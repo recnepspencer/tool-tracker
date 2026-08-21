@@ -3,6 +3,7 @@ import { ErrorState, LoadingState } from '../../components/ui/AsyncState';
 import { SearchField } from '../../components/ui/TextField';
 import { WorkerToolDetailSheet } from '../tool-detail/WorkerToolDetailSheet';
 import type { DetailAction } from '../tool-detail/detail-action-types';
+import type { CheckoutUnitOption } from '../tool-detail/checkout-unit-option';
 import { CatalogFilters } from './CatalogFilters';
 import {
   defaultCatalogFilters,
@@ -21,7 +22,11 @@ export function CheckoutPage() {
   const [filters, setFilters] = useState<CatalogFiltersState>(defaultCatalogFilters);
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [mode, setMode] = useState<'grid' | 'list'>('grid');
-  const [selectedTool, setSelectedTool] = useState<{ id: string; action?: DetailAction } | null>(null);
+  const [selectedTool, setSelectedTool] = useState<{
+    id: string;
+    action?: DetailAction;
+    requestUnits?: CheckoutUnitOption[];
+  } | null>(null);
   const filtered = useMemo(
     () => filterCatalog(catalog.data ?? [], filters).map((item) => scopeCatalogItem(item, filters)),
     [catalog.data, filters],
@@ -95,7 +100,7 @@ export function CheckoutPage() {
               item={item}
               mode={mode}
               priority={index < CATALOG_PRIORITY_IMAGE_COUNT}
-              onSelect={(id, action) => setSelectedTool({ id, action })}
+              onSelect={(id, action, requestUnits) => setSelectedTool({ id, action, requestUnits })}
             />
           ))}
         </div>
@@ -120,6 +125,8 @@ export function CheckoutPage() {
       <WorkerToolDetailSheet
         toolUnitId={selectedTool?.id ?? null}
         initialAction={selectedTool?.action ?? null}
+        requestUnits={selectedTool?.requestUnits}
+        onRequestUnitChange={(id) => setSelectedTool((current) => (current ? { ...current, id } : current))}
         onClose={() => setSelectedTool(null)}
       />
     </div>

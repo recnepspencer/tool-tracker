@@ -107,7 +107,7 @@ describe('custody projection refresh surfaces', () => {
     const detail = await screen.findByRole('dialog', { name: 'Tool details' });
     expect(within(detail).getByRole('heading', { name: 'Request this tool' })).toBeInTheDocument();
     await user.type(within(detail).getByPlaceholderText('Add context for the record'), 'Tomorrow job');
-    await user.click(within(detail).getByRole('switch', { name: 'Add a photo to this record' }));
+    expect(within(detail).queryByRole('switch', { name: 'Add a photo to this record' })).not.toBeInTheDocument();
     const beforeCalls = { ...calls, pendingByProfile: { ...calls.pendingByProfile } };
     const beforeProjection = { ...screen.getByTestId('projection-probe').dataset };
     await user.click(within(detail).getByRole('button', { name: 'Confirm' }));
@@ -131,7 +131,7 @@ describe('custody projection refresh surfaces', () => {
       warehouseId: 'north-yard',
     });
     expect(await api.custody.listPendingHandoffs('ray-torres')).toEqual(
-      expect.arrayContaining([expect.objectContaining({ evidence: { note: 'Tomorrow job', mockPhoto: true } })]),
+      expect.arrayContaining([expect.objectContaining({ evidence: { note: 'Tomorrow job' } })]),
     );
   });
 

@@ -11,6 +11,7 @@ interface CustodyEvidenceFieldsProps extends CustodyEvidenceDraft {
   className?: string;
   context?: 'transfer' | 'review' | 'request';
   notePlaceholder?: string;
+  showPhoto?: boolean;
 }
 
 export function CustodyEvidenceFields({
@@ -21,6 +22,7 @@ export function CustodyEvidenceFields({
   className = '',
   context = 'request',
   notePlaceholder,
+  showPhoto = true,
 }: CustodyEvidenceFieldsProps) {
   const resolvedNotePlaceholder =
     notePlaceholder ??
@@ -39,22 +41,24 @@ export function CustodyEvidenceFields({
         onChange={onNoteChange}
         placeholder={resolvedNotePlaceholder}
       />
-      <button
-        type="button"
-        role="switch"
-        className={`custody-photo-toggle${mockPhoto ? ' custody-photo-toggle--selected' : ''}`}
-        aria-checked={mockPhoto}
-        aria-label="Add a photo to this record"
-        onClick={() => onMockPhotoChange(!mockPhoto)}
-      >
-        <span className="custody-photo-preview" aria-hidden="true">
-          <span>{mockPhoto ? '✓' : '+'}</span>
-        </span>
-        <span className="custody-photo-copy">
-          <strong>{mockPhoto ? 'Photo attached' : 'Add a photo'}</strong>
-          <small>{mockPhoto ? 'Tap to remove' : photoHint}</small>
-        </span>
-      </button>
+      {showPhoto ? (
+        <button
+          type="button"
+          role="switch"
+          className={`custody-photo-toggle${mockPhoto ? ' custody-photo-toggle--selected' : ''}`}
+          aria-checked={mockPhoto}
+          aria-label="Add a photo to this record"
+          onClick={() => onMockPhotoChange(!mockPhoto)}
+        >
+          <span className="custody-photo-preview" aria-hidden="true">
+            <span>{mockPhoto ? '✓' : '+'}</span>
+          </span>
+          <span className="custody-photo-copy">
+            <strong>{mockPhoto ? 'Photo attached' : 'Add a photo'}</strong>
+            <small>{mockPhoto ? 'Tap to remove' : photoHint}</small>
+          </span>
+        </button>
+      ) : null}
     </div>
   );
 }

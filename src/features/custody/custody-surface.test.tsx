@@ -37,14 +37,14 @@ describe('custody workflow surfaces', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Tool details' });
     expect(within(dialog).getByRole('heading', { name: 'Request this tool' })).toBeInTheDocument();
     await user.type(within(dialog).getByPlaceholderText('Add context for the record'), 'Tomorrow job');
-    await user.click(within(dialog).getByRole('switch', { name: 'Add a photo to this record' }));
+    expect(within(dialog).queryByRole('switch', { name: 'Add a photo to this record' })).not.toBeInTheDocument();
     await user.click(within(dialog).getByRole('button', { name: 'Confirm' }));
     expect(await within(dialog).findByText('Request sent to the warehouse.')).toBeInTheDocument();
     expect(database.read().custody.find((record) => record.toolUnitId === 'TL-105')?.holder).toEqual({
       type: 'warehouse',
       warehouseId: 'north-yard',
     });
-    expect(database.read().handoffs.at(-1)).toMatchObject({ evidence: { note: 'Tomorrow job', mockPhoto: true } });
+    expect(database.read().handoffs.at(-1)).toMatchObject({ evidence: { note: 'Tomorrow job' } });
     expect(within(dialog).queryByRole('button', { name: 'Request from North Yard' })).not.toBeInTheDocument();
   });
 

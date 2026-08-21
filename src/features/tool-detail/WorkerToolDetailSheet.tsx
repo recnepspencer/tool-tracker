@@ -10,6 +10,7 @@ import { ToolCustodyActions } from './ToolCustodyActions';
 import { ToolMetadata } from './ToolMetadata';
 import { useWorkerDetailActionController } from './use-worker-detail-action-controller';
 import type { DetailAction } from './detail-action-types';
+import type { CheckoutUnitOption } from './checkout-unit-option';
 import '../../styles/tool-detail.css';
 import '../../styles/activity-indicator.css';
 
@@ -17,10 +18,14 @@ import '../../styles/activity-indicator.css';
 export function WorkerToolDetailSheet({
   toolUnitId,
   initialAction = null,
+  requestUnits,
+  onRequestUnitChange,
   onClose,
 }: {
   toolUnitId: string | null;
   initialAction?: DetailAction | null;
+  requestUnits?: CheckoutUnitOption[];
+  onRequestUnitChange?(unitId: string): void;
   onClose(): void;
 }) {
   const detail = useToolDetail(toolUnitId);
@@ -105,8 +110,10 @@ export function WorkerToolDetailSheet({
             detailRefreshing={controller.detailRefreshing}
             busy={controller.busy}
             targets={targets}
+            requestUnits={requestUnits}
             onAction={controller.onAction}
             onTargetChange={controller.onTargetChange}
+            onRequestUnitChange={onRequestUnitChange}
             onTransferModeChange={controller.onTransferModeChange}
             onNoteChange={controller.onNoteChange}
             onMockPhotoChange={controller.onMockPhotoChange}
