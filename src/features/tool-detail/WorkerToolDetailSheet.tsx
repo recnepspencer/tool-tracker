@@ -44,6 +44,9 @@ export function WorkerToolDetailSheet({
     session,
     canStartHandoff,
     initialAction,
+    onSuccess: (action) => {
+      if (action === 'transfer') onClose();
+    },
   });
 
   if (!toolUnitId) return null;
@@ -92,12 +95,16 @@ export function WorkerToolDetailSheet({
             target={controller.target}
             note={controller.note}
             mockPhoto={controller.mockPhoto}
+            transferMode={controller.transferMode}
+            personQuery={controller.personQuery}
             canStartHandoff={canStartHandoff}
             detailRefreshing={controller.detailRefreshing}
             busy={controller.busy}
             targets={targets}
             onAction={controller.onAction}
             onTargetChange={controller.onTargetChange}
+            onTransferModeChange={controller.onTransferModeChange}
+            onPersonQueryChange={controller.onPersonQueryChange}
             onNoteChange={controller.onNoteChange}
             onMockPhotoChange={controller.onMockPhotoChange}
             onCloseAction={controller.onCloseAction}

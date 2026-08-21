@@ -5,7 +5,7 @@ import { createMockApi } from '../../api/mock/create-mock-api';
 import { createMockDatabase } from '../../api/mock/mock-database';
 import { AppRoutes } from '../../app/app-routes';
 import { createMemorySessionStore, renderApp } from '../../test/render-app';
-import { chooseFieldOption } from '../../test/choose-field-option';
+import { chooseTransferDestination } from '../../test/choose-field-option';
 import { QueryProjectionProbe } from '../../test/QueryProjectionProbe';
 
 const createIncomingTransferScenario = async () => {
@@ -117,9 +117,17 @@ describe('custody command invalidation surfaces', () => {
     await waitFor(() => expect(screen.getByTestId('projection-probe')).toHaveTextContent('ready'));
     const beforeCalls = { ...calls, pendingByProfile: { ...calls.pendingByProfile } };
     const beforeProjection = { ...screen.getByTestId('projection-probe').dataset };
-    expect(within(card).getByText('Jordan Lee → Ray Torres')).toBeInTheDocument();
+    expect(within(card).getByText('From Jordan Lee · check it matches the photo')).toBeInTheDocument();
     await user.click(within(card).getByRole('button', { name: 'Review' }));
-    await user.click(within(card).getByRole('button', { name: 'Accept — take custody' }));
+    const review = within(card).getByRole('dialog', { name: 'Hammer drill transfer review' });
+    expect(within(review).getByPlaceholderText('e.g. chuck is loose')).toBeInTheDocument();
+    expect(
+      within(review).getByText(
+        'Check the tool in front of you against the photo before accepting. Accepting is the proof of handoff.',
+      ),
+    ).toBeInTheDocument();
+    expect(within(review).getByRole('button', { name: 'Decline' })).toBeInTheDocument();
+    await user.click(within(review).getByRole('button', { name: 'Accept — take custody' }));
     await waitFor(() =>
       expect(database.read().custody.find((record) => record.toolUnitId === 'TL-101')?.holder).toEqual({
         type: 'worker',
@@ -214,11 +222,11 @@ describe('custody command invalidation surfaces', () => {
     await user.click(screen.getByRole('button', { name: 'Open details for Hammer drill unit TL-101' }));
     const dialog = await screen.findByRole('dialog', { name: 'Tool details' });
     await user.click(within(dialog).getByRole('button', { name: 'Transfer tool' }));
-    await chooseFieldOption(user, within(dialog).getByRole('combobox', { name: 'Send to' }), /South Shop/);
+    await chooseTransferDestination(user, dialog, 'warehouse', /South Shop Warehouse/);
     const beforeCalls = { ...calls, pendingByProfile: { ...calls.pendingByProfile } };
     const beforeProjection = { ...screen.getByTestId('projection-probe').dataset };
-    await user.click(within(dialog).getByRole('button', { name: 'Confirm' }));
-    expect(await within(dialog).findByText('Transfer started. Custody moves after acceptance.')).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Send to South Shop' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Tool details' })).not.toBeInTheDocument());
     await waitFor(() => {
       expect(calls.tools).toBeGreaterThan(beforeCalls.tools);
       expect(calls.catalog).toBeGreaterThan(beforeCalls.catalog);

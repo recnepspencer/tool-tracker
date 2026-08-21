@@ -11,3 +11,17 @@ export async function openFieldOptions(user: UserEvent, combobox: HTMLElement) {
   await user.click(combobox);
   return screen.findByRole('listbox');
 }
+
+export async function chooseTransferDestination(
+  user: UserEvent,
+  container: HTMLElement,
+  mode: 'warehouse' | 'person',
+  destinationName: string | RegExp,
+) {
+  await user.click(
+    within(container).getByRole('button', {
+      name: mode === 'warehouse' ? /Back to a warehouse/ : /To a person/,
+    }),
+  );
+  await user.click(await within(container).findByRole('option', { name: destinationName }));
+}

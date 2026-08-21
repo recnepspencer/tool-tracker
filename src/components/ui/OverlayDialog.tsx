@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { cx } from '../../lib/cx';
 import { useModalFocusTrap } from './use-modal-focus-trap';
 import './OverlayDialog.css';
@@ -18,11 +18,18 @@ export function OverlayDialog({
 }) {
   const panelRef = useRef<HTMLElement>(null);
   useModalFocusTrap(true, onClose, panelRef);
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
   return (
     <div
       className={cx('overlay-backdrop', backdropClassName)}
       role="presentation"
-      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+      onPointerDown={(event) => event.target === event.currentTarget && onClose()}
     >
       <section
         ref={panelRef}

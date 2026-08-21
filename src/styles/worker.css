@@ -119,7 +119,6 @@
   position: relative;
 }
 .worker-tool-main .tool-photo::before,
-.worker-pending-card::before,
 .worker-catalog-card-photo::before,
 .worker-activity-photo::before {
   background: repeating-linear-gradient(

@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { ChevronDownIcon } from '../../components/ui/ChevronDownIcon';
 import { SelectField } from '../../components/ui/SelectField';
-import { TextAreaField, TextField } from '../../components/ui/TextField';
+import { TextField } from '../../components/ui/TextField';
 import type { ToolCategoryView } from '../../domain/read-models/settings';
 import type { ToolDraft } from './add-tool-types';
 
@@ -85,30 +86,32 @@ export function ToolDetailsForm({
           />
         </div>
 
-        <SelectField
-          className="worker-select-field"
-          label="Category"
-          hint="required"
-          value={draft.categoryId}
-          onChange={(value) => onUpdate('categoryId', value)}
-          options={categories.map((category) => ({ value: category.id, label: category.name }))}
-          placeholder="Select a category"
-          required
-          searchable={false}
-          presentation="sheet"
-        />
-        <SelectField
-          className="worker-select-field"
-          label="Home warehouse"
-          hint="required"
-          value={draft.warehouseId}
-          onChange={(value) => onUpdate('warehouseId', value)}
-          options={warehouses.map((warehouse) => ({ value: warehouse.id, label: warehouse.name }))}
-          placeholder="Select a warehouse"
-          required
-          searchable={false}
-          presentation="sheet"
-        />
+        <div className="worker-details-pickers">
+          <SelectField
+            className="worker-select-field"
+            label="Category"
+            hint="required"
+            value={draft.categoryId}
+            onChange={(value) => onUpdate('categoryId', value)}
+            options={categories.map((category) => ({ value: category.id, label: category.name }))}
+            placeholder="Select a category"
+            required
+            searchable={false}
+            presentation="sheet"
+          />
+          <SelectField
+            className="worker-select-field"
+            label="Home warehouse"
+            hint="required"
+            value={draft.warehouseId}
+            onChange={(value) => onUpdate('warehouseId', value)}
+            options={warehouses.map((warehouse) => ({ value: warehouse.id, label: warehouse.name }))}
+            placeholder="Select a warehouse"
+            required
+            searchable={false}
+            presentation="sheet"
+          />
+        </div>
 
         <button
           type="button"
@@ -117,32 +120,27 @@ export function ToolDetailsForm({
           onClick={() => setOptionalOpen((current) => !current)}
         >
           <span>Serial, price, notes</span>
-          <span aria-hidden="true">⌄</span>
+          <ChevronDownIcon className="worker-optional-chevron" />
         </button>
         {optionalOpen ? (
           <div className="worker-form-stack worker-optional-fields">
             <FormCard
-              label="Serial"
-              tag="Optional"
+              label="Serial number"
               value={draft.serial}
-              placeholder="Serial number"
+              placeholder="Optional"
               onChange={(value) => onUpdate('serial', value)}
             />
             <FormCard
               label="Price"
-              tag="Optional"
               value={draft.price}
-              placeholder="Replacement value"
+              placeholder="Optional"
               onChange={(value) => onUpdate('price', value)}
             />
-            <TextAreaField
-              className="worker-add-field"
-              label="Note"
-              hint="optional"
+            <FormCard
+              label="Notes"
               value={draft.note}
               onChange={(value) => onUpdate('note', value)}
-              placeholder="Condition or context"
-              rows={3}
+              placeholder="Optional"
             />
           </div>
         ) : null}
@@ -172,7 +170,7 @@ function FormCard({
   onChange,
 }: {
   label: string;
-  tag: string;
+  tag?: string;
   value: string;
   placeholder: string;
   onChange(value: string): void;
@@ -181,7 +179,7 @@ function FormCard({
     <TextField
       className="worker-add-field"
       label={label}
-      hint={tag.toLowerCase()}
+      hint={tag?.toLowerCase()}
       value={value}
       onChange={onChange}
       placeholder={placeholder}

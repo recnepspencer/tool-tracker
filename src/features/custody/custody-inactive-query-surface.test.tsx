@@ -9,7 +9,7 @@ import type { ReportConditionInput, StartTransferInput } from '../../api/contrac
 import { AppRoutes } from '../../app/app-routes';
 import { queryKeys } from '../../api/query-keys';
 import { createMemorySessionStore, renderApp } from '../../test/render-app';
-import { chooseFieldOption } from '../../test/choose-field-option';
+import { chooseTransferDestination } from '../../test/choose-field-option';
 import { useCustodyMutations } from './use-custody-mutations';
 
 function MutationHarness() {
@@ -132,13 +132,13 @@ describe('inactive TanStack query safety', () => {
     await user.click(await screen.findByRole('button', { name: 'Open details for Fluke 87V multimeter unit TL-102' }));
     const dialog = await screen.findByRole('dialog', { name: 'Tool details' });
     await user.click(within(dialog).getByRole('button', { name: 'Transfer tool' }));
-    await chooseFieldOption(user, within(dialog).getByRole('combobox', { name: 'Send to' }), /South Shop/);
+    await chooseTransferDestination(user, dialog, 'warehouse', /South Shop Warehouse/);
     onlineManager.setOnline(false);
     await user.click(screen.getByRole('button', { name: 'Invalidate transfer targets' }));
     expect(await within(dialog).findByText('Loading transfer targets…')).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: 'Confirm' })).toBeDisabled();
+    expect(within(dialog).getByRole('button', { name: 'Send to South Shop' })).toBeDisabled();
     onlineManager.setOnline(true);
-    await waitFor(() => expect(within(dialog).getByRole('combobox', { name: 'Send to' })).toBeInTheDocument());
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Send to South Shop' })).not.toBeDisabled());
     await user.click(screen.getByRole('button', { name: 'Run transfer' }));
     await waitFor(() => expect(transferStarted).toBe(true));
     expect(database.read().handoffs).toEqual(
@@ -147,11 +147,10 @@ describe('inactive TanStack query safety', () => {
     resolveTransfer();
     await waitFor(() => expect(targetCalls).toBeGreaterThanOrEqual(2));
     expect(await within(dialog).findByText('Loading transfer targets…')).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: 'Confirm' })).toBeDisabled();
+    expect(within(dialog).getByRole('button', { name: 'Send to South Shop' })).toBeDisabled();
     expect(transferCommandCalls).toBe(1);
     resolveTargets(await baseApi.custody.listTransferTargets({ actorId: 'ray-torres', toolUnitId: 'TL-102' }));
-    await waitFor(() => expect(within(dialog).getByRole('combobox', { name: 'Send to' })).toBeInTheDocument());
-    expect(within(dialog).getByRole('button', { name: 'Confirm' })).not.toBeDisabled();
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Send to South Shop' })).not.toBeDisabled());
   });
 
   it('fails closed while an active detail refetch is unresolved', async () => {

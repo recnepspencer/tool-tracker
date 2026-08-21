@@ -17,7 +17,8 @@ describe('worker tools surfaces', () => {
     renderApp(<AppRoutes />, { sessionStore: createMemorySessionStore('ray-torres') });
     expect(await screen.findByRole('heading', { name: 'My tools' })).toBeInTheDocument();
     expect(screen.getByText('Bandsaw')).toBeInTheDocument();
-    expect(screen.getByText('North Yard → Ray Torres')).toBeInTheDocument();
+    expect(screen.getByText('Awaiting warehouse approval')).toBeInTheDocument();
+    expect(screen.getByText('Requested from Ray Torres')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Transfer Hammer drill unit TL-101' }).closest('article')).toHaveClass(
       'worker-tool-row--checked-out',
     );

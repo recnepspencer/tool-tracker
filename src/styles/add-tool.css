@@ -252,6 +252,11 @@
   gap: var(--space-9);
   margin-top: var(--space-20);
 }
+.worker-details-pickers {
+  display: grid;
+  gap: var(--space-9);
+  margin-top: var(--space-9);
+}
 .worker-form-card,
 .worker-add-field,
 .worker-select-field {
@@ -349,7 +354,10 @@
 .worker-optional-toggle > span:last-child {
   transition: transform var(--duration-300) ease;
 }
-.worker-optional-toggle--open > span:last-child {
+.worker-optional-chevron {
+  transition: transform var(--duration-300) ease;
+}
+.worker-optional-toggle--open .worker-optional-chevron {
   transform: rotate(180deg);
 }
 .worker-optional-fields {

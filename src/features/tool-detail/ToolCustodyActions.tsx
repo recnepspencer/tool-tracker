@@ -1,6 +1,5 @@
 import { Button } from '../../components/ui/Button';
 import { ErrorState, LoadingState } from '../../components/ui/AsyncState';
-import { SelectField } from '../../components/ui/SelectField';
 import type { AuthSession } from '../../domain/auth';
 import { workerCustodyActionPolicy } from '../../domain/custody-policy';
 import type { ToolDetailView } from '../../domain/read-models/tools';
@@ -9,6 +8,7 @@ import { CustodyEvidenceFields } from '../custody/CustodyEvidenceFields';
 import { holderSelectionKey } from './holder-selection-key';
 import { toToolHolderRef } from './holder-ref';
 import type { DetailAction } from './detail-action-types';
+import { TransferDestinationPicker, type TransferDestinationMode } from './TransferDestinationPicker';
 
 interface ToolCustodyActionsProps {
   detail: ToolDetailView;
@@ -17,12 +17,16 @@ interface ToolCustodyActionsProps {
   target: string;
   note: string;
   mockPhoto: boolean;
+  transferMode?: TransferDestinationMode | null;
+  personQuery?: string;
   canStartHandoff: boolean;
   detailRefreshing: boolean;
   busy: boolean;
   targets: { isPending: boolean; isFetching: boolean; isPaused: boolean; isError: boolean; data?: ToolHolderView[] };
   onAction(action: DetailAction): void;
   onTargetChange(target: string): void;
+  onTransferModeChange?(mode: TransferDestinationMode | null): void;
+  onPersonQueryChange?(query: string): void;
   onNoteChange(note: string): void;
   onMockPhotoChange(mockPhoto: boolean): void;
   onCloseAction(): void;
@@ -36,18 +40,24 @@ export function ToolCustodyActions({
   target,
   note,
   mockPhoto,
+  transferMode = null,
+  personQuery = '',
   canStartHandoff,
   detailRefreshing,
   busy,
   targets,
   onAction,
   onTargetChange,
+  onTransferModeChange = () => undefined,
+  onPersonQueryChange = () => undefined,
   onNoteChange,
   onMockPhotoChange,
   onCloseAction,
   onSubmit,
 }: ToolCustodyActionsProps) {
   const selectedTarget = targets.data?.find((candidate) => holderSelectionKey(candidate) === target);
+  const activeTransferMode =
+    transferMode ?? (selectedTarget ? (selectedTarget.type === 'warehouse' ? 'warehouse' : 'person') : null);
   const actionPolicy = workerCustodyActionPolicy({
     actorRole: session?.role ?? null,
     actorId: session?.profileId ?? null,
@@ -67,32 +77,37 @@ export function ToolCustodyActions({
     );
   return (
     <>
-      <section className="detail-actions" aria-label="Custody actions">
-        {canStartHandoff && actionPolicy.canRequest ? (
-          <Button variant="primary" onClick={() => onAction('request')}>
-            Request from {detail.tool.holder.name}
-          </Button>
-        ) : null}
-        {session && canStartHandoff && actionPolicy.canTransfer ? (
-          <>
-            <Button variant="primary" onClick={() => onAction('transfer')}>
-              Transfer tool
+      {!action ? (
+        <section className="detail-actions" aria-label="Custody actions">
+          {canStartHandoff && actionPolicy.canRequest ? (
+            <Button variant="primary" onClick={() => onAction('request')}>
+              Request from {detail.tool.holder.name}
             </Button>
-            {actionPolicy.canReportCondition ? (
-              <div className="detail-action-row">
-                <Button variant="danger" onClick={() => onAction('report-damaged')}>
-                  Report damaged
-                </Button>
-                <Button variant="danger" onClick={() => onAction('report-lost')}>
-                  Report lost
-                </Button>
-              </div>
-            ) : null}
-          </>
-        ) : null}
-      </section>
+          ) : null}
+          {session && canStartHandoff && actionPolicy.canTransfer ? (
+            <>
+              <Button variant="primary" onClick={() => onAction('transfer')}>
+                Transfer tool
+              </Button>
+              {actionPolicy.canReportCondition ? (
+                <div className="detail-action-row">
+                  <Button variant="danger" onClick={() => onAction('report-damaged')}>
+                    Report damaged
+                  </Button>
+                  <Button variant="danger" onClick={() => onAction('report-lost')}>
+                    Report lost
+                  </Button>
+                </div>
+              ) : null}
+            </>
+          ) : null}
+        </section>
+      ) : null}
       {action ? (
-        <section className="detail-action-panel" aria-label="Action details">
+        <section
+          className={`detail-action-panel${action === 'transfer' ? ' detail-action-panel--transfer' : ''}`}
+          aria-label="Action details"
+        >
           <div className="detail-section-heading">
             <div>
               <span className="eyebrow">Confirm action</span>
@@ -100,7 +115,7 @@ export function ToolCustodyActions({
                 {action === 'request'
                   ? 'Request this tool'
                   : action === 'transfer'
-                    ? 'Choose a destination'
+                    ? 'Transfer'
                     : action === 'report-damaged'
                       ? 'Report damage'
                       : 'Report loss'}
@@ -116,29 +131,49 @@ export function ToolCustodyActions({
             ) : targets.isError ? (
               <ErrorState message="Transfer targets could not be loaded." />
             ) : (
-              <SelectField
-                label="Send to"
-                value={target}
-                onChange={onTargetChange}
-                placeholder="Choose a person or warehouse"
-                options={(targets.data ?? []).map((candidate) => ({
-                  value: holderSelectionKey(candidate),
-                  label: candidate.name,
-                  description: candidate.type === 'warehouse' ? 'Warehouse' : 'Person',
-                }))}
+              <TransferDestinationPicker
+                candidates={targets.data ?? []}
+                mode={activeTransferMode}
+                target={target}
+                personQuery={personQuery}
+                onModeChange={onTransferModeChange}
+                onTargetChange={onTargetChange}
+                onPersonQueryChange={onPersonQueryChange}
               />
             )
           ) : null}
-          <CustodyEvidenceFields
-            className="detail-action-field"
-            note={note}
-            mockPhoto={mockPhoto}
-            onNoteChange={onNoteChange}
-            onMockPhotoChange={onMockPhotoChange}
-          />
-          <Button variant="primary" fullWidth disabled={!canSubmit} onClick={onSubmit}>
-            {busy || detailRefreshing ? 'Saving…' : 'Confirm'}
+          {action !== 'transfer' || selectedTarget ? (
+            <CustodyEvidenceFields
+              className="detail-action-field"
+              context={action === 'transfer' ? 'transfer' : 'request'}
+              note={note}
+              mockPhoto={mockPhoto}
+              onNoteChange={onNoteChange}
+              onMockPhotoChange={onMockPhotoChange}
+            />
+          ) : null}
+          <Button
+            className={action === 'transfer' ? 'transfer-submit-button' : undefined}
+            variant="primary"
+            fullWidth
+            disabled={!canSubmit}
+            onClick={onSubmit}
+          >
+            {busy || detailRefreshing
+              ? 'Saving…'
+              : action === 'transfer'
+                ? selectedTarget
+                  ? `Send to ${selectedTarget.name}`
+                  : 'Choose a destination'
+                : 'Confirm'}
           </Button>
+          {action === 'transfer' && selectedTarget ? (
+            <p className="transfer-submit-note">
+              {selectedTarget.type === 'warehouse'
+                ? 'The warehouse manager accepts the return before it goes back in stock.'
+                : 'Custody moves only when they accept. Expires in 48 hours.'}
+            </p>
+          ) : null}
         </section>
       ) : null}
     </>

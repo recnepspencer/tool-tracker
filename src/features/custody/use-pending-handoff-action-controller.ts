@@ -26,7 +26,8 @@ export function usePendingHandoffActionController({
     mutations.cancelTransfer.isPending ||
     mutations.withdrawRequest.isPending;
 
-  const act = async (action: HandoffAction) => {
+  const act = async (action: HandoffAction): Promise<boolean> => {
+    if (queryBlocked || mutationBusy) return false;
     setError(null);
     const evidence =
       note.trim() || mockPhoto
@@ -38,8 +39,10 @@ export function usePendingHandoffActionController({
       if (action === 'decline') await mutations.declineTransfer.mutateAsync(input);
       if (action === 'cancel') await mutations.cancelTransfer.mutateAsync(input);
       if (action === 'withdraw') await mutations.withdrawRequest.mutateAsync(input);
+      return true;
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'This handoff could not be updated.');
+      return false;
     }
   };
 

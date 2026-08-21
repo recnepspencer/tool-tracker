@@ -114,8 +114,15 @@
 .field-chevron {
   color: var(--dim);
   flex: 0 0 auto;
-  font-size: var(--text-sm);
-  line-height: var(--leading-none);
+}
+.icon-chevron-down {
+  display: block;
+  height: var(--space-16);
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: var(--space-2);
+  width: var(--space-16);
 }
 .field-listbox {
   background: var(--card);

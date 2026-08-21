@@ -172,8 +172,8 @@ describe('inactive target query production action boundary', () => {
       </>,
       { api },
     );
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Confirm' })).not.toBeDisabled());
-    expect(screen.getByRole('combobox', { name: 'Send to' })).toHaveValue('South Shop');
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Send to South Shop' })).not.toBeDisabled());
+    expect(screen.getByRole('option', { name: 'South Shop Warehouse' })).toHaveAttribute('aria-selected', 'true');
     await user.click(screen.getByRole('button', { name: 'Unmount production action panel' }));
     await user.click(screen.getByRole('button', { name: 'Run request' }));
     await waitFor(() => expect(requestStarted).toBe(true));
@@ -181,14 +181,14 @@ describe('inactive target query production action boundary', () => {
     await user.click(screen.getByRole('button', { name: 'Remount target query' }));
     await user.click(screen.getByRole('button', { name: 'Remount production action panel' }));
     expect(await screen.findByText('Loading transfer targets…')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Confirm' })).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(screen.getByRole('button', { name: 'Send to South Shop' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Send to South Shop' }));
     expect(transferCalls).toBe(0);
     resolveTargets(await baseApi.custody.listTransferTargets({ actorId: 'ray-torres', toolUnitId: 'TL-102' }));
-    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Send to' })).toBeInTheDocument());
-    expect(screen.getByRole('combobox', { name: 'Send to' })).toHaveValue('South Shop');
-    expect(screen.getByRole('button', { name: 'Confirm' })).not.toBeDisabled();
-    await user.click(screen.getByRole('button', { name: 'Confirm' }));
+    await waitFor(() => expect(screen.getByRole('option', { name: 'South Shop Warehouse' })).toBeInTheDocument());
+    expect(screen.getByRole('option', { name: 'South Shop Warehouse' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('button', { name: 'Send to South Shop' })).not.toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Send to South Shop' }));
     await waitFor(() => expect(transferCalls).toBe(1));
   });
 
@@ -209,21 +209,21 @@ describe('inactive target query production action boundary', () => {
       },
     };
     renderApp(<ProductionActionPanelHarness detail={detail} session={session} />, { api });
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Confirm' })).not.toBeDisabled());
-    expect(screen.getByRole('combobox', { name: 'Send to' })).toHaveValue('South Shop');
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Send to South Shop' })).not.toBeDisabled());
+    expect(screen.getByRole('option', { name: 'South Shop Warehouse' })).toHaveAttribute('aria-selected', 'true');
     await user.click(screen.getByRole('button', { name: 'Unmount production action panel' }));
     onlineManager.setOnline(false);
     await user.click(screen.getByRole('button', { name: 'Invalidate target query' }));
     await user.click(screen.getByRole('button', { name: 'Remount target query' }));
     await user.click(screen.getByRole('button', { name: 'Remount production action panel' }));
     expect(await screen.findByText('Loading transfer targets…')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Confirm' })).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(screen.getByRole('button', { name: 'Send to South Shop' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Send to South Shop' }));
     expect(transferCalls).toBe(0);
     onlineManager.setOnline(true);
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Confirm' })).not.toBeDisabled());
-    expect(screen.getByRole('combobox', { name: 'Send to' })).toHaveValue('South Shop');
-    await user.click(screen.getByRole('button', { name: 'Confirm' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Send to South Shop' })).not.toBeDisabled());
+    expect(screen.getByRole('option', { name: 'South Shop Warehouse' })).toHaveAttribute('aria-selected', 'true');
+    await user.click(screen.getByRole('button', { name: 'Send to South Shop' }));
     await waitFor(() => expect(transferCalls).toBe(1));
   });
 
@@ -251,8 +251,8 @@ describe('inactive target query production action boundary', () => {
       },
     };
     renderApp(<ProductionActionPanelHarness detail={detail} session={session} />, { api });
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Confirm' })).not.toBeDisabled());
-    expect(screen.getByRole('combobox', { name: 'Send to' })).toHaveValue('South Shop');
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Send to South Shop' })).not.toBeDisabled());
+    expect(screen.getByRole('option', { name: 'South Shop Warehouse' })).toHaveAttribute('aria-selected', 'true');
     await user.click(screen.getByRole('button', { name: 'Unmount production action panel' }));
     shouldReject = true;
     await user.click(screen.getByRole('button', { name: 'Invalidate target query' }));
@@ -260,14 +260,14 @@ describe('inactive target query production action boundary', () => {
     await user.click(screen.getByRole('button', { name: 'Remount target query' }));
     await user.click(screen.getByRole('button', { name: 'Remount production action panel' }));
     expect(await screen.findByText('Transfer targets could not be loaded.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Confirm' })).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(screen.getByRole('button', { name: 'Send to South Shop' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Send to South Shop' }));
     expect(transferCalls).toBe(0);
     shouldReject = false;
     await user.click(screen.getByRole('button', { name: 'Invalidate target query' }));
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Confirm' })).not.toBeDisabled());
-    expect(screen.getByRole('combobox', { name: 'Send to' })).toHaveValue('South Shop');
-    await user.click(screen.getByRole('button', { name: 'Confirm' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Send to South Shop' })).not.toBeDisabled());
+    expect(screen.getByRole('option', { name: 'South Shop Warehouse' })).toHaveAttribute('aria-selected', 'true');
+    await user.click(screen.getByRole('button', { name: 'Send to South Shop' }));
     await waitFor(() => expect(transferCalls).toBe(1));
   });
 });

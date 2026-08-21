@@ -4,6 +4,7 @@ import type { ToolDetailView } from '../../domain/read-models/tools';
 import type { ToolHolderView } from '../../domain/read-models/holder';
 import { useCustodyMutations } from '../custody/use-custody-mutations';
 import type { DetailAction } from './detail-action-types';
+import type { TransferDestinationMode } from './TransferDestinationPicker';
 import { buildWorkerActionEvidence, submitWorkerDetailAction } from './worker-detail-action-runner';
 
 interface DetailQueryState {
@@ -29,6 +30,7 @@ interface WorkerDetailActionControllerInput {
   session: AuthSession | null;
   canStartHandoff: boolean;
   initialAction?: DetailAction | null;
+  onSuccess?(action: DetailAction): void;
 }
 
 export function useWorkerDetailActionController({
@@ -38,10 +40,13 @@ export function useWorkerDetailActionController({
   session,
   canStartHandoff,
   initialAction = null,
+  onSuccess,
 }: WorkerDetailActionControllerInput) {
   const mutations = useCustodyMutations();
   const [action, setAction] = useState<DetailAction | null>(null);
   const [target, setTarget] = useState('');
+  const [transferMode, setTransferMode] = useState<TransferDestinationMode | null>(null);
+  const [personQuery, setPersonQuery] = useState('');
   const [note, setNote] = useState('');
   const [mockPhoto, setMockPhoto] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +57,8 @@ export function useWorkerDetailActionController({
   useEffect(() => {
     setAction(initialAction);
     setTarget('');
+    setTransferMode(null);
+    setPersonQuery('');
     setNote('');
     setMockPhoto(false);
     setError(null);
@@ -88,8 +95,11 @@ export function useWorkerDetailActionController({
       setNotice(nextNotice);
       setAction(null);
       setTarget('');
+      setTransferMode(null);
+      setPersonQuery('');
       setNote('');
       setMockPhoto(false);
+      onSuccess?.(action);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'This action could not be completed.');
     }
@@ -107,12 +117,28 @@ export function useWorkerDetailActionController({
     onAction: (nextAction: DetailAction) => {
       setNotice(null);
       setError(null);
+      setTarget('');
+      setTransferMode(null);
+      setPersonQuery('');
       setAction(nextAction);
     },
     onTargetChange: setTarget,
+    transferMode,
+    personQuery,
+    onTransferModeChange: (nextMode: TransferDestinationMode | null) => {
+      setTransferMode(nextMode);
+      setTarget('');
+      setPersonQuery('');
+    },
+    onPersonQueryChange: setPersonQuery,
     onNoteChange: setNote,
     onMockPhotoChange: setMockPhoto,
-    onCloseAction: () => setAction(null),
+    onCloseAction: () => {
+      setAction(null);
+      setTarget('');
+      setTransferMode(null);
+      setPersonQuery('');
+    },
     submit,
   };
 }

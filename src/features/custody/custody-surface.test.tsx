@@ -5,7 +5,7 @@ import { createMockApi } from '../../api/mock/create-mock-api';
 import { createMockDatabase } from '../../api/mock/mock-database';
 import { AppRoutes } from '../../app/app-routes';
 import { createMemorySessionStore, renderApp } from '../../test/render-app';
-import { chooseFieldOption } from '../../test/choose-field-option';
+import { chooseTransferDestination } from '../../test/choose-field-option';
 import { useCustodyMutations } from './use-custody-mutations';
 
 function MutationHarness() {
@@ -192,12 +192,11 @@ describe('custody workflow surfaces', () => {
     await user.click(await screen.findByRole('button', { name: 'Open details for Hammer drill unit TL-101' }));
     const dialog = await screen.findByRole('dialog', { name: 'Tool details' });
     await user.click(within(dialog).getByRole('button', { name: 'Transfer tool' }));
-    await chooseFieldOption(user, within(dialog).getByRole('combobox', { name: 'Send to' }), /South Shop/);
-    expect(within(dialog).getByRole('combobox', { name: 'Send to' })).toHaveValue('South Shop');
+    await chooseTransferDestination(user, dialog, 'warehouse', /South Shop Warehouse/);
     await user.click(screen.getByRole('button', { name: 'Run request' }));
     await waitFor(() => expect(requestStarted).toBe(true));
     expect(await within(dialog).findByText('Transfer targets could not be loaded.')).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: 'Confirm' })).toBeDisabled();
+    expect(within(dialog).getByRole('button', { name: 'Send to South Shop' })).toBeDisabled();
     expect(startTransferCalls).toBe(0);
   });
 
@@ -216,11 +215,11 @@ describe('custody workflow surfaces', () => {
     await user.click(await screen.findByRole('button', { name: 'Open details for Hammer drill unit TL-101' }));
     const dialog = await screen.findByRole('dialog', { name: 'Tool details' });
     await user.click(within(dialog).getByRole('button', { name: 'Transfer tool' }));
-    await chooseFieldOption(user, within(dialog).getByRole('combobox', { name: 'Send to' }), /South Shop/);
-    const note = within(dialog).getByPlaceholderText('Add context for the record');
+    await chooseTransferDestination(user, dialog, 'warehouse', /South Shop Warehouse/);
+    const note = within(dialog).getByPlaceholderText('e.g. battery is in the case');
     await user.type(note, 'Keep this note');
     await user.click(within(dialog).getByRole('switch', { name: 'Add a photo to this record' }));
-    await user.click(within(dialog).getByRole('button', { name: 'Confirm' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Send to South Shop' }));
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('transfer conflict');
     expect(note).toHaveValue('Keep this note');
     expect(within(dialog).getByRole('switch', { name: 'Add a photo to this record' })).toBeChecked();
@@ -240,8 +239,7 @@ describe('custody workflow surfaces', () => {
     renderApp(<AppRoutes />, { api: rejectingApi, sessionStore: createMemorySessionStore('ray-torres') });
     const card = await screen.findByRole('article', { name: 'Bandsaw pending handoff' });
     await user.click(within(card).getByRole('button', { name: 'Review' }));
-    await user.click(within(card).getByRole('button', { name: 'Add note/photo' }));
-    const note = within(card).getByPlaceholderText('Add context for the record');
+    const note = within(card).getByPlaceholderText('e.g. left it on the bench');
     await user.type(note, 'Keep this pending note');
     await user.click(within(card).getByRole('switch', { name: 'Add a photo to this record' }));
     await user.click(within(card).getByRole('button', { name: 'Withdraw request' }));
@@ -309,8 +307,7 @@ describe('custody workflow surfaces', () => {
     renderApp(<AppRoutes />, { api, sessionStore: createMemorySessionStore('ray-torres') });
     const card = await screen.findByRole('article', { name: 'Bandsaw pending handoff' });
     await user.click(within(card).getByRole('button', { name: 'Review' }));
-    await user.click(within(card).getByRole('button', { name: 'Add note/photo' }));
-    const note = within(card).getByPlaceholderText('Add context for the record');
+    const note = within(card).getByPlaceholderText('e.g. left it on the bench');
     await user.type(note, 'Deferred handoff');
     await user.click(within(card).getByRole('switch', { name: 'Add a photo to this record' }));
     const withdraw = within(card).getByRole('button', { name: 'Withdraw request' });

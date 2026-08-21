@@ -121,7 +121,7 @@ describe('add-tool surface', () => {
     await user.type(within(dialog).getByLabelText('Tool name'), 'Failed probe');
     await chooseFieldOption(user, within(dialog).getByRole('combobox', { name: 'Category' }), 'Meters & testers');
     await user.click(within(dialog).getByRole('button', { name: 'Serial, price, notes' }));
-    const note = within(dialog).getByPlaceholderText('Condition or context');
+    const note = within(dialog).getByLabelText('Notes', { selector: 'input' });
     await user.type(note, 'Keep this draft');
     await user.click(within(dialog).getByRole('button', { name: 'Add to my tools' }));
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('creation conflict');

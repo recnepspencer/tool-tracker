@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { cx } from '../../lib/cx';
+import { ChevronDownIcon } from './ChevronDownIcon';
 import { Field } from './Field';
 import { filterSelectOptions, optionDomId, selectedSelectOption, type SelectOption } from './select-options';
 import { useListboxOverlay } from './use-listbox-overlay';
@@ -229,9 +230,7 @@ export function SelectField({
               onClick={() => !disabled && setOpen(true)}
               onKeyDown={onInputKeyDown}
             />
-            <span className="field-chevron" aria-hidden="true">
-              ▾
-            </span>
+            <ChevronDownIcon className="field-chevron" />
           </div>
         ) : (
           <button
@@ -260,9 +259,7 @@ export function SelectField({
             >
               {selected?.label ?? placeholder}
             </span>
-            <span className="field-chevron" aria-hidden="true">
-              ▾
-            </span>
+            <ChevronDownIcon className="field-chevron" />
           </button>
         )}
       </Field>
