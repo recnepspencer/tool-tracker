@@ -66,10 +66,6 @@ export function WorkerNavigationDrawer({
 
         <div className="worker-drawer-divider" />
 
-        <div className="worker-drawer-theme">
-          <ThemeToggle theme={theme} onToggleTheme={onToggleTheme} />
-        </div>
-
         <div className="worker-drawer-actions">
           <button type="button" className="worker-drawer-action worker-drawer-action--accent" onClick={onOpenAddTool}>
             <span className="worker-drawer-action-icon">+</span>
@@ -85,6 +81,10 @@ export function WorkerNavigationDrawer({
             <span className="worker-drawer-action-icon">◎</span>
             <span>Account</span>
           </button>
+        </div>
+
+        <div className="worker-drawer-theme">
+          <ThemeToggle theme={theme} onToggleTheme={onToggleTheme} />
         </div>
       </aside>
     </div>

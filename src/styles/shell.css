@@ -107,9 +107,6 @@
 .side-nav-theme {
   margin-top: auto;
 }
-.side-nav-theme .switch {
-  background: var(--card-2);
-}
 .shell-main {
   min-width: 0;
 }

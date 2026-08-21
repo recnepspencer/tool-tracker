@@ -18,7 +18,7 @@
   display: flex;
   gap: var(--space-16);
   justify-content: space-between;
-  padding: var(--space-2) var(--space-6) var(--space-18);
+  padding: var(--worker-page-pad-top) var(--space-6) var(--space-18);
 }
 
 .worker-screen-heading h1 {

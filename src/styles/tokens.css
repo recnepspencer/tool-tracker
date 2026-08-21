@@ -342,6 +342,10 @@
   --switch-height: 26px;
   --switch-knob-size: 20px;
   --switch-travel: 20px;
+  --switch-nav-width: 40px;
+  --switch-nav-height: 24px;
+  --switch-nav-knob-size: 18px;
+  --switch-nav-travel: 18px;
   --listbox-max-height: 240px;
   --listbox-min-width: 180px;
   --listbox-gap: 6px;
@@ -364,6 +368,7 @@
   --pad-auth-hero: clamp(30px, 8vw, 120px);
   --pad-auth-panel: clamp(28px, 6vw, 90px);
   --worker-header-height: 46px;
+  --worker-page-pad-top: clamp(var(--space-18), 3vw, var(--space-28));
   --worker-pad-x: clamp(16px, 4vw, 32px);
   --worker-pad-bottom: clamp(56px, 10vh, 72px);
   --worker-content-max: var(--space-900);

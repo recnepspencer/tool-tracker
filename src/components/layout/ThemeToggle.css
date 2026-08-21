@@ -1,0 +1,47 @@
+.theme-toggle--navigation .switch {
+  align-items: center;
+  background: transparent;
+  border-color: transparent;
+  border-radius: var(--radius-field);
+  gap: var(--space-12);
+  padding: var(--space-12);
+}
+
+.theme-toggle--navigation .switch:hover {
+  background: var(--hover);
+  border-color: transparent;
+}
+
+.theme-toggle--navigation .switch-copy {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  gap: var(--space-8);
+}
+
+.theme-toggle--navigation .switch-label {
+  color: var(--ink-2);
+  font: var(--weight-regular) var(--text-nav) / var(--leading-none) var(--font-sans);
+}
+
+.theme-toggle--navigation .switch-description {
+  color: var(--dim);
+  font: var(--font-mono-xs);
+  letter-spacing: var(--tracking-badge);
+  margin-left: auto;
+  text-transform: uppercase;
+}
+
+.theme-toggle--navigation .switch-track {
+  height: var(--switch-nav-height);
+  width: var(--switch-nav-width);
+}
+
+.theme-toggle--navigation .switch-knob {
+  height: var(--switch-nav-knob-size);
+  width: var(--switch-nav-knob-size);
+}
+
+.theme-toggle--navigation .switch-track--on .switch-knob {
+  transform: translateX(var(--switch-nav-travel));
+}

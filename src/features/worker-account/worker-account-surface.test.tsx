@@ -26,10 +26,15 @@ describe('worker account surfaces', () => {
     await screen.findByRole('heading', { name: 'My tools' });
     await user.click(screen.getByRole('button', { name: 'Open navigation' }));
     const navigation = screen.getByRole('dialog', { name: 'Worker navigation' });
-    expect(within(navigation).getByRole('switch', { name: 'Light mode' })).toBeInTheDocument();
+    expect(within(navigation).getByRole('switch', { name: 'Appearance' })).toBeInTheDocument();
+    const actions = navigation.querySelector('.worker-drawer-actions');
+    const theme = navigation.querySelector('.worker-drawer-theme');
+    expect(actions).not.toBeNull();
+    expect(theme).not.toBeNull();
+    expect(actions!.compareDocumentPosition(theme!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     await user.click(screen.getByRole('button', { name: 'Account' }));
     const accountDialog = screen.getByRole('dialog', { name: 'Ray Torres' });
-    expect(within(accountDialog).queryByRole('switch', { name: 'Light mode' })).not.toBeInTheDocument();
+    expect(within(accountDialog).queryByRole('switch', { name: 'Appearance' })).not.toBeInTheDocument();
     expect(within(accountDialog).getByText('ray@nelsonelectric.com')).toBeInTheDocument();
     expect(within(accountDialog).getByText(/Journeyman electrician/)).toBeInTheDocument();
     await user.click(within(accountDialog).getByRole('button', { name: 'Close account menu' }));

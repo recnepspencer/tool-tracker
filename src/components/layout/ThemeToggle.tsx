@@ -1,13 +1,16 @@
 import type { Theme } from '../../api/theme/theme-store';
 import { Switch } from '../ui/Switch';
+import './ThemeToggle.css';
 
 export function ThemeToggle({ theme, onToggleTheme }: { theme: Theme; onToggleTheme(): void }) {
   return (
-    <Switch
-      label="Light mode"
-      description={theme === 'dark' ? 'Use a light field surface.' : 'Use the dark field surface.'}
-      checked={theme === 'light'}
-      onCheckedChange={onToggleTheme}
-    />
+    <div className="theme-toggle theme-toggle--navigation">
+      <Switch
+        label="Appearance"
+        description={theme === 'light' ? 'Light' : 'Dark'}
+        checked={theme === 'light'}
+        onCheckedChange={onToggleTheme}
+      />
+    </div>
   );
 }

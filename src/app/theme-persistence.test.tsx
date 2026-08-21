@@ -18,7 +18,7 @@ describe('theme persistence boundary', () => {
     renderApp(<AppRoutes />);
     await user.click(await screen.findByRole('button', { name: 'Enter as Ray' }));
     await user.click(await screen.findByRole('button', { name: 'Open navigation' }));
-    await user.click(await screen.findByRole('switch', { name: 'Light mode' }));
+    await user.click(await screen.findByRole('switch', { name: 'Appearance' }));
     expect(document.documentElement.dataset.theme).toBe('light');
     expect(localStorage.getItem('nelson-demo-theme')).toBe('light');
     cleanup();
@@ -34,7 +34,7 @@ describe('theme persistence boundary', () => {
     renderApp(<AppRoutes />, { themeStore });
     await user.click(await screen.findByRole('button', { name: 'Enter as Ray' }));
     await user.click(await screen.findByRole('button', { name: 'Open navigation' }));
-    await user.click(await screen.findByRole('switch', { name: 'Light mode' }));
+    await user.click(await screen.findByRole('switch', { name: 'Appearance' }));
     expect(themeStore.value).toBe('light');
     cleanup();
     window.location.hash = '#/worker/tools';

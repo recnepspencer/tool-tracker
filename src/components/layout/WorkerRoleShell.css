@@ -16,7 +16,7 @@
   display: flex;
   height: calc(var(--worker-header-height) + env(safe-area-inset-top));
   justify-content: space-between;
-  padding: env(safe-area-inset-top) var(--worker-pad-x) 0;
+  padding: env(safe-area-inset-top) var(--worker-pad-x) var(--space-4);
   position: sticky;
   top: 0;
   z-index: var(--z-header);
@@ -38,8 +38,8 @@
 .worker-menu-button {
   flex-direction: column;
   gap: var(--space-4);
-  height: var(--icon-button-size);
-  width: var(--icon-button-size);
+  height: var(--space-34);
+  width: var(--space-34);
 }
 
 .worker-menu-button span {
@@ -235,11 +235,7 @@
 }
 
 .worker-drawer-theme {
-  margin-bottom: var(--space-12);
-}
-
-.worker-drawer-theme .switch {
-  background: var(--card);
+  margin-top: var(--space-8);
 }
 
 .worker-drawer-action-icon {
