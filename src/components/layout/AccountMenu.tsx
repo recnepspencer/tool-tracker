@@ -2,7 +2,6 @@ import { useCallback, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
-import { Switch } from '../ui/Switch';
 import { useModalFocusTrap } from '../ui/use-modal-focus-trap';
 import type { AuthSession, Role } from '../../domain/auth';
 import './AccountMenu.css';
@@ -11,11 +10,9 @@ export interface AccountMenuProps {
   role: Role;
   session: AuthSession;
   onSignOut(): void;
-  theme: 'dark' | 'light';
-  onToggleTheme(): void;
 }
 
-export function AccountMenu({ role, session, onSignOut, theme, onToggleTheme }: AccountMenuProps) {
+export function AccountMenu({ role, session, onSignOut }: AccountMenuProps) {
   const [open, setOpen] = useState(false);
   const sheetRef = useRef<HTMLElement>(null);
   const close = useCallback(() => setOpen(false), []);
@@ -29,7 +26,6 @@ export function AccountMenu({ role, session, onSignOut, theme, onToggleTheme }: 
 
   return (
     <div className="header-account">
-      <Switch compact label="Light mode" checked={theme === 'light'} onCheckedChange={() => onToggleTheme()} />
       <button
         type="button"
         className="account-trigger"
@@ -77,12 +73,6 @@ export function AccountMenu({ role, session, onSignOut, theme, onToggleTheme }: 
             >
               {role === 'worker' ? 'Open account page' : 'Open settings'}
             </Link>
-            <Switch
-              label="Light mode"
-              description="Saved in this browser."
-              checked={theme === 'light'}
-              onCheckedChange={() => onToggleTheme()}
-            />
             <Button variant="ghost" onClick={onSignOut}>
               Sign out
             </Button>

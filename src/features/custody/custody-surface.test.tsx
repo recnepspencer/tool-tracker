@@ -33,9 +33,9 @@ describe('custody workflow surfaces', () => {
     const database = createMockDatabase({ clock: () => '2026-08-18T09:00:00-06:00' });
     renderApp(<AppRoutes />, { api: createMockApi(database), sessionStore: createMemorySessionStore('ray-torres') });
     expect(await screen.findByRole('heading', { name: 'Browse tools' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Inspect Rotary hammer' }));
+    await user.click(screen.getByRole('button', { name: 'Check out Rotary hammer' }));
     const dialog = await screen.findByRole('dialog', { name: 'Tool details' });
-    await user.click(within(dialog).getByRole('button', { name: 'Request from North Yard' }));
+    expect(within(dialog).getByRole('heading', { name: 'Request this tool' })).toBeInTheDocument();
     await user.type(within(dialog).getByPlaceholderText('Add context for the record'), 'Tomorrow job');
     await user.click(within(dialog).getByRole('switch', { name: 'Add a photo to this record' }));
     await user.click(within(dialog).getByRole('button', { name: 'Confirm' }));

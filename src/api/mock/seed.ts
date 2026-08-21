@@ -212,6 +212,22 @@ const seedUnits: ToolUnit[] = [
     originWarehouseId: 'riverside-depot',
     assignedWarehouseId: 'riverside-depot',
   },
+  {
+    id: 'TL-117',
+    definitionId: 'def-hammer-drill',
+    condition: 'serviceable',
+    lifecycle: 'active',
+    originWarehouseId: 'south-shop',
+    assignedWarehouseId: 'south-shop',
+  },
+  {
+    id: 'TL-118',
+    definitionId: 'def-hammer-drill',
+    condition: 'serviceable',
+    lifecycle: 'active',
+    originWarehouseId: 'riverside-depot',
+    assignedWarehouseId: 'riverside-depot',
+  },
 ];
 
 const seedCustody: CustodyRecord[] = [
@@ -270,6 +286,16 @@ const seedCustody: CustodyRecord[] = [
     toolUnitId: 'TL-116',
     holder: { type: 'warehouse', warehouseId: 'riverside-depot' },
     sinceAt: '2026-08-02T10:00:00-06:00',
+  },
+  {
+    toolUnitId: 'TL-117',
+    holder: { type: 'warehouse', warehouseId: 'south-shop' },
+    sinceAt: '2026-08-18T08:30:00-06:00',
+  },
+  {
+    toolUnitId: 'TL-118',
+    holder: { type: 'warehouse', warehouseId: 'riverside-depot' },
+    sinceAt: '2026-08-18T09:15:00-06:00',
   },
 ];
 

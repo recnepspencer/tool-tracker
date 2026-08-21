@@ -101,8 +101,14 @@
   display: grid;
   font: var(--font-mono-prose);
   gap: var(--space-8);
-  margin-top: auto;
+  margin-top: var(--space-18);
   padding: var(--space-18) var(--space-12) 0;
+}
+.side-nav-theme {
+  margin-top: auto;
+}
+.side-nav-theme .switch {
+  background: var(--card-2);
 }
 .shell-main {
   min-width: 0;
@@ -183,6 +189,11 @@
   .mobile-nav-drawer nav {
     display: grid;
     gap: var(--space-5);
+  }
+  .mobile-nav-theme {
+    border-top: var(--border-width) solid var(--border);
+    margin-top: var(--space-22);
+    padding-top: var(--space-16);
   }
 }
 @media (max-width: 620px) {

@@ -38,15 +38,17 @@ describe('createMockApi tool and activity projections', () => {
       'TL-114',
       'TL-115',
       'TL-116',
+      'TL-117',
+      'TL-118',
     ]);
     expect(tools.filter((tool) => tool.holder.type === 'worker').map((tool) => tool.holder.name)).toEqual(
       Array(6).fill('Ray Torres'),
     );
-    expect(summary).toMatchObject({ totalTools: 16, checkedOut: 6, inStock: 9, flagged: 2 });
+    expect(summary).toMatchObject({ totalTools: 18, checkedOut: 6, inStock: 11, flagged: 2 });
     expect(summary.warehouses.map(({ id, tools: stock, out }) => ({ id, stock, out }))).toEqual([
       { id: 'north-yard', stock: 4, out: 3 },
-      { id: 'south-shop', stock: 3, out: 2 },
-      { id: 'riverside-depot', stock: 3, out: 1 },
+      { id: 'south-shop', stock: 4, out: 2 },
+      { id: 'riverside-depot', stock: 4, out: 1 },
     ]);
     expect(summary.recentEvents).toEqual([
       expect.objectContaining({ id: 'EV-4', toolName: 'Bandsaw' }),
@@ -65,14 +67,21 @@ describe('createMockApi tool and activity projections', () => {
     expect(catalog).toHaveLength(15);
     expect(catalog.find((item) => item.name === 'Hammer drill')).toMatchObject({
       id: 'def-hammer-drill',
-      totalCount: 2,
+      totalCount: 4,
+      availableCount: 2,
       checkedOutCount: 2,
-      unitIds: ['TL-101', 'TL-103'],
+      unitIds: ['TL-101', 'TL-103', 'TL-117', 'TL-118'],
       units: [
         { id: 'TL-101', warehouseId: 'north-yard', status: 'checked-out' },
         { id: 'TL-103', warehouseId: 'north-yard', status: 'checked-out' },
+        { id: 'TL-117', warehouseId: 'south-shop', status: 'in-stock' },
+        { id: 'TL-118', warehouseId: 'riverside-depot', status: 'in-stock' },
       ],
-      warehouses: [{ id: 'north-yard', name: 'North Yard', unitCount: 2 }],
+      warehouses: [
+        { id: 'north-yard', name: 'North Yard', unitCount: 2 },
+        { id: 'south-shop', name: 'South Shop', unitCount: 1 },
+        { id: 'riverside-depot', name: 'Riverside Depot', unitCount: 1 },
+      ],
     });
     const detail = await api.tools.getToolDetail('TL-105');
     expect(detail).toMatchObject({

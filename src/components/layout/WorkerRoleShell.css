@@ -234,6 +234,14 @@
   margin: var(--space-18) var(--space-8);
 }
 
+.worker-drawer-theme {
+  margin-bottom: var(--space-12);
+}
+
+.worker-drawer-theme .switch {
+  background: var(--card);
+}
+
 .worker-drawer-action-icon {
   align-items: center;
   display: inline-flex;

@@ -28,17 +28,19 @@ describe('createMockApi catalog projections', () => {
       ],
     }));
     const api = createMockApi(database);
-    expect((await api.tools.listTools()).filter((tool) => tool.name === 'Hammer drill')).toHaveLength(3);
+    expect((await api.tools.listTools()).filter((tool) => tool.name === 'Hammer drill')).toHaveLength(5);
     const hammerCatalog = (await api.tools.listCatalog()).find((item) => item.id === 'def-hammer-drill');
     expect(hammerCatalog?.units).toEqual([
       { id: 'TL-101', warehouseId: 'north-yard', status: 'checked-out' },
       { id: 'TL-103', warehouseId: 'north-yard', status: 'checked-out' },
+      { id: 'TL-117', warehouseId: 'south-shop', status: 'in-stock' },
+      { id: 'TL-118', warehouseId: 'riverside-depot', status: 'in-stock' },
       { id: 'TL-201', warehouseId: 'north-yard', status: 'in-stock' },
     ]);
     await expect(api.tools.getToolDetail('TL-201')).resolves.toMatchObject({
       tool: { id: 'TL-201', holder: { type: 'warehouse', warehouseId: 'north-yard' } },
     });
-    expect((await api.admin.getSummary({ actorId: 'sam-ochoa' })).totalTools).toBe(17);
+    expect((await api.admin.getSummary({ actorId: 'sam-ochoa' })).totalTools).toBe(19);
   });
 
   it('derives mixed catalog status aggregates from every projected unit', async () => {
@@ -108,14 +110,16 @@ describe('createMockApi catalog projections', () => {
       (candidate) => candidate.id === 'def-hammer-drill',
     );
     expect(item).toMatchObject({
-      totalCount: 6,
-      availableCount: 1,
+      totalCount: 8,
+      availableCount: 3,
       checkedOutCount: 3,
       damagedCount: 1,
       lostCount: 1,
       units: [
         { id: 'TL-101', status: 'checked-out' },
         { id: 'TL-103', status: 'checked-out' },
+        { id: 'TL-117', status: 'in-stock' },
+        { id: 'TL-118', status: 'in-stock' },
         { id: 'TL-201', status: 'in-stock' },
         { id: 'TL-202', status: 'checked-out' },
         { id: 'TL-203', status: 'damaged' },

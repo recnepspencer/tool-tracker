@@ -54,6 +54,8 @@ export function WorkerRoleShell({ session, onSignOut, theme, onToggleTheme }: Wo
         <WorkerNavigationDrawer
           open={navigationOpen}
           session={session}
+          theme={theme}
+          onToggleTheme={onToggleTheme}
           onClose={() => setNavigationOpen(false)}
           onOpenAddTool={openAddTool}
           onOpenAccount={() => {
@@ -64,8 +66,6 @@ export function WorkerRoleShell({ session, onSignOut, theme, onToggleTheme }: Wo
         <WorkerAccountSheet
           open={accountOpen}
           session={session}
-          theme={theme}
-          onToggleTheme={onToggleTheme}
           onSignOut={onSignOut}
           onClose={() => setAccountOpen(false)}
         />

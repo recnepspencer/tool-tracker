@@ -8,12 +8,10 @@ export interface AppHeaderProps {
   role: Role;
   session: AuthSession;
   onSignOut(): void;
-  theme: 'dark' | 'light';
-  onToggleTheme(): void;
   onOpenNavigation(): void;
 }
 
-export function AppHeader({ role, session, onSignOut, theme, onToggleTheme, onOpenNavigation }: AppHeaderProps) {
+export function AppHeader({ role, session, onSignOut, onOpenNavigation }: AppHeaderProps) {
   const isWorker = role === 'worker';
 
   return (
@@ -29,7 +27,7 @@ export function AppHeader({ role, session, onSignOut, theme, onToggleTheme, onOp
           </span>
         </NavLink>
       </div>
-      <AccountMenu role={role} session={session} onSignOut={onSignOut} theme={theme} onToggleTheme={onToggleTheme} />
+      <AccountMenu role={role} session={session} onSignOut={onSignOut} />
     </header>
   );
 }

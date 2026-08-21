@@ -2,8 +2,21 @@ import { useRef } from 'react';
 import type { Role } from '../../domain/auth';
 import { useModalFocusTrap } from '../ui/use-modal-focus-trap';
 import { NavItems } from './NavItems';
+import { ThemeToggle } from './ThemeToggle';
 
-export function MobileNavDrawer({ role, open, onClose }: { role: Role; open: boolean; onClose(): void }) {
+export function MobileNavDrawer({
+  role,
+  open,
+  theme,
+  onToggleTheme,
+  onClose,
+}: {
+  role: Role;
+  open: boolean;
+  theme: 'dark' | 'light';
+  onToggleTheme(): void;
+  onClose(): void;
+}) {
   const drawerRef = useRef<HTMLElement>(null);
   useModalFocusTrap(open, onClose, drawerRef);
 
@@ -30,6 +43,9 @@ export function MobileNavDrawer({ role, open, onClose }: { role: Role; open: boo
         <nav>
           <NavItems role={role} onNavigate={onClose} />
         </nav>
+        <div className="mobile-nav-theme">
+          <ThemeToggle theme={theme} onToggleTheme={onToggleTheme} />
+        </div>
       </aside>
     </div>
   );

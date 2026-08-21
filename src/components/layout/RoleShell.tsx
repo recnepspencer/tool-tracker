@@ -24,17 +24,16 @@ export function RoleShell({ role, session, onSignOut, theme, onToggleTheme }: Ro
 
   return (
     <div className="app-shell">
-      <AppHeader
-        role={role}
-        session={session}
-        onSignOut={onSignOut}
-        theme={theme}
-        onToggleTheme={onToggleTheme}
-        onOpenNavigation={() => setMobileNavOpen(true)}
-      />
+      <AppHeader role={role} session={session} onSignOut={onSignOut} onOpenNavigation={() => setMobileNavOpen(true)} />
       <div className="shell-body">
-        <SidebarNav role={role} />
-        <MobileNavDrawer role={role} open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+        <SidebarNav role={role} theme={theme} onToggleTheme={onToggleTheme} />
+        <MobileNavDrawer
+          role={role}
+          open={mobileNavOpen}
+          theme={theme}
+          onToggleTheme={onToggleTheme}
+          onClose={() => setMobileNavOpen(false)}
+        />
         <main className="shell-main">
           <Outlet />
         </main>

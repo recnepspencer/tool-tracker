@@ -19,13 +19,7 @@ describe('AccountMenu destination labels', () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter>
-        <AccountMenu
-          role="worker"
-          session={session}
-          onSignOut={() => undefined}
-          theme="dark"
-          onToggleTheme={() => undefined}
-        />
+        <AccountMenu role="worker" session={session} onSignOut={() => undefined} />
       </MemoryRouter>,
     );
     await user.click(screen.getByRole('button', { name: 'Open account menu' }));
@@ -40,8 +34,6 @@ describe('AccountMenu destination labels', () => {
           role="admin"
           session={{ ...session, profileId: 'sam-ochoa', name: 'Sam Ochoa', role: 'admin' }}
           onSignOut={() => undefined}
-          theme="dark"
-          onToggleTheme={() => undefined}
         />
       </MemoryRouter>,
     );
@@ -53,13 +45,7 @@ describe('AccountMenu destination labels', () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter>
-        <AccountMenu
-          role="worker"
-          session={session}
-          onSignOut={() => undefined}
-          theme="dark"
-          onToggleTheme={() => undefined}
-        />
+        <AccountMenu role="worker" session={session} onSignOut={() => undefined} />
       </MemoryRouter>,
     );
     const trigger = screen.getByRole('button', { name: 'Open account menu' });
@@ -84,8 +70,6 @@ describe('AccountMenu destination labels', () => {
           role="admin"
           session={{ ...session, profileId: 'sam-ochoa', name: 'Sam Ochoa', role: 'admin' }}
           onSignOut={() => undefined}
-          theme="dark"
-          onToggleTheme={() => undefined}
         />
       </MemoryRouter>,
     );

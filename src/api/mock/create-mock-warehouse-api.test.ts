@@ -86,7 +86,7 @@ describe('WarehouseApi mock authority', () => {
     expect(state.events).toHaveLength(before.events.length + 1);
     expect(state.events.at(-1)).toMatchObject({ id: receipt.eventId, evidence: { note: 'Returned to South Shop' } });
     expect((await api.tools.listCatalog()).find((item) => item.id === 'def-hammer-drill')?.warehouses).toEqual(
-      expect.arrayContaining([{ id: 'south-shop', name: 'South Shop', unitCount: 1 }]),
+      expect.arrayContaining([{ id: 'south-shop', name: 'South Shop', unitCount: 2 }]),
     );
     expect(await api.tools.getToolDetail('TL-101')).toMatchObject({
       tool: {

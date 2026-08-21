@@ -207,7 +207,7 @@ describe('warehouse operations surfaces', () => {
     expect(await screen.findByRole('heading', { name: 'Inventory' })).toBeInTheDocument();
     await user.click(screen.getByRole('tab', { name: 'Flagged 2' }));
     expect(screen.getByText('Cable cutter')).toBeInTheDocument();
-    await user.click(screen.getByRole('tab', { name: 'All 16' }));
+    await user.click(screen.getByRole('tab', { name: 'All 18' }));
     const search = screen.getByRole('searchbox', { name: 'Search inventory' });
     await user.type(search, 'Bandsaw');
     expect(screen.getByText('Bandsaw')).toBeInTheDocument();

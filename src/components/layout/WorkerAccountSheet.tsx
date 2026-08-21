@@ -1,25 +1,15 @@
 import { useRef } from 'react';
 import { useModalFocusTrap } from '../ui/use-modal-focus-trap';
-import { Switch } from '../ui/Switch';
 import type { AuthSession } from '../../domain/auth';
 
 interface WorkerAccountSheetProps {
   open: boolean;
   session: AuthSession;
-  theme: 'dark' | 'light';
-  onToggleTheme(): void;
   onSignOut(): void;
   onClose(): void;
 }
 
-export function WorkerAccountSheet({
-  open,
-  session,
-  theme,
-  onToggleTheme,
-  onSignOut,
-  onClose,
-}: WorkerAccountSheetProps) {
+export function WorkerAccountSheet({ open, session, onSignOut, onClose }: WorkerAccountSheetProps) {
   const sheetRef = useRef<HTMLElement>(null);
   useModalFocusTrap(open, onClose, sheetRef);
   if (!open) return null;
@@ -61,12 +51,6 @@ export function WorkerAccountSheet({
             <strong>{session.email}</strong>
           </div>
         </div>
-        <Switch
-          label="Light mode"
-          description={theme === 'dark' ? 'Use a light field surface.' : 'Use the dark field surface.'}
-          checked={theme === 'light'}
-          onCheckedChange={onToggleTheme}
-        />
         <button type="button" className="worker-sheet-secondary-button" onClick={onSignOut}>
           Sign out
         </button>

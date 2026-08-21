@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { ErrorState, LoadingState } from '../../components/ui/AsyncState';
 import { SearchField } from '../../components/ui/TextField';
 import { WorkerToolDetailSheet } from '../tool-detail/WorkerToolDetailSheet';
+import type { DetailAction } from '../tool-detail/detail-action-types';
 import { CatalogFilters } from './CatalogFilters';
 import {
   defaultCatalogFilters,
@@ -20,7 +21,7 @@ export function CheckoutPage() {
   const [filters, setFilters] = useState<CatalogFiltersState>(defaultCatalogFilters);
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [mode, setMode] = useState<'grid' | 'list'>('grid');
-  const [selectedToolId, setSelectedToolId] = useState<string | null>(null);
+  const [selectedTool, setSelectedTool] = useState<{ id: string; action?: DetailAction } | null>(null);
   const filtered = useMemo(
     () => filterCatalog(catalog.data ?? [], filters).map((item) => scopeCatalogItem(item, filters)),
     [catalog.data, filters],
@@ -94,7 +95,7 @@ export function CheckoutPage() {
               item={item}
               mode={mode}
               priority={index < CATALOG_PRIORITY_IMAGE_COUNT}
-              onSelect={setSelectedToolId}
+              onSelect={(id, action) => setSelectedTool({ id, action })}
             />
           ))}
         </div>
@@ -116,7 +117,11 @@ export function CheckoutPage() {
           onClose={() => setFiltersOpen(false)}
         />
       ) : null}
-      <WorkerToolDetailSheet toolUnitId={selectedToolId} onClose={() => setSelectedToolId(null)} />
+      <WorkerToolDetailSheet
+        toolUnitId={selectedTool?.id ?? null}
+        initialAction={selectedTool?.action ?? null}
+        onClose={() => setSelectedTool(null)}
+      />
     </div>
   );
 }

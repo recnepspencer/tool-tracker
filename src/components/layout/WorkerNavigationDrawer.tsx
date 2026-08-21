@@ -2,10 +2,13 @@ import { useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useModalFocusTrap } from '../ui/use-modal-focus-trap';
 import type { AuthSession } from '../../domain/auth';
+import { ThemeToggle } from './ThemeToggle';
 
 interface WorkerNavigationDrawerProps {
   open: boolean;
   session: AuthSession;
+  theme: 'dark' | 'light';
+  onToggleTheme(): void;
   onClose(): void;
   onOpenAddTool(): void;
   onOpenAccount(): void;
@@ -14,6 +17,8 @@ interface WorkerNavigationDrawerProps {
 export function WorkerNavigationDrawer({
   open,
   session,
+  theme,
+  onToggleTheme,
   onClose,
   onOpenAddTool,
   onOpenAccount,
@@ -60,6 +65,10 @@ export function WorkerNavigationDrawer({
         </nav>
 
         <div className="worker-drawer-divider" />
+
+        <div className="worker-drawer-theme">
+          <ThemeToggle theme={theme} onToggleTheme={onToggleTheme} />
+        </div>
 
         <div className="worker-drawer-actions">
           <button type="button" className="worker-drawer-action worker-drawer-action--accent" onClick={onOpenAddTool}>

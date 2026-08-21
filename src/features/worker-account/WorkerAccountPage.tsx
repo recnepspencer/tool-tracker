@@ -1,12 +1,9 @@
 import { useSession } from '../../app/session-context';
-import { useTheme } from '../../app/theme-context';
 import { Avatar } from '../../components/ui/Avatar';
-import { Switch } from '../../components/ui/Switch';
 import '../../styles/account.css';
 
 export function WorkerAccountPage() {
   const { session } = useSession();
-  const { theme, toggleTheme } = useTheme();
   if (!session) return null;
   const initials = session.name
     .split(' ')
@@ -48,12 +45,6 @@ export function WorkerAccountPage() {
             <dd>{session.profileId}</dd>
           </div>
         </dl>
-        <Switch
-          label="Light mode"
-          description={theme === 'dark' ? 'Use a light field surface.' : 'Use the dark field surface.'}
-          checked={theme === 'light'}
-          onCheckedChange={toggleTheme}
-        />
       </section>
     </div>
   );

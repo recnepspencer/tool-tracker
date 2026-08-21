@@ -154,6 +154,10 @@
   background: var(--hover);
   border-color: var(--blue);
 }
+.catalog-unit-empty {
+  color: var(--dim-deep);
+  font: var(--font-mono-xs);
+}
 .catalog-empty {
   background: var(--card-2);
   border: var(--border-width) dashed var(--border-strong);

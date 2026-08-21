@@ -22,7 +22,7 @@ describe('createMockApi admin projections', () => {
       units: state.units.map((unit) => (unit.id === 'TL-105' ? { ...unit, lifecycle: 'archived' } : unit)),
     }));
     const summary = await createMockApi(database).admin.getSummary({ actorId: 'sam-ochoa' });
-    expect(summary.totalTools).toBe(15);
+    expect(summary.totalTools).toBe(17);
     expect(summary.warehouses[0]).toMatchObject({ tools: 3, out: 3 });
   });
 
