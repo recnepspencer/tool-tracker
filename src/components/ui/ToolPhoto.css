@@ -1,0 +1,32 @@
+.tool-photo {
+  background: var(--photo-matte);
+  border-radius: var(--radius-md);
+  flex: 0 0 var(--space-148);
+  overflow: hidden;
+}
+.tool-photo img {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+.tool-photo--small {
+  flex-basis: var(--control-height);
+  height: var(--control-height);
+}
+.tool-photo--medium {
+  height: var(--space-150);
+}
+.tool-photo--card {
+  flex-basis: var(--space-148);
+  height: var(--space-150);
+}
+.tool-photo--large {
+  height: var(--space-280);
+}
+@media (max-width: 620px) {
+  .tool-photo--card {
+    flex-basis: var(--space-104);
+    height: var(--space-126);
+  }
+}

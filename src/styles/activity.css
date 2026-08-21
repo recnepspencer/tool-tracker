@@ -1,0 +1,101 @@
+.activity-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  margin: var(--space-4) 0 var(--space-30);
+}
+.activity-filters button {
+  background: var(--field);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-pill);
+  color: var(--muted);
+  cursor: pointer;
+  min-height: var(--icon-button-size);
+  padding: 0 var(--space-14);
+}
+.activity-filters button:hover,
+.activity-filters button.activity-filter--active {
+  background: var(--blue-bg);
+  border-color: var(--blue-border);
+  color: var(--blue-soft);
+}
+.activity-filters button:focus-visible,
+.worker-activity-row:focus-visible {
+  outline: var(--focus-ring-width) solid var(--blue);
+  outline-offset: var(--focus-ring-offset);
+}
+.activity-groups {
+  display: grid;
+  gap: var(--space-28);
+}
+.activity-empty {
+  background: var(--card-2);
+  border: var(--border-width) dashed var(--border-strong);
+  border-radius: var(--radius-card);
+  padding: var(--space-34);
+  text-align: center;
+}
+.activity-empty h2 {
+  font-size: var(--text-3xl);
+  margin: 0 0 var(--space-8);
+}
+.activity-empty p {
+  color: var(--muted);
+  margin: 0;
+}
+.activity-group .section-heading {
+  margin-bottom: var(--space-12);
+}
+.activity-group .section-heading h2 {
+  margin-bottom: 0;
+}
+.activity-feed {
+  background: var(--card);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+.worker-activity-row {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-bottom: var(--border-width) solid var(--border);
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  gap: var(--space-13);
+  min-height: var(--space-70);
+  padding: var(--space-13) var(--space-16);
+  text-align: left;
+  width: 100%;
+}
+.worker-activity-row:last-child {
+  border-bottom: 0;
+}
+.worker-activity-row:hover {
+  background: var(--hover);
+}
+.worker-activity-copy {
+  display: grid;
+  flex: 1;
+  gap: var(--space-5);
+  min-width: 0;
+}
+.worker-activity-copy span,
+.worker-activity-row time {
+  color: var(--muted);
+  font-size: var(--text-md);
+}
+.worker-activity-row time {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+@media (max-width: 620px) {
+  .worker-activity-row {
+    align-items: flex-start;
+  }
+  .worker-activity-row time {
+    display: none;
+  }
+}

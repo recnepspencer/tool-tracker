@@ -1,0 +1,30 @@
+.status-badge {
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-xs);
+  display: inline-flex;
+  font: var(--font-badge);
+  letter-spacing: var(--tracking-badge);
+  padding: var(--space-5) var(--space-7);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.status-badge--in-stock {
+  background: var(--green-bg);
+  border-color: var(--green-border);
+  color: var(--green);
+}
+.status-badge--checked-out {
+  background: var(--blue-bg);
+  border-color: var(--blue-border-muted);
+  color: var(--blue-soft);
+}
+.status-badge--damaged {
+  background: var(--amber-bg);
+  border-color: var(--amber-border-muted);
+  color: var(--amber);
+}
+.status-badge--lost {
+  background: var(--red-bg);
+  border-color: var(--red-border);
+  color: var(--red);
+}

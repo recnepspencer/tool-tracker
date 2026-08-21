@@ -1,0 +1,42 @@
+.reconciliation-grid {
+  display: grid;
+  gap: var(--space-14);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.reconciliation-card {
+  display: grid;
+  gap: var(--space-8);
+}
+.reconciliation-card--resolved {
+  border-color: var(--border-strong);
+}
+.reconciliation-card__header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+.reconciliation-card h2 {
+  font-size: var(--text-3xl);
+  margin: 0;
+}
+.reconciliation-card p {
+  color: var(--muted);
+  margin: 0;
+}
+.reconciliation-reason {
+  min-height: 2.5rem;
+}
+.reconciliation-card small {
+  color: var(--dim);
+  font: var(--font-mono-xs);
+}
+.reconciliation-choice {
+  display: grid;
+  gap: var(--space-8);
+  margin: var(--space-12) 0;
+}
+@media (max-width: 44rem) {
+  .reconciliation-grid {
+    grid-template-columns: 1fr;
+  }
+}

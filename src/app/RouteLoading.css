@@ -1,0 +1,24 @@
+.route-loading {
+  color: var(--muted);
+  display: grid;
+  gap: var(--space-10);
+  min-height: var(--size-async);
+  place-items: center;
+}
+.route-loading .pulse-dot {
+  animation: route-pulse var(--duration-route-pulse) var(--ease-in-out) infinite;
+  background: var(--blue);
+  border-radius: var(--radius-full);
+  display: inline-block;
+  height: var(--space-8);
+  width: var(--space-8);
+}
+@keyframes route-pulse {
+  0%,
+  100% {
+    opacity: var(--opacity-route-pulse);
+  }
+  50% {
+    opacity: var(--opacity-full);
+  }
+}

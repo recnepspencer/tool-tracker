@@ -1,0 +1,41 @@
+import { Outlet } from 'react-router-dom';
+import { useState } from 'react';
+import type { AuthSession, Role } from '../../domain/auth';
+import { cx } from '../../lib/cx';
+import { AppHeader } from './AppHeader';
+import { SidebarNav } from './SidebarNav';
+import { MobileNavDrawer } from './MobileNavDrawer';
+import '../../styles/shell.css';
+
+export interface RoleShellProps {
+  role: Role;
+  session: AuthSession;
+  onSignOut(): void;
+  theme: 'dark' | 'light';
+  onToggleTheme(): void;
+}
+
+export function RoleShell({ role, session, onSignOut, theme, onToggleTheme }: RoleShellProps) {
+  const isWorker = role === 'worker';
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  return (
+    <div className={cx('app-shell', isWorker && 'app-shell--worker')}>
+      <AppHeader
+        role={role}
+        session={session}
+        onSignOut={onSignOut}
+        theme={theme}
+        onToggleTheme={onToggleTheme}
+        onOpenNavigation={() => setMobileNavOpen(true)}
+      />
+      <div className="shell-body">
+        <SidebarNav role={role} />
+        <MobileNavDrawer role={role} open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+        <main className="shell-main">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+}

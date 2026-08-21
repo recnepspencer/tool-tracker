@@ -1,0 +1,12 @@
+.overlay-backdrop {
+  align-items: stretch;
+  background: var(--scrim);
+  display: flex;
+  inset: 0;
+  justify-content: flex-end;
+  position: fixed;
+  z-index: var(--z-overlay);
+}
+.overlay-panel {
+  min-width: 0;
+}

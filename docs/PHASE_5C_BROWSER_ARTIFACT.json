@@ -1,0 +1,58 @@
+{
+  "phase": "5C",
+  "verifiedAt": "2026-08-20",
+  "browser": "Codex In-app Browser",
+  "server": "http://127.0.0.1:5174",
+  "sourceFingerprint": {
+    "path": ".phase-5c-fingerprint.txt",
+    "entries": 455,
+    "sha256": "EECC700F02CCE4683CE864C2DD45373DF6D26BB479DA0300270DCB2561CA9EF3"
+  },
+  "viewports": [320, 390, 768],
+  "sessions": {
+    "ray": ["#/worker/tools", "#/worker/activity", "#/worker/checkout", "#/worker/account"],
+    "sam": [
+      "#/admin/dashboard",
+      "#/admin/reconciliation",
+      "#/admin/activity",
+      "#/admin/settings",
+      "#/admin/operations/inventory",
+      "#/admin/operations/flagged",
+      "#/admin/operations/queue"
+    ]
+  },
+  "responsive": {
+    "horizontalOverflow": false,
+    "scrollWidthLessThanOrEqualToClientWidth": true,
+    "testedWidths": [320, 390, 768]
+  },
+  "assets": {
+    "adminInventoryRows": 16,
+    "adminInventoryImagesLoaded": 16,
+    "allObservedImageSourcesAreLocalToolImages": true
+  },
+  "journeys": {
+    "workerDuplicateIdentity": {
+      "hammerDrillCards": 2,
+      "stableAccessibleIdentityObserved": ["TL-101", "TL-103"]
+    },
+    "reconciliationMerge": {
+      "openIssuesBefore": 2,
+      "openIssuesAfter": 1,
+      "duplicateCardRemoved": true
+    },
+    "resetDemoData": {
+      "confirmation": "RESET DEMO DATA",
+      "dialogClosed": true,
+      "seededSettingsRestored": true
+    },
+    "adminActivity": {
+      "firstEvent": "Aug 17, 2026, 10:18 AM",
+      "chronology": "newest-first"
+    }
+  },
+  "console": {
+    "warnCount": 0,
+    "errorCount": 0
+  }
+}

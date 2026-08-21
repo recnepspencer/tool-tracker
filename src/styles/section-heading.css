@@ -1,0 +1,11 @@
+.section-heading {
+  align-items: flex-end;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-16);
+}
+.section-heading h2 {
+  font-size: var(--text-4xl);
+  letter-spacing: var(--tracking-heading);
+  margin: var(--space-8) 0 0;
+}

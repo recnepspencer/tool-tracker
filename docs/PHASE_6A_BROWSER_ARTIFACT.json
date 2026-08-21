@@ -1,0 +1,35 @@
+{
+  "phase": "6A",
+  "candidate": {
+    "entries": 467,
+    "sha256": "D3B07DEAFAA99D56244DB8C76BDB1CB2AE69384565E260E2CA117FA639846307"
+  },
+  "browser": {
+    "url": "http://127.0.0.1:5174/#/login",
+    "routes": [
+      "/login",
+      "/signup",
+      "/company-setup",
+      "/invite/sample-invite",
+      "/invite/not-real",
+      "/reset-password"
+    ],
+    "journeys": {
+      "signupCompanyPreview": true,
+      "invitationPreview": true,
+      "unknownInvitationEmptyState": true,
+      "passwordRecoveryPreview": true,
+      "authenticatedPublicRouteRedirect": true,
+      "authenticatedRayAndSamRouteMatrix": true,
+      "publicHeadingFocus": true
+    },
+    "viewportChecks": [
+      { "width": 320, "clientWidth": 305, "scrollWidth": 305 },
+      { "width": 390, "clientWidth": 375, "scrollWidth": 375 },
+      { "width": 768, "clientWidth": 753, "scrollWidth": 753 },
+      { "width": 768, "route": "/reset-password", "clientWidth": 768, "scrollWidth": 768 }
+    ],
+    "console": { "warn": 0, "error": 0 },
+    "resources": { "sameOriginOnly": true, "applicationApiRequests": 0 }
+  }
+}

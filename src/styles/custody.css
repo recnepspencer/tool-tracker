@@ -1,0 +1,40 @@
+.pending-handoff {
+  background: var(--card-2);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-field);
+  display: grid;
+  gap: var(--space-5);
+  margin-top: var(--space-10);
+  padding: var(--space-14) var(--space-16);
+}
+.pending-handoff span,
+.pending-handoff small {
+  color: var(--muted);
+  font-size: var(--text-md);
+}
+.pending-handoff small {
+  font-family: var(--font-mono);
+}
+.pending-handoff-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  margin-top: var(--space-5);
+}
+.pending-handoff-actions .button {
+  min-height: var(--space-34);
+  padding: 0 var(--space-12);
+}
+.pending-handoff-evidence {
+  display: grid;
+  gap: var(--space-8);
+  margin-top: var(--space-6);
+}
+.pending-handoff-error {
+  color: var(--amber);
+}
+.custody-evidence-fields {
+  display: grid;
+  gap: var(--space-10);
+}

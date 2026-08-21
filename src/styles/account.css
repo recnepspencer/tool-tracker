@@ -1,0 +1,44 @@
+.account-card {
+  background: var(--card);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-card);
+  max-width: var(--space-720);
+  padding: var(--pad-account);
+}
+.account-card-identity {
+  align-items: center;
+  display: flex;
+  gap: var(--space-18);
+}
+.account-card h2 {
+  font-size: var(--text-7xl);
+  letter-spacing: var(--tracking-display);
+  margin: var(--space-6) 0;
+}
+.account-card p {
+  color: var(--muted);
+  margin: 0;
+}
+.account-facts {
+  border-bottom: var(--border-width) solid var(--border);
+  border-top: var(--border-width) solid var(--border);
+  display: grid;
+  gap: var(--space-16);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: var(--space-28) 0 var(--space-20);
+  padding: var(--space-18) 0;
+}
+.account-facts dt {
+  color: var(--dim);
+  font: var(--font-mono-xs);
+  margin-bottom: var(--space-5);
+  text-transform: uppercase;
+}
+.account-facts dd {
+  color: var(--ink-2);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.account-card .switch {
+  margin-top: var(--space-4);
+}

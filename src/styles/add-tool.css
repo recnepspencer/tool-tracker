@@ -1,0 +1,85 @@
+.add-tool-backdrop {
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-18);
+}
+.add-tool-dialog {
+  background: var(--card-2);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-dialog);
+  box-shadow: var(--elevation-dialog);
+  max-height: min(var(--space-760), calc(var(--size-viewport) - var(--space-36)));
+  max-width: var(--space-560);
+  overflow-y: auto;
+  padding: var(--space-22);
+  width: 100%;
+}
+.add-tool-header {
+  align-items: flex-start;
+  display: flex;
+  justify-content: space-between;
+}
+.add-tool-header h2 {
+  font-size: var(--text-7xl);
+  margin: var(--space-8) 0 0;
+}
+.add-tool-capture,
+.add-tool-details {
+  display: grid;
+  gap: var(--space-14);
+  margin-top: var(--space-20);
+}
+.mock-camera {
+  align-items: center;
+  aspect-ratio: 4 / 3;
+  background:
+    repeating-linear-gradient(135deg, var(--field) 0 var(--space-2), transparent var(--space-2) var(--space-9)),
+    var(--card);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-card);
+  color: var(--muted);
+  display: flex;
+  justify-content: center;
+  text-align: center;
+}
+.mock-camera--captured {
+  background: linear-gradient(135deg, var(--blue-bg), var(--card));
+  color: var(--blue-soft);
+}
+.add-tool-capture p {
+  color: var(--muted);
+  font-size: var(--text-md);
+  margin: 0;
+}
+.add-tool-fields {
+  display: grid;
+  gap: var(--space-10);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.add-tool-actions {
+  display: flex;
+  gap: var(--space-9);
+  justify-content: flex-end;
+}
+.add-tool-error {
+  background: var(--amber-bg);
+  border-radius: var(--space-9);
+  color: var(--amber);
+  font-size: var(--text-md);
+  margin: 0;
+  padding: var(--space-9);
+}
+@media (max-width: 560px) {
+  .add-tool-dialog {
+    padding: var(--space-18) var(--space-15);
+  }
+  .add-tool-fields {
+    grid-template-columns: 1fr;
+  }
+  .add-tool-actions {
+    flex-wrap: wrap;
+  }
+  .add-tool-actions .button {
+    flex: 1;
+  }
+}

@@ -1,0 +1,38 @@
+.permission-rules-card {
+  margin-top: var(--space-18);
+}
+.permission-rules-heading {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--space-18);
+  justify-content: space-between;
+}
+.permission-rules-heading h2 {
+  font-size: var(--text-3xl);
+  margin: var(--space-6) 0 0;
+}
+.permission-lock {
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  color: var(--muted);
+  font: var(--font-mono-sm);
+  letter-spacing: var(--tracking-lock);
+  padding: var(--space-6) var(--space-10);
+  text-transform: uppercase;
+}
+.permission-rules-list {
+  border-top: var(--border-width) solid var(--border);
+  display: grid;
+  gap: var(--space-12);
+  list-style: none;
+  margin: var(--space-18) 0 0;
+  padding: var(--space-18) 0 0;
+}
+.permission-rules-list li {
+  display: grid;
+  gap: var(--space-4);
+}
+.permission-rules-list p {
+  color: var(--muted);
+  margin: 0;
+}

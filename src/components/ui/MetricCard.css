@@ -1,0 +1,34 @@
+.metric-card {
+  display: grid;
+  gap: var(--space-10);
+  min-height: var(--space-124);
+  padding: var(--space-20);
+}
+.metric-card strong {
+  font-size: var(--text-display);
+  letter-spacing: var(--tracking-tightest);
+}
+.metric-detail {
+  color: var(--dim);
+  font-size: var(--text-md);
+}
+.metric-card--blue {
+  background: linear-gradient(140deg, var(--blue-bg), var(--card) var(--gradient-mid));
+  border-color: var(--blue-fill);
+}
+.metric-card--green {
+  background: linear-gradient(140deg, var(--green-wash), var(--card) var(--gradient-mid));
+}
+.metric-card--amber {
+  background: linear-gradient(140deg, var(--amber-wash), var(--card) var(--gradient-mid));
+  border-color: var(--amber-fill);
+}
+@media (max-width: 620px) {
+  .metric-card {
+    min-height: var(--space-112);
+    padding: var(--space-16);
+  }
+  .metric-card strong {
+    font-size: var(--text-8xl);
+  }
+}

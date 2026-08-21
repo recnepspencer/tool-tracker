@@ -1,0 +1,80 @@
+.header-account {
+  align-items: center;
+  display: flex;
+  gap: var(--space-10);
+  position: relative;
+}
+.account-trigger {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  gap: var(--space-8);
+  padding: var(--space-3);
+}
+.account-trigger:focus-visible {
+  outline: var(--focus-ring-width) solid var(--blue);
+  outline-offset: var(--focus-ring-offset);
+}
+.header-name {
+  color: var(--ink-2);
+  font-size: var(--text-body);
+}
+.account-sheet-backdrop {
+  background: var(--scrim);
+  inset: 0;
+  position: fixed;
+  z-index: var(--z-account);
+}
+.account-sheet {
+  background: var(--card);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  box-shadow: var(--elevation-account);
+  display: grid;
+  gap: var(--space-14);
+  margin-left: auto;
+  max-width: var(--space-360);
+  padding: var(--space-22);
+  width: min(var(--size-account-sheet), var(--space-360));
+}
+.account-sheet-header {
+  align-items: flex-start;
+  display: flex;
+  justify-content: space-between;
+}
+.account-sheet h2 {
+  font-size: var(--text-5xl);
+  margin: var(--space-7) 0 0;
+}
+.account-sheet p {
+  color: var(--muted);
+  font-size: var(--text-body);
+  margin: 0;
+}
+.account-sheet-link {
+  color: var(--blue-soft);
+  font-size: var(--text-body);
+  text-decoration: none;
+}
+.account-sheet-link:hover {
+  color: var(--ink);
+}
+.account-sheet .button {
+  width: 100%;
+}
+@media (max-width: 620px) {
+  .header-account {
+    gap: var(--space-6);
+  }
+  .sign-out-button {
+    font-size: var(--text-sm);
+    min-height: var(--space-36);
+    padding: 0 var(--space-9);
+  }
+  .header-name {
+    display: none;
+  }
+}

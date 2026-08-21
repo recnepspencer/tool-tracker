@@ -1,0 +1,119 @@
+.section-block {
+  margin-top: var(--space-18);
+}
+.tool-grid {
+  display: grid;
+  gap: var(--space-12);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.tool-card {
+  display: flex;
+  gap: var(--space-16);
+  min-height: var(--space-176);
+  overflow: hidden;
+  padding: var(--space-12);
+}
+.tool-card-button {
+  align-items: stretch;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  gap: var(--space-16);
+  padding: 0;
+  text-align: left;
+  width: 100%;
+}
+.tool-card-button:focus-visible {
+  outline: var(--focus-ring-width) solid var(--blue);
+  outline-offset: var(--focus-ring-offset);
+}
+.tool-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  padding: var(--space-4) var(--space-4) var(--space-4) 0;
+}
+.tool-card-title {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--space-8);
+  justify-content: space-between;
+}
+.tool-card h3 {
+  font-size: var(--text-xl);
+  letter-spacing: var(--tracking-card);
+  margin: 0;
+}
+.tool-card-title strong {
+  font-size: var(--text-xl);
+  letter-spacing: var(--tracking-card);
+}
+.tool-card p {
+  color: var(--muted);
+  font-size: var(--text-md);
+  margin: var(--space-7) 0 0;
+}
+.tool-card-subtitle {
+  color: var(--muted);
+  font-size: var(--text-md);
+  margin-top: var(--space-7);
+}
+.tool-card-meta {
+  color: var(--dim);
+  display: flex;
+  flex-wrap: wrap;
+  font: var(--font-mono-xs);
+  gap: var(--space-7);
+  margin-top: auto;
+}
+.tool-card-meta span + span::before {
+  content: '·';
+  margin-right: var(--space-7);
+}
+.tool-card-time {
+  color: var(--dim-deep);
+  font: var(--font-mono-xs);
+  margin-top: var(--space-12);
+}
+.pending-handoffs {
+  margin-top: var(--space-38);
+}
+.empty-copy {
+  color: var(--muted);
+  font-size: var(--text-md);
+}
+.worker-checkout-link {
+  display: inline-flex;
+  margin-top: calc(var(--space-4) * -1);
+  text-decoration: none;
+}
+.worker-tool-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-12);
+}
+@media (max-width: 820px) {
+  .tool-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 620px) {
+  .tool-card {
+    gap: var(--space-10);
+    min-height: var(--space-150);
+  }
+  .tool-card-button {
+    gap: var(--space-10);
+  }
+  .tool-card-title {
+    flex-wrap: wrap;
+  }
+  .tool-card h3 {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}

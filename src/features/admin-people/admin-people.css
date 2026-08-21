@@ -1,0 +1,7 @@
+.admin-drawer.admin-drawer--person {
+  background: var(--bg);
+  border-radius: 0;
+  max-height: var(--size-viewport);
+  max-width: min(var(--space-620), 100vw);
+  padding: var(--space-24);
+}

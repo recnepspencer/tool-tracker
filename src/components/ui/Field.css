@@ -1,0 +1,128 @@
+.field-anchor {
+  min-width: 0;
+  width: 100%;
+}
+.field {
+  background: var(--field);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-field);
+  display: grid;
+  gap: var(--space-8);
+  min-width: 0;
+  padding: var(--space-12) var(--space-16);
+  transition:
+    border-color var(--duration-med) var(--ease-standard),
+    box-shadow var(--duration-med) var(--ease-standard),
+    background var(--duration-med) var(--ease-standard);
+  width: 100%;
+}
+.field--compact {
+  gap: var(--space-6);
+  padding: var(--space-8) var(--space-12);
+}
+.field--search {
+  align-items: center;
+  border-radius: var(--radius-pill);
+  display: flex;
+  gap: var(--space-10);
+  min-height: var(--control-height);
+  padding: 0 var(--space-16);
+}
+.field--focused {
+  border-color: var(--blue-border-focus);
+  box-shadow: var(--elevation-focus);
+}
+.field--disabled {
+  opacity: var(--opacity-disabled);
+}
+.field-head {
+  align-items: baseline;
+  display: flex;
+  gap: var(--space-8);
+  justify-content: space-between;
+}
+.field-label {
+  color: var(--dim);
+  font: var(--font-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+.field-hint {
+  color: var(--dim-deep);
+  font: var(--font-hint);
+  letter-spacing: var(--tracking-hint);
+  text-transform: uppercase;
+}
+.field-control,
+.field-control-row {
+  min-width: 0;
+  width: 100%;
+}
+.field-control {
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  font: var(--font-control);
+  outline: 0;
+  padding: 0;
+  width: 100%;
+}
+.field--compact .field-control {
+  font: var(--font-control-compact);
+}
+.field-control::placeholder {
+  color: var(--dim);
+}
+.field-control-row {
+  align-items: center;
+  display: flex;
+  gap: var(--space-8);
+}
+.field-chevron {
+  color: var(--dim);
+  flex: 0 0 auto;
+  font-size: var(--text-sm);
+  line-height: var(--leading-none);
+}
+.field-listbox {
+  background: var(--card);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-field);
+  box-shadow: var(--elevation-overlay);
+  box-sizing: border-box;
+  list-style: none;
+  margin: 0;
+  max-height: var(--listbox-max-height);
+  overflow-y: auto;
+  padding: var(--space-6);
+  z-index: var(--z-popover);
+}
+.field-option,
+.field-empty {
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  padding: var(--space-10) var(--space-12);
+}
+.field-option {
+  cursor: pointer;
+}
+.field-option small,
+.field-empty {
+  color: var(--dim);
+  display: block;
+  font: var(--font-meta);
+  margin-top: var(--space-3);
+}
+.field-empty {
+  margin: 0;
+  padding: var(--space-12);
+  text-align: center;
+}
+.field-option--active,
+.field-option:hover {
+  background: var(--blue-bg);
+  color: var(--blue-soft);
+}
+.field-option--selected {
+  box-shadow: var(--elevation-selected);
+}

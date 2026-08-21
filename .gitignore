@@ -1,0 +1,11 @@
+# Dependencies and generated build output
+node_modules/
+dist/
+
+# Local editor and OS noise
+.DS_Store
+*.local
+.phase-1-fingerprint.txt
+
+# Legacy prototype references stay local; the React app uses public/tool-images.
+Nelson Electric tool custody system/

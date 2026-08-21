@@ -1,0 +1,42 @@
+.warehouse-admin-grid {
+  display: grid;
+  gap: var(--space-12);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: var(--space-12);
+}
+.warehouse-admin-card {
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-panel);
+  padding: var(--space-20);
+}
+.warehouse-admin-card p {
+  color: var(--muted);
+  margin: 0;
+}
+.warehouse-admin-card .card-heading {
+  align-items: flex-start;
+}
+.warehouse-admin-card h2 {
+  font-size: var(--text-5xl);
+}
+.warehouse-admin-stats {
+  display: flex;
+  gap: var(--space-18);
+  margin: var(--space-22) 0;
+}
+.warehouse-admin-stats span {
+  color: var(--dim);
+  font: var(--font-mono-sm);
+}
+.warehouse-admin-stats b {
+  color: var(--ink);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-medium);
+  margin-right: var(--space-4);
+}
+@media (max-width: 840px) {
+  .warehouse-admin-grid {
+    grid-template-columns: 1fr;
+  }
+}

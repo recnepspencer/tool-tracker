@@ -1,0 +1,8 @@
+.eyebrow,
+.role-label,
+.section-count {
+  color: var(--dim);
+  font: var(--font-eyebrow);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+}
