@@ -40,7 +40,7 @@ export function WorkerNavigationDrawer({
         className="worker-navigation-drawer"
         role="dialog"
         aria-modal="true"
-        aria-label="worker mobile navigation"
+        aria-label="Worker navigation"
       >
         <div className="worker-drawer-profile">
           <span className="worker-avatar">{initials(session.name)}</span>

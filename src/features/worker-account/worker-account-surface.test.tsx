@@ -31,7 +31,7 @@ describe('worker account surfaces', () => {
     expect(within(accountDialog).getByText(/Journeyman electrician/)).toBeInTheDocument();
     await user.click(within(accountDialog).getByRole('button', { name: 'Close account menu' }));
     await user.click(screen.getByLabelText('Open navigation'));
-    const navigation = screen.getByRole('dialog', { name: 'worker mobile navigation' });
+    const navigation = screen.getByRole('dialog', { name: 'Worker navigation' });
     expect(navigation).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Close navigation' })).toHaveFocus();
     await user.keyboard('{Tab}');
@@ -39,7 +39,7 @@ describe('worker account surfaces', () => {
     await user.keyboard('{Shift>}{Tab}{/Shift}');
     expect(screen.getByRole('button', { name: 'Close navigation' })).toHaveFocus();
     await user.keyboard('{Escape}');
-    expect(screen.queryByRole('dialog', { name: 'worker mobile navigation' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Worker navigation' })).not.toBeInTheDocument();
     await user.click(screen.getByLabelText('Open navigation'));
     await user.click(screen.getByRole('button', { name: 'Close navigation' }));
     expect(screen.getByLabelText('Open navigation')).toHaveFocus();

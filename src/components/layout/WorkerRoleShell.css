@@ -92,8 +92,13 @@
   inset: 0;
   padding: 0;
   position: fixed;
-  transition: opacity var(--duration-400) ease;
+  transition: opacity var(--duration-400) var(--ease-standard);
   width: 100%;
+  z-index: var(--z-base);
+}
+
+.worker-navigation-layer > .worker-scrim {
+  animation: worker-scrim-enter var(--duration-380) var(--ease-standard) both;
 }
 
 .worker-scrim--strong {
@@ -103,6 +108,7 @@
 .worker-navigation-layer,
 .worker-account-layer {
   inset: 0;
+  isolation: isolate;
   position: fixed;
   z-index: var(--z-70);
 }
@@ -120,7 +126,137 @@
   top: 0;
   transform: translateX(0);
   width: min(var(--space-292), var(--size-nav-drawer));
-  z-index: var(--z-1);
+  z-index: var(--z-2);
+  animation: worker-navigation-enter var(--duration-480) var(--ease-out) both;
+}
+
+.worker-drawer-profile {
+  align-items: center;
+  display: flex;
+  gap: var(--space-12);
+  margin: var(--space-42) var(--space-4) var(--space-28);
+}
+
+.worker-drawer-profile > div {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.worker-drawer-profile strong {
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+}
+
+.worker-drawer-profile div span {
+  color: var(--dim);
+  font: var(--font-mono-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.worker-drawer-profile .worker-close-button {
+  margin-left: auto;
+}
+
+.worker-avatar {
+  align-items: center;
+  background: linear-gradient(180deg, var(--primary-from), var(--primary-to));
+  border-radius: var(--radius-full);
+  color: var(--on-accent);
+  display: inline-flex;
+  flex: 0 0 var(--space-42);
+  font: var(--font-avatar);
+  height: var(--space-42);
+  justify-content: center;
+  width: var(--space-42);
+}
+
+.worker-avatar--large {
+  flex-basis: var(--space-52);
+  font-size: var(--text-2xl);
+  height: var(--space-52);
+  width: var(--space-52);
+}
+
+.worker-drawer-nav,
+.worker-drawer-actions {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.worker-drawer-link,
+.worker-drawer-action {
+  align-items: center;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-field);
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  font: var(--weight-regular) var(--text-base) / var(--leading-none) var(--font-sans);
+  gap: var(--space-12);
+  min-height: var(--space-46);
+  padding: 0 var(--space-13);
+  text-align: left;
+  text-decoration: none;
+  width: 100%;
+}
+
+.worker-drawer-link:hover,
+.worker-drawer-action:hover:not(:disabled),
+.worker-drawer-link--active {
+  background: var(--blue-bg);
+  color: var(--ink);
+}
+
+.worker-drawer-link--active {
+  color: var(--blue-soft);
+}
+
+.worker-drawer-link-dot {
+  background: var(--dim-deep);
+  border-radius: var(--radius-full);
+  flex: 0 0 var(--space-6);
+  height: var(--space-6);
+  width: var(--space-6);
+}
+
+.worker-drawer-link--active .worker-drawer-link-dot {
+  background: var(--blue);
+  box-shadow: 0 0 var(--space-10) var(--blue);
+}
+
+.worker-drawer-divider {
+  border-top: var(--border-width) solid var(--border);
+  margin: var(--space-18) var(--space-8);
+}
+
+.worker-drawer-action-icon {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 var(--space-16);
+  font-size: var(--space-20);
+  justify-content: center;
+  width: var(--space-16);
+}
+
+.worker-drawer-action--accent {
+  color: var(--blue-soft);
+}
+
+.worker-drawer-action:disabled {
+  color: var(--dim-deep);
+  cursor: default;
+}
+
+.worker-drawer-badge {
+  color: var(--dim);
+  font: var(--font-mono-xs);
+  margin-left: auto;
+  text-transform: uppercase;
 }
 
 .worker-bottom-sheet {
@@ -239,6 +375,28 @@
   }
 }
 
+@keyframes worker-navigation-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+
+  to {
+    opacity: var(--opacity-full);
+    transform: translateX(0);
+  }
+}
+
+@keyframes worker-scrim-enter {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: var(--opacity-full);
+  }
+}
+
 .worker-main {
   box-sizing: border-box;
   animation: worker-fade-in var(--duration-260) ease both;
@@ -249,7 +407,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .worker-main {
+  .worker-main,
+  .worker-navigation-drawer,
+  .worker-scrim {
     animation-duration: var(--duration-none);
   }
 }
