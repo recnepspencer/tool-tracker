@@ -46,7 +46,6 @@ export function useWorkerDetailActionController({
   const [action, setAction] = useState<DetailAction | null>(null);
   const [target, setTarget] = useState('');
   const [transferMode, setTransferMode] = useState<TransferDestinationMode | null>(null);
-  const [personQuery, setPersonQuery] = useState('');
   const [note, setNote] = useState('');
   const [mockPhoto, setMockPhoto] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +57,6 @@ export function useWorkerDetailActionController({
     setAction(initialAction);
     setTarget('');
     setTransferMode(null);
-    setPersonQuery('');
     setNote('');
     setMockPhoto(false);
     setError(null);
@@ -96,7 +94,6 @@ export function useWorkerDetailActionController({
       setAction(null);
       setTarget('');
       setTransferMode(null);
-      setPersonQuery('');
       setNote('');
       setMockPhoto(false);
       onSuccess?.(action);
@@ -119,25 +116,20 @@ export function useWorkerDetailActionController({
       setError(null);
       setTarget('');
       setTransferMode(null);
-      setPersonQuery('');
       setAction(nextAction);
     },
     onTargetChange: setTarget,
     transferMode,
-    personQuery,
     onTransferModeChange: (nextMode: TransferDestinationMode | null) => {
       setTransferMode(nextMode);
       setTarget('');
-      setPersonQuery('');
     },
-    onPersonQueryChange: setPersonQuery,
     onNoteChange: setNote,
     onMockPhotoChange: setMockPhoto,
     onCloseAction: () => {
       setAction(null);
       setTarget('');
       setTransferMode(null);
-      setPersonQuery('');
     },
     submit,
   };

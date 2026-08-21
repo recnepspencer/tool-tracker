@@ -17,13 +17,18 @@ describe('worker catalog surfaces', () => {
     const user = userEvent.setup();
     renderApp(<AppRoutes />, { sessionStore: createMemorySessionStore('ray-torres') });
     expect(await screen.findByRole('heading', { name: 'Browse tools' })).toBeInTheDocument();
+    let filters = screen.getByRole('dialog', { name: 'Catalog filters' });
+    expect(filters.closest('.worker-filter-layer')?.parentElement).toBe(document.body);
+    expect(screen.getByAltText('Hammer drill product photo')).toHaveAttribute('loading', 'eager');
+    expect(screen.getByAltText('Hammer drill product photo')).toHaveAttribute('fetchpriority', 'high');
+    await user.click(within(filters).getByRole('button', { name: 'Done' }));
     const search = screen.getByRole('searchbox', { name: 'Search tools' });
     await user.type(search, 'Bandsaw');
     expect(screen.getByRole('button', { name: 'Inspect Bandsaw' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Inspect Hammer drill' })).not.toBeInTheDocument();
     await user.clear(search);
     await user.click(screen.getByRole('button', { name: 'Filter catalog' }));
-    let filters = screen.getByRole('dialog', { name: 'Catalog filters' });
+    filters = screen.getByRole('dialog', { name: 'Catalog filters' });
     await user.click(within(filters).getByRole('button', { name: 'Available only' }));
     await user.click(within(filters).getByRole('button', { name: 'Done' }));
     expect(screen.getByRole('button', { name: 'Inspect Rotary hammer' })).toBeInTheDocument();
@@ -80,6 +85,9 @@ describe('worker catalog surfaces', () => {
     const pendingApi = { ...baseApi, tools: { ...baseApi.tools, getToolDetail: () => detailPromise } };
     renderApp(<AppRoutes />, { api: pendingApi, sessionStore: createMemorySessionStore('ray-torres') });
     expect(await screen.findByRole('heading', { name: 'Browse tools' })).toBeInTheDocument();
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'Catalog filters' })).getByRole('button', { name: 'Done' }),
+    );
     await user.click(screen.getByRole('button', { name: 'Inspect Rotary hammer' }));
     expect(await screen.findByText('Loading tool details…')).toBeInTheDocument();
     resolveDetail(await baseApi.tools.getToolDetail('TL-105'));
@@ -163,6 +171,9 @@ describe('worker catalog surfaces', () => {
     };
     renderApp(<AppRoutes />, { api: multiApi, sessionStore: createMemorySessionStore('ray-torres') });
     expect(await screen.findByRole('heading', { name: 'Browse tools' })).toBeInTheDocument();
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'Catalog filters' })).getByRole('button', { name: 'Done' }),
+    );
     expect(screen.getByRole('button', { name: 'Inspect Hammer drill unit TL-101' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Inspect Hammer drill unit TL-201' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Filter catalog' }));

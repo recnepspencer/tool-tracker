@@ -13,10 +13,12 @@ import { ToolCatalogCard } from './ToolCatalogCard';
 import { useToolCatalog } from './use-tool-catalog';
 import '../../styles/catalog.css';
 
+const CATALOG_PRIORITY_IMAGE_COUNT = 4;
+
 export function CheckoutPage() {
   const catalog = useToolCatalog();
   const [filters, setFilters] = useState<CatalogFiltersState>(defaultCatalogFilters);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(true);
   const [mode, setMode] = useState<'grid' | 'list'>('grid');
   const [selectedToolId, setSelectedToolId] = useState<string | null>(null);
   const filtered = useMemo(
@@ -86,8 +88,14 @@ export function CheckoutPage() {
       />
       {filtered.length ? (
         <div className={`catalog-grid catalog-grid--${mode}`}>
-          {filtered.map((item) => (
-            <ToolCatalogCard key={item.id} item={item} mode={mode} onSelect={setSelectedToolId} />
+          {filtered.map((item, index) => (
+            <ToolCatalogCard
+              key={item.id}
+              item={item}
+              mode={mode}
+              priority={index < CATALOG_PRIORITY_IMAGE_COUNT}
+              onSelect={setSelectedToolId}
+            />
           ))}
         </div>
       ) : (

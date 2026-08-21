@@ -18,7 +18,6 @@ interface ToolCustodyActionsProps {
   note: string;
   mockPhoto: boolean;
   transferMode?: TransferDestinationMode | null;
-  personQuery?: string;
   canStartHandoff: boolean;
   detailRefreshing: boolean;
   busy: boolean;
@@ -26,7 +25,6 @@ interface ToolCustodyActionsProps {
   onAction(action: DetailAction): void;
   onTargetChange(target: string): void;
   onTransferModeChange?(mode: TransferDestinationMode | null): void;
-  onPersonQueryChange?(query: string): void;
   onNoteChange(note: string): void;
   onMockPhotoChange(mockPhoto: boolean): void;
   onCloseAction(): void;
@@ -41,7 +39,6 @@ export function ToolCustodyActions({
   note,
   mockPhoto,
   transferMode = null,
-  personQuery = '',
   canStartHandoff,
   detailRefreshing,
   busy,
@@ -49,7 +46,6 @@ export function ToolCustodyActions({
   onAction,
   onTargetChange,
   onTransferModeChange = () => undefined,
-  onPersonQueryChange = () => undefined,
   onNoteChange,
   onMockPhotoChange,
   onCloseAction,
@@ -135,10 +131,8 @@ export function ToolCustodyActions({
                 candidates={targets.data ?? []}
                 mode={activeTransferMode}
                 target={target}
-                personQuery={personQuery}
                 onModeChange={onTransferModeChange}
                 onTargetChange={onTargetChange}
-                onPersonQueryChange={onPersonQueryChange}
               />
             )
           ) : null}

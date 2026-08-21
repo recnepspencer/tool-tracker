@@ -4,10 +4,12 @@ import { ToolPhoto } from '../../components/ui/ToolPhoto';
 export function ToolCatalogCard({
   item,
   mode,
+  priority,
   onSelect,
 }: {
   item: ToolCatalogItem;
   mode: 'grid' | 'list';
+  priority: boolean;
   onSelect(toolUnitId: string): void;
 }) {
   const statusParts = [
@@ -20,7 +22,12 @@ export function ToolCatalogCard({
   const hasOnlyAvailable = item.availableCount > 0 && statusParts.length === 1;
   return (
     <article className={`catalog-card catalog-card--${mode}`}>
-      <ToolPhoto src={item.imageSrc} alt={`${item.name} product photo`} size={mode === 'grid' ? 'card' : 'small'} />
+      <ToolPhoto
+        src={item.imageSrc}
+        alt={`${item.name} product photo`}
+        size={mode === 'grid' ? 'card' : 'small'}
+        priority={priority}
+      />
       <span className="catalog-card-body">
         <span className="catalog-card-title">
           <strong>{item.name}</strong>

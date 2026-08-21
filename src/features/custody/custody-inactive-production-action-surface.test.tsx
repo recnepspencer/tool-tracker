@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import userEvent, { type UserEvent } from '@testing-library/user-event';
 import { onlineManager, useQueryClient } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createMockApi } from '../../api/mock/create-mock-api';
@@ -8,6 +8,7 @@ import type { AuthSession } from '../../domain/auth';
 import type { ToolDetailView } from '../../domain/read-models/tools';
 import type { ToolHolderView } from '../../domain/read-models/holder';
 import { renderApp } from '../../test/render-app';
+import { openFieldOptions } from '../../test/choose-field-option';
 import { useTransferTargets } from './use-custody-queries';
 import { ToolCustodyActions } from '../tool-detail/ToolCustodyActions';
 import { useCustodyMutations } from './use-custody-mutations';
@@ -27,6 +28,15 @@ const idleTargetState: TargetState = {
   isPaused: false,
   isError: false,
 };
+
+async function expectSelectedWarehouse(user: UserEvent) {
+  const listbox = await openFieldOptions(user, screen.getByRole('combobox', { name: 'Warehouse' }));
+  expect(within(listbox).getByRole('option', { name: 'South Shop Warehouse' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await user.keyboard('{Escape}');
+}
 
 function TransferTargetObserver({ onState }: { onState(state: TargetState): void }) {
   const query = useTransferTargets('ray-torres', 'TL-102');
@@ -173,7 +183,7 @@ describe('inactive target query production action boundary', () => {
       { api },
     );
     await waitFor(() => expect(screen.getByRole('button', { name: 'Send to South Shop' })).not.toBeDisabled());
-    expect(screen.getByRole('option', { name: 'South Shop Warehouse' })).toHaveAttribute('aria-selected', 'true');
+    await expectSelectedWarehouse(user);
     await user.click(screen.getByRole('button', { name: 'Unmount production action panel' }));
     await user.click(screen.getByRole('button', { name: 'Run request' }));
     await waitFor(() => expect(requestStarted).toBe(true));
@@ -185,8 +195,8 @@ describe('inactive target query production action boundary', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Send to South Shop' }));
     expect(transferCalls).toBe(0);
     resolveTargets(await baseApi.custody.listTransferTargets({ actorId: 'ray-torres', toolUnitId: 'TL-102' }));
-    await waitFor(() => expect(screen.getByRole('option', { name: 'South Shop Warehouse' })).toBeInTheDocument());
-    expect(screen.getByRole('option', { name: 'South Shop Warehouse' })).toHaveAttribute('aria-selected', 'true');
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Send to South Shop' })).not.toBeDisabled());
+    await expectSelectedWarehouse(user);
     expect(screen.getByRole('button', { name: 'Send to South Shop' })).not.toBeDisabled();
     await user.click(screen.getByRole('button', { name: 'Send to South Shop' }));
     await waitFor(() => expect(transferCalls).toBe(1));
@@ -210,7 +220,7 @@ describe('inactive target query production action boundary', () => {
     };
     renderApp(<ProductionActionPanelHarness detail={detail} session={session} />, { api });
     await waitFor(() => expect(screen.getByRole('button', { name: 'Send to South Shop' })).not.toBeDisabled());
-    expect(screen.getByRole('option', { name: 'South Shop Warehouse' })).toHaveAttribute('aria-selected', 'true');
+    await expectSelectedWarehouse(user);
     await user.click(screen.getByRole('button', { name: 'Unmount production action panel' }));
     onlineManager.setOnline(false);
     await user.click(screen.getByRole('button', { name: 'Invalidate target query' }));
@@ -222,7 +232,7 @@ describe('inactive target query production action boundary', () => {
     expect(transferCalls).toBe(0);
     onlineManager.setOnline(true);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Send to South Shop' })).not.toBeDisabled());
-    expect(screen.getByRole('option', { name: 'South Shop Warehouse' })).toHaveAttribute('aria-selected', 'true');
+    await expectSelectedWarehouse(user);
     await user.click(screen.getByRole('button', { name: 'Send to South Shop' }));
     await waitFor(() => expect(transferCalls).toBe(1));
   });
@@ -252,7 +262,7 @@ describe('inactive target query production action boundary', () => {
     };
     renderApp(<ProductionActionPanelHarness detail={detail} session={session} />, { api });
     await waitFor(() => expect(screen.getByRole('button', { name: 'Send to South Shop' })).not.toBeDisabled());
-    expect(screen.getByRole('option', { name: 'South Shop Warehouse' })).toHaveAttribute('aria-selected', 'true');
+    await expectSelectedWarehouse(user);
     await user.click(screen.getByRole('button', { name: 'Unmount production action panel' }));
     shouldReject = true;
     await user.click(screen.getByRole('button', { name: 'Invalidate target query' }));
@@ -266,7 +276,7 @@ describe('inactive target query production action boundary', () => {
     shouldReject = false;
     await user.click(screen.getByRole('button', { name: 'Invalidate target query' }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Send to South Shop' })).not.toBeDisabled());
-    expect(screen.getByRole('option', { name: 'South Shop Warehouse' })).toHaveAttribute('aria-selected', 'true');
+    await expectSelectedWarehouse(user);
     await user.click(screen.getByRole('button', { name: 'Send to South Shop' }));
     await waitFor(() => expect(transferCalls).toBe(1));
   });

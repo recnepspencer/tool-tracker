@@ -10,7 +10,7 @@ const definitions: SeedDefinition[] = [
     brand: 'DeWalt',
     model: 'DCD996',
     category: 'Power tools',
-    imageKey: 'hammer-drill.png',
+    imageKey: 'hammer-drill.jpg',
   },
   {
     id: 'def-multimeter',
@@ -18,7 +18,7 @@ const definitions: SeedDefinition[] = [
     brand: 'Fluke',
     model: '87V',
     category: 'Meters & testers',
-    imageKey: 'multimeter.png',
+    imageKey: 'multimeter.jpg',
   },
   {
     id: 'def-impact-driver',
@@ -26,7 +26,7 @@ const definitions: SeedDefinition[] = [
     brand: 'Milwaukee',
     model: '2853-20',
     category: 'Power tools',
-    imageKey: 'impact-driver.png',
+    imageKey: 'impact-driver.jpg',
   },
   {
     id: 'def-fish-tape',
@@ -34,7 +34,7 @@ const definitions: SeedDefinition[] = [
     brand: 'Klein',
     model: '56008',
     category: 'Hand tools',
-    imageKey: 'fish-tape.png',
+    imageKey: 'fish-tape.jpg',
   },
   {
     id: 'def-rotary-hammer',
@@ -42,7 +42,7 @@ const definitions: SeedDefinition[] = [
     brand: 'Bosch',
     model: 'RH328VC',
     category: 'Power tools',
-    imageKey: 'rotary-hammer.png',
+    imageKey: 'rotary-hammer.jpg',
   },
   {
     id: 'def-hydraulic-bender',
@@ -50,7 +50,7 @@ const definitions: SeedDefinition[] = [
     brand: 'Greenlee',
     model: '881',
     category: 'Benders',
-    imageKey: 'hydraulic-bender.png',
+    imageKey: 'hydraulic-bender.jpg',
   },
   {
     id: 'def-extension-ladder',
@@ -58,7 +58,7 @@ const definitions: SeedDefinition[] = [
     brand: 'Werner',
     model: 'D1224-2',
     category: 'Ladders',
-    imageKey: 'extension-ladder.png',
+    imageKey: 'extension-ladder.jpg',
   },
   {
     id: 'def-bandsaw',
@@ -66,7 +66,7 @@ const definitions: SeedDefinition[] = [
     brand: 'Milwaukee',
     model: '2729-20',
     category: 'Power tools',
-    imageKey: 'bandsaw.png',
+    imageKey: 'bandsaw.jpg',
   },
   {
     id: 'def-knockout-punches',
@@ -74,7 +74,7 @@ const definitions: SeedDefinition[] = [
     brand: 'Greenlee',
     model: '7307',
     category: 'Benders',
-    imageKey: 'knockout-punches.png',
+    imageKey: 'knockout-punches.jpg',
   },
   {
     id: 'def-ir-tester',
@@ -82,7 +82,7 @@ const definitions: SeedDefinition[] = [
     brand: 'Megger',
     model: 'MIT420',
     category: 'Meters & testers',
-    imageKey: 'ir-tester.png',
+    imageKey: 'ir-tester.jpg',
   },
   {
     id: 'def-cable-cutter',
@@ -90,7 +90,7 @@ const definitions: SeedDefinition[] = [
     brand: 'Klein',
     model: '63050',
     category: 'Hand tools',
-    imageKey: 'cable-cutters.png',
+    imageKey: 'cable-cutters.jpg',
   },
   {
     id: 'def-circuit-tracer',
@@ -98,7 +98,7 @@ const definitions: SeedDefinition[] = [
     brand: 'Fluke',
     model: '2062',
     category: 'Meters & testers',
-    imageKey: 'circuit-tracer.png',
+    imageKey: 'circuit-tracer.jpg',
   },
   {
     id: 'def-conduit-bender',
@@ -106,7 +106,7 @@ const definitions: SeedDefinition[] = [
     brand: 'Greenlee',
     model: '555',
     category: 'Benders',
-    imageKey: 'conduit-bender.png',
+    imageKey: 'conduit-bender.jpg',
   },
   {
     id: 'def-cord-reel',
@@ -114,7 +114,7 @@ const definitions: SeedDefinition[] = [
     brand: 'Southwire',
     model: 'E102',
     category: 'Power distribution',
-    imageKey: 'Gemini_Generated_Image_rxhw3arxhw3arxhw.png',
+    imageKey: 'Gemini_Generated_Image_rxhw3arxhw3arxhw.jpg',
   },
   {
     id: 'def-pump-pliers',
@@ -122,7 +122,7 @@ const definitions: SeedDefinition[] = [
     brand: 'Klein',
     model: 'D504-10',
     category: 'Hand tools',
-    imageKey: 'Gemini_Generated_Image_v50edhv50edhv50e.png',
+    imageKey: 'Gemini_Generated_Image_v50edhv50edhv50e.jpg',
   },
   {
     id: 'def-step-ladder',
@@ -130,7 +130,7 @@ const definitions: SeedDefinition[] = [
     brand: 'Werner',
     model: '6208',
     category: 'Ladders',
-    imageKey: 'Gemini_Generated_Image_9u5w5o9u5w5o9u5w.png',
+    imageKey: 'Gemini_Generated_Image_9u5w5o9u5w5o9u5w.jpg',
   },
 ];
 

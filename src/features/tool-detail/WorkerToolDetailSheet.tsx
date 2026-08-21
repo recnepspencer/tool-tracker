@@ -69,7 +69,12 @@ export function WorkerToolDetailSheet({
       {!detail.isPending && !detail.isError && detail.data ? (
         <div className="detail-sheet-content worker-detail-content">
           <div className="detail-hero">
-            <ToolPhoto src={detail.data.tool.imageSrc} alt={`${detail.data.tool.name} product photo`} size="large" />
+            <ToolPhoto
+              src={detail.data.tool.imageSrc}
+              alt={`${detail.data.tool.name} product photo`}
+              size="large"
+              priority
+            />
             <div>
               <h2>{detail.data.tool.name}</h2>
               <p>
@@ -96,7 +101,6 @@ export function WorkerToolDetailSheet({
             note={controller.note}
             mockPhoto={controller.mockPhoto}
             transferMode={controller.transferMode}
-            personQuery={controller.personQuery}
             canStartHandoff={canStartHandoff}
             detailRefreshing={controller.detailRefreshing}
             busy={controller.busy}
@@ -104,7 +108,6 @@ export function WorkerToolDetailSheet({
             onAction={controller.onAction}
             onTargetChange={controller.onTargetChange}
             onTransferModeChange={controller.onTransferModeChange}
-            onPersonQueryChange={controller.onPersonQueryChange}
             onNoteChange={controller.onNoteChange}
             onMockPhotoChange={controller.onMockPhotoChange}
             onCloseAction={controller.onCloseAction}

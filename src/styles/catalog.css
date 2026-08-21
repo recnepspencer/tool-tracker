@@ -422,6 +422,7 @@
 }
 .worker-filter-layer {
   inset: 0;
+  isolation: isolate;
   position: fixed;
   z-index: var(--z-79);
 }
@@ -437,6 +438,7 @@
   padding-bottom: var(--space-36);
   position: fixed;
   right: 0;
+  z-index: var(--z-2);
 }
 .worker-filter-heading {
   align-items: flex-end;

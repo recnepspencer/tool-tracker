@@ -10,14 +10,14 @@ describe('createMockApi tool and activity projections', () => {
     expect(tools[0]).toMatchObject({
       id: 'TL-101',
       name: 'Hammer drill',
-      imageSrc: './tool-images/hammer-drill.png',
+      imageSrc: './tool-images/hammer-drill.jpg',
       status: 'checked-out',
       holder: { type: 'worker', userId: 'ray-torres', name: 'Ray Torres' },
     });
     expect(tools[4]).toMatchObject({
       id: 'TL-105',
       name: 'Rotary hammer',
-      imageSrc: './tool-images/rotary-hammer.png',
+      imageSrc: './tool-images/rotary-hammer.jpg',
       status: 'in-stock',
       holder: { type: 'warehouse', warehouseId: 'north-yard', name: 'North Yard' },
     });

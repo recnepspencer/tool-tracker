@@ -1,4 +1,5 @@
-import type { Dispatch, SetStateAction } from 'react';
+import { createPortal } from 'react-dom';
+import { useEffect, type Dispatch, type SetStateAction } from 'react';
 import type { ToolCatalogItem } from '../../domain/read-models/tools';
 import { catalogCategories, catalogWarehouses, type CatalogFilters as CatalogFiltersState } from './catalog-selectors';
 
@@ -15,10 +16,18 @@ export function CatalogFilters({
   onClear(): void;
   onClose(): void;
 }) {
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
   const categories = catalogCategories(items);
   const warehouses = catalogWarehouses(items);
   const availableOnly = filters.availability === 'available';
-  return (
+  return createPortal(
     <div className="worker-filter-layer" role="presentation">
       <button
         type="button"
@@ -70,7 +79,8 @@ export function CatalogFilters({
           Done
         </button>
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
