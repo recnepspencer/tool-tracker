@@ -45,6 +45,8 @@ describe('session boundary', () => {
     renderApp(<AppRoutes />, { api });
     await user.click(await screen.findByRole('button', { name: 'Enter as Ray' }));
     expect(sessionStorage.getItem(SESSION_KEY)).toBe('ray-torres');
+    await user.click(await screen.findByRole('button', { name: 'Open navigation' }));
+    await user.click(screen.getByRole('button', { name: 'Account' }));
     await user.click(await screen.findByRole('button', { name: 'Sign out' }));
     expect(signOut).toHaveBeenCalledTimes(1);
     expect(sessionStorage.getItem(SESSION_KEY)).toBeNull();
@@ -214,6 +216,8 @@ describe('session boundary', () => {
       },
     );
     expect(await screen.findByRole('heading', { name: 'My tools' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Open navigation' }));
+    await user.click(screen.getByRole('button', { name: 'Account' }));
     await user.click(screen.getByRole('button', { name: 'Sign out' }));
     expect(await screen.findByRole('heading', { name: 'Sign in to continue' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Probe sign in as Sam' }));

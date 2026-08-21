@@ -16,7 +16,7 @@ export function LoginPage() {
   if (status === 'loading') {
     return (
       <main className="auth-page">
-        <LoadingState label="Preparing demo profiles…" />
+        <LoadingState label="Preparing profiles…" />
       </main>
     );
   }
@@ -27,35 +27,35 @@ export function LoginPage() {
     try {
       await signIn(profileId);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to open that demo profile.');
+      setError(cause instanceof Error ? cause.message : 'Unable to open that profile.');
     }
   };
 
   return (
     <AuthExperienceLayout
-      eyebrow="Choose a demo profile"
+      eyebrow="Choose your profile"
       title="Sign in to continue"
-      description="Click a profile to explore the experience for that role."
+      description="Select your profile to continue."
       footer={
         <div className="auth-experience-links">
-          <Link to="/signup">Preview company setup</Link>
-          <Link to="/reset-password">Preview password recovery</Link>
-          <Link to="/invite/sample-invite">Preview an invitation</Link>
+          <Link to="/signup">Create a company</Link>
+          <Link to="/reset-password">Recover access</Link>
+          <Link to="/invite/sample-invite">Accept an invitation</Link>
         </div>
       }
     >
-      {profiles.isPending && !profiles.isPaused && <LoadingState label="Loading demo profiles…" />}
+      {profiles.isPending && !profiles.isPaused && <LoadingState label="Loading profiles…" />}
       {profiles.isFetching && !profiles.isPending && !profiles.isPaused && (
-        <LoadingState label="Refreshing demo profiles…" />
+        <LoadingState label="Refreshing profiles…" />
       )}
       {profiles.isPaused && (
         <PausedState
-          label="Demo profiles are waiting for the connection to return."
+          label="Profiles are waiting for the connection to return."
           onRetry={() => void profiles.refetch()}
         />
       )}
       {profiles.isError && (
-        <ErrorState message="Demo profiles could not be loaded." onRetry={() => void profiles.refetch()} />
+        <ErrorState message="Profiles could not be loaded." onRetry={() => void profiles.refetch()} />
       )}
       {restoreError && (
         <div className="restore-recovery">
@@ -68,7 +68,7 @@ export function LoginPage() {
       {error && <ErrorState message={error} />}
       {!unsettled && profiles.data?.length === 0 && (
         <EmptyState
-          label="No demo profiles are available."
+          label="No profiles are available."
           actionLabel="Reload profiles"
           onAction={() => void profiles.refetch()}
         />
@@ -80,7 +80,6 @@ export function LoginPage() {
           ))}
         </div>
       )}
-      <p className="auth-footnote">Static demo · walkthroughs below never create accounts or send messages.</p>
     </AuthExperienceLayout>
   );
 }

@@ -24,7 +24,8 @@ describe('worker account surfaces', () => {
     window.location.hash = '#/worker/tools';
     renderApp(<AppRoutes />, { sessionStore: createMemorySessionStore('ray-torres') });
     await screen.findByRole('heading', { name: 'My tools' });
-    await user.click(screen.getByRole('button', { name: 'Open account menu' }));
+    await user.click(screen.getByRole('button', { name: 'Open navigation' }));
+    await user.click(screen.getByRole('button', { name: 'Account' }));
     const accountDialog = screen.getByRole('dialog', { name: 'Ray Torres' });
     expect(within(accountDialog).getByText('ray@nelsonelectric.com')).toBeInTheDocument();
     expect(within(accountDialog).getByText(/Journeyman electrician/)).toBeInTheDocument();

@@ -39,7 +39,7 @@ describe('login query safety', () => {
     const user = userEvent.setup();
     const listDemoProfiles = vi.fn().mockResolvedValue([]);
     renderApp(<AppRoutes />, { api: apiWithAuth({ listDemoProfiles }) });
-    expect(await screen.findByText('No demo profiles are available.')).toBeInTheDocument();
+    expect(await screen.findByText('No profiles are available.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Reload profiles' }));
     await waitFor(() => expect(listDemoProfiles).toHaveBeenCalledTimes(2));
   });
@@ -54,7 +54,7 @@ describe('login query safety', () => {
       return base.auth.listDemoProfiles();
     });
     renderApp(<AppRoutes />, { api: apiWithAuth({ listDemoProfiles }) });
-    expect(await screen.findByRole('alert')).toHaveTextContent('Demo profiles could not be loaded.');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Profiles could not be loaded.');
     expect(screen.queryByRole('button', { name: 'Enter as Ray' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Retry' }));
     expect(await screen.findByRole('button', { name: 'Enter as Ray' })).toBeEnabled();
@@ -82,7 +82,7 @@ describe('login query safety', () => {
     );
     expect(await screen.findByRole('button', { name: 'Enter as Ray' })).toBeEnabled();
     await user.click(screen.getByRole('button', { name: 'Refresh profiles' }));
-    expect(await screen.findByText('Refreshing demo profiles…')).toBeInTheDocument();
+    expect(await screen.findByText('Refreshing profiles…')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Enter as Ray' })).not.toBeInTheDocument();
     release?.();
     expect(await screen.findByRole('button', { name: 'Enter as Ray' })).toBeEnabled();
@@ -107,7 +107,7 @@ describe('login query safety', () => {
     );
     expect(await screen.findByRole('button', { name: 'Enter as Ray' })).toBeEnabled();
     await user.click(screen.getByRole('button', { name: 'Refresh profiles' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Demo profiles could not be loaded.');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Profiles could not be loaded.');
     expect(screen.queryByRole('button', { name: 'Enter as Ray' })).not.toBeInTheDocument();
     expect(signInAs).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Retry' }));
@@ -129,7 +129,7 @@ describe('login query safety', () => {
     expect(await screen.findByRole('button', { name: 'Enter as Ray' })).toBeEnabled();
     onlineManager.setOnline(false);
     await user.click(screen.getByRole('button', { name: 'Refresh profiles' }));
-    expect(await screen.findByText('Demo profiles are waiting for the connection to return.')).toBeInTheDocument();
+    expect(await screen.findByText('Profiles are waiting for the connection to return.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Enter as Ray' })).not.toBeInTheDocument();
     expect(signInAs).not.toHaveBeenCalled();
     onlineManager.setOnline(true);
@@ -162,8 +162,8 @@ describe('login query safety', () => {
     const listDemoProfiles = vi.fn().mockResolvedValue(await base.auth.listDemoProfiles());
     onlineManager.setOnline(false);
     renderApp(<AppRoutes />, { api: apiWithAuth({ listDemoProfiles }) });
-    expect(await screen.findByText('Demo profiles are waiting for the connection to return.')).toBeInTheDocument();
-    expect(screen.queryByText('Loading demo profiles…')).not.toBeInTheDocument();
+    expect(await screen.findByText('Profiles are waiting for the connection to return.')).toBeInTheDocument();
+    expect(screen.queryByText('Loading profiles…')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Retry' }));
     expect(listDemoProfiles).not.toHaveBeenCalled();
     onlineManager.setOnline(true);

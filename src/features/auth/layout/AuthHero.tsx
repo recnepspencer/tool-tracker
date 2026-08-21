@@ -10,7 +10,7 @@ export function AuthHero() {
           Nelson <em>Electric</em>
         </span>
       </div>
-      <span className="eyebrow">Tool custody system · demo</span>
+      <span className="eyebrow">Tool custody system</span>
       <h1>Know where every tool went.</h1>
       <p>One shared record for the people, yards, and handoffs that keep the job moving.</p>
       <div className="auth-proof">

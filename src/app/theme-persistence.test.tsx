@@ -17,6 +17,8 @@ describe('theme persistence boundary', () => {
     const user = userEvent.setup();
     renderApp(<AppRoutes />);
     await user.click(await screen.findByRole('button', { name: 'Enter as Ray' }));
+    await user.click(screen.getByRole('button', { name: 'Open navigation' }));
+    await user.click(screen.getByRole('button', { name: 'Account' }));
     await user.click(await screen.findByRole('switch', { name: 'Light mode' }));
     expect(document.documentElement.dataset.theme).toBe('light');
     expect(localStorage.getItem('nelson-demo-theme')).toBe('light');
@@ -32,6 +34,8 @@ describe('theme persistence boundary', () => {
     const themeStore = createMemoryThemeStore();
     renderApp(<AppRoutes />, { themeStore });
     await user.click(await screen.findByRole('button', { name: 'Enter as Ray' }));
+    await user.click(screen.getByRole('button', { name: 'Open navigation' }));
+    await user.click(screen.getByRole('button', { name: 'Account' }));
     await user.click(await screen.findByRole('switch', { name: 'Light mode' }));
     expect(themeStore.value).toBe('light');
     cleanup();

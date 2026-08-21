@@ -7,7 +7,7 @@ import './RouteLoading.css';
 function LoadingRoute() {
   return (
     <main className="route-loading" aria-label="Loading Nelson Electric">
-      <span className="pulse-dot" /> Restoring demo session…
+      <span className="pulse-dot" /> Restoring session…
     </main>
   );
 }

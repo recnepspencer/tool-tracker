@@ -37,7 +37,7 @@ describe('custody workflow surfaces', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Tool details' });
     await user.click(within(dialog).getByRole('button', { name: 'Request from North Yard' }));
     await user.type(within(dialog).getByPlaceholderText('Add context for the record'), 'Tomorrow job');
-    await user.click(within(dialog).getByRole('switch', { name: 'Attach a mock photo to this record' }));
+    await user.click(within(dialog).getByRole('switch', { name: 'Add a photo to this record' }));
     await user.click(within(dialog).getByRole('button', { name: 'Confirm' }));
     expect(await within(dialog).findByText('Request sent to the warehouse.')).toBeInTheDocument();
     expect(database.read().custody.find((record) => record.toolUnitId === 'TL-105')?.holder).toEqual({
@@ -219,11 +219,11 @@ describe('custody workflow surfaces', () => {
     await chooseFieldOption(user, within(dialog).getByRole('combobox', { name: 'Send to' }), /South Shop/);
     const note = within(dialog).getByPlaceholderText('Add context for the record');
     await user.type(note, 'Keep this note');
-    await user.click(within(dialog).getByRole('switch', { name: 'Attach a mock photo to this record' }));
+    await user.click(within(dialog).getByRole('switch', { name: 'Add a photo to this record' }));
     await user.click(within(dialog).getByRole('button', { name: 'Confirm' }));
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('transfer conflict');
     expect(note).toHaveValue('Keep this note');
-    expect(within(dialog).getByRole('switch', { name: 'Attach a mock photo to this record' })).toBeChecked();
+    expect(within(dialog).getByRole('switch', { name: 'Add a photo to this record' })).toBeChecked();
   });
 
   it('preserves pending-handoff evidence drafts when resolution is rejected', async () => {
@@ -239,14 +239,15 @@ describe('custody workflow surfaces', () => {
     window.location.hash = '#/worker/tools';
     renderApp(<AppRoutes />, { api: rejectingApi, sessionStore: createMemorySessionStore('ray-torres') });
     const card = await screen.findByRole('article', { name: 'Bandsaw pending handoff' });
+    await user.click(within(card).getByRole('button', { name: 'Review' }));
     await user.click(within(card).getByRole('button', { name: 'Add note/photo' }));
     const note = within(card).getByPlaceholderText('Add context for the record');
     await user.type(note, 'Keep this pending note');
-    await user.click(within(card).getByRole('switch', { name: 'Attach a mock photo to this record' }));
+    await user.click(within(card).getByRole('switch', { name: 'Add a photo to this record' }));
     await user.click(within(card).getByRole('button', { name: 'Withdraw request' }));
     expect(await within(card).findByRole('alert')).toHaveTextContent('withdraw conflict');
     expect(note).toHaveValue('Keep this pending note');
-    expect(within(card).getByRole('switch', { name: 'Attach a mock photo to this record' })).toBeChecked();
+    expect(within(card).getByRole('switch', { name: 'Add a photo to this record' })).toBeChecked();
   });
 
   it('disables a pending detail command and sends it once on a repeated click', async () => {
@@ -274,7 +275,7 @@ describe('custody workflow surfaces', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Tool details' });
     await user.click(within(dialog).getByRole('button', { name: 'Report damaged' }));
     await user.type(within(dialog).getByPlaceholderText('Add context for the record'), 'Deferred report');
-    await user.click(within(dialog).getByRole('switch', { name: 'Attach a mock photo to this record' }));
+    await user.click(within(dialog).getByRole('switch', { name: 'Add a photo to this record' }));
     const confirm = within(dialog).getByRole('button', { name: 'Confirm' });
     await user.click(confirm);
     expect(confirm).toBeDisabled();
@@ -307,10 +308,11 @@ describe('custody workflow surfaces', () => {
     window.location.hash = '#/worker/tools';
     renderApp(<AppRoutes />, { api, sessionStore: createMemorySessionStore('ray-torres') });
     const card = await screen.findByRole('article', { name: 'Bandsaw pending handoff' });
+    await user.click(within(card).getByRole('button', { name: 'Review' }));
     await user.click(within(card).getByRole('button', { name: 'Add note/photo' }));
     const note = within(card).getByPlaceholderText('Add context for the record');
     await user.type(note, 'Deferred handoff');
-    await user.click(within(card).getByRole('switch', { name: 'Attach a mock photo to this record' }));
+    await user.click(within(card).getByRole('switch', { name: 'Add a photo to this record' }));
     const withdraw = within(card).getByRole('button', { name: 'Withdraw request' });
     await user.click(withdraw);
     expect(withdraw).toBeDisabled();
@@ -318,7 +320,7 @@ describe('custody workflow surfaces', () => {
     await user.click(withdraw);
     expect(withdrawCalls).toBe(1);
     expect(note).toHaveValue('Deferred handoff');
-    expect(within(card).getByRole('switch', { name: 'Attach a mock photo to this record' })).toBeChecked();
+    expect(within(card).getByRole('switch', { name: 'Add a photo to this record' })).toBeChecked();
     resolveWithdraw({ toolUnitId: 'TL-108', handoffId: 'HO-1', eventId: 'EV-DEFERRED-2', status: 'withdrawn' });
   });
 });

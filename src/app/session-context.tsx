@@ -81,7 +81,7 @@ export function SessionProvider({ children, sessionStore = browserSessionStore }
     if (restore.isError) {
       if (session) return;
       setSession(null);
-      setRestoreError('Your saved demo session could not be restored. Choose a profile to continue.');
+      setRestoreError('Your saved session could not be restored. Choose a profile to continue.');
       setStatus('anonymous');
       return;
     }

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Button } from '../../components/ui/Button';
 import type { HandoffAction } from '../../domain/custody';
 import type { PendingHandoffView } from '../../domain/read-models/custody';
 import { CustodyEvidenceFields } from './CustodyEvidenceFields';
@@ -24,6 +23,7 @@ export function PendingHandoffCard({
 }) {
   const [note, setNote] = useState('');
   const [mockPhoto, setMockPhoto] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
   const [showEvidence, setShowEvidence] = useState(false);
   const {
     act,
@@ -37,55 +37,77 @@ export function PendingHandoffCard({
     mockPhoto,
     queryBlocked,
   });
+  const incoming = handoff.direction === 'incoming';
   return (
     <article
-      className="pending-handoff"
+      className={`worker-pending-card worker-pending-card--${incoming ? 'incoming' : 'outgoing'}`}
       data-handoff-id={handoff.id}
       aria-label={`${handoff.toolName} pending handoff`}
     >
-      <strong>{handoff.toolName}</strong>
-      <span>
+      <div className="worker-pending-topline">
+        <span>{incoming ? 'Incoming transfer' : 'Awaiting acceptance'}</span>
+        <time>{handoff.requestedAt}</time>
+      </div>
+      <strong className="worker-pending-title">
+        {incoming ? `${handoff.from.name} sent you a tool` : `Transfer to ${handoff.to.name}`}
+      </strong>
+      <span className="worker-pending-tool-name">{handoff.toolName}</span>
+      <span className="worker-pending-subtitle">
         {handoff.from.name} → {handoff.to.name}
       </span>
-      <small>
-        Requested by {handoff.requestedBy} · {handoff.requestedAt}
-      </small>
-      {handoff.evidence?.note ? <small>Note: {handoff.evidence.note}</small> : null}
-      {handoff.allowedActions.length ? (
-        <div className="pending-handoff-actions">
-          {handoff.allowedActions.map((action) => (
-            <Button
-              key={action}
-              variant={action === 'accept' ? 'primary' : 'secondary'}
-              disabled={busy || handoffQueryBlocked}
-              onClick={() => void act(action)}
-            >
-              {busy ? 'Saving…' : handoffQueryBlocked ? 'Unavailable' : actionLabel[action]}
-            </Button>
-          ))}
-          <button
-            type="button"
-            className="text-button"
-            onClick={() => setShowEvidence((value) => !value)}
-            aria-expanded={showEvidence}
-          >
-            {showEvidence ? 'Hide evidence' : 'Add note/photo'}
-          </button>
+      {handoff.evidence?.note ? <small className="worker-pending-note">Note: {handoff.evidence.note}</small> : null}
+      <button
+        type="button"
+        className="worker-pending-review"
+        onClick={() => setReviewOpen((current) => !current)}
+        aria-expanded={reviewOpen}
+      >
+        {reviewOpen ? 'Close review' : 'Review'}
+      </button>
+      {reviewOpen ? (
+        <div className="worker-pending-review-panel">
+          {handoff.allowedActions.length ? (
+            <div className="pending-handoff-actions">
+              {handoff.allowedActions.map((action) => (
+                <button
+                  type="button"
+                  className={
+                    action === 'accept'
+                      ? 'worker-primary-button worker-primary-button--compact'
+                      : 'worker-secondary-button'
+                  }
+                  key={action}
+                  disabled={busy || handoffQueryBlocked}
+                  onClick={() => void act(action)}
+                >
+                  {busy ? 'Saving…' : handoffQueryBlocked ? 'Unavailable' : actionLabel[action]}
+                </button>
+              ))}
+              <button
+                type="button"
+                className="worker-evidence-toggle"
+                onClick={() => setShowEvidence((value) => !value)}
+                aria-expanded={showEvidence}
+              >
+                {showEvidence ? 'Hide note/photo' : 'Add note/photo'}
+              </button>
+            </div>
+          ) : null}
+          {showEvidence ? (
+            <CustodyEvidenceFields
+              className="pending-handoff-evidence"
+              note={note}
+              mockPhoto={mockPhoto}
+              onNoteChange={setNote}
+              onMockPhotoChange={setMockPhoto}
+            />
+          ) : null}
+          {error ? (
+            <small className="pending-handoff-error" role="alert">
+              {error}
+            </small>
+          ) : null}
         </div>
-      ) : null}
-      {showEvidence ? (
-        <CustodyEvidenceFields
-          className="pending-handoff-evidence"
-          note={note}
-          mockPhoto={mockPhoto}
-          onNoteChange={setNote}
-          onMockPhotoChange={setMockPhoto}
-        />
-      ) : null}
-      {error ? (
-        <small className="pending-handoff-error" role="alert">
-          {error}
-        </small>
       ) : null}
     </article>
   );

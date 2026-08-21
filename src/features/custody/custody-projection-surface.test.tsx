@@ -107,7 +107,7 @@ describe('custody projection refresh surfaces', () => {
     const detail = await screen.findByRole('dialog', { name: 'Tool details' });
     await user.click(within(detail).getByRole('button', { name: 'Request from North Yard' }));
     await user.type(within(detail).getByPlaceholderText('Add context for the record'), 'Tomorrow job');
-    await user.click(within(detail).getByRole('switch', { name: 'Attach a mock photo to this record' }));
+    await user.click(within(detail).getByRole('switch', { name: 'Add a photo to this record' }));
     const beforeCalls = { ...calls, pendingByProfile: { ...calls.pendingByProfile } };
     const beforeProjection = { ...screen.getByTestId('projection-probe').dataset };
     await user.click(within(detail).getByRole('button', { name: 'Confirm' }));

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" role="img" aria-labelledby="title desc">
+  <title id="title">Tool photograph</title>
+  <desc id="desc">A neutral blue tool silhouette on a dark field.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#121a26" />
+      <stop offset="1" stop-color="#080b11" />
+    </linearGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d9e7f4" />
+      <stop offset="1" stop-color="#6e9ec5" />
+    </linearGradient>
+  </defs>
+  <rect width="640" height="480" fill="url(#bg)" />
+  <path d="M0 80 640 0M0 190 640 110M0 300 640 220M0 410 640 330" stroke="#253447" stroke-width="3" opacity=".45" />
+  <path d="m195 308 98-98 54 54-98 98-50 9z" fill="url(#steel)" />
+  <path d="m270 233 76-76 54 54-76 76z" fill="#a8d3ff" />
+  <path d="m363 151 49-49 66 66-49 49z" fill="#dceaf5" />
+  <path d="m403 111 39-39 40 40-39 39z" fill="#7bafd9" />
+  <circle cx="222" cy="341" r="19" fill="#3e9bff" />
+  <circle cx="222" cy="341" r="8" fill="#08101b" />
+</svg>

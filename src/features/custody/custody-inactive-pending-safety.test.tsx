@@ -100,6 +100,7 @@ describe('inactive pending action safety', () => {
       { api, sessionStore: createMemorySessionStore('ray-torres') },
     );
     const card = await screen.findByRole('article', { name: 'Bandsaw pending handoff' });
+    await user.click(within(card).getByRole('button', { name: 'Review' }));
     await waitFor(() => expect(within(card).getByRole('button', { name: 'Withdraw request' })).toBeInTheDocument());
     expect(within(card).getByRole('button', { name: 'Withdraw request' })).not.toBeDisabled();
     window.location.hash = '#/worker/checkout';
@@ -113,6 +114,7 @@ describe('inactive pending action safety', () => {
     await waitFor(() => expect(pendingCalls).toBeGreaterThanOrEqual(2));
     window.location.hash = '#/worker/tools';
     const remountedCard = await screen.findByRole('article', { name: 'Bandsaw pending handoff' });
+    await user.click(within(remountedCard).getByRole('button', { name: 'Review' }));
     const unavailable = within(remountedCard).getByRole('button', { name: 'Unavailable' });
     expect(unavailable).toBeDisabled();
     fireEvent.click(unavailable);
@@ -168,6 +170,7 @@ describe('inactive pending action safety', () => {
       { api, sessionStore: createMemorySessionStore('ray-torres') },
     );
     const card = await screen.findByRole('article', { name: 'Bandsaw pending handoff' });
+    await user.click(within(card).getByRole('button', { name: 'Review' }));
     await waitFor(() => expect(within(card).getByRole('button', { name: 'Withdraw request' })).not.toBeDisabled());
     window.location.hash = '#/worker/checkout';
     expect(await screen.findByRole('heading', { name: 'Browse tools' })).toBeInTheDocument();
@@ -182,6 +185,7 @@ describe('inactive pending action safety', () => {
     window.location.hash = '#/worker/tools';
     const remountedCard = await screen.findByRole('article', { name: 'Bandsaw pending handoff' });
     expect(await screen.findByText('Pending handoffs could not be loaded.')).toBeInTheDocument();
+    await user.click(within(remountedCard).getByRole('button', { name: 'Review' }));
     const unavailable = within(remountedCard).getByRole('button', { name: 'Unavailable' });
     expect(unavailable).toBeDisabled();
     fireEvent.click(unavailable);
@@ -238,6 +242,7 @@ describe('inactive pending action safety', () => {
       { api, sessionStore: createMemorySessionStore('ray-torres') },
     );
     const card = await screen.findByRole('article', { name: 'Bandsaw pending handoff' });
+    await user.click(within(card).getByRole('button', { name: 'Review' }));
     await waitFor(() => expect(within(card).getByRole('button', { name: 'Withdraw request' })).not.toBeDisabled());
     window.location.hash = '#/worker/checkout';
     expect(await screen.findByRole('heading', { name: 'Browse tools' })).toBeInTheDocument();
@@ -254,6 +259,7 @@ describe('inactive pending action safety', () => {
     });
     window.location.hash = '#/worker/tools';
     const remountedCard = await screen.findByRole('article', { name: 'Bandsaw pending handoff' });
+    await user.click(within(remountedCard).getByRole('button', { name: 'Review' }));
     const unavailable = within(remountedCard).getByRole('button', { name: 'Unavailable' });
     expect(unavailable).toBeDisabled();
     fireEvent.click(unavailable);

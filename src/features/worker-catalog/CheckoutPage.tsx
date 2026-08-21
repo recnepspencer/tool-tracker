@@ -1,8 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { ErrorState, LoadingState } from '../../components/ui/AsyncState';
-import { Button } from '../../components/ui/Button';
-import { PageHeading } from '../../components/layout/PageHeading';
 import { SearchField } from '../../components/ui/TextField';
 import { WorkerToolDetailSheet } from '../tool-detail/WorkerToolDetailSheet';
 import { CatalogFilters } from './CatalogFilters';
@@ -31,57 +28,62 @@ export function CheckoutPage() {
   if (catalog.isError || !catalog.data) return <ErrorState message="The checkout catalog could not be loaded." />;
 
   return (
-    <div className="page-content">
-      <PageHeading
-        eyebrow="Worker view · Checkout"
-        title="Browse tools"
-        description="Find an available unit by name, yard, category, or current availability. Open any card for its custody record."
-        status="Catalog synced"
-      />
-      <div className="catalog-toolbar">
-        <SearchField
-          className="catalog-search"
-          label="Search tools"
-          placeholder="Search tools, brands, or models"
-          value={filters.search}
-          onChange={(search) => setFilters((current) => ({ ...current, search }))}
-        />
-        <Button variant="secondary" onClick={() => setFiltersOpen((current) => !current)} aria-expanded={filtersOpen}>
-          {filtersOpen ? 'Hide filters' : 'Filter catalog'}
-        </Button>
-        <div className="view-toggle" aria-label="Catalog view">
+    <div className="worker-screen worker-checkout-screen">
+      <div className="worker-screen-heading worker-checkout-heading">
+        <h1 aria-label="Browse tools">Checkout</h1>
+        <div className="worker-checkout-controls">
           <button
             type="button"
-            className={mode === 'grid' ? 'view-toggle--active' : ''}
-            onClick={() => setMode('grid')}
+            className={`worker-filter-button${filtersOpen ? ' worker-filter-button--active' : ''}`}
+            onClick={() => setFiltersOpen(true)}
+            aria-expanded={filtersOpen}
+            aria-label="Filter catalog"
           >
-            Grid
+            <span className="worker-filter-icon" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+            <span>Filter</span>
           </button>
-          <button
-            type="button"
-            className={mode === 'list' ? 'view-toggle--active' : ''}
-            onClick={() => setMode('list')}
-          >
-            List
-          </button>
+          <div className="worker-view-toggle" aria-label="Catalog view">
+            <button
+              type="button"
+              className={mode === 'grid' ? 'worker-view-toggle--active' : ''}
+              aria-label="Grid"
+              aria-pressed={mode === 'grid'}
+              onClick={() => setMode('grid')}
+            >
+              <span className="worker-grid-icon" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+                <i />
+              </span>
+            </button>
+            <button
+              type="button"
+              className={mode === 'list' ? 'worker-view-toggle--active' : ''}
+              aria-label="List"
+              aria-pressed={mode === 'list'}
+              onClick={() => setMode('list')}
+            >
+              <span className="worker-list-icon" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+              </span>
+            </button>
+          </div>
         </div>
       </div>
-      {filtersOpen ? (
-        <CatalogFilters
-          items={catalog.data}
-          filters={filters}
-          setFilters={setFilters}
-          onClear={() => setFilters(defaultCatalogFilters)}
-        />
-      ) : null}
-      <div className="catalog-results-heading">
-        <span className="eyebrow">
-          {filtered.length} of {catalog.data.length} tool types
-        </span>
-        <Link className="text-link" to="/worker/tools">
-          Back to my tools
-        </Link>
-      </div>
+      <SearchField
+        className="worker-search-field"
+        label="Search tools"
+        placeholder="Search tools"
+        value={filters.search}
+        onChange={(search) => setFilters((current) => ({ ...current, search }))}
+      />
       {filtered.length ? (
         <div className={`catalog-grid catalog-grid--${mode}`}>
           {filtered.map((item) => (
@@ -89,14 +91,23 @@ export function CheckoutPage() {
           ))}
         </div>
       ) : (
-        <div className="catalog-empty">
-          <h2>No tools match those filters.</h2>
-          <p>Try clearing a filter or searching for another tool name.</p>
-          <Button variant="secondary" onClick={() => setFilters(defaultCatalogFilters)}>
+        <div className="catalog-empty worker-catalog-empty">
+          <h2 aria-label="No tools match those filters.">Nothing matches that.</h2>
+          <span>Try another warehouse or clear the filters.</span>
+          <button type="button" className="worker-secondary-button" onClick={() => setFilters(defaultCatalogFilters)}>
             Clear filters
-          </Button>
+          </button>
         </div>
       )}
+      {filtersOpen ? (
+        <CatalogFilters
+          items={catalog.data}
+          filters={filters}
+          setFilters={setFilters}
+          onClear={() => setFilters(defaultCatalogFilters)}
+          onClose={() => setFiltersOpen(false)}
+        />
+      ) : null}
       <WorkerToolDetailSheet toolUnitId={selectedToolId} onClose={() => setSelectedToolId(null)} />
     </div>
   );

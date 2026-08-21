@@ -28,7 +28,7 @@ export function CustodyEvidenceFields({
         onChange={onNoteChange}
         placeholder="Add context for the record"
       />
-      <Switch label="Attach a mock photo to this record" checked={mockPhoto} onCheckedChange={onMockPhotoChange} />
+      <Switch label="Add a photo to this record" checked={mockPhoto} onCheckedChange={onMockPhotoChange} />
     </div>
   );
 }

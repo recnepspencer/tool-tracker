@@ -28,6 +28,7 @@ interface WorkerDetailActionControllerInput {
   targets: TargetQueryState;
   session: AuthSession | null;
   canStartHandoff: boolean;
+  initialAction?: DetailAction | null;
 }
 
 export function useWorkerDetailActionController({
@@ -36,6 +37,7 @@ export function useWorkerDetailActionController({
   targets,
   session,
   canStartHandoff,
+  initialAction = null,
 }: WorkerDetailActionControllerInput) {
   const mutations = useCustodyMutations();
   const [action, setAction] = useState<DetailAction | null>(null);
@@ -48,13 +50,17 @@ export function useWorkerDetailActionController({
     mutations.requestTool.isPending || mutations.startTransfer.isPending || mutations.reportToolCondition.isPending;
 
   useEffect(() => {
-    setAction(null);
+    setAction(initialAction);
     setTarget('');
     setNote('');
     setMockPhoto(false);
     setError(null);
     setNotice(null);
-  }, [toolUnitId]);
+  }, [initialAction, toolUnitId]);
+
+  useEffect(() => {
+    if (initialAction && canStartHandoff && action === null) setAction(initialAction);
+  }, [action, canStartHandoff, initialAction]);
 
   useEffect(() => {
     if (detail.data && (detail.data.lifecycle !== 'active' || !canStartHandoff)) setAction(null);

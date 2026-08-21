@@ -1,7 +1,6 @@
 import { useSession } from '../../app/session-context';
 import { useTheme } from '../../app/theme-context';
 import { Avatar } from '../../components/ui/Avatar';
-import { PageHeading } from '../../components/layout/PageHeading';
 import { Switch } from '../../components/ui/Switch';
 import '../../styles/account.css';
 
@@ -15,18 +14,18 @@ export function WorkerAccountPage() {
     .join('')
     .slice(0, 2);
   return (
-    <div className="page-content">
-      <PageHeading
-        eyebrow="Worker view · Account"
-        title="Your account"
-        description="Keep your field identity and display preferences close at hand on every screen."
-        status="Local profile"
-      />
+    <div className="worker-screen worker-account-page">
+      <div className="worker-screen-heading">
+        <div>
+          <span className="worker-eyebrow">{session.name}</span>
+          <h1 aria-label="Your account">Account</h1>
+        </div>
+      </div>
       <section className="account-card" aria-labelledby="account-card-heading">
         <div className="account-card-identity">
           <Avatar initials={initials} tone="amber" size="large" />
           <div>
-            <span className="eyebrow">Signed in as</span>
+            <span className="worker-eyebrow">Signed in as</span>
             <h2 id="account-card-heading">{session.name}</h2>
             <p>{session.email}</p>
           </div>
@@ -34,7 +33,7 @@ export function WorkerAccountPage() {
         <dl className="account-facts">
           <div>
             <dt>Role</dt>
-            <dd>{session.role === 'worker' ? 'Field worker' : 'Administrator'}</dd>
+            <dd>Field worker</dd>
           </div>
           <div>
             <dt>Title</dt>
@@ -51,9 +50,9 @@ export function WorkerAccountPage() {
         </dl>
         <Switch
           label="Light mode"
-          description={`${theme === 'dark' ? 'Dark' : 'Light'} mode is saved in this browser.`}
+          description={theme === 'dark' ? 'Use a light field surface.' : 'Use the dark field surface.'}
           checked={theme === 'light'}
-          onCheckedChange={() => toggleTheme()}
+          onCheckedChange={toggleTheme}
         />
       </section>
     </div>

@@ -1,66 +1,106 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { SelectField } from '../../components/ui/SelectField';
 import type { ToolCatalogItem } from '../../domain/read-models/tools';
-import {
-  catalogCategories,
-  catalogWarehouses,
-  type CatalogAvailability,
-  type CatalogFilters as CatalogFiltersState,
-} from './catalog-selectors';
-
-const availabilityOptions = [
-  { value: 'all', label: 'All tools' },
-  { value: 'available', label: 'Available now' },
-  { value: 'checked-out', label: 'Checked out' },
-  { value: 'damaged', label: 'Needs attention' },
-  { value: 'lost', label: 'Lost' },
-] as const;
+import { catalogCategories, catalogWarehouses, type CatalogFilters as CatalogFiltersState } from './catalog-selectors';
 
 export function CatalogFilters({
   items,
   filters,
   setFilters,
   onClear,
+  onClose,
 }: {
   items: ToolCatalogItem[];
   filters: CatalogFiltersState;
   setFilters: Dispatch<SetStateAction<CatalogFiltersState>>;
   onClear(): void;
+  onClose(): void;
 }) {
   const categories = catalogCategories(items);
   const warehouses = catalogWarehouses(items);
+  const availableOnly = filters.availability === 'available';
   return (
-    <div className="catalog-filter-panel" role="region" aria-label="Catalog filters">
-      <SelectField
-        compact
-        label="Availability"
-        value={filters.availability}
-        onChange={(next) => setFilters((current) => ({ ...current, availability: next as CatalogAvailability }))}
-        options={[...availabilityOptions]}
+    <div className="worker-filter-layer" role="presentation">
+      <button
+        type="button"
+        className="worker-scrim worker-scrim--strong"
+        aria-label="Close filters"
+        onClick={onClose}
       />
-      <SelectField
-        compact
-        label="Warehouse"
-        value={filters.warehouseId}
-        onChange={(next) => setFilters((current) => ({ ...current, warehouseId: next }))}
-        options={[
-          { value: 'all', label: 'All warehouses' },
-          ...warehouses.map((warehouse) => ({ value: warehouse.id, label: warehouse.name })),
-        ]}
-      />
-      <SelectField
-        compact
-        label="Category"
-        value={filters.category}
-        onChange={(next) => setFilters((current) => ({ ...current, category: next }))}
-        options={[
-          { value: 'all', label: 'All categories' },
-          ...categories.map((category) => ({ value: category, label: category })),
-        ]}
-      />
-      <button type="button" className="text-button" onClick={onClear}>
-        Clear filters
-      </button>
+      <section className="worker-filter-sheet" role="dialog" aria-modal="true" aria-label="Catalog filters">
+        <span className="worker-sheet-handle" />
+        <div className="worker-filter-heading">
+          <h2>Filter</h2>
+          <button type="button" onClick={onClear}>
+            Clear all
+          </button>
+        </div>
+        <div className="worker-filter-scroll">
+          <button
+            type="button"
+            className={`worker-filter-toggle${availableOnly ? ' worker-filter-toggle--on' : ''}`}
+            onClick={() => setFilters((current) => ({ ...current, availability: availableOnly ? 'all' : 'available' }))}
+            aria-pressed={availableOnly}
+            aria-label="Available only"
+          >
+            <span>
+              <strong>Available only</strong>
+              <small>{availableOnly ? 'Showing units ready to check out' : 'Show every unit in the catalog'}</small>
+            </span>
+            <span className="worker-filter-switch">
+              <span />
+            </span>
+          </button>
+          <FilterChipGroup
+            label="Warehouse"
+            options={[{ id: 'all', name: 'All warehouses' }, ...warehouses]}
+            selected={filters.warehouseId}
+            onPick={(id) => setFilters((current) => ({ ...current, warehouseId: id }))}
+          />
+          <FilterChipGroup
+            label="Category"
+            options={[
+              { id: 'all', name: 'All categories' },
+              ...categories.map((category) => ({ id: category, name: category })),
+            ]}
+            selected={filters.category}
+            onPick={(id) => setFilters((current) => ({ ...current, category: id }))}
+          />
+        </div>
+        <button type="button" className="worker-filter-done" onClick={onClose}>
+          Done
+        </button>
+      </section>
+    </div>
+  );
+}
+
+function FilterChipGroup({
+  label,
+  options,
+  selected,
+  onPick,
+}: {
+  label: string;
+  options: Array<{ id: string; name: string }>;
+  selected: string;
+  onPick(id: string): void;
+}) {
+  return (
+    <div className="worker-filter-group">
+      <span>{label}</span>
+      <div>
+        {options.map((option) => (
+          <button
+            type="button"
+            key={option.id}
+            className={selected === option.id ? 'worker-filter-chip worker-filter-chip--active' : 'worker-filter-chip'}
+            aria-pressed={selected === option.id}
+            onClick={() => onPick(option.id)}
+          >
+            {option.name}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

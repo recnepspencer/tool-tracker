@@ -9,11 +9,20 @@ import { CustodyTimeline } from './CustodyTimeline';
 import { ToolCustodyActions } from './ToolCustodyActions';
 import { ToolMetadata } from './ToolMetadata';
 import { useWorkerDetailActionController } from './use-worker-detail-action-controller';
+import type { DetailAction } from './detail-action-types';
 import '../../styles/tool-detail.css';
 import '../../styles/activity-indicator.css';
 
 /** Worker-only detail composition; admin/warehouse surfaces should use a read-only detail shell. */
-export function WorkerToolDetailSheet({ toolUnitId, onClose }: { toolUnitId: string | null; onClose(): void }) {
+export function WorkerToolDetailSheet({
+  toolUnitId,
+  initialAction = null,
+  onClose,
+}: {
+  toolUnitId: string | null;
+  initialAction?: DetailAction | null;
+  onClose(): void;
+}) {
   const detail = useToolDetail(toolUnitId);
   const { session } = useSession();
   const pending = usePendingHandoffs();
@@ -34,6 +43,7 @@ export function WorkerToolDetailSheet({ toolUnitId, onClose }: { toolUnitId: str
     targets,
     session,
     canStartHandoff,
+    initialAction,
   });
 
   if (!toolUnitId) return null;
@@ -41,9 +51,10 @@ export function WorkerToolDetailSheet({ toolUnitId, onClose }: { toolUnitId: str
     <OverlayDialog
       label="Tool details"
       onClose={onClose}
-      backdropClassName="sheet-backdrop"
-      panelClassName="detail-sheet"
+      backdropClassName="worker-sheet-backdrop"
+      panelClassName="worker-bottom-sheet worker-detail-sheet"
     >
+      <span className="worker-sheet-handle" />
       <div className="detail-sheet-header">
         <span className="eyebrow">Tool details</span>
         <button type="button" className="icon-button" aria-label="Close tool details" onClick={onClose}>
@@ -53,7 +64,7 @@ export function WorkerToolDetailSheet({ toolUnitId, onClose }: { toolUnitId: str
       {detail.isPending ? <LoadingState label="Loading tool details…" /> : null}
       {detail.isError ? <ErrorState message="This tool detail could not be loaded." /> : null}
       {!detail.isPending && !detail.isError && detail.data ? (
-        <div className="detail-sheet-content">
+        <div className="detail-sheet-content worker-detail-content">
           <div className="detail-hero">
             <ToolPhoto src={detail.data.tool.imageSrc} alt={`${detail.data.tool.name} product photo`} size="large" />
             <div>

@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { ErrorState, LoadingState } from '../../components/ui/AsyncState';
-import { PageHeading } from '../../components/layout/PageHeading';
 import { useSession } from '../../app/session-context';
 import { WorkerToolDetailSheet } from '../tool-detail/WorkerToolDetailSheet';
 import { ActivityFeed } from './ActivityFeed';
@@ -26,25 +25,17 @@ export function WorkerActivityPage() {
   if (activity.isError || !activity.data) return <ErrorState message="Worker activity could not be loaded." />;
 
   return (
-    <div className="page-content">
-      <PageHeading
-        eyebrow="Worker view · Activity"
-        title="Movement record"
-        description="Review custody, warehouse, and condition events from the same source that powers every tool detail."
-        status="Audit feed"
-      />
+    <div className="worker-screen worker-activity-screen">
+      <div className="worker-screen-heading worker-activity-heading">
+        <h1 aria-label="Movement record">Activity</h1>
+        <span className="worker-activity-unread">{filtered.length ? `${filtered.length} events` : 'Quiet'}</span>
+      </div>
       <ActivityFilters value={filter} onChange={setFilter} />
       {groups.length ? (
         <div className="activity-groups">
           {groups.map((group) => (
             <section className="activity-group" key={group.label}>
-              <div className="section-heading">
-                <div>
-                  <span className="eyebrow">Activity</span>
-                  <h2>{group.label}</h2>
-                </div>
-                <span className="section-count">{group.items.length} events</span>
-              </div>
+              <div className="worker-activity-day">{group.label}</div>
               <ActivityFeed events={group.items} onSelect={setSelectedToolId} />
             </section>
           ))}

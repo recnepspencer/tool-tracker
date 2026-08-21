@@ -16,20 +16,25 @@ describe('add-tool surface', () => {
     window.location.hash = '#/worker/tools';
   });
 
-  it('completes the simulated capture and details flow through ToolsApi', async () => {
+  async function openAddTool(user: ReturnType<typeof userEvent.setup>) {
+    await screen.findByRole('heading', { name: 'My tools' });
+    await user.click(screen.getByRole('button', { name: 'Open navigation' }));
+    await user.click(screen.getByRole('button', { name: /Add a tool Setup/ }));
+  }
+
+  it('completes the capture and details flow through ToolsApi', async () => {
     const user = userEvent.setup();
     const database = createMockDatabase({ clock: () => '2026-08-18T09:00:00-06:00' });
     renderApp(<AppRoutes />, { api: createMockApi(database), sessionStore: createMemorySessionStore('ray-torres') });
     expect(await screen.findByRole('heading', { name: 'My tools' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Add a tool' }));
+    await openAddTool(user);
     const dialog = await screen.findByRole('dialog', { name: 'Add a tool' });
     await user.click(within(dialog).getByRole('button', { name: 'Capture photo' }));
-    await user.click(within(dialog).getByRole('button', { name: 'Continue' }));
     await user.type(within(dialog).getByLabelText('Tool name'), 'Voltage probe');
     await chooseFieldOption(user, within(dialog).getByRole('combobox', { name: 'Category' }), 'Meters & testers');
     await user.click(within(dialog).getByRole('button', { name: 'Add to my tools' }));
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Add a tool' })).not.toBeInTheDocument());
-    expect(database.read().units.some((unit) => unit.photoKey === 'hammer-drill.png')).toBe(true);
+    expect(database.read().units.some((unit) => unit.photoKey === 'tool-photo-placeholder.svg')).toBe(true);
     expect(database.read().definitions.some((definition) => definition.name === 'Voltage probe')).toBe(true);
     expect(await screen.findByText('Voltage probe')).toBeInTheDocument();
   });
@@ -78,10 +83,9 @@ describe('add-tool surface', () => {
     await waitFor(() => expect(screen.getByTestId('projection-probe')).toHaveTextContent('ready'));
     const beforeCalls = { ...calls };
     const beforeProjection = { ...screen.getByTestId('projection-probe').dataset };
-    await user.click(screen.getByRole('button', { name: 'Add a tool' }));
+    await openAddTool(user);
     const dialog = await screen.findByRole('dialog', { name: 'Add a tool' });
     await user.click(within(dialog).getByRole('button', { name: 'Capture photo' }));
-    await user.click(within(dialog).getByRole('button', { name: 'Continue' }));
     await user.type(within(dialog).getByLabelText('Tool name'), 'Current clamp');
     await chooseFieldOption(user, within(dialog).getByRole('combobox', { name: 'Category' }), 'Meters & testers');
     await user.click(within(dialog).getByRole('button', { name: 'Add to my tools' }));
@@ -111,12 +115,12 @@ describe('add-tool surface', () => {
       },
     };
     renderApp(<AppRoutes />, { api: rejectingApi, sessionStore: createMemorySessionStore('ray-torres') });
-    await user.click(await screen.findByRole('button', { name: 'Add a tool' }));
+    await openAddTool(user);
     const dialog = await screen.findByRole('dialog', { name: 'Add a tool' });
     await user.click(within(dialog).getByRole('button', { name: 'Capture photo' }));
-    await user.click(within(dialog).getByRole('button', { name: 'Continue' }));
     await user.type(within(dialog).getByLabelText('Tool name'), 'Failed probe');
     await chooseFieldOption(user, within(dialog).getByRole('combobox', { name: 'Category' }), 'Meters & testers');
+    await user.click(within(dialog).getByRole('button', { name: 'Serial, price, notes' }));
     const note = within(dialog).getByPlaceholderText('Condition or context');
     await user.type(note, 'Keep this draft');
     await user.click(within(dialog).getByRole('button', { name: 'Add to my tools' }));

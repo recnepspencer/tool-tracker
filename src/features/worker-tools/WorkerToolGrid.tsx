@@ -1,19 +1,26 @@
 import type { ToolView } from '../../domain/read-models/tools';
 import { ToolCard } from './ToolCard';
 
-export function WorkerToolGrid({ tools, onSelect }: { tools: ToolView[]; onSelect(toolUnitId: string): void }) {
+export function WorkerToolGrid({
+  tools,
+  onSelect,
+  onTransfer,
+}: {
+  tools: ToolView[];
+  onSelect(toolUnitId: string): void;
+  onTransfer(toolUnitId: string): void;
+}) {
   return (
-    <section className="section-block">
-      <div className="section-heading">
+    <section className="worker-possession-section">
+      <div className="worker-section-heading">
         <div>
-          <span className="eyebrow">Current custody</span>
-          <h2>Held by you</h2>
+          <span className="worker-eyebrow">In my possession</span>
         </div>
-        <span className="section-count">{tools.length} tools</span>
+        <span className="worker-section-count">{tools.length}</span>
       </div>
-      <div className="tool-grid">
+      <div className="worker-tool-list">
         {tools.map((tool) => (
-          <ToolCard key={tool.id} tool={tool} onSelect={onSelect} />
+          <ToolCard key={tool.id} tool={tool} onSelect={onSelect} onTransfer={onTransfer} />
         ))}
       </div>
     </section>

@@ -39,7 +39,7 @@ export function useAddToolController({ session, captured, draft, onClose }: AddT
           brand: draft.brand || 'Unbranded',
           model: draft.model || 'Field record',
           categoryId: draft.categoryId,
-          imageKey: 'hammer-drill.png',
+          imageKey: 'tool-photo-placeholder.svg',
         },
         warehouseId: draft.warehouseId,
         photoCaptured: true,

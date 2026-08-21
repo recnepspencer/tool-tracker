@@ -118,6 +118,7 @@ describe('custody command invalidation surfaces', () => {
     const beforeCalls = { ...calls, pendingByProfile: { ...calls.pendingByProfile } };
     const beforeProjection = { ...screen.getByTestId('projection-probe').dataset };
     expect(within(card).getByText('Jordan Lee → Ray Torres')).toBeInTheDocument();
+    await user.click(within(card).getByRole('button', { name: 'Review' }));
     await user.click(within(card).getByRole('button', { name: 'Accept — take custody' }));
     await waitFor(() =>
       expect(database.read().custody.find((record) => record.toolUnitId === 'TL-101')?.holder).toEqual({

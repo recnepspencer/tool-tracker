@@ -124,7 +124,7 @@ describe('adapter-backed route boundaries', () => {
     const pendingLoginApi = { ...baseApi, auth: { ...baseApi.auth, listDemoProfiles: () => profilesPromise } };
     window.location.hash = '#/login';
     renderApp(<AppRoutes />, { api: pendingLoginApi });
-    expect(await screen.findByText('Loading demo profiles…')).toBeInTheDocument();
+    expect(await screen.findByText('Loading profiles…')).toBeInTheDocument();
     resolveProfiles(await baseApi.auth.listDemoProfiles());
     expect(await screen.findByRole('button', { name: 'Enter as Ray' })).toBeInTheDocument();
 
