@@ -23,6 +23,8 @@
   --amber: #e0894f;
   --amber-bg: rgba(224, 137, 79, 0.14);
   --red: #e08084;
+  --danger: var(--red);
+  --btn2: var(--card-2);
   --border: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.16);
   --shadow: rgba(0, 0, 0, 0.42);
@@ -143,6 +145,7 @@
   --space-132: 132px;
   --space-140: 140px;
   --space-168: 168px;
+  --space-172: 172px;
   --space-200: 200px;
   --space-260: 260px;
   --space-300: 300px;
@@ -179,15 +182,18 @@
   --space-236: 236px;
   --space-240: 240px;
   --space-280: 280px;
+  --space-292: 292px;
   --space-320: 320px;
   --space-360: 360px;
   --space-420: 420px;
   --space-500: 500px;
+  --space-520: 520px;
   --space-540: 540px;
   --space-560: 560px;
   --space-610: 610px;
   --space-620: 620px;
   --space-680: 680px;
+  --space-844: 844px;
   --space-720: 720px;
   --space-760: 760px;
   --space-1320: 1320px;
@@ -272,6 +278,9 @@
 
   --duration-none: 0.01ms;
   --duration-fast: 180ms;
+  --duration-180: 180ms;
+  --duration-240: 240ms;
+  --duration-260: 260ms;
   --duration-120: 120ms;
   --duration-220: 220ms;
   --duration-med: 200ms;
@@ -296,6 +305,7 @@
   --z-account: 35;
   --z-overlay: 40;
   --z-popover: 60;
+  --z-60: 60;
   --z-1: 1;
   --z-2: 2;
   --z-4: 4;

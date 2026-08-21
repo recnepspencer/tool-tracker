@@ -9,6 +9,8 @@ const RGB = /\brgba?\(/i;
 const PX_OR_MS = /\d+(?:\.\d+)?(?:px|ms)\b/;
 const Z_INDEX = /z-index:\s*-?\d+/;
 const OPACITY = /opacity:\s*(?!0(?:\s|;|!|\}|$))[\d.]+/;
+const CSS_VARIABLE = /var\(--([a-z0-9-]+)\b/g;
+const CSS_VARIABLE_DEFINITION = /--([a-z0-9-]+)\s*:/g;
 
 function stripCssNoise(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/@media[^{]+/g, '@media ');
@@ -41,6 +43,19 @@ function findNativeFormViolations(sources: Record<string, string>): string[] {
     });
 }
 
+function findUndefinedCssVariables(sources: Record<string, string>): string[] {
+  const definitions = new Set(
+    Object.values(sources).flatMap((source) => [...source.matchAll(CSS_VARIABLE_DEFINITION)].map((match) => match[1])),
+  );
+  return [
+    ...new Set(
+      Object.values(sources)
+        .flatMap((source) => [...source.matchAll(CSS_VARIABLE)].map((match) => match[1]))
+        .filter((variable) => !definitions.has(variable)),
+    ),
+  ].sort();
+}
+
 describe('presentation token and field-primitive boundaries', () => {
   it('keeps native form controls inside the shared field primitives', () => {
     const sources = import.meta.glob('../**/*.tsx', {
@@ -58,6 +73,15 @@ describe('presentation token and field-primitive boundaries', () => {
       import: 'default',
     }) as Record<string, string>;
     expect(findCssLiteralViolations(sources)).toEqual([]);
+  });
+
+  it('keeps every production CSS variable backed by a definition', () => {
+    const sources = import.meta.glob('../**/*.css', {
+      eager: true,
+      query: '?raw',
+      import: 'default',
+    }) as Record<string, string>;
+    expect(findUndefinedCssVariables(sources)).toEqual([]);
   });
 
   it('flags synthetic native form tags outside the field primitives', () => {
