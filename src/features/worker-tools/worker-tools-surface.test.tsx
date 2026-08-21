@@ -18,6 +18,12 @@ describe('worker tools surfaces', () => {
     expect(await screen.findByRole('heading', { name: 'My tools' })).toBeInTheDocument();
     expect(screen.getByText('Bandsaw')).toBeInTheDocument();
     expect(screen.getByText('North Yard → Ray Torres')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Transfer Hammer drill unit TL-101' }).closest('article')).toHaveClass(
+      'worker-tool-row--checked-out',
+    );
+    expect(
+      screen.getByRole('button', { name: 'Transfer Fish tape, 240 ft unit TL-104' }).closest('article'),
+    ).toHaveClass('worker-tool-row--damaged');
   });
 
   it('excludes another worker’s custody from the authenticated Ray surface', async () => {

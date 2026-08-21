@@ -11,7 +11,7 @@ export function ToolCard({
   onTransfer(toolUnitId: string): void;
 }) {
   return (
-    <article className="worker-tool-row">
+    <article className={`worker-tool-row worker-tool-row--${tool.status}`}>
       <button
         type="button"
         className="worker-tool-main"
