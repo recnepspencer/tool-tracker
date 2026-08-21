@@ -26,7 +26,7 @@ export function WorkerToolsPage() {
     <div className="worker-screen">
       <div className="worker-screen-heading">
         <div>
-          <span className="worker-eyebrow">{session.name}</span>
+          <div className="worker-eyebrow">{session.name}</div>
           <h1>My tools</h1>
         </div>
       </div>

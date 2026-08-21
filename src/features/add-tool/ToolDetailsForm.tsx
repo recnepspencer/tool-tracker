@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SelectField } from '../../components/ui/SelectField';
 import { TextAreaField, TextField } from '../../components/ui/TextField';
 import type { ToolCategoryView } from '../../domain/read-models/settings';
 import type { ToolDraft } from './add-tool-types';
@@ -18,8 +19,6 @@ interface ToolDetailsFormProps {
   onSave(): void;
 }
 
-type Picker = 'category' | 'warehouse' | null;
-
 export function ToolDetailsForm({
   draft,
   error,
@@ -35,12 +34,6 @@ export function ToolDetailsForm({
   onSave,
 }: ToolDetailsFormProps) {
   const [optionalOpen, setOptionalOpen] = useState(false);
-  const [picker, setPicker] = useState<Picker>(null);
-  const categoryLabel = categories.find((category) => category.id === draft.categoryId)?.name ?? 'Choose a category';
-  const warehouseLabel =
-    warehouses.find((warehouse) => warehouse.id === draft.warehouseId)?.name ?? 'Choose a warehouse';
-  const options =
-    picker === 'category' ? categories.map((category) => ({ id: category.id, name: category.name })) : warehouses;
 
   return (
     <div className="worker-add-step worker-add-details-step" aria-hidden={!active}>
@@ -92,17 +85,29 @@ export function ToolDetailsForm({
           />
         </div>
 
-        <PickerField
+        <SelectField
+          className="worker-select-field"
           label="Category"
-          value={categoryLabel}
-          empty={!draft.categoryId}
-          onClick={() => setPicker('category')}
+          hint="required"
+          value={draft.categoryId}
+          onChange={(value) => onUpdate('categoryId', value)}
+          options={categories.map((category) => ({ value: category.id, label: category.name }))}
+          placeholder="Select a category"
+          required
+          searchable={false}
+          presentation="sheet"
         />
-        <PickerField
+        <SelectField
+          className="worker-select-field"
           label="Home warehouse"
-          value={warehouseLabel}
-          empty={!draft.warehouseId}
-          onClick={() => setPicker('warehouse')}
+          hint="required"
+          value={draft.warehouseId}
+          onChange={(value) => onUpdate('warehouseId', value)}
+          options={warehouses.map((warehouse) => ({ value: warehouse.id, label: warehouse.name }))}
+          placeholder="Select a warehouse"
+          required
+          searchable={false}
+          presentation="sheet"
         />
 
         <button
@@ -155,39 +160,6 @@ export function ToolDetailsForm({
         </button>
         <p>You become the holder of record</p>
       </div>
-
-      {picker ? (
-        <div className="worker-picker-layer" role="presentation">
-          <button
-            type="button"
-            className="worker-scrim worker-scrim--strong"
-            aria-label="Close picker"
-            onClick={() => setPicker(null)}
-          />
-          <section className="worker-picker-sheet" role="dialog" aria-modal="true" aria-label={`Choose ${picker}`}>
-            <span className="worker-sheet-handle" />
-            <h2>{picker === 'category' ? 'Category' : 'Home warehouse'}</h2>
-            <div className="worker-picker-options" role="listbox">
-              {options.map((option) => (
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={option.id === (picker === 'category' ? draft.categoryId : draft.warehouseId)}
-                  className="worker-picker-option"
-                  key={option.id}
-                  onClick={() => {
-                    onUpdate(picker === 'category' ? 'categoryId' : 'warehouseId', option.id);
-                    setPicker(null);
-                  }}
-                >
-                  <span>{option.name}</span>
-                  <span className="worker-picker-radio" />
-                </button>
-              ))}
-            </div>
-          </section>
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -213,35 +185,6 @@ function FormCard({
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-    />
-  );
-}
-
-function PickerField({
-  label,
-  value,
-  empty,
-  onClick,
-}: {
-  label: string;
-  value: string;
-  empty: boolean;
-  onClick(): void;
-}) {
-  return (
-    <TextField
-      className={`worker-picker-form-field${empty ? ' worker-picker-form-field--empty' : ''}`}
-      label={label}
-      hint="required"
-      value={value}
-      onChange={() => undefined}
-      readOnly
-      role="combobox"
-      aria-label={label}
-      onClick={onClick}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') onClick();
-      }}
     />
   );
 }

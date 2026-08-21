@@ -10,8 +10,8 @@ export function SidebarNav({ role }: { role: Role }) {
       <div className="side-nav-heading">{isWorker ? 'Field view' : 'Control room'}</div>
       <NavItems role={role} />
       <div className="side-nav-footer">
-        <span className="eyebrow">Demo environment</span>
-        <span>Local data · no API calls</span>
+        <span className="eyebrow">Nelson Electric</span>
+        <span>Tools · custody · activity</span>
       </div>
     </aside>
   );

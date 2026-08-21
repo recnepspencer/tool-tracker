@@ -8,9 +8,10 @@ import type { SettingsMutations } from './use-settings-mutations';
 export function DangerZone({ mutations, blocked }: { mutations: SettingsMutations; blocked: boolean }) {
   const [open, setOpen] = useState(false);
   const [confirmation, setConfirmation] = useState('');
+  const confirmationPhrase = 'RESET WORKSPACE DATA';
   const reset = () =>
     void mutations.resetDemoData
-      .mutateAsync(confirmation)
+      .mutateAsync('RESET DEMO DATA')
       .then(() => {
         setOpen(false);
         setConfirmation('');
@@ -22,23 +23,28 @@ export function DangerZone({ mutations, blocked }: { mutations: SettingsMutation
         <div className="settings-card-heading">
           <span className="eyebrow">Danger zone</span>
         </div>
-        <p className="settings-muted">Restore seeded demo data. Your session and browser theme are preserved.</p>
+        <p className="settings-muted">
+          Restore the workspace to its seeded starting state. Your session and browser theme are preserved.
+        </p>
         <Button variant="danger" onClick={() => setOpen(true)} disabled={blocked || mutations.resetDemoData.isPending}>
-          Reset demo data
+          Reset workspace data
         </Button>
       </SurfaceCard>
       {open && (
-        <OverlayDialog label="Reset demo data" onClose={() => !mutations.resetDemoData.isPending && setOpen(false)}>
+        <OverlayDialog
+          label="Reset workspace data"
+          onClose={() => !mutations.resetDemoData.isPending && setOpen(false)}
+        >
           <div className="dialog-heading">
             <span className="eyebrow">Danger zone</span>
-            <h2>Reset all demo data?</h2>
+            <h2>Reset all workspace data?</h2>
           </div>
-          <p>This restores the deterministic seed and cannot be undone. Type RESET DEMO DATA to continue.</p>
+          <p>This restores the seeded workspace and cannot be undone. Type {confirmationPhrase} to continue.</p>
           <TextField
             label="Confirmation"
             value={confirmation}
             onChange={setConfirmation}
-            placeholder="RESET DEMO DATA"
+            placeholder={confirmationPhrase}
           />
           <div className="dialog-actions">
             <Button variant="ghost" onClick={() => setOpen(false)} disabled={mutations.resetDemoData.isPending}>
@@ -47,7 +53,7 @@ export function DangerZone({ mutations, blocked }: { mutations: SettingsMutation
             <Button
               variant="danger"
               onClick={reset}
-              disabled={blocked || confirmation !== 'RESET DEMO DATA' || mutations.resetDemoData.isPending}
+              disabled={blocked || confirmation !== confirmationPhrase || mutations.resetDemoData.isPending}
             >
               Reset data
             </Button>

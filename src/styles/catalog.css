@@ -422,7 +422,7 @@
 }
 .worker-filter-layer {
   inset: 0;
-  position: absolute;
+  position: fixed;
   z-index: var(--z-79);
 }
 .worker-filter-sheet {
@@ -435,7 +435,7 @@
   max-height: var(--space-690);
   overflow-y: auto;
   padding-bottom: var(--space-36);
-  position: absolute;
+  position: fixed;
   right: 0;
 }
 .worker-filter-heading {

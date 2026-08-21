@@ -21,12 +21,12 @@ export function SignupPage() {
 
   return (
     <AuthExperienceLayout
-      eyebrow="Optional walkthrough"
+      eyebrow="Create a workspace"
       title="Start a company space"
-      description="Preview the first step for a new team. This demo never creates an account or sends an email."
+      description="Set up a new company workspace with your name and work email."
       footer={
         <p className="auth-experience-links">
-          Already have a demo profile? <Link to="/login">Return to sign in</Link>
+          Already have an account? <Link to="/login">Return to sign in</Link>
         </p>
       }
     >

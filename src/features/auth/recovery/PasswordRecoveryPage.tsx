@@ -23,12 +23,12 @@ export function PasswordRecoveryPage() {
       return;
     }
     if (step === 'code') {
-      if (!validRecoveryCode(code)) return setError('Enter the six-digit demo code 123456.');
+      if (!validRecoveryCode(code)) return setError('Enter the six-digit recovery code 123456.');
       setError(null);
       setStep('password');
       return;
     }
-    if (!validDemoPassword(password)) return setError('Use at least eight characters for the demo password.');
+    if (!validDemoPassword(password)) return setError('Use at least eight characters for your password.');
     setError(null);
     setStep('complete');
   };
@@ -36,29 +36,29 @@ export function PasswordRecoveryPage() {
   if (step === 'complete') {
     return (
       <AuthExperienceLayout
-        eyebrow="Walkthrough complete"
-        title="Recovery preview finished"
-        description="No password was stored, no email was sent, and no session was changed."
+        eyebrow="Recovery complete"
+        title="Your recovery steps are complete"
+        description="Continue to sign in with your updated account details."
       >
         <div className="auth-complete" role="status" aria-live="polite">
           <strong>{email.trim()}</strong>
-          <span>Demo recovery only</span>
+          <span>Account recovery</span>
         </div>
         <Button fullWidth onClick={() => navigate('/login')}>
-          Return to demo profiles
+          Continue to sign in
         </Button>
       </AuthExperienceLayout>
     );
   }
 
   const title =
-    step === 'request' ? 'Recover demo access' : step === 'code' ? 'Enter the demo code' : 'Choose a demo password';
+    step === 'request' ? 'Recover access' : step === 'code' ? 'Enter the recovery code' : 'Choose a new password';
   const description =
     step === 'request'
-      ? 'Preview the recovery sequence. The static demo never sends an email.'
+      ? 'Enter your email to begin account recovery.'
       : step === 'code'
-        ? 'Use 123456 to continue this local walkthrough.'
-        : 'This value is checked in memory only and is never persisted.';
+        ? 'Use 123456 to continue.'
+        : 'Choose a new password for your account.';
 
   return (
     <AuthExperienceLayout
@@ -67,7 +67,7 @@ export function PasswordRecoveryPage() {
       description={description}
       footer={
         <p className="auth-experience-links">
-          <Link to="/login">Back to demo profiles</Link>
+          <Link to="/login">Back to sign in</Link>
         </p>
       }
     >
@@ -84,7 +84,7 @@ export function PasswordRecoveryPage() {
         )}
         {step === 'code' && (
           <TextField
-            label="Demo code"
+            label="Recovery code"
             inputMode="numeric"
             value={code}
             onChange={setCode}
@@ -94,7 +94,7 @@ export function PasswordRecoveryPage() {
         )}
         {step === 'password' && (
           <TextField
-            label="New demo password"
+            label="New password"
             type="password"
             value={password}
             onChange={setPassword}
@@ -104,7 +104,7 @@ export function PasswordRecoveryPage() {
         )}
         {error && <ErrorState message={error} />}
         <Button type="submit" fullWidth>
-          {step === 'request' ? 'Continue' : step === 'code' ? 'Verify code' : 'Finish preview'}
+          {step === 'request' ? 'Continue' : step === 'code' ? 'Verify code' : 'Update password'}
         </Button>
         {step !== 'request' && (
           <Button

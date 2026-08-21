@@ -18,7 +18,7 @@ export const createMockAuthApi = (database: MockDatabase): AuthApi => ({
     const user = state.demoProfileIds.includes(profileId)
       ? state.users.find((candidate) => candidate.id === profileId)
       : undefined;
-    if (!user || !canAuthenticate(user)) throw new Error('That demo profile is not available.');
+    if (!user || !canAuthenticate(user)) throw new Error('That profile is not available.');
     const warehouse = state.warehouses.find((candidate) => candidate.id === user.homeWarehouseId);
     return toSession(user, warehouse?.name ?? 'Unassigned');
   },

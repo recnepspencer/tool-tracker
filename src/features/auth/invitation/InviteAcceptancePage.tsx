@@ -14,13 +14,13 @@ export function InviteAcceptancePage() {
   if (!invitation) {
     return (
       <AuthExperienceLayout
-        eyebrow="Invitation preview"
+        eyebrow="Invitation"
         title="That invitation is unavailable"
-        description="This static demo only includes one sample invitation and never validates real tokens."
+        description="This invitation link is no longer available."
       >
         <EmptyState
-          label="No demo invitation matches this link."
-          actionLabel="Back to demo profiles"
+          label="No invitation matches this link."
+          actionLabel="Back to sign in"
           onAction={() => navigate('/login')}
         />
       </AuthExperienceLayout>
@@ -30,9 +30,9 @@ export function InviteAcceptancePage() {
   if (accepted) {
     return (
       <AuthExperienceLayout
-        eyebrow="Walkthrough complete"
-        title="Invitation preview accepted"
-        description="No member was activated and no invite token was stored. The real product would continue through its account setup flow here."
+        eyebrow="Invitation accepted"
+        title="Your invitation is ready"
+        description="Continue to sign in and finish setting up your workspace access."
       >
         <div className="auth-complete" role="status" aria-live="polite">
           <strong>{invitation.name}</strong>
@@ -41,7 +41,7 @@ export function InviteAcceptancePage() {
           </span>
         </div>
         <Button fullWidth onClick={() => navigate('/login')}>
-          Return to demo profiles
+          Continue to sign in
         </Button>
       </AuthExperienceLayout>
     );
@@ -49,12 +49,12 @@ export function InviteAcceptancePage() {
 
   return (
     <AuthExperienceLayout
-      eyebrow="Invitation preview"
-      title="Join the demo workspace"
-      description="Review a sample invite without creating a person record or changing the shared demo database."
+      eyebrow="Invitation"
+      title="Join the workspace"
+      description="Review your invitation and continue setting up workspace access."
       footer={
         <p className="auth-experience-links">
-          <Link to="/login">Back to demo profiles</Link>
+          <Link to="/login">Back to sign in</Link>
         </p>
       }
     >
@@ -66,7 +66,7 @@ export function InviteAcceptancePage() {
         </span>
       </div>
       <Button fullWidth onClick={() => setAccepted(true)}>
-        Preview acceptance
+        Accept invitation
       </Button>
     </AuthExperienceLayout>
   );

@@ -48,7 +48,7 @@ export function SettingsPage() {
       <PageHeading
         eyebrow="Admin view · Settings"
         title="Settings"
-        description="Manage the company profile, tool taxonomy, appearance, and demo lifecycle."
+        description="Manage the company profile, tool taxonomy, appearance, and workspace lifecycle."
         status="Local system"
       />
       {mutationError && (

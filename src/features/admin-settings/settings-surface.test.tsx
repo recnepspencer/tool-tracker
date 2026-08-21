@@ -130,16 +130,16 @@ describe('settings surface', () => {
     });
     renderApp(<AppRoutes />, { api, sessionStore, themeStore });
     expect(await screen.findByRole('heading', { name: 'Settings' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Reset demo data' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Reset demo data' });
+    await user.click(screen.getByRole('button', { name: 'Reset workspace data' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Reset workspace data' });
     const reset = within(dialog).getByRole('button', { name: 'Reset data' });
     expect(reset).toBeDisabled();
-    await user.type(within(dialog).getByRole('textbox', { name: 'Confirmation' }), 'RESET DEMO DATA');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Confirmation' }), 'RESET WORKSPACE DATA');
     await user.click(reset);
     await waitFor(() => expect(database.read().company.name).toBe('Nelson Electric'));
     expect(sessionStore.value).toBe('sam-ochoa');
     expect(themeStore.value).toBe('light');
-    expect(screen.queryByRole('dialog', { name: 'Reset demo data' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Reset workspace data' })).not.toBeInTheDocument();
   });
 
   it('blocks company commands while the authoritative settings query refetches, pauses, or errors', async () => {
@@ -246,7 +246,7 @@ describe('settings surface', () => {
       { api, sessionStore: createMemorySessionStore('sam-ochoa') },
     );
     expect(await screen.findByRole('heading', { name: 'Settings' })).toBeInTheDocument();
-    const reset = screen.getByRole('button', { name: 'Reset demo data' });
+    const reset = screen.getByRole('button', { name: 'Reset workspace data' });
     await waitFor(() => expect(reset).toBeEnabled());
 
     holdNextCompany = true;

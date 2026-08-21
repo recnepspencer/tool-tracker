@@ -35,7 +35,7 @@ export function AuthExperienceLayout({
         <div className="auth-experience-content">{children}</div>
         {footer ?? (
           <p className="auth-experience-links">
-            <Link to="/login">Back to demo profiles</Link>
+            <Link to="/login">Back to sign in</Link>
           </p>
         )}
       </section>

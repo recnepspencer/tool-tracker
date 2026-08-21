@@ -8,6 +8,44 @@
   color: var(--dim);
   font: 400 var(--space-10)/1 var(--font-mono);
 }
+
+.worker-screen {
+  padding-inline: var(--worker-pad-x);
+}
+
+.worker-screen-heading {
+  align-items: flex-end;
+  display: flex;
+  gap: var(--space-16);
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-6) var(--space-18);
+}
+
+.worker-screen-heading h1 {
+  font: var(--weight-medium) var(--text-6xl) / var(--leading-none) var(--font-sans);
+  letter-spacing: var(--tracking-heading);
+  margin: 0;
+}
+
+.worker-screen-heading p {
+  color: var(--muted);
+  font-size: var(--text-md);
+  margin: var(--space-8) 0 0;
+}
+
+.worker-eyebrow,
+.worker-form-label {
+  color: var(--dim);
+  font: var(--font-eyebrow);
+  letter-spacing: var(--tracking-nav);
+  text-transform: uppercase;
+}
+
+.worker-screen-heading > div:first-child {
+  display: grid;
+  gap: var(--space-6);
+}
+
 .worker-pending-section {
   display: grid;
   gap: var(--space-8);

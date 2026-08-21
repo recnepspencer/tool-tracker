@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it } from 'vitest';
@@ -24,6 +24,24 @@ function SelectHarness() {
         { value: 'ray-torres', label: 'Ray Torres', description: 'Worker' },
         { value: 'sam-ochoa', label: 'Sam Ochoa', description: 'Administrator' },
       ]}
+    />
+  );
+}
+
+function SheetSelectHarness() {
+  const [value, setValue] = useState('');
+  return (
+    <SelectField
+      label="Category"
+      value={value}
+      onChange={setValue}
+      placeholder="Select a category"
+      options={[
+        { value: 'meters', label: 'Meters & testers' },
+        { value: 'hand-tools', label: 'Hand tools' },
+      ]}
+      searchable={false}
+      presentation="sheet"
     />
   );
 }
@@ -79,6 +97,25 @@ describe('shared field primitives', () => {
     await user.click(combobox);
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
+
+  it('uses a sheet trigger without rendering a raw input', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<SheetSelectHarness />);
+    const combobox = screen.getByRole('combobox', { name: 'Category' });
+    expect(combobox.tagName).toBe('BUTTON');
+    expect(container.querySelector('input')).not.toBeInTheDocument();
+
+    await user.click(combobox);
+    expect(screen.getByRole('dialog', { name: 'Choose Category' })).toBeInTheDocument();
+    const listbox = screen.getByRole('listbox', { name: 'Category' });
+    await user.click(within(listbox).getByRole('option', { name: 'Meters & testers' }));
+    expect(combobox).toHaveTextContent('Meters & testers');
+    expect(screen.queryByRole('dialog', { name: 'Choose Category' })).not.toBeInTheDocument();
+
+    await user.click(combobox);
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog', { name: 'Choose Category' })).not.toBeInTheDocument();
   });
 
   it('toggles a labeled switch and ignores locked controls', async () => {

@@ -7,7 +7,7 @@ import { useListboxOverlay } from './use-listbox-overlay';
 
 export type { SelectOption };
 
-interface SelectFieldProps {
+export interface SelectFieldProps {
   label: string;
   hint?: string;
   hideLabel?: boolean;
@@ -21,6 +21,8 @@ interface SelectFieldProps {
   name?: string;
   emptyMessage?: string;
   className?: string;
+  searchable?: boolean;
+  presentation?: 'popover' | 'sheet';
 }
 
 export function SelectField({
@@ -37,20 +39,29 @@ export function SelectField({
   name,
   emptyMessage = 'No matches',
   className,
+  searchable = true,
+  presentation = 'popover',
 }: SelectFieldProps) {
   const generatedId = useId();
   const listboxId = `${generatedId}-listbox`;
   const fieldRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const sheetRef = useRef<HTMLElement>(null);
+  const triggerRef = useRef<HTMLInputElement | HTMLButtonElement | null>(null);
+  const optionRefs = useRef(new Map<string, HTMLButtonElement>());
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
-  const selected = selectedSelectOption(options, value);
-  const filtered = useMemo(() => filterSelectOptions(options, open ? query : ''), [open, options, query]);
   const [activeIndex, setActiveIndex] = useState(0);
-  const overlayStyle = useListboxOverlay(open, fieldRef, listRef);
+  const selected = selectedSelectOption(options, value);
+  const isSheet = presentation === 'sheet';
+  const isSearchable = searchable && !isSheet;
+  const filtered = useMemo(
+    () => filterSelectOptions(options, isSearchable && open ? query : ''),
+    [isSearchable, open, options, query],
+  );
   const active = filtered[activeIndex];
+  const overlayStyle = useListboxOverlay(!isSheet && open, fieldRef, listRef);
 
   useEffect(() => {
     if (!open) return;
@@ -59,19 +70,32 @@ export function SelectField({
   }, [filtered, open, value]);
 
   useEffect(() => {
+    if (!open || !isSheet) return;
+    const activeOption = filtered[activeIndex];
+    if (!activeOption) return;
+    const frame = window.requestAnimationFrame(() => optionRefs.current.get(activeOption.value)?.focus());
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeIndex, filtered, isSheet, open]);
+
+  useEffect(() => {
     if (!open) return;
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Node;
-      if (fieldRef.current?.contains(target) || listRef.current?.contains(target)) return;
-      setOpen(false);
-      setQuery('');
+      if (
+        fieldRef.current?.contains(target) ||
+        listRef.current?.contains(target) ||
+        sheetRef.current?.contains(target)
+      ) {
+        return;
+      }
+      const restoreFocus = isSheet && target instanceof Element && target.classList.contains('field-sheet-scrim');
+      close(restoreFocus);
     };
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      setOpen(false);
-      setQuery('');
+      close(true);
     };
     document.addEventListener('pointerdown', onPointerDown);
     window.addEventListener('keydown', onKeyDown, true);
@@ -79,13 +103,24 @@ export function SelectField({
       document.removeEventListener('pointerdown', onPointerDown);
       window.removeEventListener('keydown', onKeyDown, true);
     };
-  }, [open]);
+  }, [isSheet, open]);
+
+  const close = (restoreFocus = false) => {
+    setOpen(false);
+    setQuery('');
+    if (restoreFocus) triggerRef.current?.focus();
+  };
 
   const choose = (option: SelectOption) => {
     onChange(option.value);
-    setOpen(false);
-    setQuery('');
-    inputRef.current?.focus();
+    close(true);
+  };
+
+  const moveActive = (delta: number) => {
+    setActiveIndex((current) => {
+      if (!filtered.length) return 0;
+      return (current + delta + filtered.length) % filtered.length;
+    });
   };
 
   const onInputKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
@@ -95,17 +130,62 @@ export function SelectField({
         setOpen(true);
         return;
       }
-      const delta = event.key === 'ArrowDown' ? 1 : -1;
-      setActiveIndex((current) => {
-        if (!filtered.length) return 0;
-        return (current + delta + filtered.length) % filtered.length;
-      });
+      moveActive(event.key === 'ArrowDown' ? 1 : -1);
       return;
     }
     if (event.key === 'Enter' && open) {
       event.preventDefault();
       if (active) choose(active);
     }
+  };
+
+  const onButtonKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (!open) {
+        setOpen(true);
+        return;
+      }
+      moveActive(event.key === 'ArrowDown' ? 1 : -1);
+      return;
+    }
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      if (!open) {
+        setOpen(true);
+      } else if (active) {
+        choose(active);
+      }
+    }
+  };
+
+  const onSheetOptionKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>, index: number) => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      const delta = event.key === 'ArrowDown' ? 1 : -1;
+      const nextIndex = filtered.length ? (index + delta + filtered.length) % filtered.length : 0;
+      setActiveIndex(nextIndex);
+      const next = filtered[nextIndex];
+      if (next) optionRefs.current.get(next.value)?.focus();
+      return;
+    }
+    if (event.key === 'Home' || event.key === 'End') {
+      event.preventDefault();
+      const nextIndex = event.key === 'Home' ? 0 : Math.max(filtered.length - 1, 0);
+      setActiveIndex(nextIndex);
+      const next = filtered[nextIndex];
+      if (next) optionRefs.current.get(next.value)?.focus();
+      return;
+    }
+    if ((event.key === 'Enter' || event.key === ' ') && filtered[index]) {
+      event.preventDefault();
+      choose(filtered[index]);
+    }
+  };
+
+  const setOptionRef = (valueToStore: string, element: HTMLButtonElement | null) => {
+    if (element) optionRefs.current.set(valueToStore, element);
+    else optionRefs.current.delete(valueToStore);
   };
 
   return (
@@ -120,38 +200,73 @@ export function SelectField({
         compact={compact}
         className={className}
       >
-        <div className="field-control-row">
-          <input
-            ref={inputRef}
+        {isSearchable ? (
+          <div className="field-control-row">
+            <input
+              ref={(element) => {
+                triggerRef.current = element;
+              }}
+              id={generatedId}
+              className="field-control"
+              role="combobox"
+              name={name}
+              disabled={disabled}
+              required={required && !value}
+              autoComplete="off"
+              spellCheck={false}
+              aria-autocomplete="list"
+              aria-expanded={open}
+              aria-controls={listboxId}
+              aria-activedescendant={open && active ? optionDomId(listboxId, active.value) : undefined}
+              placeholder={placeholder}
+              value={open ? query : (selected?.label ?? '')}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setOpen(true);
+              }}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              onClick={() => !disabled && setOpen(true)}
+              onKeyDown={onInputKeyDown}
+            />
+            <span className="field-chevron" aria-hidden="true">
+              ▾
+            </span>
+          </div>
+        ) : (
+          <button
+            ref={(element) => {
+              triggerRef.current = element;
+            }}
             id={generatedId}
-            className="field-control"
+            type="button"
+            className="field-select-trigger"
             role="combobox"
             name={name}
             disabled={disabled}
-            required={required && !value}
-            autoComplete="off"
-            spellCheck={false}
-            aria-autocomplete="list"
+            aria-label={label}
+            aria-required={required || undefined}
+            aria-haspopup="listbox"
             aria-expanded={open}
             aria-controls={listboxId}
             aria-activedescendant={open && active ? optionDomId(listboxId, active.value) : undefined}
-            placeholder={placeholder}
-            value={open ? query : (selected?.label ?? '')}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setOpen(true);
-            }}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
-            onClick={() => !disabled && setOpen(true)}
-            onKeyDown={onInputKeyDown}
-          />
-          <span className="field-chevron" aria-hidden="true">
-            ▾
-          </span>
-        </div>
+            onClick={() => !disabled && setOpen((current) => !current)}
+            onKeyDown={onButtonKeyDown}
+          >
+            <span
+              className={cx('field-select-trigger__value', !selected && 'field-select-trigger__value--placeholder')}
+            >
+              {selected?.label ?? placeholder}
+            </span>
+            <span className="field-chevron" aria-hidden="true">
+              ▾
+            </span>
+          </button>
+        )}
       </Field>
-      {open
+      {open && !isSheet
         ? createPortal(
             <ul
               ref={listRef}
@@ -185,6 +300,58 @@ export function SelectField({
                 <li className="field-empty">{emptyMessage}</li>
               )}
             </ul>,
+            document.body,
+          )
+        : null}
+      {open && isSheet
+        ? createPortal(
+            <div className="field-sheet-layer" role="presentation">
+              <button
+                type="button"
+                className="field-sheet-scrim"
+                aria-label={`Close ${label} options`}
+                onClick={() => close(true)}
+              />
+              <section
+                ref={sheetRef}
+                className="field-sheet"
+                role="dialog"
+                aria-modal="true"
+                aria-label={`Choose ${label}`}
+              >
+                <span className="field-sheet-handle" aria-hidden="true" />
+                <h2>{label}</h2>
+                <div id={listboxId} className="field-sheet-options" role="listbox" aria-label={label}>
+                  {filtered.length ? (
+                    filtered.map((option, index) => (
+                      <button
+                        ref={(element) => setOptionRef(option.value, element)}
+                        type="button"
+                        role="option"
+                        aria-selected={option.value === value}
+                        className={cx(
+                          'field-sheet-option',
+                          index === activeIndex && 'field-sheet-option--active',
+                          option.value === value && 'field-sheet-option--selected',
+                        )}
+                        key={option.value}
+                        onMouseEnter={() => setActiveIndex(index)}
+                        onClick={() => choose(option)}
+                        onKeyDown={(event) => onSheetOptionKeyDown(event, index)}
+                      >
+                        <span>
+                          {option.label}
+                          {option.description ? <small>{option.description}</small> : null}
+                        </span>
+                        <span className="field-option-radio" aria-hidden="true" />
+                      </button>
+                    ))
+                  ) : (
+                    <p className="field-empty">{emptyMessage}</p>
+                  )}
+                </div>
+              </section>
+            </div>,
             document.body,
           )
         : null}

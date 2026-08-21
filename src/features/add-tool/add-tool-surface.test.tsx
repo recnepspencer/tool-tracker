@@ -126,7 +126,7 @@ describe('add-tool surface', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Add to my tools' }));
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('creation conflict');
     expect(within(dialog).getByLabelText('Tool name')).toHaveValue('Failed probe');
-    expect(within(dialog).getByRole('combobox', { name: 'Category' })).toHaveValue('Meters & testers');
+    expect(within(dialog).getByRole('combobox', { name: 'Category' })).toHaveTextContent('Meters & testers');
     expect(note).toHaveValue('Keep this draft');
   });
 });
