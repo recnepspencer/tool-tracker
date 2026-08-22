@@ -18,9 +18,10 @@ describe('worker tools surfaces', () => {
   it('renders the seeded pending handoff beside Ray’s tools', async () => {
     renderApp(<AppRoutes />, { sessionStore: createMemorySessionStore('ray-torres') });
     expect(await screen.findByRole('heading', { name: 'My tools' })).toBeInTheDocument();
-    expect(screen.getByText('Bandsaw')).toBeInTheDocument();
-    expect(screen.getByText('Awaiting warehouse approval')).toBeInTheDocument();
-    expect(screen.getByText('Requested from Ray Torres')).toBeInTheDocument();
+    const pendingRequest = screen.getByRole('article', { name: 'Bandsaw pending handoff' });
+    expect(within(pendingRequest).getByText('Bandsaw')).toBeInTheDocument();
+    expect(within(pendingRequest).getByText('Outgoing')).toBeInTheDocument();
+    expect(within(pendingRequest).getByText('Requested from Ray Torres')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Transfer Hammer drill unit TL-101' }).closest('article')).toHaveClass(
       'worker-tool-row--checked-out',
     );
@@ -39,8 +40,7 @@ describe('worker tools surfaces', () => {
     expect(await screen.findByRole('heading', { name: 'My tools' })).toBeInTheDocument();
 
     const outgoing = screen.getByRole('article', { name: 'Klein 10" pump pliers pending handoff' });
-    expect(within(outgoing).getByText('Outgoing transfer')).toBeInTheDocument();
-    expect(within(outgoing).getByText('Awaiting acceptance')).toBeInTheDocument();
+    expect(within(outgoing).getByText('Outgoing')).toBeInTheDocument();
     expect(within(outgoing).getByText('To Eli Warren')).toBeInTheDocument();
     await user.click(within(outgoing).getByRole('button', { name: 'Edit transfer' }));
     const outgoingDialog = await screen.findByRole('dialog', {
@@ -68,9 +68,8 @@ describe('worker tools surfaces', () => {
     ).toBeInTheDocument();
 
     const incoming = screen.getByRole('article', { name: 'Cord reel, 100 ft pending handoff' });
-    expect(within(incoming).getByText('Incoming transfer')).toBeInTheDocument();
-    expect(within(incoming).getByText('Needs your acceptance')).toBeInTheDocument();
-    expect(within(incoming).getByText(/From Eli Warren/)).toBeInTheDocument();
+    expect(within(incoming).getByText('Incoming')).toBeInTheDocument();
+    expect(within(incoming).getByText('From Eli Warren')).toBeInTheDocument();
     await user.click(within(incoming).getByRole('button', { name: 'Review' }));
     const incomingDialog = await screen.findByRole('dialog', { name: 'Cord reel, 100 ft transfer review' });
     expect(within(incomingDialog).getByText('Incoming transfer')).toBeInTheDocument();

@@ -59,7 +59,8 @@ describe('custody workflow surfaces', () => {
     window.location.hash = '#/worker/tools';
     renderApp(<AppRoutes />, { api: createMockApi(database), sessionStore: createMemorySessionStore('ray-torres') });
     const card = await screen.findByRole('article', { name: 'Bandsaw pending handoff' });
-    expect(within(card).getByText('Note: Bring the long bit')).toBeInTheDocument();
+    await userEvent.setup().click(within(card).getByRole('button', { name: 'Review' }));
+    expect(within(card).getByLabelText('Note')).toHaveValue('Bring the long bit');
   });
 
   it('does not carry a completed action notice into another tool detail', async () => {
