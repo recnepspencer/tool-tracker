@@ -33,11 +33,15 @@ export function TransferDestinationPicker({
       label: 'Back to a warehouse',
       description: 'Returns to stock, claimable by anyone',
     },
-    {
-      value: 'person',
-      label: 'To a person',
-      description: 'Stays pending until they accept',
-    },
+    ...(people.length
+      ? [
+          {
+            value: 'person',
+            label: 'To a person',
+            description: 'Stays pending until they accept',
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -58,7 +62,7 @@ export function TransferDestinationPicker({
           onChange={onTargetChange}
           options={destinationOptions}
           placeholder={mode === 'person' ? 'Choose a person' : 'Choose a warehouse'}
-          emptyMessage={mode === 'person' ? 'No people found' : 'No warehouses found'}
+          emptyMessage={mode === 'person' ? 'No matching people' : 'No warehouses found'}
           searchable={mode === 'person'}
           presentation="sheet"
         />

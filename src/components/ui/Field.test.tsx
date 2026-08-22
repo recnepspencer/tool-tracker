@@ -94,6 +94,9 @@ describe('shared field primitives', () => {
     const user = userEvent.setup();
     render(<SelectHarness />);
     const combobox = screen.getByRole('combobox', { name: 'Send to' });
+    const field = combobox.closest('.field');
+    expect(field?.querySelector('.field-chevron')).toBeInTheDocument();
+    expect(field?.querySelector('.field-control-row .field-chevron')).not.toBeInTheDocument();
     await user.click(combobox);
     expect(screen.getByRole('listbox', { name: 'Send to' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /South Shop/ })).toBeInTheDocument();

@@ -201,7 +201,7 @@ export function SelectField({
         focused={focused || open}
         disabled={disabled}
         compact={compact}
-        className={className}
+        className={cx(className, 'field--select')}
       >
         {usesTriggerSearch ? (
           <div className="field-control-row">
@@ -232,7 +232,6 @@ export function SelectField({
               onClick={() => !disabled && setOpen(true)}
               onKeyDown={onInputKeyDown}
             />
-            <ChevronDownIcon className="field-chevron" />
           </div>
         ) : (
           <button
@@ -261,9 +260,9 @@ export function SelectField({
             >
               {selected?.label ?? placeholder}
             </span>
-            <ChevronDownIcon className="field-chevron" />
           </button>
         )}
+        <ChevronDownIcon className="field-chevron" />
       </Field>
       {open && !isSheet
         ? createPortal(

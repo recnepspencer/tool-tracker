@@ -101,6 +101,20 @@ describe('custody workflow surfaces', () => {
     expect(within(dialog).queryByRole('button', { name: 'Report lost' })).not.toBeInTheDocument();
   });
 
+  it('does not offer a person destination for a damaged tool', async () => {
+    const user = userEvent.setup();
+    window.location.hash = '#/worker/tools';
+    renderApp(<AppRoutes />, { sessionStore: createMemorySessionStore('ray-torres') });
+    await user.click(await screen.findByRole('button', { name: 'Open details for Fish tape, 240 ft unit TL-104' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Tool details' });
+    await user.click(within(dialog).getByRole('button', { name: 'Transfer tool' }));
+    await user.click(await within(dialog).findByRole('combobox', { name: 'Send to' }));
+
+    const destinationMenu = await screen.findByRole('dialog', { name: 'Choose Send to' });
+    expect(within(destinationMenu).getByRole('option', { name: /Back to a warehouse/ })).toBeInTheDocument();
+    expect(within(destinationMenu).queryByRole('option', { name: /To a person/ })).not.toBeInTheDocument();
+  });
+
   it('hides all worker custody actions for an archived detail record', async () => {
     const baseApi = createMockApi();
     const activeDetail = await baseApi.tools.getToolDetail('TL-101');
