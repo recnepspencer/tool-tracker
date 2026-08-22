@@ -48,6 +48,7 @@ export function SelectField({
   const fieldRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const sheetRef = useRef<HTMLElement>(null);
+  const sheetSearchRef = useRef<HTMLInputElement>(null);
   const triggerRef = useRef<HTMLInputElement | HTMLButtonElement | null>(null);
   const optionRefs = useRef(new Map<string, HTMLButtonElement>());
   const [open, setOpen] = useState(false);
@@ -56,10 +57,10 @@ export function SelectField({
   const [activeIndex, setActiveIndex] = useState(0);
   const selected = selectedSelectOption(options, value);
   const isSheet = presentation === 'sheet';
-  const isSearchable = searchable && !isSheet;
+  const usesTriggerSearch = searchable && !isSheet;
   const filtered = useMemo(
-    () => filterSelectOptions(options, isSearchable && open ? query : ''),
-    [isSearchable, open, options, query],
+    () => filterSelectOptions(options, searchable && open ? query : ''),
+    [open, options, query, searchable],
   );
   const active = filtered[activeIndex];
   const overlayStyle = useListboxOverlay(!isSheet && open, fieldRef, listRef);
@@ -72,6 +73,7 @@ export function SelectField({
 
   useEffect(() => {
     if (!open || !isSheet) return;
+    if (document.activeElement === sheetSearchRef.current) return;
     const activeOption = filtered[activeIndex];
     if (!activeOption) return;
     const frame = window.requestAnimationFrame(() => optionRefs.current.get(activeOption.value)?.focus());
@@ -201,7 +203,7 @@ export function SelectField({
         compact={compact}
         className={className}
       >
-        {isSearchable ? (
+        {usesTriggerSearch ? (
           <div className="field-control-row">
             <input
               ref={(element) => {
@@ -318,6 +320,32 @@ export function SelectField({
               >
                 <span className="field-sheet-handle" aria-hidden="true" />
                 <h2>{label}</h2>
+                {searchable ? (
+                  <div className="field-sheet-search">
+                    <label className="sr-only" htmlFor={`${generatedId}-sheet-search`}>
+                      Search {label}
+                    </label>
+                    <input
+                      ref={sheetSearchRef}
+                      id={`${generatedId}-sheet-search`}
+                      className="field-sheet-search-input"
+                      type="search"
+                      role="searchbox"
+                      autoComplete="off"
+                      spellCheck={false}
+                      aria-autocomplete="list"
+                      aria-controls={listboxId}
+                      aria-activedescendant={active ? optionDomId(listboxId, active.value) : undefined}
+                      placeholder={`Search ${label}`}
+                      value={query}
+                      onChange={(event) => {
+                        setQuery(event.target.value);
+                        setActiveIndex(0);
+                      }}
+                      onKeyDown={onInputKeyDown}
+                    />
+                  </div>
+                ) : null}
                 <div id={listboxId} className="field-sheet-options" role="listbox" aria-label={label}>
                   {filtered.length ? (
                     filtered.map((option, index) => (

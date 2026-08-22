@@ -209,6 +209,29 @@
   letter-spacing: var(--tracking-heading);
   margin: var(--space-10) var(--space-20) var(--space-4);
 }
+.field-sheet-search {
+  padding: var(--space-8) var(--space-20) 0;
+}
+.field-sheet-search-input {
+  appearance: none;
+  background: var(--field);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-field);
+  box-sizing: border-box;
+  color: var(--ink);
+  font: var(--font-control-compact);
+  min-height: var(--control-height);
+  outline: 0;
+  padding: 0 var(--space-12);
+  width: 100%;
+}
+.field-sheet-search-input:focus {
+  border-color: var(--blue-border-focus);
+  box-shadow: var(--elevation-focus);
+}
+.field-sheet-search-input::placeholder {
+  color: var(--dim);
+}
 .field-sheet-options {
   display: flex;
   flex-direction: column;

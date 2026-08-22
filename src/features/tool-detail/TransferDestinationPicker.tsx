@@ -59,7 +59,7 @@ export function TransferDestinationPicker({
           options={destinationOptions}
           placeholder={mode === 'person' ? 'Choose a person' : 'Choose a warehouse'}
           emptyMessage={mode === 'person' ? 'No people found' : 'No warehouses found'}
-          searchable={false}
+          searchable={mode === 'person'}
           presentation="sheet"
         />
       ) : null}

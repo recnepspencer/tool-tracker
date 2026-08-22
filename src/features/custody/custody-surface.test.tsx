@@ -5,7 +5,7 @@ import { createMockApi } from '../../api/mock/create-mock-api';
 import { createMockDatabase } from '../../api/mock/mock-database';
 import { AppRoutes } from '../../app/app-routes';
 import { createMemorySessionStore, renderApp } from '../../test/render-app';
-import { chooseTransferDestination } from '../../test/choose-field-option';
+import { chooseFieldOption, chooseTransferDestination } from '../../test/choose-field-option';
 import { useCustodyMutations } from './use-custody-mutations';
 
 function MutationHarness() {
@@ -207,11 +207,23 @@ describe('custody workflow surfaces', () => {
     await user.click(await screen.findByRole('button', { name: 'Open details for Hammer drill unit TL-101' }));
     const dialog = await screen.findByRole('dialog', { name: 'Tool details' });
     await user.click(within(dialog).getByRole('button', { name: 'Transfer tool' }));
-    await chooseTransferDestination(user, dialog, 'person', /Eli Warren Person/);
+    await chooseFieldOption(user, within(dialog).getByRole('combobox', { name: 'Send to' }), /To a person/);
 
     const person = within(dialog).getByRole('combobox', { name: 'Person' });
     expect(person.tagName).toBe('BUTTON');
     expect(within(dialog).queryByRole('textbox', { name: 'Person' })).not.toBeInTheDocument();
+
+    await user.click(person);
+    const chooser = await screen.findByRole('dialog', { name: 'Choose Person' });
+    const search = within(chooser).getByRole('searchbox', { name: 'Search Person' });
+    expect(search).not.toHaveFocus();
+    await user.click(search);
+    await user.type(search, 'eli');
+    const personOptions = within(chooser).getByRole('listbox', { name: 'Person' });
+    expect(within(personOptions).getByRole('option', { name: /Eli Warren Person/ })).toBeInTheDocument();
+    expect(within(personOptions).queryByRole('option', { name: /Avery Cole Person/ })).not.toBeInTheDocument();
+    await user.click(within(personOptions).getByRole('option', { name: /Eli Warren Person/ }));
+
     expect(person).toHaveTextContent('Eli Warren');
     expect(within(dialog).getByRole('button', { name: 'Send to Eli Warren' })).toBeEnabled();
   });

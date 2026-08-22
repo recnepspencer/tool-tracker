@@ -46,6 +46,24 @@ function SheetSelectHarness() {
   );
 }
 
+function SearchableSheetSelectHarness() {
+  const [value, setValue] = useState('');
+  return (
+    <SelectField
+      label="Category"
+      value={value}
+      onChange={setValue}
+      placeholder="Select a category"
+      options={[
+        { value: 'meters', label: 'Meters & testers' },
+        { value: 'hand-tools', label: 'Hand tools' },
+      ]}
+      presentation="sheet"
+      searchable
+    />
+  );
+}
+
 function SwitchHarness() {
   const [checked, setChecked] = useState(false);
   return (
@@ -107,8 +125,9 @@ describe('shared field primitives', () => {
     expect(container.querySelector('input')).not.toBeInTheDocument();
 
     await user.click(combobox);
-    expect(screen.getByRole('dialog', { name: 'Choose Category' })).toBeInTheDocument();
-    const listbox = screen.getByRole('listbox', { name: 'Category' });
+    const dialog = screen.getByRole('dialog', { name: 'Choose Category' });
+    expect(within(dialog).queryByRole('searchbox')).not.toBeInTheDocument();
+    const listbox = within(dialog).getByRole('listbox', { name: 'Category' });
     await user.click(within(listbox).getByRole('option', { name: 'Meters & testers' }));
     expect(combobox).toHaveTextContent('Meters & testers');
     expect(screen.queryByRole('dialog', { name: 'Choose Category' })).not.toBeInTheDocument();
@@ -116,6 +135,26 @@ describe('shared field primitives', () => {
     await user.click(combobox);
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog', { name: 'Choose Category' })).not.toBeInTheDocument();
+  });
+
+  it('keeps optional sheet search inside the menu without auto-focusing it', async () => {
+    const user = userEvent.setup();
+    render(<SearchableSheetSelectHarness />);
+    const combobox = screen.getByRole('combobox', { name: 'Category' });
+
+    await user.click(combobox);
+    const dialog = screen.getByRole('dialog', { name: 'Choose Category' });
+    const search = within(dialog).getByRole('searchbox', { name: 'Search Category' });
+    expect(search).not.toHaveFocus();
+
+    await user.click(search);
+    await user.type(search, 'hand');
+    const listbox = within(dialog).getByRole('listbox', { name: 'Category' });
+    expect(within(listbox).getByRole('option', { name: 'Hand tools' })).toBeInTheDocument();
+    expect(within(listbox).queryByRole('option', { name: 'Meters & testers' })).not.toBeInTheDocument();
+
+    await user.click(within(listbox).getByRole('option', { name: 'Hand tools' }));
+    expect(combobox).toHaveTextContent('Hand tools');
   });
 
   it('toggles a labeled switch and ignores locked controls', async () => {
