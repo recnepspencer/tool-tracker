@@ -138,7 +138,8 @@
   background: var(--card-2);
 }
 .worker-pending-card--request {
-  background: var(--card-2);
+  background: var(--field);
+  border-color: var(--border-strong);
 }
 .worker-pending-card--request::before {
   background: var(--dim);
@@ -197,19 +198,26 @@
     transform var(--duration-120) var(--ease-standard);
   width: 100%;
 }
-.worker-pending-card--outgoing .worker-pending-review,
-.worker-pending-card--request .worker-pending-review {
+.worker-pending-card--outgoing .worker-pending-review {
   background: var(--field);
   border-color: var(--border);
   color: var(--ink);
+}
+.worker-pending-card--request .worker-pending-review {
+  background: var(--card-2);
+  border-color: var(--border-strong);
+  color: var(--ink-2);
 }
 .worker-pending-review:hover {
   background: var(--blue-mist);
   border-color: var(--blue-border-focus);
 }
-.worker-pending-card--outgoing .worker-pending-review:hover,
-.worker-pending-card--request .worker-pending-review:hover {
+.worker-pending-card--outgoing .worker-pending-review:hover {
   background: var(--hover);
+  border-color: var(--border-strong);
+}
+.worker-pending-card--request .worker-pending-review:hover {
+  background: var(--card);
   border-color: var(--border-strong);
 }
 .worker-pending-review:focus-visible {
