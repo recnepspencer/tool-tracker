@@ -39,12 +39,15 @@ describe('worker tools surfaces', () => {
     expect(await screen.findByRole('heading', { name: 'My tools' })).toBeInTheDocument();
 
     const outgoing = screen.getByRole('article', { name: 'Klein 10" pump pliers pending handoff' });
+    expect(within(outgoing).getByText('Outgoing transfer')).toBeInTheDocument();
     expect(within(outgoing).getByText('Awaiting acceptance')).toBeInTheDocument();
     expect(within(outgoing).getByText('To Eli Warren')).toBeInTheDocument();
     await user.click(within(outgoing).getByRole('button', { name: 'Edit transfer' }));
     const outgoingDialog = await screen.findByRole('dialog', {
       name: 'Klein 10" pump pliers transfer review',
     });
+    expect(within(outgoingDialog).getByText('Outgoing transfer')).toBeInTheDocument();
+    expect(within(outgoingDialog).getByText('Awaiting acceptance')).toBeInTheDocument();
     expect(within(outgoingDialog).getByText(/Photos are optional/)).toBeInTheDocument();
     await chooseTransferDestination(user, outgoingDialog, 'warehouse', /South Shop Warehouse/);
     const note = within(outgoingDialog).getByPlaceholderText('e.g. reason for the transfer');
@@ -66,9 +69,12 @@ describe('worker tools surfaces', () => {
 
     const incoming = screen.getByRole('article', { name: 'Cord reel, 100 ft pending handoff' });
     expect(within(incoming).getByText('Incoming transfer')).toBeInTheDocument();
+    expect(within(incoming).getByText('Needs your acceptance')).toBeInTheDocument();
     expect(within(incoming).getByText(/From Eli Warren/)).toBeInTheDocument();
     await user.click(within(incoming).getByRole('button', { name: 'Review' }));
     const incomingDialog = await screen.findByRole('dialog', { name: 'Cord reel, 100 ft transfer review' });
+    expect(within(incomingDialog).getByText('Incoming transfer')).toBeInTheDocument();
+    expect(within(incomingDialog).getByText('Needs your acceptance')).toBeInTheDocument();
     expect(within(incomingDialog).getByRole('button', { name: 'Accept — take custody' })).toBeInTheDocument();
     expect(within(incomingDialog).getByRole('button', { name: 'Decline' })).toBeInTheDocument();
     expect(within(incomingDialog).getByRole('switch', { name: /Add an optional photo/ })).toBeInTheDocument();

@@ -1,10 +1,12 @@
 import { OverlayDialog } from '../../components/ui/OverlayDialog';
+import { ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 import type { HandoffAction } from '../../domain/custody';
 import type { ToolHolderView } from '../../domain/read-models/holder';
 import type { PendingHandoffView } from '../../domain/read-models/custody';
 import { CustodyEvidenceFields } from './CustodyEvidenceFields';
 import { TransferDestinationPicker, type TransferDestinationMode } from '../tool-detail/TransferDestinationPicker';
 import { ErrorState, LoadingState } from '../../components/ui/AsyncState';
+import { pendingHandoffDirectionLabel, pendingHandoffStatusLabel } from './pending-handoff-copy';
 
 const actionLabel: Record<HandoffAction, string> = {
   accept: 'Accept — take custody',
@@ -59,6 +61,9 @@ export function PendingHandoffReviewSheet({
   onClose(): void;
 }) {
   const incoming = handoff.direction === 'incoming';
+  const DirectionIcon = incoming ? ArrowDownToLine : ArrowUpFromLine;
+  const directionLabel = pendingHandoffDirectionLabel(handoff.direction, handoff.kind);
+  const statusLabel = pendingHandoffStatusLabel(handoff.direction, handoff.kind);
   const transferEditBlocked =
     editable &&
     (!transferTargets ||
@@ -93,14 +98,12 @@ export function PendingHandoffReviewSheet({
               incoming ? 'worker-pending-review-tag worker-pending-review-tag--incoming' : 'worker-pending-review-tag'
             }
           >
-            {incoming
-              ? 'Incoming transfer'
-              : handoff.kind === 'warehouse-request'
-                ? 'Awaiting warehouse approval'
-                : 'Awaiting acceptance'}
+            <DirectionIcon aria-hidden="true" className="worker-pending-direction-icon" />
+            {directionLabel}
           </span>
           <time>{handoff.requestedAt}</time>
         </div>
+        <span className="worker-pending-review-status">{statusLabel}</span>
         <div className="worker-pending-review-hero">
           <div className="worker-pending-review-photo">
             <img src={handoff.imageSrc} alt={`${handoff.toolName} transfer photo`} />

@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 import type { PendingHandoffView } from '../../domain/read-models/custody';
 import type { ToolHolderView } from '../../domain/read-models/holder';
 import type { HolderRef } from '../../domain/custody';
 import type { TransferDestinationMode } from '../tool-detail/TransferDestinationPicker';
 import { PendingHandoffReviewSheet } from './PendingHandoffReviewSheet';
+import { pendingHandoffDirectionLabel, pendingHandoffStatusLabel } from './pending-handoff-copy';
 import { usePendingHandoffActionController } from './use-pending-handoff-action-controller';
 import { useTransferTargets } from './use-custody-queries';
 import '../../styles/custody.css';
@@ -18,6 +20,9 @@ export function PendingHandoffCard({
   queryBlocked?: boolean;
 }) {
   const incoming = handoff.direction === 'incoming';
+  const DirectionIcon = incoming ? ArrowDownToLine : ArrowUpFromLine;
+  const directionLabel = pendingHandoffDirectionLabel(handoff.direction, handoff.kind);
+  const statusLabel = pendingHandoffStatusLabel(handoff.direction, handoff.kind);
   const editable = handoff.canEdit;
   const [note, setNote] = useState(handoff.evidence?.note ?? '');
   const [mockPhoto, setMockPhoto] = useState(handoff.evidence?.mockPhoto === true);
@@ -56,13 +61,13 @@ export function PendingHandoffCard({
       aria-label={`${handoff.toolName} pending handoff`}
     >
       <div className="worker-pending-topline">
-        <span>
-          {incoming
-            ? 'Incoming transfer'
-            : handoff.kind === 'warehouse-request'
-              ? 'Awaiting warehouse approval'
-              : 'Awaiting acceptance'}
-        </span>
+        <div className="worker-pending-topline-copy">
+          <span className="worker-pending-direction">
+            <DirectionIcon aria-hidden="true" className="worker-pending-direction-icon" />
+            {directionLabel}
+          </span>
+          <span className="worker-pending-status">{statusLabel}</span>
+        </div>
         <time>{handoff.requestedAt}</time>
       </div>
       <strong className="worker-pending-title">{handoff.toolName}</strong>

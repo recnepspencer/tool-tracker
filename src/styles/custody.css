@@ -130,14 +130,37 @@
   display: flex;
   justify-content: space-between;
 }
-.worker-pending-topline span,
+.worker-pending-topline-copy {
+  display: grid;
+  gap: var(--space-5);
+}
+.worker-pending-direction,
 .worker-pending-topline time {
   color: var(--blue-soft);
   font: 400 var(--space-10)/1 var(--font-mono);
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
+.worker-pending-direction {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-6);
+}
+.worker-pending-direction-icon {
+  flex: 0 0 var(--space-14);
+  height: var(--space-14);
+  width: var(--space-14);
+}
 .worker-pending-card--outgoing .worker-pending-topline span {
+  color: var(--dim);
+}
+.worker-pending-status {
+  color: var(--dim);
+  font: var(--font-mono-xs);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+.worker-pending-card--outgoing .worker-pending-direction {
   color: var(--dim);
 }
 .worker-pending-topline time {
@@ -252,11 +275,22 @@
   font: var(--font-mono-xs);
 }
 .worker-pending-review-tag {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-6);
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
 }
 .worker-pending-review-tag--incoming {
   color: var(--blue-soft);
+}
+.worker-pending-review-status {
+  color: var(--dim);
+  display: block;
+  font: var(--font-mono-xs);
+  letter-spacing: var(--tracking-label);
+  margin-top: var(--space-6);
+  text-transform: uppercase;
 }
 .worker-pending-review-hero {
   align-items: center;
