@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Menu } from 'lucide-react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import type { AuthSession } from '../../domain/auth';
 import { AddToolWizard } from '../../features/add-tool/AddToolWizard';
@@ -40,9 +41,7 @@ export function WorkerRoleShell({ session, onSignOut, theme, onToggleTheme }: Wo
             aria-label="Open navigation"
             onClick={() => setNavigationOpen(true)}
           >
-            <span />
-            <span />
-            <span />
+            <Menu aria-hidden="true" />
           </button>
           <Link className="worker-wordmark" to="/worker/tools">
             NELSON ELECTRIC

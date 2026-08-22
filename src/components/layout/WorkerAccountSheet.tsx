@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { X } from 'lucide-react';
 import { useModalFocusTrap } from '../ui/use-modal-focus-trap';
 import type { AuthSession } from '../../domain/auth';
 
@@ -30,6 +31,11 @@ export function WorkerAccountSheet({ open, session, onSignOut, onClose }: Worker
         aria-label={session.name}
       >
         <span className="worker-sheet-handle" />
+        <div className="worker-account-sheet-topbar">
+          <button type="button" className="worker-close-button" aria-label="Close account menu" onClick={onClose}>
+            <X aria-hidden="true" />
+          </button>
+        </div>
         <div className="worker-account-heading">
           <span className="worker-avatar worker-avatar--large">{initials(session.name)}</span>
           <div>
@@ -37,9 +43,6 @@ export function WorkerAccountSheet({ open, session, onSignOut, onClose }: Worker
             <h2>{session.name}</h2>
             <p>{session.title}</p>
           </div>
-          <button type="button" className="worker-close-button" aria-label="Close account menu" onClick={onClose}>
-            ×
-          </button>
         </div>
         <div className="worker-account-facts">
           <div>

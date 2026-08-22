@@ -36,22 +36,14 @@
 }
 
 .worker-menu-button {
-  flex-direction: column;
-  gap: var(--space-4);
   height: var(--space-34);
   width: var(--space-34);
 }
 
-.worker-menu-button span {
-  background: var(--muted);
-  border-radius: var(--radius-pill);
-  display: block;
-  height: var(--space-1);
-  width: var(--space-15);
-}
-
-.worker-menu-button span:nth-child(2) {
-  width: var(--space-11);
+.worker-menu-button svg,
+.worker-close-button svg {
+  height: var(--space-18);
+  width: var(--space-18);
 }
 
 .worker-menu-button:hover,
@@ -62,8 +54,8 @@
 
 .worker-menu-button:focus-visible,
 .worker-close-button:focus-visible,
+.worker-drawer-profile:focus-visible,
 .worker-drawer-link:focus-visible,
-.worker-drawer-action:focus-visible,
 .worker-scrim:focus-visible,
 .worker-sheet-secondary-button:focus-visible {
   outline: var(--focus-ring-width) solid var(--blue);
@@ -130,11 +122,30 @@
   animation: worker-navigation-enter var(--duration-480) var(--ease-out) both;
 }
 
+.worker-drawer-header {
+  display: flex;
+  justify-content: flex-end;
+  min-height: var(--space-30);
+}
+
 .worker-drawer-profile {
   align-items: center;
+  appearance: none;
+  background: transparent;
+  border: 0;
   display: flex;
   gap: var(--space-12);
-  margin: var(--space-42) var(--space-4) var(--space-28);
+  margin: var(--space-12) var(--space-4) var(--space-28);
+  padding: var(--space-8) var(--space-4);
+  text-align: left;
+  width: calc(100% - var(--space-8));
+}
+
+.worker-drawer-profile:hover {
+  background: var(--blue-bg);
+  border-radius: var(--radius-field);
+  color: var(--ink);
+  cursor: pointer;
 }
 
 .worker-drawer-profile > div {
@@ -154,10 +165,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.worker-drawer-profile .worker-close-button {
-  margin-left: auto;
 }
 
 .worker-avatar {
@@ -180,14 +187,12 @@
   width: var(--space-52);
 }
 
-.worker-drawer-nav,
-.worker-drawer-actions {
+.worker-drawer-nav {
   display: grid;
   gap: var(--space-5);
 }
 
-.worker-drawer-link,
-.worker-drawer-action {
+.worker-drawer-link {
   align-items: center;
   appearance: none;
   background: transparent;
@@ -206,7 +211,6 @@
 }
 
 .worker-drawer-link:hover,
-.worker-drawer-action:hover:not(:disabled),
 .worker-drawer-link--active {
   background: var(--blue-bg);
   color: var(--ink);
@@ -216,51 +220,22 @@
   color: var(--blue-soft);
 }
 
-.worker-drawer-link-dot {
-  background: var(--dim-deep);
-  border-radius: var(--radius-full);
-  flex: 0 0 var(--space-6);
-  height: var(--space-6);
-  width: var(--space-6);
+.worker-drawer-link-icon {
+  color: var(--dim);
+  flex: 0 0 var(--space-18);
+  height: var(--space-18);
+  width: var(--space-18);
 }
 
-.worker-drawer-link--active .worker-drawer-link-dot {
-  background: var(--blue);
-  box-shadow: 0 0 var(--space-10) var(--blue);
-}
-
-.worker-drawer-divider {
-  border-top: var(--border-width) solid var(--border);
-  margin: var(--space-18) var(--space-8);
+.worker-drawer-link--active .worker-drawer-link-icon,
+.worker-drawer-link--accent .worker-drawer-link-icon {
+  color: currentColor;
 }
 
 .worker-drawer-theme {
-  margin-top: var(--space-8);
-}
-
-.worker-drawer-action-icon {
-  align-items: center;
-  display: inline-flex;
-  flex: 0 0 var(--space-16);
-  font-size: var(--space-20);
-  justify-content: center;
-  width: var(--space-16);
-}
-
-.worker-drawer-action--accent {
-  color: var(--blue-soft);
-}
-
-.worker-drawer-action:disabled {
-  color: var(--dim-deep);
-  cursor: default;
-}
-
-.worker-drawer-badge {
-  color: var(--dim);
-  font: var(--font-mono-xs);
-  margin-left: auto;
-  text-transform: uppercase;
+  border-top: var(--border-width) solid var(--border);
+  margin-top: auto;
+  padding-top: var(--space-18);
 }
 
 .worker-bottom-sheet {
@@ -294,6 +269,12 @@
   padding: var(--space-12) var(--space-22) max(var(--space-40), env(safe-area-inset-bottom));
 }
 
+.worker-account-sheet-topbar {
+  display: flex;
+  justify-content: flex-end;
+  min-height: var(--space-30);
+}
+
 .worker-account-heading {
   align-items: center;
   display: flex;
@@ -315,10 +296,6 @@
   color: var(--dim);
   font-size: var(--text-md);
   margin: 0;
-}
-
-.worker-account-heading .worker-close-button {
-  margin-left: auto;
 }
 
 .worker-account-facts {

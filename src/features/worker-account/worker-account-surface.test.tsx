@@ -27,12 +27,18 @@ describe('worker account surfaces', () => {
     await user.click(screen.getByRole('button', { name: 'Open navigation' }));
     const navigation = screen.getByRole('dialog', { name: 'Worker navigation' });
     expect(within(navigation).getByRole('switch', { name: 'Appearance' })).toBeInTheDocument();
-    const actions = navigation.querySelector('.worker-drawer-actions');
+    expect(within(navigation).getByRole('link', { name: 'My tools' })).toBeInTheDocument();
+    expect(within(navigation).getByRole('link', { name: 'Checkout' })).toBeInTheDocument();
+    expect(within(navigation).getByRole('link', { name: 'Activity' })).toBeInTheDocument();
+    expect(within(navigation).getByRole('button', { name: 'Add a tool' })).toBeInTheDocument();
+    expect(within(navigation).queryByText('Warehouses')).not.toBeInTheDocument();
+    expect(navigation.querySelectorAll('.worker-drawer-link-icon')).toHaveLength(4);
     const theme = navigation.querySelector('.worker-drawer-theme');
-    expect(actions).not.toBeNull();
     expect(theme).not.toBeNull();
-    expect(actions!.compareDocumentPosition(theme!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    await user.click(screen.getByRole('button', { name: 'Account' }));
+    expect(navigation.querySelector('.worker-drawer-nav')!.compareDocumentPosition(theme!)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    await user.click(within(navigation).getByRole('button', { name: 'Open account for Ray Torres' }));
     const accountDialog = screen.getByRole('dialog', { name: 'Ray Torres' });
     expect(within(accountDialog).queryByRole('switch', { name: 'Appearance' })).not.toBeInTheDocument();
     expect(within(accountDialog).getByText('ray@nelsonelectric.com')).toBeInTheDocument();

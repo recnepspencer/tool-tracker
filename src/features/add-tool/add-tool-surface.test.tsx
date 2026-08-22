@@ -19,7 +19,7 @@ describe('add-tool surface', () => {
   async function openAddTool(user: ReturnType<typeof userEvent.setup>) {
     await screen.findByRole('heading', { name: 'My tools' });
     await user.click(screen.getByRole('button', { name: 'Open navigation' }));
-    await user.click(screen.getByRole('button', { name: /Add a tool Setup/ }));
+    await user.click(screen.getByRole('button', { name: 'Add a tool' }));
   }
 
   it('completes the capture and details flow through ToolsApi', async () => {
