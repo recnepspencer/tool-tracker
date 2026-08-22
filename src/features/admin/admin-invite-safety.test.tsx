@@ -73,7 +73,7 @@ describe('admin invite query safety', () => {
     await user.type(within(dialog).getByLabelText('Name'), 'Fresh person');
     await user.type(within(dialog).getByLabelText('Email address'), 'fresh@nelsonelectric.com');
     await user.type(within(dialog).getByLabelText('Title'), 'Field specialist');
-    await waitFor(() => expect(within(dialog).getByLabelText('Home warehouse')).toHaveValue('North Yard'));
+    await waitFor(() => expect(within(dialog).getByLabelText('Home warehouse')).toHaveTextContent('North Yard'));
     await waitFor(() => expect(submit).not.toBeDisabled());
     await user.click(screen.getByRole('button', { name: 'Refresh admin people' }));
     await waitFor(() => expect(listCalls).toBe(2));

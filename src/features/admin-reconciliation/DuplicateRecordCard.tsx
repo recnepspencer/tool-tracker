@@ -13,10 +13,16 @@ export function DuplicateRecordCard({
   return (
     <SurfaceCard className={`reconciliation-card reconciliation-card--${issue.status}`}>
       <div className="reconciliation-card__header">
-        <span className="eyebrow">Duplicate record</span>
-        <span className="admin-meta-kind">{issue.status}</span>
+        <div>
+          <span className="eyebrow">Duplicate record</span>
+          <h2>{issue.reason}</h2>
+        </div>
+        {issue.status === 'open' && (
+          <Button aria-label="Review" variant="secondary" onClick={() => onReview(issue)}>
+            Review
+          </Button>
+        )}
       </div>
-      <h2>Potential duplicate</h2>
       <div className="reconciliation-comparison">
         {issue.candidateNames.map((name, index) => (
           <div key={issue.candidateToolUnitIds[index]}>
@@ -28,13 +34,7 @@ export function DuplicateRecordCard({
           </div>
         ))}
       </div>
-      <p className="reconciliation-reason">{issue.reason}</p>
       <small>Detected {formatActivityTimestamp(issue.detectedAt)}</small>
-      {issue.status === 'open' && (
-        <Button variant="secondary" onClick={() => onReview(issue)}>
-          Review
-        </Button>
-      )}
     </SurfaceCard>
   );
 }

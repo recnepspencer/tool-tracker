@@ -74,7 +74,7 @@ describe('admin command safety', () => {
     await chooseFieldOption(user, role, 'Warehouse manager');
     await user.click(within(drawer).getByRole('button', { name: 'Save role' }));
     expect(await within(drawer).findByText('role service unavailable')).toBeInTheDocument();
-    expect(role).toHaveValue('Warehouse manager');
+    expect(role).toHaveTextContent('Warehouse manager');
   });
 
   it('restores a suspended person through the query-backed access command', async () => {
@@ -222,6 +222,6 @@ describe('admin command safety', () => {
     expect(await screen.findByText('warehouse update unavailable')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('Name')).toHaveValue('North Yard Updated');
     expect(within(dialog).getByLabelText('Address')).toHaveValue('1420 Kerr Ave');
-    expect(within(dialog).getByLabelText('Manager')).toHaveValue('Sam Ochoa');
+    expect(within(dialog).getByLabelText('Manager')).toHaveTextContent('Sam Ochoa');
   });
 });

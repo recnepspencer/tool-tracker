@@ -16,7 +16,7 @@ describe('warehouse operations surfaces', () => {
     window.location.hash = '#/admin/operations/queue';
   });
 
-  it('reviews the seeded request through the query boundary and updates inventory', async () => {
+  it('releases the seeded request directly from the queue and updates inventory', async () => {
     const user = userEvent.setup();
     const database = createMockDatabase({ clock: () => '2026-08-19T09:00:00-06:00' });
     renderApp(<AppRoutes />, { api: createMockApi(database), sessionStore: createMemorySessionStore('sam-ochoa') });
@@ -24,11 +24,9 @@ describe('warehouse operations surfaces', () => {
     expect(screen.getByText('Bandsaw')).toBeInTheDocument();
     const requestCard = screen.getByText('Bandsaw').closest('article');
     expect(requestCard).not.toBeNull();
-    await user.click(within(requestCard!).getByRole('button', { name: 'Review request for Bandsaw' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Review Bandsaw' });
-    expect(dialog).toContainElement(document.activeElement as HTMLElement);
-    await user.type(within(dialog).getByLabelText('Decision note'), 'Approved for the morning crew');
-    await user.click(within(dialog).getByRole('button', { name: 'Release to worker' }));
+    expect(within(requestCard!).getByRole('button', { name: 'Release for Bandsaw' })).toBeInTheDocument();
+    expect(within(requestCard!).getByRole('button', { name: 'Decline request for Bandsaw' })).toBeInTheDocument();
+    await user.click(within(requestCard!).getByRole('button', { name: 'Release for Bandsaw' }));
     await waitFor(() => expect(screen.queryByText('Bandsaw')).not.toBeInTheDocument());
     await waitFor(() =>
       expect(database.read().handoffs.find((handoff) => handoff.id === 'HO-1')?.status).toBe('accepted'),

@@ -84,8 +84,8 @@ describe('admin action safety', () => {
     expect(within(dialog).getByLabelText('Name')).toHaveValue('Jamie Park');
     expect(within(dialog).getByLabelText('Email address')).toHaveValue('jamie@example.com');
     expect(within(dialog).getByLabelText('Title')).toHaveValue('Estimator');
-    expect(within(dialog).getByLabelText('Role')).toHaveValue('Worker');
-    expect(within(dialog).getByLabelText('Home warehouse')).toHaveValue('North Yard');
+    expect(within(dialog).getByLabelText('Role')).toHaveTextContent('Worker');
+    expect(within(dialog).getByLabelText('Home warehouse')).toHaveTextContent('North Yard');
   });
 
   it('invites exactly one person from each form', async () => {
@@ -192,7 +192,7 @@ describe('admin action safety', () => {
     expect(await screen.findByText('warehouse unavailable')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('Name')).toHaveValue('West Annex');
     expect(within(dialog).getByLabelText('Address')).toHaveValue('9 Line Ave');
-    expect(within(dialog).getByLabelText('Manager')).toHaveValue('Morgan Price');
+    expect(within(dialog).getByLabelText('Manager')).toHaveTextContent('Morgan Price');
   });
 
   it('blocks cached admin commands while their authoritative people query is refreshing', async () => {

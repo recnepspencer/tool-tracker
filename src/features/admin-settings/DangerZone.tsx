@@ -19,9 +19,9 @@ export function DangerZone({ mutations, blocked }: { mutations: SettingsMutation
       .catch(() => undefined);
   return (
     <>
-      <SurfaceCard className="settings-card--danger">
+      <SurfaceCard className="settings-card settings-card--danger">
         <div className="settings-card-heading">
-          <span className="eyebrow">Danger zone</span>
+          <span className="eyebrow">Careful</span>
         </div>
         <p className="settings-muted">
           Restore the workspace to its original starting data. Your session and browser theme are preserved.

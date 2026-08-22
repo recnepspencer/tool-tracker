@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { ErrorState, LoadingState } from '../../components/ui/AsyncState';
 import { PageHeading } from '../../components/layout/PageHeading';
 import { useAdminAudit } from './use-admin-audit';
@@ -27,14 +26,12 @@ export function AdminActivityPage() {
         eyebrow="Admin view · Governance"
         title="Audit log"
         description="Immutable operational history across tools, people, and settings."
-        status="Read only"
+        action={
+          <Button variant="secondary" onClick={() => exportAuditLog(events)}>
+            Export log
+          </Button>
+        }
       />
-      <div className="admin-toolbar admin-toolbar--audit">
-        <span className="section-count">{events.length} events</span>
-        <Button variant="secondary" onClick={() => exportAuditLog(events)}>
-          Export log
-        </Button>
-      </div>
       <AuditLogFilters
         events={audit.data}
         search={search}
@@ -45,9 +42,6 @@ export function AdminActivityPage() {
         onWarehouseChange={setWarehouseId}
       />
       <AuditLog events={events} />
-      <Link className="text-link" to="/admin/dashboard">
-        Back to dashboard
-      </Link>
     </div>
   );
 }

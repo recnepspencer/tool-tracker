@@ -137,39 +137,39 @@ function FlaggedRow({
   const policy = warehouseToolDecisionPolicy({ ...item, holder: toHolderRef(item.holder) });
   return (
     <article className="flagged-row">
-      <ToolPhoto src={item.imageSrc} alt="" size="small" />
-      <div className="flagged-row__body">
-        <div className="flagged-row__heading">
-          <div>
-            <span className="eyebrow">
-              {item.warehouseName} · {item.toolUnitId}
-            </span>
+      <div className="flagged-row__main">
+        <ToolPhoto src={item.imageSrc} alt="" size="small" />
+        <div className="flagged-row__body">
+          <div className="flagged-row__heading">
             <h2>{item.toolName}</h2>
+            <StatusBadge status={item.status} />
           </div>
-          <StatusBadge status={item.status} />
+          <span className="flagged-row__identity">
+            {item.toolUnitId} · {item.warehouseName}
+          </span>
+          <p>
+            {item.holder.name} · {item.category}
+          </p>
         </div>
-        <p>
-          {item.condition} · {item.holder.name} · {item.category}
-        </p>
-        <div className="queue-item__actions">
-          <Button variant="secondary" disabled={busy || !policy.canEdit} onClick={onEdit}>
-            Edit
-          </Button>
-          {policy.canRestore || policy.canDecommission ? (
-            <>
-              <Button aria-label="Restore to stock" disabled={busy || !policy.canRestore} onClick={onRestore}>
-                Restore
-              </Button>
-              <Button variant="danger" disabled={busy || !policy.canDecommission} onClick={onDecommission}>
-                Decommission
-              </Button>
-            </>
-          ) : (
-            <Button disabled={busy || !policy.canForceReturn} onClick={onReturn}>
-              Force return
+      </div>
+      <div className="flagged-row__actions">
+        <Button variant="secondary" disabled={busy || !policy.canEdit} onClick={onEdit}>
+          Edit
+        </Button>
+        {policy.canRestore || policy.canDecommission ? (
+          <>
+            <Button aria-label="Restore to stock" disabled={busy || !policy.canRestore} onClick={onRestore}>
+              Restore
             </Button>
-          )}
-        </div>
+            <Button variant="danger" disabled={busy || !policy.canDecommission} onClick={onDecommission}>
+              Decommission
+            </Button>
+          </>
+        ) : (
+          <Button disabled={busy || !policy.canForceReturn} onClick={onReturn}>
+            Force return
+          </Button>
+        )}
       </div>
     </article>
   );

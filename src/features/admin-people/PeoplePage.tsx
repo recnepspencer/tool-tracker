@@ -4,21 +4,13 @@ import { LoadingState, ErrorState } from '../../components/ui/AsyncState';
 import { Button } from '../../components/ui/Button';
 import { PageHeading } from '../../components/layout/PageHeading';
 import { SearchField } from '../../components/ui/TextField';
-import { SelectField } from '../../components/ui/SelectField';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
-import {
-  MEMBER_LIFECYCLE_LABELS,
-  MEMBER_ROLE_LABELS,
-  MEMBER_ROLES,
-  type MemberLifecycle,
-  type MemberRole,
-} from '../../domain/people';
 import { useAdminPeople, useAdminPerson } from '../admin/use-admin-people';
 import { PersonDrawer } from './PersonDrawer';
 import { PeopleTable } from './PeopleTable';
 import { InvitePersonDialog } from './InvitePersonDialog';
 import { adminPersonPath } from './admin-person-path';
-import { filterAdminPeople, type AdminPeopleCapabilityFilter } from './people-selectors';
+import { filterAdminPeople } from './people-selectors';
 import './admin-people.css';
 
 export function PeoplePage() {
@@ -27,19 +19,17 @@ export function PeoplePage() {
   const detail = useAdminPerson(personId);
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
-  const [lifecycle, setLifecycle] = useState<MemberLifecycle | 'all'>('all');
-  const [roleFilter, setRoleFilter] = useState<MemberRole | 'all'>('all');
-  const [capabilityFilter, setCapabilityFilter] = useState<AdminPeopleCapabilityFilter>('all');
+  const [filter, setFilter] = useState<'everyone' | 'invited' | 'admins' | 'no-access'>('everyone');
   const [showInvite, setShowInvite] = useState(false);
   const rows = useMemo(
     () =>
       filterAdminPeople(people.data ?? [], {
         search,
-        lifecycle,
-        role: roleFilter,
-        capability: capabilityFilter,
-      }),
-    [capabilityFilter, lifecycle, people.data, roleFilter, search],
+        lifecycle: filter === 'invited' ? 'invited' : 'all',
+        role: 'all',
+        capability: filter === 'no-access' ? 'no-access' : 'all',
+      }).filter((person) => filter !== 'admins' || person.role !== 'worker'),
+    [filter, people.data, search],
   );
   if (people.isPending && !people.data) return <LoadingState label="Loading people…" />;
   if (!people.data)
@@ -50,49 +40,34 @@ export function PeoplePage() {
         eyebrow="Admin view · People"
         title="People"
         description="Manage access, responsibility, and the history attached to every member."
+        action={<Button onClick={() => setShowInvite(true)}>Invite person</Button>}
       />
       {people.isError && (
         <ErrorState message="The people directory could not be refreshed." onRetry={() => void people.refetch()} />
       )}
-      <div className="admin-toolbar">
-        <div className="admin-filters">
-          <SearchField label="Search people" placeholder="Search people…" value={search} onChange={setSearch} />
-          <SelectField
-            compact
-            label="Filter lifecycle"
-            value={lifecycle}
-            onChange={(next) => setLifecycle(next as MemberLifecycle | 'all')}
-            options={[
-              { value: 'all', label: 'All access states' },
-              ...Object.entries(MEMBER_LIFECYCLE_LABELS).map(([value, optionLabel]) => ({
-                value,
-                label: optionLabel,
-              })),
-            ]}
-          />
-          <SelectField
-            compact
-            label="Filter role"
-            value={roleFilter}
-            onChange={(next) => setRoleFilter(next as MemberRole | 'all')}
-            options={[
-              { value: 'all', label: 'All roles' },
-              ...MEMBER_ROLES.map((value) => ({ value, label: MEMBER_ROLE_LABELS[value] })),
-            ]}
-          />
-          <SelectField
-            compact
-            label="Filter capability"
-            value={capabilityFilter}
-            onChange={(next) => setCapabilityFilter(next as AdminPeopleCapabilityFilter)}
-            options={[
-              { value: 'all', label: 'All capabilities' },
-              { value: 'admin-capable', label: 'Admin-capable' },
-              { value: 'no-access', label: 'No access' },
-            ]}
-          />
+      <div className="people-toolbar">
+        <SearchField compact label="Search people" placeholder="Search people…" value={search} onChange={setSearch} />
+        <div className="people-filter-tabs" role="tablist" aria-label="People filter">
+          {(
+            [
+              ['everyone', 'Everyone'],
+              ['invited', 'Invited'],
+              ['admins', 'Admins'],
+              ['no-access', 'No access'],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={filter === value}
+              className={filter === value ? 'people-filter-tab people-filter-tab--active' : 'people-filter-tab'}
+              onClick={() => setFilter(value)}
+              key={value}
+            >
+              {label}
+            </button>
+          ))}
         </div>
-        <Button onClick={() => setShowInvite(true)}>Invite person</Button>
       </div>
       <SurfaceCard className="admin-table-card">
         <PeopleTable people={rows} onOpen={(id) => navigate(adminPersonPath(id))} />

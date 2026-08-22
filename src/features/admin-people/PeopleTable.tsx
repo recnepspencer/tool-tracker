@@ -25,8 +25,9 @@ export function PeopleTable({ people, onOpen }: { people: AdminPersonView[]; onO
                 <Link className="admin-person-link" to={adminPersonPath(person.id)}>
                   {person.name}
                 </Link>
-                <span>
-                  {person.email} · {person.title}
+                <span>{person.email}</span>
+                <span className="people-table__mobile-meta">
+                  {MEMBER_ROLE_LABELS[person.role]} · {person.homeWarehouse} · {person.heldToolCount} held
                 </span>
               </td>
               <td data-label="Role">{MEMBER_ROLE_LABELS[person.role]}</td>
@@ -43,7 +44,7 @@ export function PeopleTable({ people, onOpen }: { people: AdminPersonView[]; onO
               </td>
               <td data-label="Actions">
                 <Button variant="ghost" onClick={() => onOpen(person.id)}>
-                  View
+                  Open
                 </Button>
               </td>
             </tr>

@@ -110,6 +110,11 @@ export function WarehouseQueuePage() {
           onRetry={() => void warehouses.refetch()}
         />
       )}
+      {!reviewController.review && reviewController.quickDecisionError && (
+        <p className="form-error operations-inline-error" role="alert">
+          {reviewController.quickDecisionError}
+        </p>
+      )}
       <SurfaceCard className="queue-card">
         {items.length ? (
           <>
@@ -118,12 +123,14 @@ export function WarehouseQueuePage() {
               items={requests}
               busy={reviewController.busy}
               onReview={reviewController.setReview}
+              onResolve={reviewController.resolveItem}
             />
             <QueueGroup
               label="Returns to accept"
               items={returns}
               busy={reviewController.busy}
               onReview={reviewController.setReview}
+              onResolve={reviewController.resolveItem}
             />
           </>
         ) : (
@@ -150,11 +157,13 @@ function QueueGroup({
   items,
   busy,
   onReview,
+  onResolve,
 }: {
   label: string;
   items: WarehouseQueueItemView[];
   busy: boolean;
   onReview(item: WarehouseQueueItemView): void;
+  onResolve(item: WarehouseQueueItemView, decision: 'approve' | 'decline'): void;
 }) {
   if (!items.length) return null;
   return (
@@ -165,7 +174,7 @@ function QueueGroup({
       </div>
       <div className="queue-list">
         {items.map((item) => (
-          <WarehouseQueueItem item={item} busy={busy} onReview={onReview} key={item.id} />
+          <WarehouseQueueItem item={item} busy={busy} onReview={onReview} onResolve={onResolve} key={item.id} />
         ))}
       </div>
     </section>

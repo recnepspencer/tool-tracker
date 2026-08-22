@@ -1,30 +1,59 @@
-.reconciliation-grid {
+.admin-reconciliation-page {
+  max-width: calc(var(--space-900) + (var(--pad-page-x) * 2));
+}
+.reconciliation-section + .reconciliation-section {
+  margin-top: var(--space-22);
+}
+.reconciliation-section__heading {
+  align-items: center;
+  display: flex;
+  gap: var(--space-10);
+  margin-bottom: var(--space-12);
+}
+.reconciliation-section__heading::after {
+  background: var(--border);
+  content: '';
+  flex: 1;
+  height: var(--border-width);
+}
+.reconciliation-section__heading h2,
+.reconciliation-section__heading span {
+  color: var(--dim);
+  font: var(--font-mono-xs);
+  letter-spacing: var(--tracking-table);
+  margin: 0;
+  text-transform: uppercase;
+}
+.reconciliation-section__heading span {
+  order: 3;
+}
+.reconciliation-list {
   display: grid;
-  gap: var(--space-14);
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-10);
 }
 .reconciliation-card {
   display: grid;
-  gap: var(--space-8);
+  gap: var(--space-10);
+  padding: var(--space-16);
 }
 .reconciliation-card--resolved {
   border-color: var(--border-strong);
 }
 .reconciliation-card__header {
-  align-items: center;
+  align-items: flex-start;
   display: flex;
   justify-content: space-between;
 }
 .reconciliation-card h2 {
-  font-size: var(--text-3xl);
-  margin: 0;
+  font-size: var(--text-2xl);
+  margin: var(--space-5) 0 0;
 }
 .reconciliation-card p {
   color: var(--muted);
   margin: 0;
 }
 .reconciliation-reason {
-  min-height: 2.5rem;
+  color: var(--ink-2) !important;
 }
 .reconciliation-card small {
   color: var(--dim);
@@ -47,6 +76,12 @@
   display: grid;
   gap: var(--space-6);
   padding: var(--space-10);
+}
+.reconciliation-route {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
 }
 .reconciliation-comparison small {
   line-height: var(--leading-normal);
@@ -97,7 +132,14 @@
   font: var(--font-mono-sm);
 }
 @media (max-width: 44rem) {
-  .reconciliation-grid {
+  .reconciliation-comparison {
     grid-template-columns: 1fr;
+  }
+  .reconciliation-card__header {
+    gap: var(--space-12);
+  }
+  .reconciliation-card__header .button {
+    min-height: var(--space-36);
+    padding-inline: var(--space-11);
   }
 }

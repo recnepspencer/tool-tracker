@@ -1,9 +1,7 @@
 import { ErrorState, LoadingState } from '../../components/ui/AsyncState';
 import { PageHeading } from '../../components/layout/PageHeading';
-import { useSession } from '../../app/session-context';
 import { useCompanyProfile } from '../settings/use-company-profile';
 import { useToolCategories } from '../settings/use-tool-categories';
-import { AccountSettingsCard } from './AccountSettingsCard';
 import { CategoryManager } from './CategoryManager';
 import { CompanySettingsForm } from './CompanySettingsForm';
 import { DangerZone } from './DangerZone';
@@ -14,7 +12,6 @@ export function SettingsPage() {
   const company = useCompanyProfile();
   const categories = useToolCategories();
   const mutations = useSettingsMutations();
-  const { session } = useSession();
   if (company.isPending || categories.isPending) return <LoadingState label="Loading settings…" />;
   if (company.isError || categories.isError || !company.data || !categories.data)
     return (
@@ -45,7 +42,7 @@ export function SettingsPage() {
       <PageHeading
         eyebrow="Admin view · Settings"
         title="Settings"
-        description="Manage the company profile, tool categories, account, and workspace lifecycle."
+        description="Manage company details, tool categories, and workspace data."
       />
       {mutationError && (
         <p className="form-error" role="alert">
@@ -55,7 +52,6 @@ export function SettingsPage() {
       <div className="settings-grid">
         <CompanySettingsForm company={company.data} mutations={mutations} blocked={queryBlocked} />
         <CategoryManager categories={categories.data} mutations={mutations} blocked={queryBlocked} />
-        <AccountSettingsCard session={session} />
         <DangerZone mutations={mutations} blocked={queryBlocked} />
       </div>
     </div>

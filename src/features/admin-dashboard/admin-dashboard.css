@@ -4,6 +4,9 @@
   gap: var(--space-12);
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
 }
+.mobile-dashboard-actions {
+  display: none;
+}
 .warehouse-card,
 .activity-card,
 .long-held-card {
@@ -126,6 +129,52 @@
   }
 }
 @media (max-width: 620px) {
+  .dashboard-overview {
+    display: none;
+  }
+  .mobile-dashboard-actions {
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-panel);
+    display: grid;
+    overflow: hidden;
+  }
+  .mobile-dashboard-action {
+    align-items: center;
+    background: var(--card);
+    border-bottom: var(--border-width) solid var(--border);
+    color: var(--ink);
+    display: grid;
+    gap: var(--space-12);
+    grid-template-columns: var(--space-42) minmax(0, 1fr) auto;
+    padding: var(--space-14);
+    text-decoration: none;
+  }
+  .mobile-dashboard-action:last-child {
+    border-bottom: 0;
+  }
+  .mobile-dashboard-action__count {
+    align-items: center;
+    background: var(--surface-2);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-sm);
+    display: flex;
+    font-size: var(--text-3xl);
+    height: var(--space-42);
+    justify-content: center;
+  }
+  .mobile-dashboard-action strong,
+  .mobile-dashboard-action small {
+    display: block;
+  }
+  .mobile-dashboard-action small {
+    color: var(--muted);
+    margin-top: var(--space-4);
+  }
+  .mobile-dashboard-action > svg {
+    color: var(--dim);
+    height: var(--space-18);
+    width: var(--space-18);
+  }
   .warehouse-row {
     align-items: flex-start;
     flex-direction: column;

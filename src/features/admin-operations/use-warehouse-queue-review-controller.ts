@@ -29,26 +29,30 @@ export function useWarehouseQueueReviewController({
     setNote('');
   };
 
-  const resolve = async (decision: QueueDecision) => {
-    if (!review) return;
+  const resolveItem = async (item: WarehouseQueueItemView, decision: QueueDecision, evidenceNote = '') => {
     const mutation =
       decision === 'decline'
         ? mutations.declineQueueItem
-        : review.kind === 'request'
+        : item.kind === 'request'
           ? mutations.approveRequest
           : mutations.acceptReturn;
     mutation.reset();
     const input = {
-      handoffId: review.id,
-      toolUnitId: review.toolUnitId,
-      ...(note.trim() ? { evidence: { note } } : {}),
+      handoffId: item.id,
+      toolUnitId: item.toolUnitId,
+      ...(evidenceNote.trim() ? { evidence: { note: evidenceNote } } : {}),
     };
     try {
       await mutation.mutateAsync(input);
-      closeReview();
+      if (review?.id === item.id) closeReview();
     } catch {
       // Keep the review and evidence note mounted so this operation can be retried.
     }
+  };
+
+  const resolve = async (decision: QueueDecision) => {
+    if (!review) return;
+    await resolveItem(review, decision, note);
   };
 
   const errorFor = (mutation: { isError: boolean; error: unknown }) =>
@@ -57,6 +61,8 @@ export function useWarehouseQueueReviewController({
     review?.kind === 'request'
       ? (errorFor(mutations.approveRequest) ?? errorFor(mutations.declineQueueItem))
       : (errorFor(mutations.acceptReturn) ?? errorFor(mutations.declineQueueItem));
+  const quickDecisionError =
+    errorFor(mutations.approveRequest) ?? errorFor(mutations.acceptReturn) ?? errorFor(mutations.declineQueueItem);
   return {
     review,
     note,
@@ -64,7 +70,9 @@ export function useWarehouseQueueReviewController({
     setNote,
     closeReview,
     resolve,
+    resolveItem,
     decisionError,
+    quickDecisionError,
     busy:
       queryBlocked ||
       mutations.approveRequest.isPending ||

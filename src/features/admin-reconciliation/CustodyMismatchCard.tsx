@@ -13,20 +13,23 @@ export function CustodyMismatchCard({
   return (
     <SurfaceCard className={`reconciliation-card reconciliation-card--${issue.status}`}>
       <div className="reconciliation-card__header">
-        <span className="eyebrow">Custody mismatch</span>
-        <span className="admin-meta-kind">{issue.status}</span>
+        <div>
+          <span className="eyebrow">Custody mismatch</span>
+          <h2>{issue.toolName}</h2>
+        </div>
+        {issue.status === 'open' && (
+          <Button aria-label="Review" variant="secondary" onClick={() => onReview(issue)}>
+            Review
+          </Button>
+        )}
       </div>
-      <h2>{issue.toolName}</h2>
-      <p>
-        Recorded at {issue.recordedLabel}; observed at {issue.observedLabel}.
+      <p className="reconciliation-route">
+        <span>{issue.recordedLabel}</span>
+        <span aria-hidden="true">→</span>
+        <span>{issue.observedLabel}</span>
       </p>
       <p className="reconciliation-reason">{issue.reason}</p>
       <small>Detected {formatActivityTimestamp(issue.detectedAt)}</small>
-      {issue.status === 'open' && (
-        <Button variant="secondary" onClick={() => onReview(issue)}>
-          Review
-        </Button>
-      )}
     </SurfaceCard>
   );
 }

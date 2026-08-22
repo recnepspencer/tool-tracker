@@ -136,18 +136,45 @@
   stroke-width: var(--space-2);
   width: var(--space-16);
 }
-.field-listbox {
+.field-popover {
   background: var(--card);
   border: var(--border-width) solid var(--border-strong);
   border-radius: var(--radius-field);
   box-shadow: var(--elevation-overlay);
   box-sizing: border-box;
+  overflow: hidden;
+  z-index: var(--z-popover);
+}
+.field-popover-search {
+  border-bottom: var(--border-width) solid var(--border);
+  padding: var(--space-8);
+}
+.field-popover-search-input {
+  appearance: none;
+  background: var(--field);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+  color: var(--ink);
+  font: var(--font-control-compact);
+  min-height: var(--space-38);
+  outline: 0;
+  padding: 0 var(--space-10);
+  width: 100%;
+}
+.field-popover-search-input:focus {
+  border-color: var(--blue-border-focus);
+  box-shadow: var(--elevation-focus);
+}
+.field-popover-search-input::placeholder {
+  color: var(--dim);
+}
+.field-listbox {
   list-style: none;
   margin: 0;
   max-height: var(--listbox-max-height);
   overflow-y: auto;
   padding: var(--space-6);
-  z-index: var(--z-popover);
 }
 .field-option,
 .field-empty {

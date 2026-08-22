@@ -68,31 +68,53 @@
   align-items: center;
   border-bottom: var(--border-width) solid var(--border);
   display: grid;
-  gap: var(--space-12);
-  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-16);
+  grid-template-columns: minmax(0, 1fr) auto;
   padding: var(--space-14) var(--space-16);
 }
 .flagged-row:last-child {
   border-bottom: 0;
 }
+.flagged-row__main {
+  align-items: center;
+  display: flex;
+  gap: var(--space-12);
+  min-width: 0;
+}
 .flagged-row__body {
   min-width: 0;
 }
 .flagged-row__heading {
-  align-items: start;
+  align-items: center;
   display: flex;
-  gap: var(--space-12);
+  gap: var(--space-10);
   justify-content: space-between;
 }
 .flagged-row h2 {
   font-size: var(--text-2xl);
   letter-spacing: var(--tracking-heading);
-  margin: var(--space-3) 0 0;
+  margin: 0;
 }
 .flagged-row p {
   color: var(--muted);
   font-size: var(--text-body);
   margin: var(--space-4) 0 0;
+}
+.flagged-row__identity {
+  color: var(--dim);
+  display: block;
+  font: var(--font-mono-xs);
+  margin-top: var(--space-5);
+}
+.flagged-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  justify-content: flex-end;
+}
+.flagged-row__actions .button {
+  min-height: var(--space-36);
+  padding-inline: var(--space-11);
 }
 .queue-card,
 .inventory-card {
@@ -104,6 +126,8 @@
 }
 .queue-item {
   border-bottom: var(--border-width) solid var(--border);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 .queue-item__open {
   align-items: center;
@@ -185,15 +209,18 @@
   height: var(--space-16);
   width: var(--space-16);
 }
-.queue-item__actions {
+.queue-item__decisions {
+  align-items: center;
   display: flex;
-  flex-wrap: wrap;
   gap: var(--space-8);
-  margin-top: var(--space-10);
+  padding: var(--space-12) var(--space-16) var(--space-12) 0;
 }
-.flagged-row .queue-item__actions .button {
+.queue-item__decisions .button {
   min-height: var(--space-36);
-  padding-inline: var(--space-11);
+  padding-inline: var(--space-12);
+}
+.operations-inline-error {
+  margin-bottom: var(--space-12);
 }
 .operations-dialog {
   max-width: min(var(--space-520), calc(100vw - var(--space-24)));
@@ -310,6 +337,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .queue-item {
+    grid-template-columns: 1fr;
     padding: 0;
   }
   .queue-item__open {
@@ -323,24 +351,28 @@
   .queue-item__note {
     -webkit-line-clamp: 1;
   }
+  .queue-item__decisions {
+    border-top: var(--border-width) solid var(--border);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: var(--space-9) var(--space-14) var(--space-12);
+  }
+  .queue-item__decisions .button {
+    width: 100%;
+  }
   .flagged-row {
-    gap: var(--space-12);
-    grid-template-columns: var(--control-height) minmax(0, 1fr);
+    align-items: stretch;
+    gap: var(--space-10);
+    grid-template-columns: 1fr;
     padding: var(--space-14);
   }
   .flagged-row__heading {
     gap: var(--space-8);
   }
-  .flagged-row__body {
-    display: contents;
-  }
-  .flagged-row__heading,
-  .flagged-row p {
-    grid-column: 2;
-  }
-  .flagged-row .queue-item__actions {
-    grid-column: 1 / -1;
-    margin-top: 0;
+  .flagged-row__actions {
+    border-top: var(--border-width) solid var(--border);
+    justify-content: flex-start;
+    padding-top: var(--space-10);
   }
   .inventory-table {
     min-width: 0;

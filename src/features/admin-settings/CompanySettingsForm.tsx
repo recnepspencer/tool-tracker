@@ -25,12 +25,14 @@ export function CompanySettingsForm({
       .mutateAsync({ expectedRevision: company.revision, name, address })
       .catch(() => undefined);
   return (
-    <SurfaceCard>
+    <SurfaceCard className="settings-card">
       <div className="settings-card-heading">
         <span className="eyebrow">Company profile</span>
       </div>
-      <TextField label="Company name" value={name} onChange={setName} />
-      <TextField label="Address" value={address} onChange={setAddress} />
+      <div className="settings-fields">
+        <TextField label="Company name" value={name} onChange={setName} />
+        <TextField label="Address" value={address} onChange={setAddress} />
+      </div>
       <Button onClick={save} disabled={blocked || mutations.updateCompany.isPending || !name.trim() || !address.trim()}>
         Save company
       </Button>

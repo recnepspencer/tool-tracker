@@ -97,18 +97,18 @@ describe('admin route surfaces', () => {
     renderApp(<AppRoutes />, { sessionStore: createMemorySessionStore('sam-ochoa') });
     const table = await screen.findByRole('table');
     expect(within(table).getByText('Casey Reed')).toBeInTheDocument();
-    await chooseFieldOption(user, screen.getByLabelText('Filter lifecycle'), 'Invited');
+    await user.click(screen.getByRole('tab', { name: 'Invited' }));
     expect(within(table).getByText('Casey Reed')).toBeInTheDocument();
     expect(within(table).queryByText('Ray Torres')).not.toBeInTheDocument();
-    await chooseFieldOption(user, screen.getByLabelText('Filter lifecycle'), 'All access states');
-    await chooseFieldOption(user, screen.getByLabelText('Filter capability'), 'No access');
+    await user.click(screen.getByRole('tab', { name: 'Everyone' }));
+    await user.click(screen.getByRole('tab', { name: 'No access' }));
     expect(within(table).getByText('Casey Reed')).toBeInTheDocument();
     expect(within(table).getByText('Taylor Nguyen')).toBeInTheDocument();
     expect(within(table).getByText('Quinn Hart')).toBeInTheDocument();
-    await chooseFieldOption(user, screen.getByLabelText('Filter capability'), 'Admin-capable');
+    await user.click(screen.getByRole('tab', { name: 'Admins' }));
     expect(within(table).getByText('Sam Ochoa')).toBeInTheDocument();
     expect(within(table).queryByText('Casey Reed')).not.toBeInTheDocument();
-    await chooseFieldOption(user, screen.getByLabelText('Filter capability'), 'All capabilities');
+    await user.click(screen.getByRole('tab', { name: 'Everyone' }));
     await user.click(within(table).getByRole('link', { name: 'Casey Reed' }));
     const drawer = await screen.findByRole('dialog', { name: 'Person details for Casey Reed' });
     await chooseFieldOption(user, within(drawer).getByLabelText('Role'), 'Warehouse manager');
@@ -130,9 +130,10 @@ describe('admin route surfaces', () => {
     expect(within(table).getByText('Casey Reed')).toBeInTheDocument();
     expect(within(table).queryByText('Ray Torres')).not.toBeInTheDocument();
     await user.clear(search);
-    await chooseFieldOption(user, screen.getByLabelText('Filter role'), 'Administrator');
+    await user.click(screen.getByRole('tab', { name: 'Admins' }));
     expect(within(table).getByText('Sam Ochoa')).toBeInTheDocument();
-    expect(within(table).queryByText('Morgan Price')).not.toBeInTheDocument();
+    expect(within(table).getByText('Morgan Price')).toBeInTheDocument();
+    expect(within(table).queryByText('Ray Torres')).not.toBeInTheDocument();
     await user.type(search, 'no such person');
     expect(screen.getByText('No people match this filter.')).toBeInTheDocument();
   });
@@ -156,13 +157,11 @@ describe('admin route surfaces', () => {
     await user.click(await screen.findByRole('link', { name: 'Access' }));
     expect(await screen.findByRole('heading', { name: 'Access guide' })).toBeInTheDocument();
     expect(screen.getAllByText('Worker').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Worker', { selector: 'strong' })).toHaveLength(1);
-    expect(screen.getByText('request tools')).toBeInTheDocument();
+    expect(screen.getByText('Request tools')).toBeInTheDocument();
     expect(screen.getAllByText('Warehouse manager').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('manage warehouse').length).toBeGreaterThan(0);
+    expect(screen.getByText('Manage warehouse')).toBeInTheDocument();
     expect(screen.getAllByText('Administrator').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Administrator', { selector: 'strong' })).toHaveLength(1);
-    expect(screen.getByText('administer people')).toBeInTheDocument();
+    expect(screen.getByText('Administer people')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Locked rules' })).toBeInTheDocument();
     expect(screen.getByRole('list', { name: 'Locked structural rules' })).toHaveTextContent(
       'Every handoff requires an accepting party before custody changes.',

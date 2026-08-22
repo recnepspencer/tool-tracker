@@ -47,7 +47,7 @@ export function SelectField({
   const generatedId = useId();
   const listboxId = `${generatedId}-listbox`;
   const fieldRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLUListElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLElement>(null);
   const sheetSearchRef = useRef<HTMLInputElement>(null);
   const triggerRef = useRef<HTMLInputElement | HTMLButtonElement | null>(null);
@@ -58,7 +58,6 @@ export function SelectField({
   const [activeIndex, setActiveIndex] = useState(0);
   const selected = selectedSelectOption(options, value);
   const isSheet = presentation === 'sheet';
-  const usesTriggerSearch = searchable && !isSheet;
   const filtered = useMemo(
     () => filterSelectOptions(options, searchable && open ? query : ''),
     [open, options, query, searchable],
@@ -207,101 +206,87 @@ export function SelectField({
         compact={compact}
         className={cx(className, 'field--select')}
       >
-        {usesTriggerSearch ? (
-          <div className="field-control-row">
-            <input
-              ref={(element) => {
-                triggerRef.current = element;
-              }}
-              id={generatedId}
-              className="field-control"
-              role="combobox"
-              name={name}
-              disabled={disabled}
-              required={required && !value}
-              autoComplete="off"
-              spellCheck={false}
-              aria-autocomplete="list"
-              aria-expanded={open}
-              aria-controls={listboxId}
-              aria-activedescendant={open && active ? optionDomId(listboxId, active.value) : undefined}
-              placeholder={placeholder}
-              value={open ? query : (selected?.label ?? '')}
-              onChange={(event) => {
-                setQuery(event.target.value);
-                setOpen(true);
-              }}
-              onFocus={() => setFocused(true)}
-              onBlur={() => setFocused(false)}
-              onClick={() => !disabled && setOpen(true)}
-              onKeyDown={onInputKeyDown}
-            />
-          </div>
-        ) : (
-          <button
-            ref={(element) => {
-              triggerRef.current = element;
-            }}
-            id={generatedId}
-            type="button"
-            className="field-select-trigger"
-            role="combobox"
-            name={name}
-            disabled={disabled}
-            aria-label={label}
-            aria-required={required || undefined}
-            aria-haspopup="listbox"
-            aria-expanded={open}
-            aria-controls={listboxId}
-            aria-activedescendant={open && active ? optionDomId(listboxId, active.value) : undefined}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            onClick={() => !disabled && setOpen((current) => !current)}
-            onKeyDown={onButtonKeyDown}
-          >
-            <span
-              className={cx('field-select-trigger__value', !selected && 'field-select-trigger__value--placeholder')}
-            >
-              {selected?.label ?? placeholder}
-            </span>
-          </button>
-        )}
+        <button
+          ref={(element) => {
+            triggerRef.current = element;
+          }}
+          id={generatedId}
+          type="button"
+          className="field-select-trigger"
+          role="combobox"
+          name={name}
+          disabled={disabled}
+          aria-label={label}
+          aria-required={required || undefined}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          aria-controls={listboxId}
+          aria-activedescendant={open && active ? optionDomId(listboxId, active.value) : undefined}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          onClick={() => !disabled && setOpen((current) => !current)}
+          onKeyDown={onButtonKeyDown}
+        >
+          <span className={cx('field-select-trigger__value', !selected && 'field-select-trigger__value--placeholder')}>
+            {selected?.label ?? placeholder}
+          </span>
+        </button>
         <ChevronDownIcon className="field-chevron" />
       </Field>
       {open && !isSheet
         ? createPortal(
-            <ul
-              ref={listRef}
-              id={listboxId}
-              className="field-listbox"
-              role="listbox"
-              aria-label={label}
-              style={overlayStyle}
-              onMouseDown={(event) => event.preventDefault()}
-            >
-              {filtered.length ? (
-                filtered.map((option, index) => (
-                  <li
-                    key={option.value}
-                    id={optionDomId(listboxId, option.value)}
-                    role="option"
-                    className={cx(
-                      'field-option',
-                      index === activeIndex && 'field-option--active',
-                      option.value === value && 'field-option--selected',
-                    )}
-                    aria-selected={option.value === value}
-                    onMouseEnter={() => setActiveIndex(index)}
-                    onClick={() => choose(option)}
-                  >
-                    {option.label}
-                    {option.description ? <small>{option.description}</small> : null}
-                  </li>
-                ))
-              ) : (
-                <li className="field-empty">{emptyMessage}</li>
-              )}
-            </ul>,
+            <div ref={listRef} className="field-popover" style={overlayStyle}>
+              {searchable ? (
+                <div className="field-popover-search">
+                  <label className="sr-only" htmlFor={`${generatedId}-popover-search`}>
+                    Search {label}
+                  </label>
+                  <input
+                    id={`${generatedId}-popover-search`}
+                    className="field-popover-search-input"
+                    type="search"
+                    role="searchbox"
+                    autoComplete="off"
+                    spellCheck={false}
+                    aria-autocomplete="list"
+                    aria-controls={listboxId}
+                    aria-activedescendant={active ? optionDomId(listboxId, active.value) : undefined}
+                    placeholder={`Search ${label}`}
+                    value={query}
+                    onChange={(event) => {
+                      setQuery(event.target.value);
+                      setActiveIndex(0);
+                    }}
+                    onKeyDown={onInputKeyDown}
+                  />
+                </div>
+              ) : null}
+              <ul id={listboxId} className="field-listbox" role="listbox" aria-label={label}>
+                {filtered.length ? (
+                  filtered.map((option, index) => (
+                    <li
+                      key={option.value}
+                      id={optionDomId(listboxId, option.value)}
+                      role="option"
+                      className={cx(
+                        'field-option',
+                        index === activeIndex && 'field-option--active',
+                        option.value === value && 'field-option--selected',
+                      )}
+                      aria-selected={option.value === value}
+                      onMouseEnter={() => setActiveIndex(index)}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => choose(option)}
+                    >
+                      {option.label}
+                      {option.description ? <small>{option.description}</small> : null}
+                    </li>
+                  ))
+                ) : (
+                  <li className="field-empty">{emptyMessage}</li>
+                )}
+              </ul>
+            </div>,
             document.body,
           )
         : null}

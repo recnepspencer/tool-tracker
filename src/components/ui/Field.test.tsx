@@ -110,12 +110,16 @@ describe('shared field primitives', () => {
     await user.click(combobox);
     expect(screen.getByRole('listbox', { name: 'Send to' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /South Shop/ })).toBeInTheDocument();
-    await user.type(combobox, 'ray');
+    expect(combobox.tagName).toBe('BUTTON');
+    const search = screen.getByRole('searchbox', { name: 'Search Send to' });
+    expect(search).not.toHaveFocus();
+    await user.click(search);
+    await user.type(search, 'ray');
     expect(screen.getByRole('option', { name: /Ray Torres/ })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: /South Shop/ })).not.toBeInTheDocument();
     await user.click(screen.getByRole('option', { name: /Ray Torres/ }));
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
-    expect(combobox).toHaveValue('Ray Torres');
+    expect(combobox).toHaveTextContent('Ray Torres');
   });
 
   it('moves through overlay options with the keyboard and closes on Escape', async () => {
@@ -124,7 +128,7 @@ describe('shared field primitives', () => {
     const combobox = screen.getByRole('combobox', { name: 'Send to' });
     await user.click(combobox);
     await user.keyboard('{ArrowDown}{Enter}');
-    expect(combobox).toHaveValue('Ray Torres');
+    expect(combobox).toHaveTextContent('Ray Torres');
     await user.click(combobox);
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();

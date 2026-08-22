@@ -28,7 +28,7 @@ export function CategoryManager({
       .then(() => setEditingCategory(null))
       .catch(() => undefined);
   return (
-    <SurfaceCard className="settings-card--wide">
+    <SurfaceCard className="settings-card">
       <div className="settings-card-heading">
         <span className="eyebrow">Tool categories</span>
       </div>

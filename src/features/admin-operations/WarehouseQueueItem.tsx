@@ -1,4 +1,5 @@
 import { ChevronRight } from 'lucide-react';
+import { Button } from '../../components/ui/Button';
 import { ToolPhoto } from '../../components/ui/ToolPhoto';
 import type { WarehouseQueueItemView } from '../../domain/read-models/warehouse-operations';
 
@@ -6,10 +7,12 @@ export function WarehouseQueueItem({
   item,
   busy,
   onReview,
+  onResolve,
 }: {
   item: WarehouseQueueItemView;
   busy: boolean;
   onReview: (item: WarehouseQueueItemView) => void;
+  onResolve: (item: WarehouseQueueItemView, decision: 'approve' | 'decline') => void;
 }) {
   return (
     <article className="queue-item">
@@ -42,6 +45,23 @@ export function WarehouseQueueItem({
           <ChevronRight aria-hidden="true" />
         </span>
       </button>
+      <div className="queue-item__decisions">
+        <Button
+          variant="secondary"
+          disabled={busy}
+          aria-label={`Decline ${item.kind} for ${item.toolName}`}
+          onClick={() => onResolve(item, 'decline')}
+        >
+          Decline
+        </Button>
+        <Button
+          disabled={busy}
+          aria-label={`${item.kind === 'request' ? 'Release' : 'Accept return'} for ${item.toolName}`}
+          onClick={() => onResolve(item, 'approve')}
+        >
+          {item.kind === 'request' ? 'Release' : 'Accept'}
+        </Button>
+      </div>
     </article>
   );
 }

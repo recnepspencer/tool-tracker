@@ -1,5 +1,4 @@
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
-import { formatActivityTimestamp } from '../../domain/activity';
 import type { AuditEventView } from '../../domain/read-models/activity';
 
 export function AuditLog({ events }: { events: AuditEventView[] }) {
@@ -10,21 +9,34 @@ export function AuditLog({ events }: { events: AuditEventView[] }) {
         <div className="audit-list">
           {groups.map((group) => (
             <section className="audit-group" key={group.label}>
-              <h2>{group.label}</h2>
-              {group.events.map((event) => (
-                <article className="audit-row" key={event.id}>
-                  <div className="audit-row__time">{formatActivityTimestamp(event.timestamp)}</div>
-                  <div className="audit-row__body">
-                    <strong>{event.action}</strong>
-                    <p>
-                      {event.actor}
-                      {event.toolName ? ` · ${event.toolName}${event.toolUnitId ? ` (${event.toolUnitId})` : ''}` : ''}
-                      {event.warehouseName ? ` · ${event.warehouseName}` : ''}
-                    </p>
-                  </div>
-                  <span className="admin-meta-kind">{event.kind}</span>
-                </article>
-              ))}
+              <div className="audit-group__heading">
+                <h2>{group.label}</h2>
+                <span>{group.events.length}</span>
+              </div>
+              <div className="audit-group__rows">
+                {group.events.map((event) => (
+                  <article className="audit-row" key={event.id}>
+                    <time className="audit-row__time" dateTime={event.timestamp}>
+                      {formatAuditTime(event.timestamp)}
+                    </time>
+                    <span className="audit-row__avatar" aria-hidden="true">
+                      {initials(event.actor)}
+                    </span>
+                    <div className="audit-row__body">
+                      <strong>{event.action}</strong>
+                      <p>
+                        {event.actor}
+                        {event.warehouseName ? ` · ${event.warehouseName}` : ''}
+                      </p>
+                    </div>
+                    <span className="audit-row__tool">
+                      {event.toolName ?? 'Workspace'}
+                      {event.toolUnitId ? ` · ${event.toolUnitId}` : ''}
+                    </span>
+                    <span className="admin-meta-kind">{event.kind}</span>
+                  </article>
+                ))}
+              </div>
             </section>
           ))}
         </div>
@@ -34,6 +46,18 @@ export function AuditLog({ events }: { events: AuditEventView[] }) {
     </SurfaceCard>
   );
 }
+
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toLocaleUpperCase();
+
+const formatAuditTime = (timestamp: string) =>
+  new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date(timestamp));
 
 function groupEvents(events: AuditEventView[]) {
   const groups = new Map<string, AuditEventView[]>();

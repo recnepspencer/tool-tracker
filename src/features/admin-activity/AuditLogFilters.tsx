@@ -33,6 +33,27 @@ export function AuditLogFilters({
   );
   return (
     <>
+      <div className="activity-toolbar">
+        <SearchField
+          compact
+          label="Search audit log"
+          value={search}
+          onChange={onSearchChange}
+          placeholder="Search activity…"
+        />
+        <SelectField
+          compact
+          hideLabel
+          searchable={false}
+          label="Warehouse"
+          value={warehouseId}
+          onChange={onWarehouseChange}
+          options={[
+            { value: 'all', label: 'All warehouses' },
+            ...warehouses.map(([value, label]) => ({ value, label })),
+          ]}
+        />
+      </div>
       <div className="activity-kind-chips" aria-label="Audit event type">
         {(
           [
@@ -53,24 +74,6 @@ export function AuditLogFilters({
             {label}
           </button>
         ))}
-      </div>
-      <div className="activity-toolbar">
-        <SearchField
-          label="Search audit log"
-          value={search}
-          onChange={onSearchChange}
-          placeholder="Search actor, tool, action…"
-        />
-        <SelectField
-          compact
-          label="Warehouse"
-          value={warehouseId}
-          onChange={onWarehouseChange}
-          options={[
-            { value: 'all', label: 'All warehouses' },
-            ...warehouses.map(([value, label]) => ({ value, label })),
-          ]}
-        />
       </div>
     </>
   );
