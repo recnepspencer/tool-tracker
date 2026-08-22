@@ -1,8 +1,8 @@
+import { Menu } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { AccountMenu } from './AccountMenu';
 import { BrandMark } from './BrandMark';
 import type { AuthSession, Role } from '../../domain/auth';
-import { Button } from '../ui/Button';
 
 export interface AppHeaderProps {
   role: Role;
@@ -17,17 +17,27 @@ export function AppHeader({ role, session, onSignOut, onOpenNavigation }: AppHea
   return (
     <header className="app-header">
       <div className="header-leading">
-        <Button className="mobile-nav-trigger" variant="ghost" onClick={onOpenNavigation} aria-label="Open navigation">
-          Menu
-        </Button>
+        <button
+          type="button"
+          className="mobile-nav-trigger worker-menu-button"
+          onClick={onOpenNavigation}
+          aria-label="Open navigation"
+        >
+          <Menu aria-hidden="true" />
+        </button>
         <NavLink className="wordmark" to={isWorker ? '/worker/tools' : '/admin/dashboard'}>
-          <BrandMark />
-          <span>
+          <span className="desktop-wordmark-mark">
+            <BrandMark />
+          </span>
+          <span className="desktop-wordmark-copy">
             Nelson <em>Electric</em>
           </span>
+          <span className="mobile-wordmark-copy">NELSON ELECTRIC</span>
         </NavLink>
       </div>
-      <AccountMenu role={role} session={session} onSignOut={onSignOut} />
+      <div className="desktop-header-account">
+        <AccountMenu role={role} session={session} onSignOut={onSignOut} />
+      </div>
     </header>
   );
 }

@@ -68,19 +68,28 @@ describe('admin route surfaces', () => {
     await screen.findByRole('heading', { name: 'People' });
     const open = screen.getByLabelText('Open navigation');
     await user.click(open);
-    const navigation = screen.getByRole('dialog', { name: 'admin mobile navigation' });
+    const navigation = screen.getByRole('dialog', { name: 'Admin navigation' });
     expect(navigation).toHaveAttribute('aria-modal', 'true');
+    expect(within(navigation).getByRole('button', { name: 'Open account for Sam Ochoa' })).toBeInTheDocument();
+    expect(within(navigation).getByRole('switch', { name: 'Appearance' })).toBeInTheDocument();
     expect(within(navigation).getByRole('link', { name: 'Dashboard' })).toBeInTheDocument();
     expect(within(navigation).getByRole('link', { name: 'People' })).toBeInTheDocument();
     expect(within(navigation).getByRole('link', { name: 'Queue' })).toHaveAttribute('href', '#/admin/operations/queue');
+    expect(navigation.querySelectorAll('.worker-drawer-link-icon')).toHaveLength(10);
     expect(screen.getByRole('button', { name: 'Close navigation' })).toHaveFocus();
     await user.keyboard('{Tab}');
     expect(navigation).toContainElement(document.activeElement as HTMLElement);
     await user.keyboard('{Shift>}{Tab}{/Shift}');
     expect(screen.getByRole('button', { name: 'Close navigation' })).toHaveFocus();
     await user.keyboard('{Escape}');
-    expect(screen.queryByRole('dialog', { name: 'admin mobile navigation' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Admin navigation' })).not.toBeInTheDocument();
     expect(open).toHaveFocus();
+
+    await user.click(open);
+    await user.click(screen.getByRole('button', { name: 'Open account for Sam Ochoa' }));
+    const account = screen.getByRole('dialog', { name: 'Sam Ochoa' });
+    expect(within(account).getByText('sam@nelsonelectric.com')).toBeInTheDocument();
+    expect(within(account).queryByRole('switch', { name: 'Appearance' })).not.toBeInTheDocument();
   });
 
   it('filters people and keeps role, access, and removal commands visible after refetch', async () => {

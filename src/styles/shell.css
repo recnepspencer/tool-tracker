@@ -32,6 +32,9 @@
 .mobile-nav-trigger {
   display: none;
 }
+.mobile-wordmark-copy {
+  display: none;
+}
 .wordmark em {
   color: var(--muted);
   font-style: normal;
@@ -151,6 +154,29 @@
   width: var(--space-7);
 }
 @media (max-width: 920px) {
+  .app-header {
+    box-sizing: border-box;
+    height: calc(var(--worker-header-height) + env(safe-area-inset-top));
+    min-height: 0;
+    padding: env(safe-area-inset-top) var(--worker-pad-x) var(--space-4);
+  }
+  .header-leading {
+    justify-content: space-between;
+    width: 100%;
+  }
+  .desktop-header-account,
+  .desktop-wordmark-mark,
+  .desktop-wordmark-copy {
+    display: none;
+  }
+  .mobile-wordmark-copy {
+    display: inline;
+  }
+  .wordmark {
+    color: var(--dim);
+    font: var(--weight-medium) var(--text-xs) / var(--leading-none) var(--font-mono);
+    letter-spacing: var(--tracking-nav);
+  }
   .shell-body {
     grid-template-columns: 1fr;
   }
@@ -159,38 +185,6 @@
   }
   .mobile-nav-trigger {
     display: inline-flex;
-    min-height: var(--icon-button-size);
-    padding: 0 var(--space-12);
-  }
-  .mobile-nav-backdrop {
-    background: var(--scrim);
-    inset: 0;
-    position: fixed;
-    z-index: var(--z-nav);
-  }
-  .mobile-nav-drawer {
-    background: var(--side);
-    border-right: var(--border-width) solid var(--border-strong);
-    box-shadow: var(--elevation-nav);
-    height: 100%;
-    max-width: var(--space-320);
-    padding: var(--space-22) var(--space-16);
-    width: var(--size-nav-drawer);
-  }
-  .mobile-nav-header {
-    align-items: center;
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: var(--space-22);
-  }
-  .mobile-nav-drawer nav {
-    display: grid;
-    gap: var(--space-5);
-  }
-  .mobile-nav-theme {
-    border-top: var(--border-width) solid var(--border);
-    margin-top: var(--space-22);
-    padding-top: var(--space-16);
   }
 }
 @media (max-width: 620px) {
@@ -206,10 +200,5 @@
   }
   .page-heading .live-indicator {
     margin-top: var(--space-20);
-  }
-}
-@media (max-width: 390px) {
-  .wordmark > span:last-child {
-    display: none;
   }
 }

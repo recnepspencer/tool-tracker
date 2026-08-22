@@ -1,38 +1,70 @@
+import {
+  Activity,
+  Boxes,
+  ClipboardList,
+  GitMerge,
+  LayoutDashboard,
+  PackageCheck,
+  Settings,
+  ShieldCheck,
+  TriangleAlert,
+  Users,
+  Warehouse,
+  Wrench,
+  type LucideIcon,
+} from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import type { Role } from '../../domain/auth';
 
-const navByRole: Record<Role, Array<{ label: string; path: string; enabled: boolean }>> = {
+const navByRole: Record<Role, Array<{ label: string; path: string; enabled: boolean; icon: LucideIcon }>> = {
   worker: [
-    { label: 'My tools', path: '/worker/tools', enabled: true },
-    { label: 'Checkout', path: '/worker/checkout', enabled: true },
-    { label: 'Activity', path: '/worker/activity', enabled: true },
+    { label: 'My tools', path: '/worker/tools', enabled: true, icon: Wrench },
+    { label: 'Checkout', path: '/worker/checkout', enabled: true, icon: PackageCheck },
+    { label: 'Activity', path: '/worker/activity', enabled: true, icon: Activity },
   ],
   admin: [
-    { label: 'Dashboard', path: '/admin/dashboard', enabled: true },
-    { label: 'Queue', path: '/admin/operations/queue', enabled: true },
-    { label: 'Inventory', path: '/admin/operations/inventory', enabled: true },
-    { label: 'Damaged & lost', path: '/admin/operations/flagged', enabled: true },
-    { label: 'People', path: '/admin/people', enabled: true },
-    { label: 'Warehouses', path: '/admin/warehouses', enabled: true },
-    { label: 'Access', path: '/admin/permissions', enabled: true },
-    { label: 'Reconciliation', path: '/admin/reconciliation', enabled: true },
-    { label: 'Activity', path: '/admin/activity', enabled: true },
-    { label: 'Settings', path: '/admin/settings', enabled: true },
+    { label: 'Dashboard', path: '/admin/dashboard', enabled: true, icon: LayoutDashboard },
+    { label: 'Queue', path: '/admin/operations/queue', enabled: true, icon: ClipboardList },
+    { label: 'Inventory', path: '/admin/operations/inventory', enabled: true, icon: Boxes },
+    { label: 'Damaged & lost', path: '/admin/operations/flagged', enabled: true, icon: TriangleAlert },
+    { label: 'People', path: '/admin/people', enabled: true, icon: Users },
+    { label: 'Warehouses', path: '/admin/warehouses', enabled: true, icon: Warehouse },
+    { label: 'Access', path: '/admin/permissions', enabled: true, icon: ShieldCheck },
+    { label: 'Reconciliation', path: '/admin/reconciliation', enabled: true, icon: GitMerge },
+    { label: 'Activity', path: '/admin/activity', enabled: true, icon: Activity },
+    { label: 'Settings', path: '/admin/settings', enabled: true, icon: Settings },
   ],
 };
 
-export function NavItems({ role, onNavigate }: { role: Role; onNavigate?(): void }) {
+export function NavItems({
+  role,
+  onNavigate,
+  variant = 'sidebar',
+}: {
+  role: Role;
+  onNavigate?(): void;
+  variant?: 'sidebar' | 'drawer';
+}) {
   return (
     <>
-      {navByRole[role].map((item) =>
-        item.enabled ? (
+      {navByRole[role].map((item) => {
+        const Icon = item.icon;
+        return item.enabled ? (
           <NavLink
             key={item.label}
             to={item.path}
             onClick={onNavigate}
-            className={({ isActive }) => `side-nav-link${isActive ? ' side-nav-link--active' : ''}`}
+            className={({ isActive }) =>
+              variant === 'drawer'
+                ? `worker-drawer-link${isActive ? ' worker-drawer-link--active' : ''}`
+                : `side-nav-link${isActive ? ' side-nav-link--active' : ''}`
+            }
           >
-            <span className="nav-dot" />
+            {variant === 'drawer' ? (
+              <Icon className="worker-drawer-link-icon" aria-hidden="true" />
+            ) : (
+              <span className="nav-dot" />
+            )}
             {item.label}
           </NavLink>
         ) : (
@@ -41,8 +73,8 @@ export function NavItems({ role, onNavigate }: { role: Role; onNavigate?(): void
             {item.label}
             <small>Next</small>
           </span>
-        ),
-      )}
+        );
+      })}
     </>
   );
 }
