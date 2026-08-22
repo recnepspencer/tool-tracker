@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { ErrorState, LoadingState } from '../../components/ui/AsyncState';
 import { Button } from '../../components/ui/Button';
 import { PageHeading } from '../../components/layout/PageHeading';
-import { SearchField } from '../../components/ui/TextField';
+import { DirectoryToolbar } from '../../components/layout/DirectoryToolbar';
 import { SelectField } from '../../components/ui/SelectField';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { StatusBadge } from '../../components/ui/StatusBadge';
@@ -20,18 +20,27 @@ import { toHolderRef } from './holder-ref';
 export function FlaggedToolsPage() {
   const [warehouseId, setWarehouseId] = useState('all');
   const [search, setSearch] = useState('');
+  const [condition, setCondition] = useState<'all' | 'damaged' | 'lost'>('all');
   const scopes = useWarehouseScopes();
   const inventory = useWarehouseInventory(warehouseId, true);
   const query = search.trim().toLocaleLowerCase();
-  const rows = useMemo(() => flaggedInventoryItems(inventory.data ?? [], query), [inventory.data, query]);
+  const rows = useMemo(
+    () =>
+      flaggedInventoryItems(inventory.data ?? [], query).filter(
+        (item) => condition === 'all' || item.status === condition,
+      ),
+    [condition, inventory.data, query],
+  );
   const decisions = useInventoryDecisionController({
     items: inventory.data,
     inventoryBlocked: inventory.isFetching || inventory.isPaused || inventory.isError,
     scopesBlocked: scopes.isFetching || scopes.isPaused || scopes.isError,
   });
-  if (inventory.isPending && !inventory.data) return <LoadingState label="Loading flagged tools…" />;
+  if (inventory.isPending && !inventory.data) return <LoadingState label="Loading damaged and lost tools…" />;
   if (!inventory.data)
-    return <ErrorState message="Flagged tools could not be loaded." onRetry={() => void inventory.refetch()} />;
+    return (
+      <ErrorState message="Damaged and lost tools could not be loaded." onRetry={() => void inventory.refetch()} />
+    );
   if (scopes.isPending && !scopes.data) return <LoadingState label="Loading warehouse scopes…" />;
   if (scopes.isError)
     return (
@@ -44,21 +53,26 @@ export function FlaggedToolsPage() {
     <div className="page-content admin-operations-page">
       <PageHeading
         eyebrow="Admin view · Warehouse operations"
-        title="Flagged tools"
-        description="Resolve damaged and lost units with evidence while keeping lifecycle history intact."
+        title="Damaged & lost"
+        description="Review flagged tools and decide what happens next."
       />
       <span className="sr-only" data-testid="warehouse-decision-pending" aria-live="polite">
         {decisions.decisionPending ? 'Saving warehouse decision' : ''}
       </span>
-      <div className="operations-toolbar operations-toolbar--inventory">
-        <div className="operations-filters operations-filters--compact">
-          <SearchField
-            compact
-            label="Search flagged tools"
-            placeholder="Search tools…"
-            value={search}
-            onChange={setSearch}
-          />
+      <DirectoryToolbar<'all' | 'damaged' | 'lost'>
+        searchLabel="Search damaged and lost tools"
+        searchPlaceholder="Search tools…"
+        search={search}
+        onSearchChange={setSearch}
+        filterLabel="Condition filter"
+        filters={[
+          { value: 'all', label: 'All' },
+          { value: 'damaged', label: 'Damaged' },
+          { value: 'lost', label: 'Lost' },
+        ]}
+        activeFilter={condition}
+        onFilterChange={setCondition}
+        trailing={
           <SelectField
             compact
             hideLabel
@@ -71,14 +85,20 @@ export function FlaggedToolsPage() {
               ...(scopes.data ?? []).map((warehouse) => ({ value: warehouse.id, label: warehouse.name })),
             ]}
           />
-        </div>
-      </div>
+        }
+      />
       {inventory.isError && (
-        <ErrorState message="Flagged tools could not be refreshed." onRetry={() => void inventory.refetch()} />
+        <ErrorState message="Damaged and lost tools could not be refreshed." onRetry={() => void inventory.refetch()} />
       )}
-      <SurfaceCard className="inventory-card">
+      <SurfaceCard className="inventory-card flagged-card">
         {rows.length ? (
           <div className="flagged-list">
+            <div className="flagged-list__header" aria-hidden="true">
+              <span>Tool</span>
+              <span>Issue</span>
+              <span>Current custody</span>
+              <span>Actions</span>
+            </div>
             {rows.map((item) => (
               <FlaggedRow
                 key={item.toolUnitId}
@@ -92,7 +112,7 @@ export function FlaggedToolsPage() {
             ))}
           </div>
         ) : (
-          <p className="admin-empty">No active flagged tools match this view.</p>
+          <p className="admin-empty">No damaged or lost tools match this view.</p>
         )}
       </SurfaceCard>
       {decisions.editItem && (
@@ -138,22 +158,23 @@ function FlaggedRow({
   return (
     <article className="flagged-row">
       <div className="flagged-row__main">
-        <ToolPhoto src={item.imageSrc} alt="" size="small" />
+        <ToolPhoto src={item.imageSrc} alt="" size="small" priority />
         <div className="flagged-row__body">
-          <div className="flagged-row__heading">
-            <h2>{item.toolName}</h2>
-            <StatusBadge status={item.status} />
-          </div>
+          <h2>{item.toolName}</h2>
           <span className="flagged-row__identity">
-            {item.toolUnitId} · {item.warehouseName}
+            {item.toolUnitId} · {item.category}
           </span>
-          <p>
-            {item.holder.name} · {item.category}
-          </p>
         </div>
       </div>
+      <div className="flagged-row__issue">
+        <StatusBadge status={item.status} />
+      </div>
+      <div className="flagged-row__custody">
+        <strong>{item.holder.name}</strong>
+        <span>{item.holder.type === 'warehouse' ? 'Warehouse custody' : `Home warehouse · ${item.warehouseName}`}</span>
+      </div>
       <div className="flagged-row__actions">
-        <Button variant="secondary" disabled={busy || !policy.canEdit} onClick={onEdit}>
+        <Button variant="ghost" disabled={busy || !policy.canEdit} onClick={onEdit}>
           Edit
         </Button>
         {policy.canRestore || policy.canDecommission ? (

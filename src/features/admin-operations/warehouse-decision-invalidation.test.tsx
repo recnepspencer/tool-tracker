@@ -62,7 +62,7 @@ describe('warehouse decision invalidation', () => {
       </>,
       { api, sessionStore: createMemorySessionStore('sam-ochoa') },
     );
-    expect(await screen.findByRole('heading', { name: 'Flagged tools' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Damaged & lost' })).toBeInTheDocument();
     await screen.findByTestId('warehouse-prefetch-ready');
     const before = { ...calls };
     holdInventory = true;
@@ -131,7 +131,7 @@ describe('warehouse decision invalidation', () => {
       </>,
       { api, sessionStore: createMemorySessionStore('sam-ochoa') },
     );
-    expect(await screen.findByRole('heading', { name: 'Flagged tools' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Damaged & lost' })).toBeInTheDocument();
     await screen.findByTestId('warehouse-prefetch-ready');
     const before = { ...calls };
     holdInventory = true;
@@ -184,7 +184,7 @@ describe('warehouse decision invalidation', () => {
       </>,
       { api, sessionStore: createMemorySessionStore('sam-ochoa') },
     );
-    expect(await screen.findByRole('heading', { name: 'Flagged tools' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Damaged & lost' })).toBeInTheDocument();
     await screen.findByTestId('warehouse-prefetch-ready');
     const before = calls.details;
     const row = screen.getByText('Fish tape, 240 ft').closest('article');

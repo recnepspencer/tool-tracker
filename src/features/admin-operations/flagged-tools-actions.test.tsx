@@ -32,7 +32,7 @@ describe('flagged tool decision actions', () => {
     const user = userEvent.setup();
     const database = createMockDatabase();
     renderApp(<AppRoutes />, { api: createMockApi(database), sessionStore: createMemorySessionStore('sam-ochoa') });
-    expect(await screen.findByRole('heading', { name: 'Flagged tools' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Damaged & lost' })).toBeInTheDocument();
     const row = screen.getByText('Fish tape, 240 ft').closest('article');
     expect(row).not.toBeNull();
     await user.click(within(row as HTMLElement).getByRole('button', { name: 'Edit' }));
@@ -52,7 +52,7 @@ describe('flagged tool decision actions', () => {
     const user = userEvent.setup();
     const database = createMockDatabase();
     renderApp(<AppRoutes />, { api: createMockApi(database), sessionStore: createMemorySessionStore('sam-ochoa') });
-    expect(await screen.findByRole('heading', { name: 'Flagged tools' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Damaged & lost' })).toBeInTheDocument();
     const row = screen.getByText('Fish tape, 240 ft').closest('article');
     await user.click(within(row as HTMLElement).getByRole('button', { name: 'Force return' }));
     await waitFor(() =>
@@ -74,7 +74,7 @@ describe('flagged tool decision actions', () => {
     const user = userEvent.setup();
     const database = createMockDatabase();
     renderApp(<AppRoutes />, { api: createMockApi(database), sessionStore: createMemorySessionStore('sam-ochoa') });
-    expect(await screen.findByRole('heading', { name: 'Flagged tools' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Damaged & lost' })).toBeInTheDocument();
     const row = screen.getByText('Cable cutter').closest('article');
     await user.click(within(row as HTMLElement).getByRole('button', { name: 'Decommission' }));
     const dialog = await screen.findByRole('dialog', { name: /Decommission Cable cutter/i });

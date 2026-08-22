@@ -6,97 +6,12 @@
   margin-left: auto;
   padding: var(--space-24);
 }
-.people-toolbar {
-  align-items: center;
-  display: flex;
-  gap: var(--space-12);
-  justify-content: space-between;
-  margin-bottom: var(--space-16);
-}
-.people-toolbar > .field--search {
-  flex: 1;
-  max-width: var(--space-520);
-}
-.people-filter-tabs {
-  display: flex;
-  gap: var(--space-7);
-  scrollbar-width: none;
-}
-.people-filter-tabs::-webkit-scrollbar {
-  display: none;
-}
-.people-filter-tab {
-  background: transparent;
-  border: var(--border-width) solid transparent;
-  border-radius: var(--radius-pill);
-  color: var(--muted);
-  cursor: pointer;
-  min-height: var(--space-36);
-  padding: 0 var(--space-12);
-  white-space: nowrap;
-}
-.people-filter-tab:hover,
-.people-filter-tab--active {
-  background: var(--blue-bg);
-  border-color: var(--blue-border);
-  color: var(--blue-soft);
-}
 .people-table__mobile-meta {
   display: none !important;
 }
 @media (max-width: 840px) {
-  .people-toolbar {
-    align-items: stretch;
-    flex-direction: column;
-  }
-  .people-toolbar > .field--search {
-    max-width: none;
-  }
-  .people-filter-tabs {
-    gap: var(--space-4);
-    overflow-x: auto;
-    padding-bottom: var(--space-3);
-  }
-  .people-filter-tab {
-    flex: 0 0 auto;
-    padding-inline: var(--space-10);
-    white-space: nowrap;
-  }
-  .people-table tr {
-    align-items: center;
-    display: grid !important;
-    gap: var(--space-8) var(--space-12);
-    grid-template-columns: minmax(0, 1fr) auto;
-    padding: var(--space-14) var(--space-16);
-  }
-  .people-table td {
-    display: block !important;
-    padding: 0;
-  }
-  .people-table td:first-child {
-    grid-row: 1 / span 2;
-    margin: 0;
-    min-width: 0;
-  }
   .people-table td:first-child span {
     line-height: var(--leading-normal);
-  }
-  .people-table td:nth-child(2),
-  .people-table td:nth-child(4),
-  .people-table td:nth-child(5) {
-    display: none !important;
-  }
-  .people-table td:nth-child(3),
-  .people-table td:last-child {
-    grid-column: 2;
-  }
-  .people-table td::before {
-    display: none !important;
-  }
-  .people-table td:last-child .button {
-    min-height: var(--space-34);
-    padding-inline: var(--space-10);
-    width: auto;
   }
   .people-table__mobile-meta {
     display: block !important;

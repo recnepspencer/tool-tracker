@@ -18,9 +18,13 @@ describe('flagged tools route', () => {
     const user = userEvent.setup();
     const database = createMockDatabase({ clock: () => '2026-08-20T09:00:00-06:00' });
     renderApp(<AppRoutes />, { api: createMockApi(database), sessionStore: createMemorySessionStore('sam-ochoa') });
-    expect(await screen.findByRole('heading', { name: 'Flagged tools' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Damaged & lost' })).toBeInTheDocument();
     expect(screen.getByText('Cable cutter')).toBeInTheDocument();
     expect(screen.getByText('Fish tape, 240 ft')).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'Damaged' }));
+    expect(screen.queryByText('Cable cutter')).not.toBeInTheDocument();
+    expect(screen.getByText('Fish tape, 240 ft')).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'All' }));
     await user.click(screen.getAllByRole('button', { name: 'Restore to stock' })[0]);
     await waitFor(() => expect(screen.queryByText('Cable cutter')).not.toBeInTheDocument());
     expect(database.read().units.find((unit) => unit.id === 'TL-111')?.condition).toBe('serviceable');

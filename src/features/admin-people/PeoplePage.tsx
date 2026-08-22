@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { LoadingState, ErrorState } from '../../components/ui/AsyncState';
 import { Button } from '../../components/ui/Button';
 import { PageHeading } from '../../components/layout/PageHeading';
-import { SearchField } from '../../components/ui/TextField';
+import { DirectoryToolbar } from '../../components/layout/DirectoryToolbar';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { useAdminPeople, useAdminPerson } from '../admin/use-admin-people';
 import { PersonDrawer } from './PersonDrawer';
@@ -45,30 +45,21 @@ export function PeoplePage() {
       {people.isError && (
         <ErrorState message="The people directory could not be refreshed." onRetry={() => void people.refetch()} />
       )}
-      <div className="people-toolbar">
-        <SearchField compact label="Search people" placeholder="Search people…" value={search} onChange={setSearch} />
-        <div className="people-filter-tabs" role="tablist" aria-label="People filter">
-          {(
-            [
-              ['everyone', 'Everyone'],
-              ['invited', 'Invited'],
-              ['admins', 'Admins'],
-              ['no-access', 'No access'],
-            ] as const
-          ).map(([value, label]) => (
-            <button
-              type="button"
-              role="tab"
-              aria-selected={filter === value}
-              className={filter === value ? 'people-filter-tab people-filter-tab--active' : 'people-filter-tab'}
-              onClick={() => setFilter(value)}
-              key={value}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <DirectoryToolbar<'everyone' | 'invited' | 'admins' | 'no-access'>
+        searchLabel="Search people"
+        searchPlaceholder="Search people…"
+        search={search}
+        onSearchChange={setSearch}
+        filterLabel="People filter"
+        filters={[
+          { value: 'everyone', label: 'Everyone' },
+          { value: 'invited', label: 'Invited' },
+          { value: 'admins', label: 'Admins' },
+          { value: 'no-access', label: 'No access' },
+        ]}
+        activeFilter={filter}
+        onFilterChange={setFilter}
+      />
       <SurfaceCard className="admin-table-card">
         <PeopleTable people={rows} onOpen={(id) => navigate(adminPersonPath(id))} />
         {!rows.length && <p className="admin-empty">No people match this filter.</p>}

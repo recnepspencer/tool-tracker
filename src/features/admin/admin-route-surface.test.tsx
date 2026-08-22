@@ -235,6 +235,11 @@ describe('admin route surfaces', () => {
     await screen.findByRole('heading', { name: 'People' });
     await user.click(screen.getByRole('link', { name: 'Warehouses' }));
     expect(await screen.findByRole('heading', { name: 'Warehouses' })).toBeInTheDocument();
+    const warehouseSearch = screen.getByRole('searchbox', { name: 'Search warehouses' });
+    await user.type(warehouseSearch, 'south');
+    expect(screen.getByText('South Shop')).toBeInTheDocument();
+    expect(screen.queryByText('North Yard')).not.toBeInTheDocument();
+    await user.clear(warehouseSearch);
     await user.click(screen.getByRole('button', { name: 'Add warehouse' }));
     const dialog = await screen.findByRole('dialog', { name: 'Create warehouse' });
     const managerOptions = await openFieldOptions(user, within(dialog).getByRole('combobox', { name: 'Manager' }));
@@ -245,9 +250,9 @@ describe('admin route surfaces', () => {
     await user.type(within(dialog).getByLabelText('Address'), '9 Line Ave');
     await user.click(within(dialog).getByRole('button', { name: 'Save warehouse' }));
     const created = await screen.findByText('West Annex');
-    const card = created.closest('.surface-card');
-    expect(card).not.toBeNull();
-    await user.click(within(card as HTMLElement).getByRole('button', { name: 'Edit' }));
+    const row = created.closest('tr');
+    expect(row).not.toBeNull();
+    await user.click(within(row as HTMLElement).getByRole('button', { name: 'Open' }));
     const editDialog = await screen.findByRole('dialog', { name: 'Edit warehouse' });
     const name = within(editDialog).getByLabelText('Name');
     await user.clear(name);

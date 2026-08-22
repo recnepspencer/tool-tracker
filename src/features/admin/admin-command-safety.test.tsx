@@ -206,9 +206,9 @@ describe('admin command safety', () => {
     };
     window.location.hash = '#/admin/warehouses';
     renderApp(<AppRoutes />, { api, sessionStore: createMemorySessionStore('sam-ochoa') });
-    const card = (await screen.findByText('North Yard')).closest('.surface-card');
-    expect(card).not.toBeNull();
-    await user.click(within(card as HTMLElement).getByRole('button', { name: 'Edit' }));
+    const row = (await screen.findByText('North Yard')).closest('tr');
+    expect(row).not.toBeNull();
+    await user.click(within(row as HTMLElement).getByRole('button', { name: 'Open' }));
     const dialog = await screen.findByRole('dialog', { name: 'Edit warehouse' });
     const name = within(dialog).getByLabelText('Name');
     await user.clear(name);

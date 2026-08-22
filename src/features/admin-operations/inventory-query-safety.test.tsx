@@ -86,12 +86,12 @@ describe('warehouse inventory query safety', () => {
       </>,
       { api, sessionStore: createMemorySessionStore('sam-ochoa') },
     );
-    expect(await screen.findByRole('heading', { name: 'Flagged tools' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Damaged & lost' })).toBeInTheDocument();
     const restore = await screen.findByRole('button', { name: 'Restore to stock' });
     await waitFor(() => expect(restore).toBeEnabled());
     await user.click(screen.getByRole('button', { name: 'Refresh authority' }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Restore to stock' })).toBeDisabled());
-    expect(await screen.findByText('Flagged tools could not be refreshed.')).toBeInTheDocument();
+    expect(await screen.findByText('Damaged and lost tools could not be refreshed.')).toBeInTheDocument();
   });
 
   it('removes cached flagged actions when warehouse scopes error', async () => {
@@ -117,7 +117,7 @@ describe('warehouse inventory query safety', () => {
       </>,
       { api, sessionStore: createMemorySessionStore('sam-ochoa') },
     );
-    expect(await screen.findByRole('heading', { name: 'Flagged tools' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Damaged & lost' })).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: 'Restore to stock' })).toBeEnabled();
     await user.click(screen.getByRole('button', { name: 'Refresh authority' }));
     expect(
