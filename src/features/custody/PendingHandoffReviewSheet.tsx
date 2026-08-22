@@ -75,7 +75,7 @@ export function PendingHandoffReviewSheet({
   const subtitle = incoming
     ? `From ${handoff.from.name} · check it matches the photo`
     : handoff.kind === 'warehouse-request'
-      ? `Requested from ${handoff.to.name}`
+      ? `Requested from ${handoff.from.name}`
       : `Sent to ${handoff.to.name}`;
   const runAction = async (action: HandoffAction) => {
     if (await onAction(action)) onClose();

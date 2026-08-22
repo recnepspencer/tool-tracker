@@ -137,6 +137,12 @@
 .worker-pending-card--outgoing {
   background: var(--card-2);
 }
+.worker-pending-card--request {
+  background: var(--card-2);
+}
+.worker-pending-card--request::before {
+  background: var(--dim);
+}
 .worker-pending-direction {
   color: var(--blue-soft);
   font-family: var(--font-sans);
@@ -148,6 +154,9 @@
 }
 .worker-pending-card--outgoing .worker-pending-direction {
   color: var(--ink-2);
+}
+.worker-pending-card--request .worker-pending-direction {
+  color: var(--muted);
 }
 .worker-pending-title {
   font-size: var(--text-xl);
@@ -188,7 +197,8 @@
     transform var(--duration-120) var(--ease-standard);
   width: 100%;
 }
-.worker-pending-card--outgoing .worker-pending-review {
+.worker-pending-card--outgoing .worker-pending-review,
+.worker-pending-card--request .worker-pending-review {
   background: var(--field);
   border-color: var(--border);
   color: var(--ink);
@@ -197,7 +207,8 @@
   background: var(--blue-mist);
   border-color: var(--blue-border-focus);
 }
-.worker-pending-card--outgoing .worker-pending-review:hover {
+.worker-pending-card--outgoing .worker-pending-review:hover,
+.worker-pending-card--request .worker-pending-review:hover {
   background: var(--hover);
   border-color: var(--border-strong);
 }

@@ -17,7 +17,8 @@ export function PendingHandoffCard({
   profileId: string;
   queryBlocked?: boolean;
 }) {
-  const incoming = handoff.direction === 'incoming';
+  const warehouseRequest = handoff.kind === 'warehouse-request';
+  const incoming = !warehouseRequest && handoff.direction === 'incoming';
   const editable = handoff.canEdit;
   const [note, setNote] = useState(handoff.evidence?.note ?? '');
   const [mockPhoto, setMockPhoto] = useState(handoff.evidence?.mockPhoto === true);
@@ -51,17 +52,19 @@ export function PendingHandoffCard({
   };
   return (
     <article
-      className={`worker-pending-card worker-pending-card--${incoming ? 'incoming' : 'outgoing'}`}
+      className={`worker-pending-card worker-pending-card--${warehouseRequest ? 'request' : incoming ? 'incoming' : 'outgoing'}`}
       data-handoff-id={handoff.id}
       aria-label={`${handoff.toolName} pending handoff`}
     >
-      <span className="worker-pending-direction">{incoming ? 'Incoming' : 'Outgoing'}</span>
+      <span className="worker-pending-direction">
+        {warehouseRequest ? 'Request' : incoming ? 'Incoming' : 'Outgoing'}
+      </span>
       <strong className="worker-pending-title">{handoff.toolName}</strong>
       <span className="worker-pending-subtitle">
-        {incoming
-          ? `From ${handoff.from.name}`
-          : handoff.kind === 'warehouse-request'
-            ? `Requested from ${handoff.to.name}`
+        {warehouseRequest
+          ? `Requested from ${handoff.from.name}`
+          : incoming
+            ? `From ${handoff.from.name}`
             : `To ${handoff.to.name}`}
       </span>
       <button
@@ -70,7 +73,7 @@ export function PendingHandoffCard({
         onClick={() => setReviewOpen((current) => !current)}
         aria-expanded={reviewOpen}
       >
-        {editable ? 'Edit transfer' : 'Review'}
+        {editable ? 'Edit transfer' : warehouseRequest ? 'Review request' : 'Review'}
       </button>
       {reviewOpen ? (
         <PendingHandoffReviewSheet

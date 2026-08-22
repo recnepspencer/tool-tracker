@@ -59,7 +59,7 @@ describe('custody workflow surfaces', () => {
     window.location.hash = '#/worker/tools';
     renderApp(<AppRoutes />, { api: createMockApi(database), sessionStore: createMemorySessionStore('ray-torres') });
     const card = await screen.findByRole('article', { name: 'Bandsaw pending handoff' });
-    await userEvent.setup().click(within(card).getByRole('button', { name: 'Review' }));
+    await userEvent.setup().click(within(card).getByRole('button', { name: 'Review request' }));
     expect(within(card).getByLabelText('Note')).toHaveValue('Bring the long bit');
   });
 
@@ -268,7 +268,7 @@ describe('custody workflow surfaces', () => {
     expect(within(dialog).getByRole('switch', { name: /Add an optional photo/ })).toBeChecked();
   });
 
-  it('preserves pending-handoff evidence drafts when resolution is rejected', async () => {
+  it('preserves pending request evidence drafts when resolution is rejected', async () => {
     const user = userEvent.setup();
     const baseApi = createMockApi();
     const rejectingApi = {
@@ -281,7 +281,7 @@ describe('custody workflow surfaces', () => {
     window.location.hash = '#/worker/tools';
     renderApp(<AppRoutes />, { api: rejectingApi, sessionStore: createMemorySessionStore('ray-torres') });
     const card = await screen.findByRole('article', { name: 'Bandsaw pending handoff' });
-    await user.click(within(card).getByRole('button', { name: 'Review' }));
+    await user.click(within(card).getByRole('button', { name: 'Review request' }));
     const note = within(card).getByPlaceholderText('Add context for the record');
     await user.type(note, 'Keep this pending note');
     await user.click(within(card).getByRole('switch', { name: /Add an optional photo/ }));
@@ -327,7 +327,7 @@ describe('custody workflow surfaces', () => {
     expect(await within(dialog).findByText('Tool reported damaged.')).toBeInTheDocument();
   });
 
-  it('disables a pending handoff resolution and preserves its evidence draft', async () => {
+  it('disables a pending request resolution and preserves its evidence draft', async () => {
     const user = userEvent.setup();
     const baseApi = createMockApi();
     let resolveWithdraw: (result: Awaited<ReturnType<typeof baseApi.custody.withdrawRequest>>) => void = () =>
@@ -349,7 +349,7 @@ describe('custody workflow surfaces', () => {
     window.location.hash = '#/worker/tools';
     renderApp(<AppRoutes />, { api, sessionStore: createMemorySessionStore('ray-torres') });
     const card = await screen.findByRole('article', { name: 'Bandsaw pending handoff' });
-    await user.click(within(card).getByRole('button', { name: 'Review' }));
+    await user.click(within(card).getByRole('button', { name: 'Review request' }));
     const note = within(card).getByPlaceholderText('Add context for the record');
     await user.type(note, 'Deferred handoff');
     await user.click(within(card).getByRole('switch', { name: /Add an optional photo/ }));

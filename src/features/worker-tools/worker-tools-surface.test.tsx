@@ -15,13 +15,14 @@ describe('worker tools surfaces', () => {
     window.location.hash = '#/worker/tools';
   });
 
-  it('renders the seeded pending handoff beside Ray’s tools', async () => {
+  it('keeps warehouse requests distinct from person-to-person transfers', async () => {
     renderApp(<AppRoutes />, { sessionStore: createMemorySessionStore('ray-torres') });
     expect(await screen.findByRole('heading', { name: 'My tools' })).toBeInTheDocument();
     const pendingRequest = screen.getByRole('article', { name: 'Bandsaw pending handoff' });
     expect(within(pendingRequest).getByText('Bandsaw')).toBeInTheDocument();
-    expect(within(pendingRequest).getByText('Outgoing')).toBeInTheDocument();
-    expect(within(pendingRequest).getByText('Requested from Ray Torres')).toBeInTheDocument();
+    expect(within(pendingRequest).getByText('Request')).toBeInTheDocument();
+    expect(within(pendingRequest).getByText('Requested from North Yard')).toBeInTheDocument();
+    expect(within(pendingRequest).getByRole('button', { name: 'Review request' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Transfer Hammer drill unit TL-101' }).closest('article')).toHaveClass(
       'worker-tool-row--checked-out',
     );
@@ -131,7 +132,7 @@ describe('worker tools surfaces', () => {
     expect(screen.getByText('Checking pending handoffs…')).toBeInTheDocument();
     expect(requestedProfile).toBe('ray-torres');
     resolvePending(await baseApi.custody.listPendingHandoffs('ray-torres'));
-    expect(await screen.findByText('Bandsaw')).toBeInTheDocument();
+    expect(await screen.findByRole('article', { name: 'Bandsaw pending handoff' })).toBeInTheDocument();
     cleanup();
     const rejectingApi = {
       ...baseApi,
