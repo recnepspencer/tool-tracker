@@ -200,6 +200,22 @@ describe('custody workflow surfaces', () => {
     expect(startTransferCalls).toBe(0);
   });
 
+  it('keeps person transfers on the standard destination sheet', async () => {
+    const user = userEvent.setup();
+    window.location.hash = '#/worker/tools';
+    renderApp(<AppRoutes />, { sessionStore: createMemorySessionStore('ray-torres') });
+    await user.click(await screen.findByRole('button', { name: 'Open details for Hammer drill unit TL-101' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Tool details' });
+    await user.click(within(dialog).getByRole('button', { name: 'Transfer tool' }));
+    await chooseTransferDestination(user, dialog, 'person', /Eli Warren Person/);
+
+    const person = within(dialog).getByRole('combobox', { name: 'Person' });
+    expect(person.tagName).toBe('BUTTON');
+    expect(within(dialog).queryByRole('textbox', { name: 'Person' })).not.toBeInTheDocument();
+    expect(person).toHaveTextContent('Eli Warren');
+    expect(within(dialog).getByRole('button', { name: 'Send to Eli Warren' })).toBeEnabled();
+  });
+
   it('keeps transfer evidence drafts when the adapter rejects the command', async () => {
     const user = userEvent.setup();
     const baseApi = createMockApi();
