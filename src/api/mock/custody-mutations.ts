@@ -3,11 +3,13 @@ import type {
   HandoffReviewInput,
   RequestToolInput,
   StartTransferInput,
+  UpdateTransferInput,
 } from '../contracts/custody-api';
 import {
   canAcceptTransfer,
   canCancelTransfer,
   canDeclineTransfer,
+  canEditTransfer,
   canRequestWarehouseTool,
   canStartTransfer,
   canWithdrawRequest,
@@ -35,7 +37,7 @@ const ensureNoPending = (state: MockDatabaseState, toolUnitId: string) => {
 const workerActorOrThrow = (
   state: MockDatabaseState,
   actorId: string,
-  action: 'request tools' | 'start transfers' | 'resolve handoffs',
+  action: 'request tools' | 'start transfers' | 'edit transfers' | 'resolve handoffs',
 ) => {
   const actor = userOrThrow(state, actorId);
   if (actor.role !== 'worker' || !isActiveMember(actor)) {
@@ -169,6 +171,41 @@ export const startTransfer = (database: MockDatabase, input: StartTransferInput)
       warehouseId: warehouseId!,
       occurredAt,
       evidence: normalizeCustodyEvidence(input.evidence),
+    });
+    mutation = toCustodyMutationResult(input.toolUnitId, eventId, 'pending', handoff.id);
+    return state;
+  });
+  return mutation!;
+};
+
+export const updateTransfer = (database: MockDatabase, input: UpdateTransferInput): CustodyMutationResult => {
+  const occurredAt = database.clock();
+  let mutation: CustodyMutationResult | undefined;
+  database.update((state) => {
+    const actor = workerActorOrThrow(state, input.actorId, 'edit transfers');
+    const { handoff, custody } = assertPendingHandoff(state, input.handoffId, input.toolUnitId);
+    const unit = unitOrThrow(state, input.toolUnitId);
+    if (!canEditTransfer(handoff, actor.id) || !holderExists(state, input.to)) {
+      throw new WorkflowError('forbidden', 'Only the outgoing worker can edit this transfer');
+    }
+    if (!canStartTransfer(unit, custody, actor.id, input.to)) {
+      throw new WorkflowError('forbidden', 'This tool cannot be transferred to that destination');
+    }
+    const evidence = normalizeCustodyEvidence(input.evidence);
+    handoff.to = { ...input.to };
+    if (evidence) handoff.evidence = evidence;
+    else delete handoff.evidence;
+    const warehouseId = warehouseFor(state, custody.holder, handoff.toolUnitId);
+    const eventId = appendAuditEvent(state, database, {
+      actorId: actor.id,
+      action: `Updated transfer of ${toolName(state, input.toolUnitId)}`,
+      toolUnitId: input.toolUnitId,
+      kind: 'custody',
+      scope: 'worker',
+      participantIds: [actor.id, ...(input.to.type === 'worker' ? [input.to.userId] : [])],
+      warehouseId: warehouseId!,
+      occurredAt,
+      evidence,
     });
     mutation = toCustodyMutationResult(input.toolUnitId, eventId, 'pending', handoff.id);
     return state;

@@ -23,7 +23,7 @@ describe('warehouse inventory count semantics', () => {
     }));
     renderApp(<AppRoutes />, { api: createMockApi(database), sessionStore: createMemorySessionStore('sam-ochoa') });
     expect(await screen.findByRole('heading', { name: 'Inventory' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'All 17' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'All 19' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Flagged 2' })).toBeInTheDocument();
     await user.click(screen.getByRole('tab', { name: 'Archived 1' }));
     expect(screen.getByText('Rotary hammer')).toBeInTheDocument();
@@ -37,7 +37,7 @@ describe('warehouse inventory count semantics', () => {
     }));
     const api = createMockApi(database);
     await expect(api.warehouse.getSummary({ actorId: 'sam-ochoa' })).resolves.toMatchObject({
-      inventoryCount: 17,
+      inventoryCount: 19,
       archivedCount: 1,
     });
   });

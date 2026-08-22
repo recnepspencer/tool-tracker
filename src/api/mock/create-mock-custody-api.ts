@@ -7,6 +7,7 @@ import {
   declineTransfer,
   requestTool,
   startTransfer,
+  updateTransfer,
   withdrawRequest,
 } from './custody-mutations';
 import { listTransferTargets } from './custody-queries';
@@ -24,9 +25,11 @@ export const createMockCustodyApi = (database: MockDatabase): CustodyApi => ({
       .filter((handoff) => activeUnitIds.has(handoff.toolUnitId) && canSeePendingHandoff(handoff, profileId))
       .map((handoff) => toPendingHandoffView(state, handoff.id, profileId));
   },
-  listTransferTargets: async ({ actorId, toolUnitId }) => listTransferTargets(database, actorId, toolUnitId),
+  listTransferTargets: async ({ actorId, toolUnitId, handoffId }) =>
+    listTransferTargets(database, actorId, toolUnitId, handoffId),
   requestTool: async (input) => requestTool(database, input),
   startTransfer: async (input) => startTransfer(database, input),
+  updateTransfer: async (input) => updateTransfer(database, input),
   acceptTransfer: async (input) => acceptTransfer(database, input),
   declineTransfer: async (input) => declineTransfer(database, input),
   cancelTransfer: async (input) => cancelTransfer(database, input),

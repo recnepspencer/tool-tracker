@@ -290,6 +290,7 @@ describe('createHttpApi', () => {
         requestedAtInstant: '2026-08-17T10:18:00-06:00',
         direction: 'outgoing',
         allowedActions: ['withdraw'],
+        canEdit: false,
       },
     ]);
     await expect(api.activity.listActivity()).resolves.toEqual([

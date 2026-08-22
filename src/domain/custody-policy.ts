@@ -81,6 +81,9 @@ export const canDeclineTransfer = canAcceptTransfer;
 export const canCancelTransfer = (handoff: HandoffRequest, actorId: string) =>
   handoff.status === 'pending' && handoff.kind === 'transfer' && isWorker(handoff.from, actorId);
 
+export const canEditTransfer = (handoff: Pick<HandoffRequest, 'kind' | 'from' | 'status'>, actorId: string) =>
+  handoff.status === 'pending' && handoff.kind === 'transfer' && isWorker(handoff.from, actorId);
+
 export const canWithdrawRequest = (handoff: HandoffRequest, actorId: string) =>
   handoff.status === 'pending' && handoff.kind === 'warehouse-request' && handoff.requestedBy === actorId;
 

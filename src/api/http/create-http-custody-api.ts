@@ -39,13 +39,12 @@ export const createHttpCustodyApi = ({ transport, basePath = '/api' }: HttpApiOp
       if (new Set(toolIds).size !== toolIds.length) throw new Error('Invalid API response: pending handoff tool ids');
       return uniqueHandoffs;
     },
-    listTransferTargets: async ({ actorId, toolUnitId }) => {
+    listTransferTargets: async ({ actorId, toolUnitId, handoffId }) => {
+      const query =
+        '?actor_id=' + encodeURIComponent(actorId) + (handoffId ? '&handoff_id=' + encodeURIComponent(handoffId) : '');
       const targets = responseArray<TransferTargetDto>(
         await transport.get(
-          pathWithBase(
-            basePath,
-            '/tools/' + encodeURIComponent(toolUnitId) + '/transfer-targets?actor_id=' + encodeURIComponent(actorId),
-          ),
+          pathWithBase(basePath, '/tools/' + encodeURIComponent(toolUnitId) + '/transfer-targets' + query),
         ),
         'transfer targets',
       ).map(mapTransferTarget);
@@ -75,6 +74,19 @@ export const createHttpCustodyApi = ({ transport, basePath = '/api' }: HttpApiOp
         },
         toolUnitId,
         operation: 'start-transfer',
+      }),
+    updateTransfer: ({ actorId, handoffId, toolUnitId, to, evidence }) =>
+      postMutation({
+        path: '/tools/handoffs/' + encodeURIComponent(handoffId) + '/edit',
+        body: {
+          actor_id: actorId,
+          tool_unit_id: toolUnitId,
+          to: { kind: to.type, id: to.type === 'worker' ? to.userId : to.warehouseId },
+          ...(toEvidenceDto(evidence) ? { evidence: toEvidenceDto(evidence) } : {}),
+        },
+        toolUnitId,
+        handoffId,
+        operation: 'edit-transfer',
       }),
     acceptTransfer: ({ actorId, handoffId, toolUnitId, evidence }) =>
       postMutation({

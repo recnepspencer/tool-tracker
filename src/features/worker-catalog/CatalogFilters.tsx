@@ -40,7 +40,7 @@ export function CatalogFilters({
         <div className="worker-filter-heading">
           <h2>Filter</h2>
           <button type="button" onClick={onClear}>
-            Clear all
+            Reset filters
           </button>
         </div>
         <div className="worker-filter-scroll">

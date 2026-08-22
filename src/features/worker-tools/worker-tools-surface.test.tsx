@@ -1,9 +1,11 @@
-import { cleanup, screen, waitFor } from '@testing-library/react';
+import { cleanup, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createMockApi } from '../../api/mock/create-mock-api';
 import { createMockDatabase } from '../../api/mock/mock-database';
 import { AppRoutes } from '../../app/app-routes';
 import { createMemorySessionStore, renderApp } from '../../test/render-app';
+import { chooseTransferDestination } from '../../test/choose-field-option';
 
 describe('worker tools surfaces', () => {
   beforeEach(() => {
@@ -25,6 +27,51 @@ describe('worker tools surfaces', () => {
     expect(
       screen.getByRole('button', { name: 'Transfer Fish tape, 240 ft unit TL-104' }).closest('article'),
     ).toHaveClass('worker-tool-row--damaged');
+  });
+
+  it('shows incoming and editable outgoing demo transfers', async () => {
+    const user = userEvent.setup();
+    const database = createMockDatabase({ clock: () => '2026-08-18T09:00:00-06:00' });
+    renderApp(<AppRoutes />, {
+      api: createMockApi(database),
+      sessionStore: createMemorySessionStore('ray-torres'),
+    });
+    expect(await screen.findByRole('heading', { name: 'My tools' })).toBeInTheDocument();
+
+    const outgoing = screen.getByRole('article', { name: 'Klein 10" pump pliers pending handoff' });
+    expect(within(outgoing).getByText('Awaiting acceptance')).toBeInTheDocument();
+    expect(within(outgoing).getByText('To Eli Warren')).toBeInTheDocument();
+    await user.click(within(outgoing).getByRole('button', { name: 'Edit transfer' }));
+    const outgoingDialog = await screen.findByRole('dialog', {
+      name: 'Klein 10" pump pliers transfer review',
+    });
+    expect(within(outgoingDialog).getByText(/Photos are optional/)).toBeInTheDocument();
+    await chooseTransferDestination(user, outgoingDialog, 'warehouse', /South Shop Warehouse/);
+    const note = within(outgoingDialog).getByPlaceholderText('e.g. reason for the transfer');
+    await user.clear(note);
+    await user.type(note, 'Use at the south shop');
+    await user.click(within(outgoingDialog).getByRole('switch', { name: /Add an optional photo/ }));
+    await user.click(within(outgoingDialog).getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /Klein 10/ })).not.toBeInTheDocument());
+    expect(database.read().handoffs.find((handoff) => handoff.id === 'HO-DEMO-OUT')).toMatchObject({
+      to: { type: 'warehouse', warehouseId: 'south-shop' },
+      evidence: { note: 'Use at the south shop' },
+    });
+    expect(
+      database.read().handoffs.find((handoff) => handoff.id === 'HO-DEMO-OUT')?.evidence?.mockPhoto,
+    ).toBeUndefined();
+    expect(
+      within(screen.getByRole('article', { name: 'Klein 10" pump pliers pending handoff' })).getByText('To South Shop'),
+    ).toBeInTheDocument();
+
+    const incoming = screen.getByRole('article', { name: 'Cord reel, 100 ft pending handoff' });
+    expect(within(incoming).getByText('Incoming transfer')).toBeInTheDocument();
+    expect(within(incoming).getByText(/From Eli Warren/)).toBeInTheDocument();
+    await user.click(within(incoming).getByRole('button', { name: 'Review' }));
+    const incomingDialog = await screen.findByRole('dialog', { name: 'Cord reel, 100 ft transfer review' });
+    expect(within(incomingDialog).getByRole('button', { name: 'Accept — take custody' })).toBeInTheDocument();
+    expect(within(incomingDialog).getByRole('button', { name: 'Decline' })).toBeInTheDocument();
+    expect(within(incomingDialog).getByRole('switch', { name: /Add an optional photo/ })).toBeInTheDocument();
   });
 
   it('excludes another worker’s custody from the authenticated Ray surface', async () => {

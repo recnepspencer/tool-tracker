@@ -47,15 +47,15 @@ export function CustodyEvidenceFields({
           role="switch"
           className={`custody-photo-toggle${mockPhoto ? ' custody-photo-toggle--selected' : ''}`}
           aria-checked={mockPhoto}
-          aria-label="Add a photo to this record"
+          aria-label="Add an optional photo to this record"
           onClick={() => onMockPhotoChange(!mockPhoto)}
         >
           <span className="custody-photo-preview" aria-hidden="true">
             <span>{mockPhoto ? '✓' : '+'}</span>
           </span>
           <span className="custody-photo-copy">
-            <strong>{mockPhoto ? 'Photo attached' : 'Add a photo'}</strong>
-            <small>{mockPhoto ? 'Tap to remove' : photoHint}</small>
+            <strong>{mockPhoto ? 'Photo attached (optional)' : 'Add a photo (optional)'}</strong>
+            <small>{mockPhoto ? 'Tap to remove' : `${photoHint} · Optional`}</small>
           </span>
         </button>
       ) : null}

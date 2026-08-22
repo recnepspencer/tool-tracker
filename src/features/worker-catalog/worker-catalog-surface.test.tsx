@@ -21,15 +21,17 @@ describe('worker catalog surfaces', () => {
     expect(filters.closest('.worker-filter-layer')?.parentElement).toBe(document.body);
     expect(screen.getByAltText('Hammer drill product photo')).toHaveAttribute('loading', 'eager');
     expect(screen.getByAltText('Hammer drill product photo')).toHaveAttribute('fetchpriority', 'high');
+    expect(within(filters).getByRole('button', { name: 'Available only' })).toHaveAttribute('aria-pressed', 'true');
     await user.click(within(filters).getByRole('button', { name: 'Done' }));
     const hammerCard = screen.getByText('Hammer drill').closest('article') as HTMLElement;
-    expect(within(hammerCard).getByRole('button', { name: 'Check out Hammer drill' })).toBeInTheDocument();
+    expect(hammerCard).toHaveAttribute('aria-label', 'Open Hammer drill');
+    expect(within(hammerCard).queryByRole('button', { name: /Check out/ })).not.toBeInTheDocument();
     expect(within(hammerCard).queryByText('South Shop')).not.toBeInTheDocument();
     expect(within(hammerCard).queryByText('Riverside Depot')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Check out Hammer drill' }));
+    await user.click(screen.getByRole('button', { name: 'Open Hammer drill' }));
     const requestDialog = await screen.findByRole('dialog', { name: 'Tool details' });
     expect(within(requestDialog).getByText('Request this tool')).toBeInTheDocument();
-    expect(within(requestDialog).queryByRole('switch', { name: 'Add a photo to this record' })).not.toBeInTheDocument();
+    expect(within(requestDialog).queryByRole('switch', { name: /Add an optional photo/ })).not.toBeInTheDocument();
     await user.click(within(requestDialog).getByRole('combobox', { name: 'Warehouse' }));
     const warehouseOptions = screen.getByRole('dialog', { name: 'Choose Warehouse' });
     expect(within(warehouseOptions).getByRole('option', { name: /South Shop/ })).toBeInTheDocument();
@@ -40,21 +42,21 @@ describe('worker catalog surfaces', () => {
     await user.click(within(requestDialog).getByRole('button', { name: 'Close tool details' }));
     const search = screen.getByRole('searchbox', { name: 'Search tools' });
     await user.type(search, 'Bandsaw');
-    expect(screen.getByRole('button', { name: 'Check out Bandsaw' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Check out Hammer drill/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open Bandsaw' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Check out/ })).not.toBeInTheDocument();
     await user.clear(search);
     await user.click(screen.getByRole('button', { name: 'Filter catalog' }));
     filters = screen.getByRole('dialog', { name: 'Catalog filters' });
     await user.click(within(filters).getByRole('button', { name: 'Available only' }));
     await user.click(within(filters).getByRole('button', { name: 'Done' }));
-    expect(screen.getByRole('button', { name: 'Check out Rotary hammer' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open Rotary hammer' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Filter catalog' }));
     filters = screen.getByRole('dialog', { name: 'Catalog filters' });
     await user.click(within(filters).getByRole('button', { name: 'Ladders' }));
     await user.click(within(filters).getByRole('button', { name: 'Done' }));
-    expect(screen.getByRole('button', { name: 'Check out Extension ladder, 24 ft' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Check out Hammer drill/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open Extension ladder, 24 ft' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Check out/ })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Filter catalog' }));
     filters = screen.getByRole('dialog', { name: 'Catalog filters' });
     await user.click(within(filters).getByRole('button', { name: 'All categories' }));
@@ -64,7 +66,7 @@ describe('worker catalog surfaces', () => {
     await user.type(search, 'no such tool');
     expect(await screen.findByRole('heading', { name: 'No tools match those filters.' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Clear filters' }));
-    await user.click(screen.getByRole('button', { name: 'Check out Rotary hammer' }));
+    await user.click(screen.getByRole('button', { name: 'Open Rotary hammer' }));
     const dialog = await screen.findByRole('dialog', { name: 'Tool details' });
     expect(within(dialog).getByText('Request this tool')).toBeInTheDocument();
     expect(within(dialog).getAllByText('North Yard')).toHaveLength(2);
@@ -105,7 +107,7 @@ describe('worker catalog surfaces', () => {
     await user.click(
       within(screen.getByRole('dialog', { name: 'Catalog filters' })).getByRole('button', { name: 'Done' }),
     );
-    await user.click(screen.getByRole('button', { name: 'Check out Rotary hammer' }));
+    await user.click(screen.getByRole('button', { name: 'Open Rotary hammer' }));
     expect(await screen.findByText('Loading tool details…')).toBeInTheDocument();
     resolveDetail(await baseApi.tools.getToolDetail('TL-105'));
     expect(await screen.findByText('Added a tool to inventory')).toBeInTheDocument();
@@ -117,7 +119,7 @@ describe('worker catalog surfaces', () => {
     window.location.hash = '#/worker/checkout';
     renderApp(<AppRoutes />, { api: rejectingApi, sessionStore: createMemorySessionStore('ray-torres') });
     expect(await screen.findByRole('heading', { name: 'Browse tools' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Check out Rotary hammer' }));
+    await user.click(screen.getByRole('button', { name: 'Open Rotary hammer' }));
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('could not be loaded'));
   });
 
@@ -191,17 +193,17 @@ describe('worker catalog surfaces', () => {
     await user.click(
       within(screen.getByRole('dialog', { name: 'Catalog filters' })).getByRole('button', { name: 'Done' }),
     );
-    expect(screen.queryByRole('button', { name: /Check out Hammer drill from/ })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Check out Hammer drill' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Check out/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open Hammer drill' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Filter catalog' }));
     const filters = screen.getByRole('dialog', { name: 'Catalog filters' });
     await user.click(within(filters).getByRole('button', { name: 'South Shop' }));
     await user.click(within(filters).getByRole('button', { name: 'Available only' }));
     await user.click(within(filters).getByRole('button', { name: 'Done' }));
     expect(screen.getByText('1 available')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Check out Hammer drill' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Check out Hammer drill from/ })).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Check out Hammer drill' }));
+    expect(screen.getByRole('button', { name: 'Open Hammer drill' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Check out/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Open Hammer drill' }));
     const dialog = await screen.findByRole('dialog', { name: 'Tool details' });
     expect(within(dialog).getAllByText('South Shop')).toHaveLength(2);
     expect(within(dialog).getByText('Serviceable')).toBeInTheDocument();

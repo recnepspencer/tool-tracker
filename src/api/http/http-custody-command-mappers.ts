@@ -4,7 +4,7 @@ import type { CustodyMutationDto } from './http-custody-command-types';
 import { nonBlankStringValue, oneOf } from './http-validation';
 
 export type CustodyMutationOperation =
-  'request' | 'start-transfer' | 'accept' | 'decline' | 'cancel' | 'withdraw' | 'report-condition';
+  'request' | 'start-transfer' | 'edit-transfer' | 'accept' | 'decline' | 'cancel' | 'withdraw' | 'report-condition';
 
 const mutationContracts: Record<
   CustodyMutationOperation,
@@ -12,6 +12,7 @@ const mutationContracts: Record<
 > = {
   request: { status: 'pending', handoff: true },
   'start-transfer': { status: 'pending', handoff: true },
+  'edit-transfer': { status: 'pending', handoff: true },
   accept: { status: 'accepted', handoff: true },
   decline: { status: 'declined', handoff: true },
   cancel: { status: 'cancelled', handoff: true },

@@ -40,14 +40,17 @@ describe('createMockApi tool and activity projections', () => {
       'TL-116',
       'TL-117',
       'TL-118',
+      'TL-119',
+      'TL-120',
     ]);
-    expect(tools.filter((tool) => tool.holder.type === 'worker').map((tool) => tool.holder.name)).toEqual(
-      Array(6).fill('Ray Torres'),
-    );
-    expect(summary).toMatchObject({ totalTools: 18, checkedOut: 6, inStock: 11, flagged: 2 });
+    const workerHolders = tools.filter((tool) => tool.holder.type === 'worker').map((tool) => tool.holder.name);
+    expect(workerHolders).toHaveLength(8);
+    expect(workerHolders.filter((name) => name === 'Ray Torres')).toHaveLength(7);
+    expect(workerHolders.filter((name) => name === 'Eli Warren')).toHaveLength(1);
+    expect(summary).toMatchObject({ totalTools: 20, checkedOut: 8, inStock: 11, flagged: 2 });
     expect(summary.warehouses.map(({ id, tools: stock, out }) => ({ id, stock, out }))).toEqual([
-      { id: 'north-yard', stock: 4, out: 3 },
-      { id: 'south-shop', stock: 4, out: 2 },
+      { id: 'north-yard', stock: 4, out: 4 },
+      { id: 'south-shop', stock: 4, out: 3 },
       { id: 'riverside-depot', stock: 4, out: 1 },
     ]);
     expect(summary.recentEvents).toEqual([
@@ -103,15 +106,20 @@ describe('createMockApi tool and activity projections', () => {
       'EV-3',
       'EV-5',
     ]);
-    await expect(api.custody.listPendingHandoffs('ray-torres')).resolves.toEqual([
-      expect.objectContaining({
-        id: 'HO-1',
-        toolUnitId: 'TL-108',
-        toolName: 'Bandsaw',
-        requestedAt: 'Aug 17, 2026, 10:18 AM',
-        requestedAtInstant: '2026-08-17T10:18:00-06:00',
-      }),
-    ]);
+    await expect(api.custody.listPendingHandoffs('ray-torres')).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'HO-1',
+          toolUnitId: 'TL-108',
+          toolName: 'Bandsaw',
+          requestedAt: 'Aug 17, 2026, 10:18 AM',
+          requestedAtInstant: '2026-08-17T10:18:00-06:00',
+          canEdit: false,
+        }),
+        expect.objectContaining({ id: 'HO-DEMO-OUT', toolUnitId: 'TL-120', canEdit: true }),
+        expect.objectContaining({ id: 'HO-DEMO-IN', toolUnitId: 'TL-119', canEdit: false }),
+      ]),
+    );
     await expect(api.tools.getToolDetail('TL-111')).resolves.toMatchObject({
       tool: { status: 'lost' },
       condition: 'lost',

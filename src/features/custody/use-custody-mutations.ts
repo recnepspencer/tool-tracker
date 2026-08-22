@@ -5,6 +5,7 @@ import type {
   ReportConditionInput,
   RequestToolInput,
   StartTransferInput,
+  UpdateTransferInput,
 } from '../../api/contracts/custody-api';
 import { invalidateCustodyProjections } from './query-invalidation';
 
@@ -16,6 +17,10 @@ export function useCustodyMutations() {
     requestTool: useMutation({ mutationFn: (input: RequestToolInput) => api.custody.requestTool(input), onSuccess }),
     startTransfer: useMutation({
       mutationFn: (input: StartTransferInput) => api.custody.startTransfer(input),
+      onSuccess,
+    }),
+    updateTransfer: useMutation({
+      mutationFn: (input: UpdateTransferInput) => api.custody.updateTransfer(input),
       onSuccess,
     }),
     acceptTransfer: useMutation({

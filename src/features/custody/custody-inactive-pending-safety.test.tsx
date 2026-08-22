@@ -123,7 +123,7 @@ describe('inactive pending action safety', () => {
     await waitFor(() =>
       expect(within(remountedCard).getByRole('button', { name: 'Withdraw request' })).not.toBeDisabled(),
     );
-    expect(screen.getAllByRole('article', { name: /pending handoff/i })).toHaveLength(2);
+    expect(screen.getAllByRole('article', { name: /pending handoff/i })).toHaveLength(4);
   });
 
   it('blocks cached pending actions when the authoritative refetch errors', async () => {

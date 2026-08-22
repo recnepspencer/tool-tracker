@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { HolderRef } from '../../domain/custody';
 import type { HandoffAction } from '../../domain/custody';
 import type { PendingHandoffView } from '../../domain/read-models/custody';
 import { useCustodyMutations } from './use-custody-mutations';
@@ -24,7 +25,8 @@ export function usePendingHandoffActionController({
     mutations.acceptTransfer.isPending ||
     mutations.declineTransfer.isPending ||
     mutations.cancelTransfer.isPending ||
-    mutations.withdrawRequest.isPending;
+    mutations.withdrawRequest.isPending ||
+    mutations.updateTransfer.isPending;
 
   const act = async (action: HandoffAction): Promise<boolean> => {
     if (queryBlocked || mutationBusy) return false;
@@ -46,5 +48,27 @@ export function usePendingHandoffActionController({
     }
   };
 
-  return { act, busy: mutationBusy, queryBlocked, error };
+  const saveEdit = async (to: HolderRef): Promise<boolean> => {
+    if (queryBlocked || mutationBusy) return false;
+    setError(null);
+    const evidence =
+      note.trim() || mockPhoto
+        ? { ...(note.trim() ? { note: note.trim() } : {}), ...(mockPhoto ? { mockPhoto: true } : {}) }
+        : undefined;
+    try {
+      await mutations.updateTransfer.mutateAsync({
+        handoffId: handoff.id,
+        toolUnitId: handoff.toolUnitId,
+        actorId: profileId,
+        to,
+        evidence,
+      });
+      return true;
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'This transfer could not be updated.');
+      return false;
+    }
+  };
+
+  return { act, saveEdit, busy: mutationBusy, queryBlocked, error };
 }

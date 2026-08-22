@@ -19,7 +19,10 @@ export const queryKeys = {
   transferTargetsRoot: ['transfer-targets'] as const,
   toolDetailRoot: ['tool-detail'] as const,
   toolDetail: (toolUnitId: string) => ['tool-detail', toolUnitId] as const,
-  transferTargets: (actorId: string, toolUnitId: string) => ['transfer-targets', actorId, toolUnitId] as const,
+  transferTargets: (actorId: string, toolUnitId: string, handoffId?: string) =>
+    handoffId
+      ? (['transfer-targets', actorId, toolUnitId, handoffId] as const)
+      : (['transfer-targets', actorId, toolUnitId] as const),
   warehouseQueueRoot: ['warehouse-queue'] as const,
   warehouseScopesRoot: ['warehouse-scopes'] as const,
   warehouseScopes: (actorId: string) => ['warehouse-scopes', actorId] as const,

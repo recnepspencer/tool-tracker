@@ -16,5 +16,6 @@ export interface PendingHandoffView {
   requestedAtInstant: string;
   evidence?: CustodyEvidence;
   direction: 'incoming' | 'outgoing';
+  canEdit: boolean;
   allowedActions: HandoffAction[];
 }

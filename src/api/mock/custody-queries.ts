@@ -8,7 +8,12 @@ import { unitOrThrow } from './tool-state';
 import { toHolderView } from './mock-holder-projection';
 import { isActiveMember } from '../../domain/people';
 
-export const listTransferTargets = (database: MockDatabase, actorId: string, toolUnitId: string) => {
+export const listTransferTargets = (
+  database: MockDatabase,
+  actorId: string,
+  toolUnitId: string,
+  editableHandoffId?: string,
+) => {
   const state = database.read();
   const actor = userOrThrow(state, actorId);
   if (actor.role !== 'worker' || !isActiveMember(actor)) {
@@ -16,7 +21,8 @@ export const listTransferTargets = (database: MockDatabase, actorId: string, too
   }
   const unit = unitOrThrow(state, toolUnitId);
   const custody = custodyOrThrow(state, toolUnitId);
-  if (pendingForUnit(state, toolUnitId)) return [];
+  const pending = pendingForUnit(state, toolUnitId);
+  if (pending && pending.id !== editableHandoffId) return [];
   if (!canStartTransfer(unit, custody, actor.id, { type: 'warehouse', warehouseId: state.warehouses[0]?.id ?? '' }))
     return [];
   const userNames = new Map(state.users.map((user) => [user.id, user.name]));

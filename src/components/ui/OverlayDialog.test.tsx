@@ -20,7 +20,30 @@ function RerenderingDialogHarness() {
   );
 }
 
+function FormDialogHarness() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button onClick={() => setOpen(true)}>Open form dialog</button>
+      {open ? (
+        <OverlayDialog label="Form dialog" onClose={() => setOpen(false)}>
+          <input aria-label="Note" placeholder="Type a note" />
+          <button onClick={() => setOpen(false)}>Continue</button>
+        </OverlayDialog>
+      ) : null}
+    </>
+  );
+}
+
 describe('OverlayDialog focus lifecycle', () => {
+  it('does not focus the first text field when a form dialog opens', async () => {
+    const user = userEvent.setup();
+    render(<FormDialogHarness />);
+    await user.click(screen.getByRole('button', { name: 'Open form dialog' }));
+    expect(screen.getByRole('textbox', { name: 'Note' })).not.toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Continue' })).toHaveFocus();
+  });
+
   it('keeps focus inside the dialog when an owner rerenders and restores it on Escape', async () => {
     const user = userEvent.setup();
     render(<RerenderingDialogHarness />);

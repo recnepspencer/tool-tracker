@@ -13,7 +13,7 @@ export const defaultCatalogFilters: CatalogFilters = {
   search: '',
   warehouseId: 'all',
   category: 'all',
-  availability: 'all',
+  availability: 'available',
 };
 
 const matchesAvailability = (status: ToolCatalogItem['units'][number]['status'], availability: CatalogAvailability) =>

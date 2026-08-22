@@ -24,6 +24,14 @@ export interface StartTransferInput {
   evidence?: CustodyEvidence;
 }
 
+export interface UpdateTransferInput {
+  handoffId: string;
+  toolUnitId: string;
+  actorId: string;
+  to: HolderRef;
+  evidence?: CustodyEvidence;
+}
+
 export interface HandoffReviewInput {
   handoffId: string;
   toolUnitId: string;
@@ -40,9 +48,10 @@ export interface ReportConditionInput {
 
 export interface CustodyApi {
   listPendingHandoffs(profileId: string): Promise<PendingHandoffView[]>;
-  listTransferTargets(input: { actorId: string; toolUnitId: string }): Promise<ToolHolderView[]>;
+  listTransferTargets(input: { actorId: string; toolUnitId: string; handoffId?: string }): Promise<ToolHolderView[]>;
   requestTool(input: RequestToolInput): Promise<CustodyMutationResult>;
   startTransfer(input: StartTransferInput): Promise<CustodyMutationResult>;
+  updateTransfer(input: UpdateTransferInput): Promise<CustodyMutationResult>;
   acceptTransfer(input: HandoffReviewInput): Promise<CustodyMutationResult>;
   declineTransfer(input: HandoffReviewInput): Promise<CustodyMutationResult>;
   cancelTransfer(input: HandoffReviewInput): Promise<CustodyMutationResult>;

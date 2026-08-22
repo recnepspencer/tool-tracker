@@ -1,6 +1,6 @@
 import type { PendingHandoffView } from '../../domain/read-models/custody';
 import { formatActivityTimestamp } from '../../domain/activity';
-import { pendingHandoffActions, pendingHandoffDirection } from '../../domain/custody-policy';
+import { canEditTransfer, pendingHandoffActions, pendingHandoffDirection } from '../../domain/custody-policy';
 import { toHolderView } from './mock-holder-projection';
 import { toToolView } from './mock-tool-projections';
 import type { MockState } from './mock-state';
@@ -26,6 +26,7 @@ export const toPendingHandoffView = (state: MockState, handoffId: string, profil
     requestedAtInstant: handoff.requestedAt,
     ...(handoff.evidence ? { evidence: { ...handoff.evidence } } : {}),
     direction: isIncomingTransfer ? 'incoming' : 'outgoing',
+    canEdit: canEditTransfer(handoff, profileId),
     allowedActions: pendingHandoffActions(handoff, profileId),
   };
 };

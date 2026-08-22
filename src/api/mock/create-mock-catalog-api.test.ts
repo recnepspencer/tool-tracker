@@ -40,7 +40,7 @@ describe('createMockApi catalog projections', () => {
     await expect(api.tools.getToolDetail('TL-201')).resolves.toMatchObject({
       tool: { id: 'TL-201', holder: { type: 'warehouse', warehouseId: 'north-yard' } },
     });
-    expect((await api.admin.getSummary({ actorId: 'sam-ochoa' })).totalTools).toBe(19);
+    expect((await api.admin.getSummary({ actorId: 'sam-ochoa' })).totalTools).toBe(21);
   });
 
   it('derives mixed catalog status aggregates from every projected unit', async () => {

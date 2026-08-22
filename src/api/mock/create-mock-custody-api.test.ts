@@ -22,7 +22,7 @@ describe('createMockApi custody projections', () => {
       handoffs: [
         ...state.handoffs,
         {
-          id: 'HO-2',
+          id: 'HO-20',
           kind: 'warehouse-request',
           toolUnitId: 'TL-109',
           from: { type: 'warehouse', warehouseId: 'north-yard' },
@@ -32,7 +32,7 @@ describe('createMockApi custody projections', () => {
           status: 'pending',
         },
         {
-          id: 'HO-3',
+          id: 'HO-30',
           kind: 'transfer',
           toolUnitId: 'TL-101',
           from: { type: 'worker', userId: 'ray-torres' },
@@ -42,7 +42,7 @@ describe('createMockApi custody projections', () => {
           status: 'pending',
         },
         {
-          id: 'HO-4',
+          id: 'HO-40',
           kind: 'transfer',
           toolUnitId: 'TL-102',
           from: { type: 'worker', userId: 'ray-torres' },
@@ -52,7 +52,7 @@ describe('createMockApi custody projections', () => {
           status: 'pending',
         },
         {
-          id: 'HO-5',
+          id: 'HO-50',
           kind: 'warehouse-request',
           toolUnitId: 'TL-105',
           from: { type: 'warehouse', warehouseId: 'north-yard' },
@@ -66,13 +66,15 @@ describe('createMockApi custody projections', () => {
     const api = createMockApi(database);
     expect((await api.custody.listPendingHandoffs('ray-torres')).map((handoff) => handoff.id)).toEqual([
       'HO-1',
-      'HO-3',
-      'HO-4',
+      'HO-DEMO-OUT',
+      'HO-DEMO-IN',
+      'HO-30',
+      'HO-40',
     ]);
     expect((await api.custody.listPendingHandoffs('jordan-lee')).map((handoff) => handoff.id)).toEqual([
-      'HO-2',
-      'HO-4',
-      'HO-5',
+      'HO-20',
+      'HO-40',
+      'HO-50',
     ]);
     expect(await api.custody.listPendingHandoffs('sam-ochoa')).toEqual([]);
     expect(await api.custody.listPendingHandoffs('unrelated-worker')).toEqual([]);

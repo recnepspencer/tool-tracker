@@ -23,8 +23,37 @@ export function ToolCatalogCard({
   const status = statusParts.join(' · ') || 'No units';
   const hasOnlyAvailable = item.availableCount > 0 && statusParts.length === 1;
   const availableUnits = item.units.filter((unit) => unit.status === 'in-stock');
+  const selectedUnit = availableUnits[0] ?? item.units[0];
+  const openDetail = () => {
+    if (!selectedUnit) return;
+    onSelect(
+      selectedUnit.id,
+      availableUnits.length ? 'request' : undefined,
+      availableUnits.length
+        ? availableUnits.map((unit) => ({
+            unitId: unit.id,
+            warehouseId: unit.warehouseId,
+            warehouseName:
+              item.warehouses.find((warehouse) => warehouse.id === unit.warehouseId)?.name ?? unit.warehouseId,
+          }))
+        : undefined,
+    );
+  };
   return (
-    <article className={`catalog-card catalog-card--${mode}`}>
+    <article
+      className={`catalog-card catalog-card--${mode}`}
+      role="button"
+      tabIndex={0}
+      aria-label={`Open ${item.name}`}
+      data-catalog-item-id={item.id}
+      onClick={openDetail}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openDetail();
+        }
+      }}
+    >
       <ToolPhoto
         src={item.imageSrc}
         alt={`${item.name} product photo`}
@@ -46,31 +75,6 @@ export function ToolCatalogCard({
           <span>
             {item.totalCount} {item.totalCount === 1 ? 'unit' : 'units'}
           </span>
-        </span>
-        <span className="catalog-unit-actions" aria-label={`${item.name} available units`}>
-          {availableUnits.length ? (
-            <button
-              type="button"
-              className="catalog-unit-button"
-              onClick={() =>
-                onSelect(
-                  availableUnits[0].id,
-                  'request',
-                  availableUnits.map((unit) => ({
-                    unitId: unit.id,
-                    warehouseId: unit.warehouseId,
-                    warehouseName:
-                      item.warehouses.find((warehouse) => warehouse.id === unit.warehouseId)?.name ?? unit.warehouseId,
-                  })),
-                )
-              }
-              aria-label={`Check out ${item.name}`}
-            >
-              Check out
-            </button>
-          ) : (
-            <span className="catalog-unit-empty">No units ready to check out</span>
-          )}
         </span>
       </span>
     </article>

@@ -103,11 +103,11 @@ describe('custody projection refresh surfaces', () => {
     expect(await screen.findByRole('heading', { name: 'My tools' })).toBeInTheDocument();
     await waitFor(() => expect(screen.getByTestId('projection-probe')).toHaveTextContent('ready'));
     await user.click(screen.getByRole('link', { name: 'Browse checkout catalog' }));
-    await user.click(await screen.findByRole('button', { name: 'Check out Rotary hammer' }));
+    await user.click(await screen.findByRole('button', { name: 'Open Rotary hammer' }));
     const detail = await screen.findByRole('dialog', { name: 'Tool details' });
     expect(within(detail).getByRole('heading', { name: 'Request this tool' })).toBeInTheDocument();
     await user.type(within(detail).getByPlaceholderText('Add context for the record'), 'Tomorrow job');
-    expect(within(detail).queryByRole('switch', { name: 'Add a photo to this record' })).not.toBeInTheDocument();
+    expect(within(detail).queryByRole('switch', { name: /Add an optional photo/ })).not.toBeInTheDocument();
     const beforeCalls = { ...calls, pendingByProfile: { ...calls.pendingByProfile } };
     const beforeProjection = { ...screen.getByTestId('projection-probe').dataset };
     await user.click(within(detail).getByRole('button', { name: 'Confirm' }));

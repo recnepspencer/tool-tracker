@@ -127,8 +127,8 @@ describe('warehouse operations surfaces', () => {
     await screen.findByTestId('warehouse-prefetch-ready');
     await waitFor(() => {
       expect(screen.getByTestId('warehouse-probe-tool-holder')).toHaveTextContent('North Yard');
-      expect(screen.getByTestId('warehouse-probe-summary-checked-out')).toHaveTextContent('6');
-      expect(screen.getByTestId('warehouse-probe-pending')).toHaveTextContent('1');
+      expect(screen.getByTestId('warehouse-probe-summary-checked-out')).toHaveTextContent('8');
+      expect(screen.getByTestId('warehouse-probe-pending')).toHaveTextContent('3');
     });
     await user.click(screen.getByRole('button', { name: 'Disable projection probes' }));
     expect(screen.queryByTestId('warehouse-projection-probe')).not.toBeInTheDocument();
@@ -159,11 +159,11 @@ describe('warehouse operations surfaces', () => {
       expect(screen.getByTestId('warehouse-probe-tool-holder')).toHaveTextContent('Ray Torres');
       expect(screen.getByTestId('warehouse-probe-catalog-checked-out')).toHaveTextContent('1');
       expect(screen.getByTestId('warehouse-probe-activity')).toHaveTextContent('true');
-      expect(screen.getByTestId('warehouse-probe-summary-checked-out')).toHaveTextContent('7');
-      expect(screen.getByTestId('warehouse-probe-ray-held-tools')).toHaveTextContent('7');
-      expect(screen.getByTestId('warehouse-probe-person-held-tools')).toHaveTextContent('7');
-      expect(screen.getByTestId('warehouse-probe-north-out')).toHaveTextContent('4');
-      expect(screen.getByTestId('warehouse-probe-pending')).toHaveTextContent('0');
+      expect(screen.getByTestId('warehouse-probe-summary-checked-out')).toHaveTextContent('9');
+      expect(screen.getByTestId('warehouse-probe-ray-held-tools')).toHaveTextContent('8');
+      expect(screen.getByTestId('warehouse-probe-person-held-tools')).toHaveTextContent('8');
+      expect(screen.getByTestId('warehouse-probe-north-out')).toHaveTextContent('5');
+      expect(screen.getByTestId('warehouse-probe-pending')).toHaveTextContent('2');
       expect(screen.getByTestId('warehouse-probe-targets')).not.toHaveTextContent('0');
       expect(screen.getByTestId('warehouse-probe-detail-holder')).toHaveTextContent('Ray Torres');
     });
@@ -207,7 +207,7 @@ describe('warehouse operations surfaces', () => {
     expect(await screen.findByRole('heading', { name: 'Inventory' })).toBeInTheDocument();
     await user.click(screen.getByRole('tab', { name: 'Flagged 2' }));
     expect(screen.getByText('Cable cutter')).toBeInTheDocument();
-    await user.click(screen.getByRole('tab', { name: 'All 18' }));
+    await user.click(screen.getByRole('tab', { name: 'All 20' }));
     const search = screen.getByRole('searchbox', { name: 'Search inventory' });
     await user.type(search, 'Bandsaw');
     expect(screen.getByText('Bandsaw')).toBeInTheDocument();

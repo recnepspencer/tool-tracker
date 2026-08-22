@@ -4,6 +4,7 @@ import type { PendingHandoffView } from '../../domain/read-models/custody';
 import { TOOL_LIFECYCLES } from '../../domain/tool';
 import {
   canSeePendingHandoff,
+  canEditTransfer,
   pendingHandoffActions,
   pendingHandoffDirection,
   sameHolder,
@@ -51,6 +52,7 @@ export const mapPendingHandoff = (dto: PendingHandoffDto, expectedProfileId: str
     requestedAtInstant,
     ...(evidence ? { evidence } : {}),
     direction: pendingHandoffDirection(policyInput, expectedProfileId),
+    canEdit: canEditTransfer(policyInput, expectedProfileId),
     allowedActions,
   };
 };

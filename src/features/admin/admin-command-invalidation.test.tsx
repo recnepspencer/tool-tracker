@@ -218,7 +218,7 @@ describe('admin command invalidation fanout', () => {
         command === 'suspend' ? 'suspended' : 'removed',
       );
       expect(screen.getByTestId('command-held-tools')).toHaveTextContent(command === 'suspend' ? '1' : '0');
-      expect(screen.getByTestId('command-summary-checked-out')).toHaveTextContent(command === 'suspend' ? '6' : '5');
+      expect(screen.getByTestId('command-summary-checked-out')).toHaveTextContent(command === 'suspend' ? '8' : '7');
       expect(screen.getByTestId('command-pending')).toHaveTextContent('0');
       expect(screen.getByTestId('command-target-present')).toHaveTextContent('false');
     });

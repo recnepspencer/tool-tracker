@@ -39,6 +39,15 @@ const seedUsers: Member[] = [
     homeWarehouseId: 'south-shop',
   },
   {
+    id: 'eli-warren',
+    name: 'Eli Warren',
+    email: 'eli@nelsonelectric.com',
+    role: 'worker',
+    lifecycle: 'active',
+    title: 'Field electrician',
+    homeWarehouseId: 'south-shop',
+  },
+  {
     id: 'morgan-price',
     name: 'Morgan Price',
     email: 'morgan@nelsonelectric.com',
@@ -228,6 +237,22 @@ const seedUnits: ToolUnit[] = [
     originWarehouseId: 'riverside-depot',
     assignedWarehouseId: 'riverside-depot',
   },
+  {
+    id: 'TL-119',
+    definitionId: 'def-cord-reel',
+    condition: 'serviceable',
+    lifecycle: 'active',
+    originWarehouseId: 'south-shop',
+    assignedWarehouseId: 'south-shop',
+  },
+  {
+    id: 'TL-120',
+    definitionId: 'def-pump-pliers',
+    condition: 'serviceable',
+    lifecycle: 'active',
+    originWarehouseId: 'north-yard',
+    assignedWarehouseId: 'north-yard',
+  },
 ];
 
 const seedCustody: CustodyRecord[] = [
@@ -296,6 +321,16 @@ const seedCustody: CustodyRecord[] = [
     toolUnitId: 'TL-118',
     holder: { type: 'warehouse', warehouseId: 'riverside-depot' },
     sinceAt: '2026-08-18T09:15:00-06:00',
+  },
+  {
+    toolUnitId: 'TL-119',
+    holder: { type: 'worker', userId: 'eli-warren' },
+    sinceAt: '2026-08-18T08:45:00-06:00',
+  },
+  {
+    toolUnitId: 'TL-120',
+    holder: { type: 'worker', userId: 'ray-torres' },
+    sinceAt: '2026-08-18T08:20:00-06:00',
   },
 ];
 
@@ -377,6 +412,28 @@ const seedHandoffs: HandoffRequest[] = [
     requestedBy: 'ray-torres',
     requestedAt: '2026-08-17T10:18:00-06:00',
     status: 'pending',
+  },
+  {
+    id: 'HO-DEMO-OUT',
+    kind: 'transfer',
+    toolUnitId: 'TL-120',
+    from: { type: 'worker', userId: 'ray-torres' },
+    to: { type: 'worker', userId: 'eli-warren' },
+    requestedBy: 'ray-torres',
+    requestedAt: '2026-08-18T08:20:00-06:00',
+    status: 'pending',
+    evidence: { note: 'Return after the panel test', mockPhoto: true },
+  },
+  {
+    id: 'HO-DEMO-IN',
+    kind: 'transfer',
+    toolUnitId: 'TL-119',
+    from: { type: 'worker', userId: 'eli-warren' },
+    to: { type: 'worker', userId: 'ray-torres' },
+    requestedBy: 'eli-warren',
+    requestedAt: '2026-08-18T08:45:00-06:00',
+    status: 'pending',
+    evidence: { note: 'Ready for the west crew' },
   },
 ];
 

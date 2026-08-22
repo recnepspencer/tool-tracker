@@ -22,8 +22,8 @@ describe('createMockApi admin projections', () => {
       units: state.units.map((unit) => (unit.id === 'TL-105' ? { ...unit, lifecycle: 'archived' } : unit)),
     }));
     const summary = await createMockApi(database).admin.getSummary({ actorId: 'sam-ochoa' });
-    expect(summary.totalTools).toBe(17);
-    expect(summary.warehouses[0]).toMatchObject({ tools: 3, out: 3 });
+    expect(summary.totalTools).toBe(19);
+    expect(summary.warehouses[0]).toMatchObject({ tools: 3, out: 4 });
   });
 
   it('reconciles every summary aggregate with canonical active custody', async () => {

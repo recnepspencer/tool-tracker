@@ -14,11 +14,11 @@ export function usePendingHandoffs(profileId?: string) {
   });
 }
 
-export function useTransferTargets(actorId: string | null, toolUnitId: string | null) {
+export function useTransferTargets(actorId: string | null, toolUnitId: string | null, handoffId?: string) {
   const api = useApi();
   return useQuery({
-    queryKey: queryKeys.transferTargets(actorId ?? 'none', toolUnitId ?? 'none'),
-    queryFn: () => api.custody.listTransferTargets({ actorId: actorId!, toolUnitId: toolUnitId! }),
+    queryKey: queryKeys.transferTargets(actorId ?? 'none', toolUnitId ?? 'none', handoffId),
+    queryFn: () => api.custody.listTransferTargets({ actorId: actorId!, toolUnitId: toolUnitId!, handoffId }),
     enabled: Boolean(actorId && toolUnitId),
   });
 }
