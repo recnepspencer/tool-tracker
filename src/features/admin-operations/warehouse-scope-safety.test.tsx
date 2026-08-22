@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, screen, waitFor } from '@testing-library/react';
+import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import { AppRoutes } from '../../app/app-routes';
 import { createMockApi } from '../../api/mock/create-mock-api';
 import { renderApp, createMemorySessionStore } from '../../test/render-app';
@@ -48,7 +48,7 @@ describe('warehouse scope failure surfaces', () => {
       await screen.findByText('Warehouse scopes could not be loaded. Decisions are paused until it recovers.'),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Retry' })).toBeVisible();
-    screen.getAllByRole('button', { name: 'Release to worker' }).forEach((button) => {
+    screen.getAllByRole('button', { name: /Review request/ }).forEach((button) => {
       expect(button).toBeDisabled();
     });
   });
@@ -76,7 +76,7 @@ describe('warehouse scope failure surfaces', () => {
 
   it('blocks warehouse stocking while cached scope authority is paused offline', async () => {
     const user = userEvent.setup();
-    window.location.hash = '#/admin/operations/queue';
+    window.location.hash = '#/admin/operations/inventory';
     renderApp(
       <>
         <AppRoutes />
@@ -84,11 +84,11 @@ describe('warehouse scope failure surfaces', () => {
       </>,
       { api: createMockApi(), sessionStore: createMemorySessionStore('sam-ochoa') },
     );
-    await user.click(await screen.findByRole('button', { name: 'Add tools' }));
+    await user.click(await screen.findByRole('button', { name: 'Add tool' }));
     const dialog = await screen.findByRole('dialog', { name: 'Add tools to inventory' });
     await user.type(screen.getByLabelText('Tool name'), 'Paused stock');
     await chooseFieldOption(user, screen.getByRole('combobox', { name: 'Category' }), 'Power tools');
-    const submit = screen.getByRole('button', { name: 'Add tool' });
+    const submit = within(dialog).getByRole('button', { name: 'Add tool' });
     expect(submit).toBeEnabled();
 
     onlineManager.setOnline(false);

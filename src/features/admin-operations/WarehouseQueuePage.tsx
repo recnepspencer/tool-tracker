@@ -3,7 +3,6 @@ import { ErrorState, LoadingState } from '../../components/ui/AsyncState';
 import { PageHeading } from '../../components/layout/PageHeading';
 import { SelectField } from '../../components/ui/SelectField';
 import { SearchField } from '../../components/ui/TextField';
-import { Button } from '../../components/ui/Button';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { useWarehouseQueue } from './use-warehouse-queue';
 import { useWarehouseScopes } from './use-warehouse-scopes';
@@ -12,7 +11,6 @@ import { WarehouseQueueItem } from './WarehouseQueueItem';
 import { WarehouseQueueReviewDialog } from './WarehouseQueueReviewDialog';
 import { useWarehouseQueueReviewController } from './use-warehouse-queue-review-controller';
 import './admin-operations.css';
-import { WarehouseStockDialog } from './WarehouseStockDialog';
 import type { WarehouseQueueItemView } from '../../domain/read-models/warehouse-operations';
 
 type QueueFilter = 'all' | 'request' | 'return';
@@ -21,7 +19,6 @@ export function WarehouseQueuePage() {
   const [warehouseId, setWarehouseId] = useState('all');
   const [filter, setFilter] = useState<QueueFilter>('all');
   const [search, setSearch] = useState('');
-  const [stockOpen, setStockOpen] = useState(false);
   const warehouses = useWarehouseScopes();
   const queue = useWarehouseQueue(warehouseId);
   const summary = useWarehouseOperationsSummary(warehouseId);
@@ -52,7 +49,6 @@ export function WarehouseQueuePage() {
         eyebrow="Admin view · Warehouse operations"
         title="Queue"
         description="Review requests and returns at the gate before custody changes."
-        status="Live queue"
       />
       <div className="operations-toolbar">
         <div className="operations-tabs" role="tablist" aria-label="Queue filter">
@@ -84,15 +80,12 @@ export function WarehouseQueuePage() {
             </button>
           ))}
         </div>
-        <div className="operations-filters">
-          <SearchField
-            label="Search queue"
-            placeholder="Tool, person, or warehouse…"
-            value={search}
-            onChange={setSearch}
-          />
+        <div className="operations-filters operations-filters--compact">
+          <SearchField compact label="Search queue" placeholder="Search queue…" value={search} onChange={setSearch} />
           <SelectField
             compact
+            hideLabel
+            searchable={false}
             label="Warehouse"
             value={warehouseId}
             onChange={setWarehouseId}
@@ -101,7 +94,6 @@ export function WarehouseQueuePage() {
               ...(warehouses.data ?? []).map((warehouse) => ({ value: warehouse.id, label: warehouse.name })),
             ]}
           />
-          <Button onClick={() => setStockOpen(true)}>Add tools</Button>
         </div>
       </div>
       {queue.isError && <ErrorState message="The queue could not be refreshed." onRetry={() => void queue.refetch()} />}
@@ -147,12 +139,6 @@ export function WarehouseQueuePage() {
           onNoteChange={reviewController.setNote}
           onClose={reviewController.closeReview}
           onResolve={(decision) => void reviewController.resolve(decision)}
-        />
-      )}
-      {stockOpen && (
-        <WarehouseStockDialog
-          defaultWarehouseId={warehouseId === 'all' ? undefined : warehouseId}
-          onClose={() => setStockOpen(false)}
         />
       )}
     </div>

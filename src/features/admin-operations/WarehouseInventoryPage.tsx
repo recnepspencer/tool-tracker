@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Plus } from 'lucide-react';
 import { ErrorState, LoadingState } from '../../components/ui/AsyncState';
 import { PageHeading } from '../../components/layout/PageHeading';
 import { SearchField } from '../../components/ui/TextField';
@@ -63,6 +64,12 @@ export function WarehouseInventoryPage() {
         eyebrow="Admin view · Warehouse operations"
         title="Inventory"
         description="Search every tool unit, its custody, and its lifecycle."
+        action={
+          <Button className="operations-add-button" onClick={() => setStockOpen(true)}>
+            <Plus aria-hidden="true" />
+            Add tool
+          </Button>
+        }
       />
       <div className="operations-toolbar operations-toolbar--inventory">
         <div className="operations-tabs" role="tablist" aria-label="Inventory filter">
@@ -80,10 +87,18 @@ export function WarehouseInventoryPage() {
             </button>
           ))}
         </div>
-        <div className="operations-filters">
-          <SearchField label="Search inventory" placeholder="Search tools…" value={search} onChange={setSearch} />
+        <div className="operations-filters operations-filters--compact">
+          <SearchField
+            compact
+            label="Search inventory"
+            placeholder="Search tools…"
+            value={search}
+            onChange={setSearch}
+          />
           <SelectField
             compact
+            hideLabel
+            searchable={false}
             label="Warehouse"
             value={warehouseId}
             onChange={setWarehouseId}
@@ -92,7 +107,6 @@ export function WarehouseInventoryPage() {
               ...(warehouses.data ?? []).map((warehouse) => ({ value: warehouse.id, label: warehouse.name })),
             ]}
           />
-          <Button onClick={() => setStockOpen(true)}>Add tools</Button>
         </div>
       </div>
       {inventory.isError && (
@@ -162,6 +176,9 @@ function InventoryRow({ item, onFlag }: { item: WarehouseInventoryItemView; onFl
             <strong>{item.toolName}</strong>
             <span>
               {item.toolUnitId} · {item.category}
+            </span>
+            <span className="inventory-tool__mobile-context">
+              {item.warehouseName} · {item.holder.name} · {item.lastMoved}
             </span>
           </div>
         </div>

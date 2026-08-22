@@ -1,8 +1,6 @@
-import { Button } from '../../components/ui/Button';
+import { ChevronRight } from 'lucide-react';
 import { ToolPhoto } from '../../components/ui/ToolPhoto';
 import type { WarehouseQueueItemView } from '../../domain/read-models/warehouse-operations';
-
-const actionLabel = (item: WarehouseQueueItemView) => (item.kind === 'request' ? 'Release to worker' : 'Accept return');
 
 export function WarehouseQueueItem({
   item,
@@ -15,28 +13,35 @@ export function WarehouseQueueItem({
 }) {
   return (
     <article className="queue-item">
-      <ToolPhoto src={item.imageSrc} alt="" size="small" />
-      <div className="queue-item__body">
-        <div className="queue-item__heading">
-          <div>
-            <span className="eyebrow">{item.kind === 'request' ? 'Request to release' : 'Return to accept'}</span>
-            <h2>{item.toolName}</h2>
-          </div>
-          <span className="queue-item__time">{item.requestedAt}</span>
-        </div>
-        <p>
-          <strong>{item.personName}</strong> · {item.personRole} · {item.warehouseName}
-        </p>
-        <p className="queue-item__route">
-          {item.from.name} <span aria-hidden="true">→</span> {item.to.name}
-        </p>
-        {item.note && <p className="queue-item__note">“{item.note}”</p>}
-        <div className="queue-item__actions">
-          <Button disabled={busy} onClick={() => onReview(item)}>
-            {actionLabel(item)}
-          </Button>
-        </div>
-      </div>
+      <button
+        type="button"
+        className="queue-item__open"
+        disabled={busy}
+        onClick={() => onReview(item)}
+        aria-label={`Review ${item.kind} for ${item.toolName}`}
+      >
+        <ToolPhoto src={item.imageSrc} alt="" size="small" />
+        <span className="queue-item__body">
+          <span className="queue-item__heading">
+            <span>
+              <span className="eyebrow">{item.kind === 'request' ? 'Request to release' : 'Return to accept'}</span>
+              <strong className="queue-item__name">{item.toolName}</strong>
+            </span>
+            <span className="queue-item__time">{item.requestedAt}</span>
+          </span>
+          <span className="queue-item__person">
+            <strong>{item.personName}</strong> · {item.personRole}
+          </span>
+          <span className="queue-item__route">
+            {item.from.name} <span aria-hidden="true">→</span> {item.to.name}
+          </span>
+          {item.note && <span className="queue-item__note">“{item.note}”</span>}
+        </span>
+        <span className="queue-item__review">
+          <span className="queue-item__review-label">Review</span>
+          <ChevronRight aria-hidden="true" />
+        </span>
+      </button>
     </article>
   );
 }

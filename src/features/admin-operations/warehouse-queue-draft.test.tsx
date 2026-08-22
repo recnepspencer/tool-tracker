@@ -42,7 +42,9 @@ describe('warehouse queue draft safety', () => {
     renderApp(<AppRoutes />, { api, sessionStore: createMemorySessionStore('sam-ochoa') });
     await screen.findByRole('heading', { name: 'Queue' });
     await user.click(
-      within(screen.getByText('Bandsaw').closest('article')!).getByRole('button', { name: 'Release to worker' }),
+      within(screen.getByText('Bandsaw').closest('article')!).getByRole('button', {
+        name: 'Review request for Bandsaw',
+      }),
     );
     const dialog = await screen.findByRole('dialog', { name: 'Review Bandsaw' });
     const note = within(dialog).getByLabelText('Decision note');
@@ -76,7 +78,9 @@ describe('warehouse queue draft safety', () => {
     renderApp(<AppRoutes />, { api, sessionStore: createMemorySessionStore('sam-ochoa') });
     await screen.findByRole('heading', { name: 'Queue' });
     await user.click(
-      within(screen.getByText('Bandsaw').closest('article')!).getByRole('button', { name: 'Release to worker' }),
+      within(screen.getByText('Bandsaw').closest('article')!).getByRole('button', {
+        name: 'Review request for Bandsaw',
+      }),
     );
     const dialog = await screen.findByRole('dialog', { name: 'Review Bandsaw' });
     await user.click(within(dialog).getByRole('button', { name: 'Release to worker' }));
@@ -111,7 +115,9 @@ describe('warehouse queue draft safety', () => {
     );
     await screen.findByRole('heading', { name: 'Queue' });
     await user.click(
-      within(screen.getByText('Bandsaw').closest('article')!).getByRole('button', { name: 'Release to worker' }),
+      within(screen.getByText('Bandsaw').closest('article')!).getByRole('button', {
+        name: 'Review request for Bandsaw',
+      }),
     );
     const dialog = await screen.findByRole('dialog', { name: 'Review Bandsaw' });
     await user.click(screen.getByRole('button', { name: 'Refresh queue' }));

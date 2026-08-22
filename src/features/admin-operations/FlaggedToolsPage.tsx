@@ -46,17 +46,23 @@ export function FlaggedToolsPage() {
         eyebrow="Admin view · Warehouse operations"
         title="Flagged tools"
         description="Resolve damaged and lost units with evidence while keeping lifecycle history intact."
-        status={`${rows.length} need a decision`}
       />
       <span className="sr-only" data-testid="warehouse-decision-pending" aria-live="polite">
         {decisions.decisionPending ? 'Saving warehouse decision' : ''}
       </span>
       <div className="operations-toolbar operations-toolbar--inventory">
-        <div className="operations-callout">Flagged units remain visible until restored or decommissioned.</div>
-        <div className="operations-filters">
-          <SearchField label="Search flagged tools" placeholder="Search tools…" value={search} onChange={setSearch} />
+        <div className="operations-filters operations-filters--compact">
+          <SearchField
+            compact
+            label="Search flagged tools"
+            placeholder="Search tools…"
+            value={search}
+            onChange={setSearch}
+          />
           <SelectField
             compact
+            hideLabel
+            searchable={false}
             label="Warehouse"
             value={warehouseId}
             onChange={setWarehouseId}
@@ -151,8 +157,8 @@ function FlaggedRow({
           </Button>
           {policy.canRestore || policy.canDecommission ? (
             <>
-              <Button disabled={busy || !policy.canRestore} onClick={onRestore}>
-                Restore to stock
+              <Button aria-label="Restore to stock" disabled={busy || !policy.canRestore} onClick={onRestore}>
+                Restore
               </Button>
               <Button variant="danger" disabled={busy || !policy.canDecommission} onClick={onDecommission}>
                 Decommission

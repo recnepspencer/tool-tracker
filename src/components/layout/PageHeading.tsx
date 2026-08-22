@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+import { cx } from '../../lib/cx';
 import '../ui/Typography.css';
 
 export function PageHeading({
@@ -5,24 +7,23 @@ export function PageHeading({
   title,
   description,
   status,
+  action,
 }: {
   eyebrow: string;
   title: string;
   description: string;
   status?: string;
+  action?: ReactNode;
 }) {
   return (
-    <div className="page-heading">
+    <div className={cx('page-heading', Boolean(action) && 'page-heading--with-action')}>
       <div>
         <span className="eyebrow">{eyebrow}</span>
         <h1>{title}</h1>
         <p>{description}</p>
       </div>
-      {status ? (
-        <span className="live-indicator">
-          <i /> {status}
-        </span>
-      ) : null}
+      {action ? <div className="page-heading-action">{action}</div> : null}
+      {!action && status ? <span className="page-heading-status">{status}</span> : null}
     </div>
   );
 }

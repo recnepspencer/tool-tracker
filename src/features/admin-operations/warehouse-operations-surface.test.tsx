@@ -24,7 +24,7 @@ describe('warehouse operations surfaces', () => {
     expect(screen.getByText('Bandsaw')).toBeInTheDocument();
     const requestCard = screen.getByText('Bandsaw').closest('article');
     expect(requestCard).not.toBeNull();
-    await user.click(within(requestCard!).getByRole('button', { name: 'Release to worker' }));
+    await user.click(within(requestCard!).getByRole('button', { name: 'Review request for Bandsaw' }));
     const dialog = await screen.findByRole('dialog', { name: 'Review Bandsaw' });
     expect(dialog).toContainElement(document.activeElement as HTMLElement);
     await user.type(within(dialog).getByLabelText('Decision note'), 'Approved for the morning crew');
@@ -45,9 +45,10 @@ describe('warehouse operations surfaces', () => {
   it('adds a matching batch directly to warehouse inventory', async () => {
     const user = userEvent.setup();
     const database = createMockDatabase({ clock: () => '2026-08-19T09:00:00-06:00' });
+    window.location.hash = '#/admin/operations/inventory';
     renderApp(<AppRoutes />, { api: createMockApi(database), sessionStore: createMemorySessionStore('sam-ochoa') });
-    expect(await screen.findByRole('heading', { name: 'Queue' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Add tools' }));
+    expect(await screen.findByRole('heading', { name: 'Inventory' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Add tool' }));
     const dialog = await screen.findByRole('dialog', { name: 'Add tools to inventory' });
     await user.type(within(dialog).getByLabelText('Tool name'), 'Warehouse cart');
     await user.type(within(dialog).getByLabelText('Brand'), 'Greenlee');
@@ -169,7 +170,7 @@ describe('warehouse operations surfaces', () => {
     const before = { ...calls };
     const bandsawRequest = screen.getByText('Bandsaw').closest('article');
     expect(bandsawRequest).not.toBeNull();
-    const release = within(bandsawRequest!).getByRole('button', { name: 'Release to worker' });
+    const release = within(bandsawRequest!).getByRole('button', { name: 'Review request for Bandsaw' });
     await waitFor(() => expect(release).toBeEnabled());
     await user.click(release);
     const dialog = await screen.findByRole('dialog', { name: 'Review Bandsaw' });
@@ -251,7 +252,7 @@ describe('warehouse operations surfaces', () => {
     const warehouse = screen.getByRole('combobox', { name: 'Warehouse' });
     await user.click(warehouse);
     await user.click(screen.getByRole('option', { name: 'South Shop' }));
-    expect(screen.getByRole('combobox', { name: 'Warehouse' })).toHaveValue('South Shop');
+    expect(screen.getByRole('combobox', { name: 'Warehouse' })).toHaveTextContent('South Shop');
   });
 
   it('keeps queue summary failure truthful and exercises production filters', async () => {
@@ -275,7 +276,7 @@ describe('warehouse operations surfaces', () => {
       await screen.findByText('The queue summary could not be refreshed. Queue decisions remain available.'),
     ).toBeInTheDocument();
     expect(screen.queryByLabelText('Warehouse operations summary')).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Release to worker' })[0]).toBeEnabled();
+    expect(screen.getAllByRole('button', { name: /Review request/ })[0]).toBeEnabled();
     cleanup();
 
     window.location.hash = '#/admin/operations/queue';
@@ -287,6 +288,8 @@ describe('warehouse operations surfaces', () => {
     const warehouse = screen.getByRole('combobox', { name: 'Warehouse' });
     await user.click(warehouse);
     await user.click(screen.getByRole('option', { name: 'South Shop' }));
-    expect(screen.getByRole('combobox', { name: 'Warehouse' })).toHaveValue('South Shop');
+    expect(screen.getByRole('combobox', { name: 'Warehouse' })).toHaveTextContent('South Shop');
+    expect(screen.queryByText('Live queue')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add tool' })).not.toBeInTheDocument();
   });
 });
