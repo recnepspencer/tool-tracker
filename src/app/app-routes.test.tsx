@@ -28,10 +28,10 @@ describe('application route guards', () => {
     const user = userEvent.setup();
     renderApp(<AppRoutes />);
     await user.click(await screen.findByRole('button', { name: 'Enter as Sam' }));
-    expect(await screen.findByRole('heading', { name: 'Control room' })).toBeInTheDocument();
-    expect(window.location.hash).toBe('#/admin/dashboard');
+    expect(await screen.findByRole('heading', { name: 'Queue' })).toBeInTheDocument();
+    expect(window.location.hash).toBe('#/admin/operations/queue');
     window.location.hash = '#/worker/tools';
-    await waitFor(() => expect(window.location.hash).toBe('#/admin/dashboard'));
+    await waitFor(() => expect(window.location.hash).toBe('#/admin/operations/queue'));
     expect(screen.queryByRole('heading', { name: 'My tools' })).not.toBeInTheDocument();
   });
 
@@ -43,7 +43,7 @@ describe('application route guards', () => {
     expect(window.location.hash).toBe('#/worker/tools');
     window.location.hash = '#/admin/dashboard';
     await waitFor(() => expect(window.location.hash).toBe('#/worker/tools'));
-    expect(screen.queryByRole('heading', { name: 'Control room' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Queue' })).not.toBeInTheDocument();
   });
 
   it('protects an unauthenticated deep link', async () => {

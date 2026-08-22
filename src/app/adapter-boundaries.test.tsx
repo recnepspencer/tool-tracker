@@ -88,15 +88,15 @@ describe('adapter-backed route boundaries', () => {
 
     const adminApi = {
       ...baseApi,
-      admin: {
-        ...baseApi.admin,
-        getSummary: async () => {
-          throw new Error('summary offline');
+      warehouse: {
+        ...baseApi.warehouse,
+        listQueue: async () => {
+          throw new Error('queue offline');
         },
       },
     };
     cleanup();
-    window.location.hash = '#/admin/dashboard';
+    window.location.hash = '#/admin/operations/queue';
     renderApp(<AppRoutes />, { api: adminApi, sessionStore: createMemorySessionStore('sam-ochoa') });
     expect(await screen.findByRole('alert')).toHaveTextContent('could not be loaded');
   });
@@ -129,17 +129,17 @@ describe('adapter-backed route boundaries', () => {
     expect(await screen.findByRole('button', { name: 'Enter as Ray' })).toBeInTheDocument();
 
     cleanup();
-    type Summary = Awaited<ReturnType<typeof baseApi.admin.getSummary>>;
-    let resolveSummary: (summary: Summary) => void = () => undefined;
-    const summaryPromise = new Promise<Summary>((resolve) => {
-      resolveSummary = resolve;
+    type Queue = Awaited<ReturnType<typeof baseApi.warehouse.listQueue>>;
+    let resolveQueue: (queue: Queue) => void = () => undefined;
+    const queuePromise = new Promise<Queue>((resolve) => {
+      resolveQueue = resolve;
     });
-    const pendingAdminApi = { ...baseApi, admin: { ...baseApi.admin, getSummary: () => summaryPromise } };
-    window.location.hash = '#/admin/dashboard';
+    const pendingAdminApi = { ...baseApi, warehouse: { ...baseApi.warehouse, listQueue: () => queuePromise } };
+    window.location.hash = '#/admin/operations/queue';
     renderApp(<AppRoutes />, { api: pendingAdminApi, sessionStore: createMemorySessionStore('sam-ochoa') });
-    expect(await screen.findByText('Loading the control room…')).toBeInTheDocument();
-    resolveSummary(await baseApi.admin.getSummary({ actorId: 'sam-ochoa' }));
-    expect(await screen.findByRole('heading', { name: 'Control room' })).toBeInTheDocument();
+    expect(await screen.findByText('Loading warehouse queue…')).toBeInTheDocument();
+    resolveQueue(await baseApi.warehouse.listQueue({ actorId: 'sam-ochoa' }));
+    expect(await screen.findByRole('heading', { name: 'Queue' })).toBeInTheDocument();
   });
 
   it('keeps production surfaces behind hooks/contracts instead of transport or direct adapter calls', () => {

@@ -7,7 +7,6 @@ import { PasswordRecoveryPage } from '../features/auth/recovery/PasswordRecovery
 import { WorkerToolsPage } from '../features/worker-tools/WorkerToolsPage';
 import { CheckoutPage } from '../features/worker-catalog/CheckoutPage';
 import { WorkerActivityPage } from '../features/worker-activity/WorkerActivityPage';
-import { AdminDashboardPage } from '../features/admin-dashboard/AdminDashboardPage';
 import { PeoplePage } from '../features/admin-people/PeoplePage';
 import { PermissionsPage } from '../features/admin-permissions/PermissionsPage';
 import { WarehousesPage } from '../features/admin-warehouses/WarehousesPage';
@@ -46,8 +45,8 @@ export function AppRoutes() {
           </Route>
           <Route element={<RequireRole role="admin" />}>
             <Route element={<AdminShell />}>
-              <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-              <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+              <Route path="/admin" element={<Navigate to="/admin/operations/queue" replace />} />
+              <Route path="/admin/dashboard" element={<Navigate to="/admin/operations/queue" replace />} />
               <Route path="/admin/people" element={<PeoplePage />} />
               <Route path="/admin/people/:personId" element={<PeoplePage />} />
               <Route path="/admin/permissions" element={<PermissionsPage />} />

@@ -196,13 +196,13 @@ describe('admin TanStack invalidation', () => {
       <>
         <AppRoutes />
         <MutationHarness />
+        <ProjectionProbe />
       </>,
       { api, sessionStore: createMemorySessionStore('sam-ochoa') },
     );
     expect(await screen.findByRole('heading', { name: 'People' })).toBeInTheDocument();
     const beforePeople = calls.people;
-    await user.click(screen.getByRole('link', { name: 'Dashboard' }));
-    expect(await screen.findByRole('heading', { name: 'Control room' })).toBeInTheDocument();
+    await waitFor(() => expect(calls.summary).toBeGreaterThan(0));
     const beforeSummary = calls.summary;
     await user.click(screen.getByRole('button', { name: 'Run admin invite' }));
     await waitFor(() => {
@@ -210,10 +210,7 @@ describe('admin TanStack invalidation', () => {
       expect(calls.summary).toBeGreaterThan(beforeSummary);
     });
     expect(database.read().users.some((person) => person.email === 'jamie@nelson.test')).toBe(true);
-    await user.click(screen.getByRole('link', { name: 'People' }));
     expect(await screen.findByText('Jamie Park')).toBeInTheDocument();
-    await user.click(screen.getByRole('link', { name: 'Dashboard' }));
-    expect(await screen.findByText('Invited Jamie Park')).toBeInTheDocument();
   });
 
   it('refetches person, detail, summary, and session warehouse projections after a rename', async () => {

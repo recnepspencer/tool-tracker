@@ -58,9 +58,9 @@ describe('session boundary', () => {
 
   it('restores valid persisted identity and rejects unknown persisted identity', async () => {
     const validStore = createMemorySessionStore('sam-ochoa');
-    window.location.hash = '#/admin/dashboard';
+    window.location.hash = '#/admin/operations/queue';
     renderApp(<AppRoutes />, { sessionStore: validStore });
-    expect(await screen.findByRole('heading', { name: 'Control room' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Queue' })).toBeInTheDocument();
 
     cleanup();
     const invalidStore = createMemorySessionStore('missing-profile');
@@ -225,6 +225,6 @@ describe('session boundary', () => {
     expect(screen.getByTestId('sign-in-pending')).toHaveTextContent('true');
     releaseSignOut?.();
     await waitFor(() => expect(signInAs).toHaveBeenCalledTimes(1));
-    expect(await screen.findByRole('heading', { name: 'Control room' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Queue' })).toBeInTheDocument();
   });
 });

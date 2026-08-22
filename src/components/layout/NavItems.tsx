@@ -3,7 +3,6 @@ import {
   Boxes,
   ClipboardList,
   GitMerge,
-  LayoutDashboard,
   PackageCheck,
   Settings,
   ShieldCheck,
@@ -23,7 +22,6 @@ const navByRole: Record<Role, Array<{ label: string; path: string; enabled: bool
     { label: 'Activity', path: '/worker/activity', enabled: true, icon: Activity },
   ],
   admin: [
-    { label: 'Dashboard', path: '/admin/dashboard', enabled: true, icon: LayoutDashboard },
     { label: 'Queue', path: '/admin/operations/queue', enabled: true, icon: ClipboardList },
     { label: 'Inventory', path: '/admin/operations/inventory', enabled: true, icon: Boxes },
     { label: 'Damaged & lost', path: '/admin/operations/flagged', enabled: true, icon: TriangleAlert },

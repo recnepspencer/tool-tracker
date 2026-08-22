@@ -25,7 +25,7 @@ export function AppHeader({ role, session, onSignOut, onOpenNavigation }: AppHea
         >
           <Menu aria-hidden="true" />
         </button>
-        <NavLink className="wordmark" to={isWorker ? '/worker/tools' : '/admin/dashboard'}>
+        <NavLink className="wordmark" to={isWorker ? '/worker/tools' : '/admin/operations/queue'}>
           <span className="desktop-wordmark-mark">
             <BrandMark />
           </span>

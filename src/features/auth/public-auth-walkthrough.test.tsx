@@ -178,7 +178,7 @@ describe('public auth parity routes', () => {
     const routes = ['/login', '/signup', '/company-setup', '/invite/invite-token', '/reset-password'];
     for (const [profileId, heading, home] of [
       ['ray-torres', 'My tools', '/worker/tools'],
-      ['sam-ochoa', 'Control room', '/admin/dashboard'],
+      ['sam-ochoa', 'Queue', '/admin/operations/queue'],
     ] as const) {
       for (const route of routes) {
         cleanup();

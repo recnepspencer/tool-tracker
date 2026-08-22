@@ -3,7 +3,6 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { AppRoutes } from '../../app/app-routes';
 import { createMockApi } from '../../api/mock/create-mock-api';
-import { createMockDatabase } from '../../api/mock/mock-database';
 import { createMemorySessionStore, renderApp } from '../../test/render-app';
 import { chooseFieldOption, openFieldOptions } from '../../test/choose-field-option';
 
@@ -72,10 +71,10 @@ describe('admin route surfaces', () => {
     expect(navigation).toHaveAttribute('aria-modal', 'true');
     expect(within(navigation).getByRole('button', { name: 'Open account for Sam Ochoa' })).toBeInTheDocument();
     expect(within(navigation).getByRole('switch', { name: 'Appearance' })).toBeInTheDocument();
-    expect(within(navigation).getByRole('link', { name: 'Dashboard' })).toBeInTheDocument();
+    expect(within(navigation).queryByRole('link', { name: 'Dashboard' })).not.toBeInTheDocument();
     expect(within(navigation).getByRole('link', { name: 'People' })).toBeInTheDocument();
     expect(within(navigation).getByRole('link', { name: 'Queue' })).toHaveAttribute('href', '#/admin/operations/queue');
-    expect(navigation.querySelectorAll('.worker-drawer-link-icon')).toHaveLength(10);
+    expect(navigation.querySelectorAll('.worker-drawer-link-icon')).toHaveLength(9);
     expect(screen.getByRole('button', { name: 'Close navigation' })).toHaveFocus();
     await user.keyboard('{Tab}');
     expect(navigation).toContainElement(document.activeElement as HTMLElement);
@@ -138,22 +137,9 @@ describe('admin route surfaces', () => {
     expect(screen.getByText('No people match this filter.')).toBeInTheDocument();
   });
 
-  it('renders every policy role and capability and retries a dashboard error', async () => {
+  it('renders every policy role and capability', async () => {
     const user = userEvent.setup();
-    const baseApi = createMockApi();
-    let summaryCalls = 0;
-    const api = {
-      ...baseApi,
-      admin: {
-        ...baseApi.admin,
-        getSummary: async (input: { actorId: string }) => {
-          summaryCalls += 1;
-          if (summaryCalls === 1) throw new Error('dashboard unavailable');
-          return baseApi.admin.getSummary(input);
-        },
-      },
-    };
-    renderApp(<AppRoutes />, { api, sessionStore: createMemorySessionStore('sam-ochoa') });
+    renderApp(<AppRoutes />, { sessionStore: createMemorySessionStore('sam-ochoa') });
     await user.click(await screen.findByRole('link', { name: 'Access' }));
     expect(await screen.findByRole('heading', { name: 'Access guide' })).toBeInTheDocument();
     expect(screen.getAllByText('Worker').length).toBeGreaterThan(0);
@@ -172,54 +158,6 @@ describe('admin route surfaces', () => {
     expect(screen.getByRole('list', { name: 'Locked structural rules' })).toHaveTextContent(
       'Only administrators can invite, change, suspend, or remove people.',
     );
-    await user.click(screen.getByRole('link', { name: 'Dashboard' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('admin dashboard could not be loaded');
-    await user.click(screen.getByRole('button', { name: 'Retry' }));
-    expect(await screen.findByRole('heading', { name: 'Control room' })).toBeInTheDocument();
-  });
-
-  it('renders the dashboard attention facts and newest movement from the admin projection', async () => {
-    const user = userEvent.setup();
-    const api = createMockApi(createMockDatabase({ clock: () => '2026-08-18T09:00:00-06:00' }));
-    renderApp(<AppRoutes />, { api, sessionStore: createMemorySessionStore('sam-ochoa') });
-    await user.click(await screen.findByRole('link', { name: 'Dashboard' }));
-    expect(await screen.findByRole('heading', { name: 'Control room' })).toBeInTheDocument();
-    const pending = screen.getByText('Handoffs waiting for a decision.').closest('section');
-    const longHeld = screen.getByText('Worker custody older than seven days.').closest('section');
-    expect(pending).toHaveTextContent('3');
-    expect(longHeld).toHaveTextContent('1');
-    expect(screen.getByText(/TL-103/)).toBeInTheDocument();
-    expect(screen.getByText('Completed the Riverside Depot cycle count')).toBeInTheDocument();
-    expect(Array.from(document.querySelectorAll('.activity-row strong'))[0]).toHaveTextContent(
-      'Completed the Riverside Depot cycle count',
-    );
-    expect(document.querySelector('.activity-row time')).toHaveAttribute('datetime', '2026-08-18T09:20:00-06:00');
-  });
-
-  it('states dashboard empty coverage and movement explicitly', async () => {
-    const user = userEvent.setup();
-    const baseApi = createMockApi();
-    const api = {
-      ...baseApi,
-      admin: {
-        ...baseApi.admin,
-        getSummary: async () => ({
-          totalTools: 0,
-          checkedOut: 0,
-          inStock: 0,
-          flagged: 0,
-          warehouses: [],
-          recentEvents: [],
-          pendingApprovals: 0,
-          longHeldTools: [],
-        }),
-      },
-    };
-    renderApp(<AppRoutes />, { api, sessionStore: createMemorySessionStore('sam-ochoa') });
-    await user.click(await screen.findByRole('link', { name: 'Dashboard' }));
-    expect(await screen.findByRole('heading', { name: 'Control room' })).toBeInTheDocument();
-    expect(screen.getByText('No warehouse coverage is available.')).toBeInTheDocument();
-    expect(screen.getByText('No recent movement recorded.')).toBeInTheDocument();
   });
 
   it('renders permission loading and error states through the query boundary', async () => {
