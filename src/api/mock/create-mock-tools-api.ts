@@ -1,6 +1,6 @@
 import type { ToolsApi } from '../contracts/tools-api';
 import { toCatalogItem, toToolDetail, toToolView } from './mock-tool-projections';
-import { createTool } from './tool-mutations';
+import { createTool, createTools } from './tool-mutations';
 import { flagTool, restoreTool, updateTool } from './tool-decision-mutations';
 import type { MockDatabase } from './mock-database';
 import {
@@ -24,6 +24,7 @@ export const createMockToolsApi = (database: MockDatabase): ToolsApi => ({
   },
   getToolDetail: async (toolUnitId) => toToolDetail(database.read(), toolUnitId),
   createTool: async (input) => createTool(database, input),
+  createTools: async (inputs) => createTools(database, inputs),
   updateTool: async (input) => updateTool(database, normalizeUpdateToolInput(input)),
   flagTool: async (input) => flagTool(database, normalizeFlagToolInput(input)),
   restoreTool: async (input) => restoreTool(database, normalizeRestoreToolInput(input)),

@@ -41,10 +41,10 @@ describe('mock settings authority', () => {
       address: 'Changed',
     });
     await expect(api.settings.resetDemoData({ actorId: 'sam-ochoa', confirmation: 'reset demo data' })).rejects.toThrow(
-      'RESET DEMO DATA',
+      'RESET WORKSPACE DATA',
     );
     await expect(
-      api.settings.resetDemoData({ actorId: 'sam-ochoa', confirmation: 'RESET DEMO DATA' }),
+      api.settings.resetDemoData({ actorId: 'sam-ochoa', confirmation: 'RESET WORKSPACE DATA' }),
     ).resolves.toEqual({ operation: 'reset-demo-data', seedRevision: 'seed-v1' });
     expect(database.read()).toEqual(createSeedState());
     expect(database.nextId('EV')).toBe('EV-7');

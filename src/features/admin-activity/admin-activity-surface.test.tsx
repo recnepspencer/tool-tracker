@@ -18,7 +18,7 @@ describe('admin activity surface', () => {
     renderApp(<AppRoutes />, { sessionStore: createMemorySessionStore('sam-ochoa') });
     expect(await screen.findByRole('heading', { name: 'Audit log' })).toBeInTheDocument();
     const rows = screen.getAllByRole('article');
-    expect(rows[0]).toHaveTextContent('Bandsaw');
+    expect(rows[0]).toHaveTextContent('Hydraulic bender');
     const search = screen.getByRole('searchbox', { name: 'Search audit log' });
     await user.type(search, 'Fish tape');
     expect(screen.getAllByRole('article')).toHaveLength(1);
@@ -29,13 +29,11 @@ describe('admin activity surface', () => {
     const user = userEvent.setup();
     renderApp(<AppRoutes />, { sessionStore: createMemorySessionStore('sam-ochoa') });
     expect(await screen.findByRole('heading', { name: 'Audit log' })).toBeInTheDocument();
-    await user.click(screen.getByRole('combobox', { name: 'Kind' }));
-    await user.click(screen.getByRole('option', { name: 'Requests' }));
-    expect(screen.getAllByRole('article')).toHaveLength(1);
-    expect(screen.getByRole('article')).toHaveTextContent('Requested a bandsaw handoff');
+    await user.click(screen.getByRole('button', { name: 'Requests' }));
+    expect(screen.getAllByRole('article')).toHaveLength(3);
+    expect(screen.getByText('Requested a bandsaw handoff')).toBeInTheDocument();
     expect(screen.queryByText('Reported a tool damaged')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('combobox', { name: 'Kind' }));
-    await user.click(screen.getByRole('option', { name: 'Everything' }));
+    await user.click(screen.getByRole('button', { name: 'Everything' }));
     await user.click(screen.getByRole('combobox', { name: 'Warehouse' }));
     await user.click(screen.getByRole('option', { name: 'North Yard' }));
     expect(screen.getByText('Requested a bandsaw handoff')).toBeInTheDocument();

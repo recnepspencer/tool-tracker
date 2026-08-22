@@ -7,6 +7,7 @@ import { AppRoutes } from '../../app/app-routes';
 import { createMemorySessionStore, renderApp } from '../../test/render-app';
 import { QueryProjectionProbe } from '../../test/QueryProjectionProbe';
 import { chooseFieldOption } from '../../test/choose-field-option';
+import { attachPhoto } from '../../test/attach-photo';
 
 describe('add-tool surface', () => {
   beforeEach(() => {
@@ -29,12 +30,13 @@ describe('add-tool surface', () => {
     expect(await screen.findByRole('heading', { name: 'My tools' })).toBeInTheDocument();
     await openAddTool(user);
     const dialog = await screen.findByRole('dialog', { name: 'Add a tool' });
-    await user.click(within(dialog).getByRole('button', { name: 'Capture photo' }));
+    await attachPhoto(user, dialog);
+    await within(dialog).findByLabelText('Tool name');
     await user.type(within(dialog).getByLabelText('Tool name'), 'Voltage probe');
     await chooseFieldOption(user, within(dialog).getByRole('combobox', { name: 'Category' }), 'Meters & testers');
     await user.click(within(dialog).getByRole('button', { name: 'Add to my tools' }));
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Add a tool' })).not.toBeInTheDocument());
-    expect(database.read().units.some((unit) => unit.photoKey === 'tool-photo-placeholder.svg')).toBe(true);
+    expect(database.read().units.some((unit) => unit.photoKey?.startsWith('data:image/jpeg'))).toBe(true);
     expect(database.read().definitions.some((definition) => definition.name === 'Voltage probe')).toBe(true);
     expect(await screen.findByText('Voltage probe')).toBeInTheDocument();
   });
@@ -85,7 +87,8 @@ describe('add-tool surface', () => {
     const beforeProjection = { ...screen.getByTestId('projection-probe').dataset };
     await openAddTool(user);
     const dialog = await screen.findByRole('dialog', { name: 'Add a tool' });
-    await user.click(within(dialog).getByRole('button', { name: 'Capture photo' }));
+    await attachPhoto(user, dialog);
+    await within(dialog).findByLabelText('Tool name');
     await user.type(within(dialog).getByLabelText('Tool name'), 'Current clamp');
     await chooseFieldOption(user, within(dialog).getByRole('combobox', { name: 'Category' }), 'Meters & testers');
     await user.click(within(dialog).getByRole('button', { name: 'Add to my tools' }));
@@ -101,7 +104,7 @@ describe('add-tool surface', () => {
     expect(Number(afterProjection.toolCount)).toBe(Number(beforeProjection.toolCount) + 1);
     expect(Number(afterProjection.catalogCount)).toBe(Number(beforeProjection.catalogCount) + 1);
     expect(Number(afterProjection.activityCount)).toBeGreaterThan(Number(beforeProjection.activityCount));
-    expect(Number(afterProjection.adminRecentCount)).toBeGreaterThan(Number(beforeProjection.adminRecentCount));
+    expect(afterProjection.adminRecentCount).toBe(beforeProjection.adminRecentCount);
   });
 
   it('preserves the capture and details draft when creation is rejected', async () => {
@@ -117,7 +120,8 @@ describe('add-tool surface', () => {
     renderApp(<AppRoutes />, { api: rejectingApi, sessionStore: createMemorySessionStore('ray-torres') });
     await openAddTool(user);
     const dialog = await screen.findByRole('dialog', { name: 'Add a tool' });
-    await user.click(within(dialog).getByRole('button', { name: 'Capture photo' }));
+    await attachPhoto(user, dialog);
+    await within(dialog).findByLabelText('Tool name');
     await user.type(within(dialog).getByLabelText('Tool name'), 'Failed probe');
     await chooseFieldOption(user, within(dialog).getByRole('combobox', { name: 'Category' }), 'Meters & testers');
     await user.click(within(dialog).getByRole('button', { name: 'Serial, price, notes' }));

@@ -33,9 +33,12 @@ const assertUniqueValues = (values: string[], label: string) => {
 
 const nonBlank = (value: string) => value.trim().length > 0;
 
-const assertEvidence = (evidence: { note?: string; mockPhoto?: boolean } | undefined, label: string) => {
+const assertEvidence = (
+  evidence: { note?: string; photo?: { fileName: string; src: string } } | undefined,
+  label: string,
+) => {
   if (evidence?.note !== undefined && !nonBlank(evidence.note)) throw new Error('Invalid ' + label + ' note');
-  if (evidence?.mockPhoto !== undefined && typeof evidence.mockPhoto !== 'boolean') {
+  if (evidence?.photo !== undefined && (!nonBlank(evidence.photo.fileName) || !nonBlank(evidence.photo.src))) {
     throw new Error('Invalid ' + label + ' photo');
   }
 };

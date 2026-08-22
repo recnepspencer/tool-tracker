@@ -15,7 +15,7 @@ const session = {
 };
 
 describe('AccountMenu destination labels', () => {
-  it('names and links the worker account destination', async () => {
+  it('keeps worker account details in the name-triggered sheet without a dead page link', async () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter>
@@ -23,7 +23,8 @@ describe('AccountMenu destination labels', () => {
       </MemoryRouter>,
     );
     await user.click(screen.getByRole('button', { name: 'Open account menu' }));
-    expect(screen.getByRole('link', { name: 'Open account page' })).toHaveAttribute('href', '/worker/account');
+    expect(screen.getByRole('dialog', { name: 'Ray Torres' })).toHaveTextContent('ray@nelsonelectric.com');
+    expect(screen.queryByRole('link', { name: 'Open account page' })).not.toBeInTheDocument();
   });
 
   it('names and links the admin settings destination', async () => {

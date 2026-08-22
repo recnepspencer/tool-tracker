@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { useModalFocusTrap } from '../ui/use-modal-focus-trap';
@@ -13,6 +13,7 @@ export interface AccountMenuProps {
 }
 
 export function AccountMenu({ role, session, onSignOut }: AccountMenuProps) {
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const sheetRef = useRef<HTMLElement>(null);
   const close = useCallback(() => setOpen(false), []);
@@ -36,9 +37,6 @@ export function AccountMenu({ role, session, onSignOut }: AccountMenuProps) {
         <Avatar initials={initials} tone={role === 'worker' ? 'amber' : 'blue'} size="small" />
         <span className="header-name">{session.name}</span>
       </button>
-      <Button className="sign-out-button" variant="ghost" onClick={onSignOut}>
-        Sign out
-      </Button>
       {open ? (
         <div
           className="account-sheet-backdrop"
@@ -65,14 +63,11 @@ export function AccountMenu({ role, session, onSignOut }: AccountMenuProps) {
               {session.title} · {session.homeWarehouse}
             </p>
             <p>{session.email}</p>
-            <Link
-              className="account-sheet-link"
-              aria-label={role === 'worker' ? 'Open account page' : 'Open settings'}
-              to={role === 'worker' ? '/worker/account' : '/admin/settings'}
-              onClick={close}
-            >
-              {role === 'worker' ? 'Open account page' : 'Open settings'}
-            </Link>
+            {role === 'admin' && location.pathname !== '/admin/settings' ? (
+              <Link className="account-sheet-link" aria-label="Open settings" to="/admin/settings" onClick={close}>
+                Open settings
+              </Link>
+            ) : null}
             <Button variant="ghost" onClick={onSignOut}>
               Sign out
             </Button>

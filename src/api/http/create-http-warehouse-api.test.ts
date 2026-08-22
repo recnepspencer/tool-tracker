@@ -246,7 +246,10 @@ describe('WarehouseApi HTTP boundary', () => {
         actorId: 'sam-ochoa',
         handoffId: 'HO-1',
         toolUnitId: 'TL-108',
-        evidence: { note: 'Ready for release', mockPhoto: true },
+        evidence: {
+          note: 'Ready for release',
+          photo: { fileName: 'proof.jpg', src: 'data:image/jpeg;base64,cHJvb2Y=' },
+        },
       }),
     ).resolves.toMatchObject({ operation: 'approve-request', correlationId: 'WH-EV-7' });
     const accept = apiFor(
@@ -281,7 +284,10 @@ describe('WarehouseApi HTTP boundary', () => {
         body: {
           actor_id: 'sam-ochoa',
           tool_unit_id: 'TL-108',
-          evidence: { note: 'Ready for release', mock_photo: true },
+          evidence: {
+            note: 'Ready for release',
+            photo: { file_name: 'proof.jpg', src: 'data:image/jpeg;base64,cHJvb2Y=' },
+          },
         },
       },
       {

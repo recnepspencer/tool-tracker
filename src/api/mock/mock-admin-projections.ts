@@ -166,7 +166,8 @@ export const projectSummary = (state: MockState, now: string): AdminSummary => {
       .map((event) => toEventView(state, event.id))
       .sort(
         (left, right) => compareActivityTimestamps(left.timestamp, right.timestamp) || left.id.localeCompare(right.id),
-      ),
+      )
+      .slice(0, 6),
     pendingApprovals: state.handoffs.filter(
       (handoff) => handoff.status === 'pending' && classifyWarehouseQueueItem(handoff) !== null,
     ).length,

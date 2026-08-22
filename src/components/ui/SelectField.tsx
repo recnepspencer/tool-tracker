@@ -5,6 +5,7 @@ import { ChevronDownIcon } from './ChevronDownIcon';
 import { Field } from './Field';
 import { filterSelectOptions, optionDomId, selectedSelectOption, type SelectOption } from './select-options';
 import { useListboxOverlay } from './use-listbox-overlay';
+import { useModalFocusTrap } from './use-modal-focus-trap';
 
 export type { SelectOption };
 
@@ -64,6 +65,7 @@ export function SelectField({
   );
   const active = filtered[activeIndex];
   const overlayStyle = useListboxOverlay(!isSheet && open, fieldRef, listRef);
+  useModalFocusTrap(open && isSheet, () => close(true), sheetRef);
 
   useEffect(() => {
     if (!open) return;
@@ -76,7 +78,9 @@ export function SelectField({
     if (document.activeElement === sheetSearchRef.current) return;
     const activeOption = filtered[activeIndex];
     if (!activeOption) return;
-    const frame = window.requestAnimationFrame(() => optionRefs.current.get(activeOption.value)?.focus());
+    const activeOptionElement = optionRefs.current.get(activeOption.value);
+    if (document.activeElement === activeOptionElement) return;
+    const frame = window.requestAnimationFrame(() => activeOptionElement?.focus());
     return () => window.cancelAnimationFrame(frame);
   }, [activeIndex, filtered, isSheet, open]);
 

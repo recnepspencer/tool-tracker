@@ -42,16 +42,18 @@ export function PeoplePage() {
     [capabilityFilter, lifecycle, people.data, roleFilter, search],
   );
   if (people.isPending && !people.data) return <LoadingState label="Loading people…" />;
-  if (!people.data) return <ErrorState message="The people directory could not be loaded." />;
+  if (!people.data)
+    return <ErrorState message="The people directory could not be loaded." onRetry={() => void people.refetch()} />;
   return (
-    <div className="page-content">
+    <div className="page-content people-page">
       <PageHeading
         eyebrow="Admin view · People"
         title="People"
         description="Manage access, responsibility, and the history attached to every member."
-        status="Directory"
       />
-      {people.isError && <ErrorState message="The people directory could not be refreshed." />}
+      {people.isError && (
+        <ErrorState message="The people directory could not be refreshed." onRetry={() => void people.refetch()} />
+      )}
       <div className="admin-toolbar">
         <div className="admin-filters">
           <SearchField label="Search people" placeholder="Search people…" value={search} onChange={setSearch} />
@@ -111,7 +113,9 @@ export function PeoplePage() {
           onClose={() => navigate('/admin/people')}
         />
       )}
-      {personId && detail.isError && <ErrorState message="That person could not be loaded." />}
+      {personId && detail.isError && (
+        <ErrorState message="That person could not be loaded." onRetry={() => void detail.refetch()} />
+      )}
     </div>
   );
 }

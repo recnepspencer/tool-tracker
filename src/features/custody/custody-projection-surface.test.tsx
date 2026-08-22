@@ -105,12 +105,12 @@ describe('custody projection refresh surfaces', () => {
     await user.click(screen.getByRole('link', { name: 'Browse checkout catalog' }));
     await user.click(await screen.findByRole('button', { name: 'Open Rotary hammer' }));
     const detail = await screen.findByRole('dialog', { name: 'Tool details' });
-    expect(within(detail).getByRole('heading', { name: 'Request this tool' })).toBeInTheDocument();
+    expect(within(detail).getByRole('heading', { name: 'Request from North Yard' })).toBeInTheDocument();
     await user.type(within(detail).getByPlaceholderText('Add context for the record'), 'Tomorrow job');
-    expect(within(detail).queryByRole('switch', { name: /Add an optional photo/ })).not.toBeInTheDocument();
+    expect(detail.querySelector('input[type="file"]')).not.toBeInTheDocument();
     const beforeCalls = { ...calls, pendingByProfile: { ...calls.pendingByProfile } };
     const beforeProjection = { ...screen.getByTestId('projection-probe').dataset };
-    await user.click(within(detail).getByRole('button', { name: 'Confirm' }));
+    await user.click(within(detail).getByRole('button', { name: 'Request from North Yard' }));
     expect(await within(detail).findByText('Request sent to the warehouse.')).toBeInTheDocument();
     await waitFor(() => {
       expect(calls.tools).toBeGreaterThan(beforeCalls.tools);

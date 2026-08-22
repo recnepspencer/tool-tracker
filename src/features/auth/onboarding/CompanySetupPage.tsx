@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import { ErrorState } from '../../../components/ui/AsyncState';
 import { TextField } from '../../../components/ui/TextField';
@@ -11,12 +11,10 @@ interface SignupLocationState {
 }
 
 export function CompanySetupPage() {
-  const navigate = useNavigate();
   const location = useLocation();
   const state = (location.state as SignupLocationState | null) ?? null;
   const [company, setCompany] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [complete, setComplete] = useState(false);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -24,27 +22,8 @@ export function CompanySetupPage() {
       setError('Enter a company name to continue.');
       return;
     }
-    setError(null);
-    setComplete(true);
+    setError('Workspace creation is currently unavailable. Nothing was saved.');
   };
-
-  if (complete) {
-    return (
-      <AuthExperienceLayout
-        eyebrow="Workspace setup"
-        title="Your workspace is ready"
-        description="Continue to sign in and access your new workspace."
-      >
-        <div className="auth-complete" role="status" aria-live="polite">
-          <strong>{company.trim()}</strong>
-          <span>{state?.email ?? 'Workspace owner'} · workspace setup</span>
-        </div>
-        <Button fullWidth onClick={() => navigate('/login')}>
-          Continue to sign in
-        </Button>
-      </AuthExperienceLayout>
-    );
-  }
 
   return (
     <AuthExperienceLayout

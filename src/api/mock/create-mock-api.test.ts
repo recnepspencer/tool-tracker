@@ -54,14 +54,13 @@ describe('createMockApi tool and activity projections', () => {
       { id: 'riverside-depot', stock: 4, out: 1 },
     ]);
     expect(summary.recentEvents).toEqual([
+      expect.objectContaining({ id: 'EV-SEED-11', toolName: 'Hydraulic bender' }),
+      expect.objectContaining({ id: 'EV-SEED-10', toolName: 'Fiberglass step ladder, 8 ft' }),
+      expect.objectContaining({ id: 'EV-SEED-8', toolName: 'Circuit tracer' }),
+      expect.objectContaining({ id: 'EV-SEED-7', toolName: 'Cord reel, 100 ft' }),
       expect.objectContaining({ id: 'EV-4', toolName: 'Bandsaw' }),
       expect.objectContaining({ id: 'EV-1', toolName: 'Rotary hammer' }),
-      expect.objectContaining({ id: 'EV-2', toolName: 'Fish tape, 240 ft' }),
-      expect.objectContaining({ id: 'EV-3', toolName: 'Hydraulic bender' }),
-      expect.objectContaining({ id: 'EV-5', toolName: 'Cable cutter' }),
-      expect.objectContaining({ id: 'EV-6', action: 'Updated warehouse settings' }),
     ]);
-    expect(summary.recentEvents[5].toolName).toBeUndefined();
   });
 
   it('projects catalog groups, unit details, activity, and pending handoffs from canonical state', async () => {
@@ -100,6 +99,10 @@ describe('createMockApi tool and activity projections', () => {
       timeline: [{ id: 'EV-1', action: 'Added a tool to inventory' }],
     });
     expect((await api.activity.listActivity()).map((event) => event.id)).toEqual([
+      'EV-SEED-11',
+      'EV-SEED-10',
+      'EV-SEED-8',
+      'EV-SEED-7',
       'EV-4',
       'EV-1',
       'EV-2',

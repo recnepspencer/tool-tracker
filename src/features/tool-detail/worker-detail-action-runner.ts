@@ -1,6 +1,6 @@
 import type { ReportConditionInput, RequestToolInput, StartTransferInput } from '../../api/contracts/custody-api';
 import type { AuthSession } from '../../domain/auth';
-import type { CustodyEvidence } from '../../domain/evidence';
+import type { CustodyEvidence, CustodyPhotoEvidence } from '../../domain/evidence';
 import type { HolderRef } from '../../domain/custody';
 import type { ToolHolderView } from '../../domain/read-models/holder';
 import { holderSelectionKey } from './holder-selection-key';
@@ -14,10 +14,13 @@ export interface WorkerDetailCommandMutations {
   reportToolCondition: AsyncMutation<ReportConditionInput>;
 }
 
-export const buildWorkerActionEvidence = (note: string, mockPhoto: boolean): CustodyEvidence | undefined => {
+export const buildWorkerActionEvidence = (
+  note: string,
+  photo: CustodyPhotoEvidence | null,
+): CustodyEvidence | undefined => {
   const normalizedNote = note.trim();
-  return normalizedNote || mockPhoto
-    ? { ...(normalizedNote ? { note: normalizedNote } : {}), ...(mockPhoto ? { mockPhoto: true } : {}) }
+  return normalizedNote || photo
+    ? { ...(normalizedNote ? { note: normalizedNote } : {}), ...(photo ? { photo } : {}) }
     : undefined;
 };
 

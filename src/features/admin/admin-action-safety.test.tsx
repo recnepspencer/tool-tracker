@@ -72,7 +72,7 @@ describe('admin action safety', () => {
     await user.click(await screen.findByRole('button', { name: 'Invite person' }));
     const dialog = await screen.findByRole('dialog', { name: 'Invite a person' });
     await user.type(within(dialog).getByLabelText('Name'), 'Jamie Park');
-    await user.type(within(dialog).getByLabelText('Email'), 'jamie@example.com');
+    await user.type(within(dialog).getByLabelText('Email address'), 'jamie@example.com');
     await user.type(within(dialog).getByLabelText('Title'), 'Estimator');
     const submit = within(dialog).getByRole('button', { name: 'Send invite' });
     await user.click(submit);
@@ -82,25 +82,88 @@ describe('admin action safety', () => {
     rejectInvite(new Error('Invite rejected'));
     expect(await screen.findByText('Invite rejected')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('Name')).toHaveValue('Jamie Park');
-    expect(within(dialog).getByLabelText('Email')).toHaveValue('jamie@example.com');
+    expect(within(dialog).getByLabelText('Email address')).toHaveValue('jamie@example.com');
     expect(within(dialog).getByLabelText('Title')).toHaveValue('Estimator');
     expect(within(dialog).getByLabelText('Role')).toHaveValue('Worker');
     expect(within(dialog).getByLabelText('Home warehouse')).toHaveValue('North Yard');
   });
 
-  it('renders a truthful adapter error when the people query fails', async () => {
+  it('invites exactly one person from each form', async () => {
+    const user = userEvent.setup();
     const baseApi = createMockApi();
+    const invited: string[] = [];
     const api = {
       ...baseApi,
       admin: {
         ...baseApi.admin,
-        listPeople: async () => {
-          throw new Error('directory offline');
+        invitePerson: async (input: Parameters<typeof baseApi.admin.invitePerson>[0]) => {
+          invited.push(input.email);
+          return baseApi.admin.invitePerson(input);
+        },
+      },
+    };
+    renderApp(<AppRoutes />, { api, sessionStore: createMemorySessionStore('sam-ochoa') });
+    await user.click(await screen.findByRole('button', { name: 'Invite person' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Invite a person' });
+    await user.type(within(dialog).getByLabelText('Name'), 'First Person');
+    await user.type(within(dialog).getByLabelText('Email address'), 'first@example.com');
+    await user.type(within(dialog).getByLabelText('Title'), 'Estimator');
+    await user.click(within(dialog).getByRole('button', { name: 'Send invite' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Invite a person' })).not.toBeInTheDocument());
+    expect(invited).toEqual(['first@example.com']);
+  });
+
+  it('rejects malformed invitation addresses without calling the command adapter', async () => {
+    const user = userEvent.setup();
+    const baseApi = createMockApi();
+    let inviteCalls = 0;
+    const api = {
+      ...baseApi,
+      admin: {
+        ...baseApi.admin,
+        invitePerson: async (input: Parameters<typeof baseApi.admin.invitePerson>[0]) => {
+          inviteCalls += 1;
+          return baseApi.admin.invitePerson(input);
+        },
+      },
+    };
+    renderApp(<AppRoutes />, { api, sessionStore: createMemorySessionStore('sam-ochoa') });
+    await user.click(await screen.findByRole('button', { name: 'Invite person' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Invite a person' });
+    await user.type(within(dialog).getByLabelText('Name'), 'Invalid Person');
+    await user.type(within(dialog).getByLabelText('Email address'), 'not-an-email');
+    await user.type(within(dialog).getByLabelText('Title'), 'Estimator');
+    await user.click(within(dialog).getByRole('button', { name: 'Send invite' }));
+    expect(within(dialog).getByText('Enter a valid email address.')).toBeInTheDocument();
+    expect(inviteCalls).toBe(0);
+    expect(within(dialog).queryByLabelText('Shared invitation link')).not.toBeInTheDocument();
+    await user.clear(within(dialog).getByLabelText('Email address'));
+    await user.click(within(dialog).getByRole('button', { name: 'Send invite' }));
+    expect(within(dialog).getByText('Enter an email address.')).toBeInTheDocument();
+    expect(inviteCalls).toBe(0);
+    expect(dialog).toBeInTheDocument();
+  });
+
+  it('renders a truthful adapter error when the people query fails', async () => {
+    const user = userEvent.setup();
+    const baseApi = createMockApi();
+    let listCalls = 0;
+    const api = {
+      ...baseApi,
+      admin: {
+        ...baseApi.admin,
+        listPeople: async (input: Parameters<typeof baseApi.admin.listPeople>[0]) => {
+          listCalls += 1;
+          if (listCalls === 1) throw new Error('directory offline');
+          return baseApi.admin.listPeople(input);
         },
       },
     };
     renderApp(<AppRoutes />, { api, sessionStore: createMemorySessionStore('sam-ochoa') });
     expect(await screen.findByRole('alert')).toHaveTextContent('directory could not be loaded');
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByRole('heading', { name: 'People' })).toBeInTheDocument();
   });
 
   it('keeps a warehouse draft after a rejected command and exposes only eligible managers', async () => {

@@ -8,19 +8,20 @@ export function PermissionsPage() {
   const permissions = useAdminPermissions();
   if (permissions.isPending) return <LoadingState label="Loading permissions…" />;
   if (permissions.isError || !permissions.data)
-    return <ErrorState message="The permission matrix could not be loaded." />;
+    return (
+      <ErrorState message="The permission matrix could not be loaded." onRetry={() => void permissions.refetch()} />
+    );
   const structuralRules = permissions.data[0]?.structuralRules ?? [];
   return (
     <div className="page-content">
       <PageHeading
         eyebrow="Admin view · Permissions"
-        title="Permission matrix"
-        description="The role capabilities that guard every command and projection."
-        status="Policy"
+        title="Access guide"
+        description="See what each role can do in this workspace. Access changes are managed from People."
       />
       <SurfaceCard className="admin-table-card">
         <div className="admin-table-wrap">
-          <table className="admin-table permission-table">
+          <table className="admin-table admin-table--responsive permission-table">
             <thead>
               <tr>
                 <th>Role</th>
@@ -30,10 +31,10 @@ export function PermissionsPage() {
             <tbody>
               {permissions.data.map((row) => (
                 <tr key={row.role}>
-                  <td>
+                  <td data-label="Role">
                     <strong>{row.label}</strong>
                   </td>
-                  <td>
+                  <td data-label="Capabilities">
                     <div className="capability-list">
                       {row.capabilities.map((capability) => (
                         <span key={capability} className="capability-pill">
@@ -54,9 +55,6 @@ export function PermissionsPage() {
             <span className="eyebrow">Structural policy</span>
             <h2>Locked rules</h2>
           </div>
-          <span className="permission-lock" aria-label="Structural rules are locked">
-            Locked
-          </span>
         </div>
         <ul className="permission-rules-list" aria-label="Locked structural rules">
           {structuralRules.map((rule) => (

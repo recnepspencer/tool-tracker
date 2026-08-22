@@ -21,6 +21,7 @@ import { WorkflowError } from '../../domain/workflow-error';
 import { requireAdminActor } from './admin-authorization';
 import { currentWarehouseForUnit } from '../../domain/warehouse-responsibility';
 import { bumpUnitRevision } from './tool-state';
+import { isValidEmailAddress, normalizeEmailAddress } from '../../domain/email-address';
 
 const text = (value: string, label: string) => {
   const normalized = value.trim();
@@ -28,7 +29,11 @@ const text = (value: string, label: string) => {
   return normalized;
 };
 
-const normalizedEmail = (value: string) => text(value, 'Email').toLocaleLowerCase();
+const normalizedEmail = (value: string) => {
+  const email = normalizeEmailAddress(text(value, 'Email'));
+  if (!isValidEmailAddress(email)) throw new WorkflowError('invalid', 'Enter a valid email address');
+  return email;
+};
 
 const adminActor = (state: MockDatabaseState, actorId: string) => {
   return requireAdminActor(state, actorId);
@@ -71,7 +76,7 @@ const ensureNotAssignedManager = (state: MockDatabaseState, personId: string) =>
 
 const ensureNotDemoProfile = (state: MockDatabaseState, personId: string) => {
   if (state.demoProfileIds.includes(personId)) {
-    throw new WorkflowError('conflict', 'Demo sign-in profiles cannot be deactivated or reassigned');
+    throw new WorkflowError('conflict', 'This sign-in profile cannot be deactivated or reassigned');
   }
 };
 

@@ -34,6 +34,27 @@ const definitionBody = (definition: {
   image_key: definition.imageKey,
 });
 
+const createToolBody = (input: ReturnType<typeof normalizeCreateToolInput>) => {
+  const evidence = toEvidenceDto(input.evidence);
+  return {
+    actor_id: input.actorId,
+    definition: definitionBody(input.definition),
+    warehouse_id: input.warehouseId,
+    photo_captured: input.photoCaptured,
+    ...(input.destination ? { destination: input.destination } : {}),
+    ...(input.serial ? { serial: input.serial } : {}),
+    ...(input.price ? { price: input.price } : {}),
+    ...(evidence ? { evidence } : {}),
+  };
+};
+
+const mapCreateReceipt = (dto: ToolDto, input: ReturnType<typeof normalizeCreateToolInput>) =>
+  mapCreatedTool(dto, {
+    actorId: input.actorId,
+    destination: input.destination,
+    warehouseId: input.warehouseId,
+  });
+
 export const createHttpToolsApi = ({ transport, basePath = '/api' }: HttpApiOptions): ToolsApi => ({
   listTools: async () =>
     assertUniqueIds(
@@ -60,18 +81,26 @@ export const createHttpToolsApi = ({ transport, basePath = '/api' }: HttpApiOpti
     ),
   createTool: async (input) => {
     const normalizedInput = normalizeCreateToolInput(input);
-    const evidence = toEvidenceDto(normalizedInput.evidence);
-    return mapCreatedTool(
-      await transport.post<ToolDto>(pathWithBase(basePath, '/tools'), {
-        actor_id: normalizedInput.actorId,
-        definition: definitionBody(normalizedInput.definition),
-        warehouse_id: normalizedInput.warehouseId,
-        photo_captured: normalizedInput.photoCaptured,
-        ...(normalizedInput.serial ? { serial: normalizedInput.serial } : {}),
-        ...(normalizedInput.price ? { price: normalizedInput.price } : {}),
-        ...(evidence ? { evidence } : {}),
+    return mapCreateReceipt(
+      await transport.post<ToolDto>(pathWithBase(basePath, '/tools'), createToolBody(normalizedInput)),
+      normalizedInput,
+    );
+  },
+  createTools: async (inputs) => {
+    if (!inputs.length) throw new Error('At least one tool is required');
+    const normalizedInputs = inputs.map(normalizeCreateToolInput);
+    const receipts = responseArray<ToolDto>(
+      await transport.post(pathWithBase(basePath, '/tools/batch'), {
+        tools: normalizedInputs.map(createToolBody),
       }),
-      normalizedInput.actorId,
+      'created tools',
+    );
+    if (receipts.length !== normalizedInputs.length) {
+      throw new Error('Invalid API response: created tool count');
+    }
+    return assertUniqueIds(
+      receipts.map((receipt, index) => mapCreateReceipt(receipt, normalizedInputs[index])),
+      'created tool',
     );
   },
   updateTool: async (input) => {

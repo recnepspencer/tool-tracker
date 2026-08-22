@@ -10,7 +10,6 @@ export function RecentActivity({ events }: { events: AuditEventView[] }) {
           <span className="eyebrow">Audit feed</span>
           <h2>Recent movement</h2>
         </div>
-        <span className="section-count">Live</span>
       </div>
       <div className="activity-list">
         {events.length ? (
@@ -23,7 +22,7 @@ export function RecentActivity({ events }: { events: AuditEventView[] }) {
                   {event.actor} · {event.toolName ?? 'General audit'}
                 </span>
               </div>
-              <time>{event.time}</time>
+              <time dateTime={event.timestamp}>{event.time}</time>
             </div>
           ))
         ) : (

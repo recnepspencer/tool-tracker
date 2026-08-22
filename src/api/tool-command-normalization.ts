@@ -10,9 +10,18 @@ const normalizeCondition = (value: unknown): ConditionReportKind => {
   return value as ConditionReportKind;
 };
 
+const normalizeDestination = (value: unknown): CreateToolInput['destination'] => {
+  if (value === undefined) return undefined;
+  if (value !== 'worker' && value !== 'warehouse') {
+    throw new Error('Tool destination must be worker or warehouse');
+  }
+  return value;
+};
+
 export const normalizeCreateToolInput = (input: CreateToolInput): CreateToolInput => {
   const serial = optionalText(input.serial);
   const price = optionalText(input.price);
+  const destination = normalizeDestination(input.destination);
   return {
     actorId: input.actorId.trim(),
     warehouseId: input.warehouseId.trim(),
@@ -25,6 +34,7 @@ export const normalizeCreateToolInput = (input: CreateToolInput): CreateToolInpu
       imageKey: input.definition.imageKey.trim(),
     },
     photoCaptured: input.photoCaptured,
+    ...(destination ? { destination } : {}),
     ...(serial ? { serial } : {}),
     ...(price ? { price } : {}),
     ...(input.evidence ? normalizeEvidence({ evidence: input.evidence }) : {}),

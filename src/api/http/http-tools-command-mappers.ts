@@ -5,10 +5,23 @@ import { mapTool } from './http-tool-mappers';
 import type { ConditionReportKind } from '../../domain/condition-report';
 import type { ToolStatus } from '../../domain/tool';
 
-/** Validate the tool receipt returned by the create command against its actor. */
-export const mapCreatedTool = (dto: ToolDto, actorId: string): ToolView => {
+/** Validate the tool receipt returned by the create command against its requested destination. */
+export const mapCreatedTool = (
+  dto: ToolDto,
+  expected: { actorId: string; destination?: 'worker' | 'warehouse'; warehouseId: string },
+): ToolView => {
   const tool = mapTool(dto);
-  if (tool.status !== 'checked-out' || tool.holder.type !== 'worker' || tool.holder.userId !== actorId) {
+  const validWarehouseStock =
+    expected.destination === 'warehouse' &&
+    tool.status === 'in-stock' &&
+    tool.holder.type === 'warehouse' &&
+    tool.holder.warehouseId === expected.warehouseId;
+  const validWorkerTool =
+    expected.destination !== 'warehouse' &&
+    tool.status === 'checked-out' &&
+    tool.holder.type === 'worker' &&
+    tool.holder.userId === expected.actorId;
+  if (!validWarehouseStock && !validWorkerTool) {
     throw new Error('Invalid API response: created tool custody');
   }
   return tool;

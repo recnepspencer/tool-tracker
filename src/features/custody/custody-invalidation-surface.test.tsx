@@ -117,16 +117,13 @@ describe('custody command invalidation surfaces', () => {
     await waitFor(() => expect(screen.getByTestId('projection-probe')).toHaveTextContent('ready'));
     const beforeCalls = { ...calls, pendingByProfile: { ...calls.pendingByProfile } };
     const beforeProjection = { ...screen.getByTestId('projection-probe').dataset };
-    expect(within(card).getByText('From Jordan Lee · check it matches the photo')).toBeInTheDocument();
-    await user.click(within(card).getByRole('button', { name: 'Review' }));
+    expect(within(card).getByText('Accept from Jordan Lee')).toBeInTheDocument();
+    await user.click(within(card).getByRole('button', { name: 'Review and accept' }));
     const review = within(card).getByRole('dialog', { name: 'Hammer drill transfer review' });
     expect(within(review).getByPlaceholderText('e.g. chuck is loose')).toBeInTheDocument();
-    expect(
-      within(review).getByText(
-        'Check the tool in front of you against the photo before accepting. Accepting is the proof of handoff.',
-      ),
-    ).toBeInTheDocument();
+    expect(within(review).getByText('Optional')).toBeInTheDocument();
     expect(within(review).getByRole('button', { name: 'Decline' })).toBeInTheDocument();
+    await user.click(within(review).getByRole('checkbox', { name: 'I have inspected this tool' }));
     await user.click(within(review).getByRole('button', { name: 'Accept — take custody' }));
     await waitFor(() =>
       expect(database.read().custody.find((record) => record.toolUnitId === 'TL-101')?.holder).toEqual({
@@ -239,7 +236,7 @@ describe('custody command invalidation surfaces', () => {
       const projection = screen.getByTestId('projection-probe').dataset;
       expect(Number(projection.pendingCount)).toBe(Number(beforeProjection.pendingCount) + 1);
       expect(Number(projection.activityCount)).toBeGreaterThan(Number(beforeProjection.activityCount));
-      expect(Number(projection.adminRecentCount)).toBeGreaterThan(Number(beforeProjection.adminRecentCount));
+      expect(projection.adminRecentCount).toBe(beforeProjection.adminRecentCount);
       expect(Number(projection.targetCount)).toBeLessThan(Number(beforeProjection.targetCount));
       expect(projection.detailHolder).toBe(beforeProjection.detailHolder);
       expect(projection.toolCount).toBe(beforeProjection.toolCount);

@@ -29,8 +29,10 @@ export function useReconciliationController() {
     });
   const dismiss = (issue: Extract<ReconciliationIssueView, { kind: 'duplicate-tool-record' }>) =>
     run(reconciliation.dismissDuplicate.mutateAsync(dismissInput(issue, note)));
-  const merge = (issue: Extract<ReconciliationIssueView, { kind: 'duplicate-tool-record' }>) =>
-    run(reconciliation.mergeDuplicate.mutateAsync(mergeInput(issue, note)));
+  const merge = (
+    issue: Extract<ReconciliationIssueView, { kind: 'duplicate-tool-record' }>,
+    survivorToolUnitId?: string,
+  ) => run(reconciliation.mergeDuplicate.mutateAsync(mergeInput(issue, note, survivorToolUnitId)));
   const resolveMismatch = (issue: Extract<ReconciliationIssueView, { kind: 'custody-mismatch' }>) =>
     run(reconciliation.resolveCustodyMismatch.mutateAsync(resolveMismatchInput(issue, decision, note)));
   const review = (issue: ReconciliationIssueView) => {

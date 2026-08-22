@@ -24,7 +24,12 @@ export function ToolFlagDialog({
   const [condition, setCondition] = useState<'damaged' | 'lost'>('damaged');
   const [note, setNote] = useState('');
   return (
-    <OverlayDialog label={`Flag ${item.toolName}`} onClose={onClose} panelClassName="operations-dialog">
+    <OverlayDialog
+      label={`Flag ${item.toolName}`}
+      onClose={onClose}
+      panelClassName="admin-dialog operations-dialog"
+      showCloseButton
+    >
       <div className="dialog-heading">
         <span className="eyebrow">Inventory decision</span>
         <h2>Flag tool</h2>

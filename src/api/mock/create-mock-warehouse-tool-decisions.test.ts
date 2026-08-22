@@ -111,13 +111,6 @@ describe('mock warehouse inventory decisions', () => {
   it('returns to the assigned warehouse while retaining origin and exact receipts', async () => {
     const database = createMockDatabase({ clock: () => '2026-08-20T09:00:00-06:00' });
     const api = createMockApi(database);
-    await api.admin.updateWarehouse({
-      actorId: 'sam-ochoa',
-      warehouseId: 'south-shop',
-      name: 'South Shop',
-      address: '88 Trade St',
-      managerId: 'morgan-price',
-    });
     const started = await api.custody.startTransfer({
       actorId: 'ray-torres',
       toolUnitId: 'TL-104',

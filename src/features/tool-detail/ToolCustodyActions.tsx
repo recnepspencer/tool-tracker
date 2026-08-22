@@ -5,6 +5,7 @@ import type { AuthSession } from '../../domain/auth';
 import { workerCustodyActionPolicy } from '../../domain/custody-policy';
 import type { ToolDetailView } from '../../domain/read-models/tools';
 import type { ToolHolderView } from '../../domain/read-models/holder';
+import type { CustodyPhotoEvidence } from '../../domain/evidence';
 import { CustodyEvidenceFields } from '../custody/CustodyEvidenceFields';
 import type { CheckoutUnitOption } from './checkout-unit-option';
 import { holderSelectionKey } from './holder-selection-key';
@@ -18,7 +19,8 @@ interface ToolCustodyActionsProps {
   action: DetailAction | null;
   target: string;
   note: string;
-  mockPhoto: boolean;
+  photo: CustodyPhotoEvidence | null;
+  photoBusy?: boolean;
   transferMode?: TransferDestinationMode | null;
   canStartHandoff: boolean;
   detailRefreshing: boolean;
@@ -30,7 +32,8 @@ interface ToolCustodyActionsProps {
   onRequestUnitChange?(unitId: string): void;
   onTransferModeChange?(mode: TransferDestinationMode | null): void;
   onNoteChange(note: string): void;
-  onMockPhotoChange(mockPhoto: boolean): void;
+  onPhotoChange(photo: CustodyPhotoEvidence | null): void;
+  onPhotoBusyChange?(busy: boolean): void;
   onCloseAction(): void;
   onSubmit(): void;
 }
@@ -41,7 +44,8 @@ export function ToolCustodyActions({
   action,
   target,
   note,
-  mockPhoto,
+  photo,
+  photoBusy = false,
   transferMode = null,
   canStartHandoff,
   detailRefreshing,
@@ -53,7 +57,8 @@ export function ToolCustodyActions({
   onRequestUnitChange,
   onTransferModeChange = () => undefined,
   onNoteChange,
-  onMockPhotoChange,
+  onPhotoChange,
+  onPhotoBusyChange = () => undefined,
   onCloseAction,
   onSubmit,
 }: ToolCustodyActionsProps) {
@@ -74,6 +79,7 @@ export function ToolCustodyActions({
     !detailRefreshing &&
     detail.lifecycle === 'active' &&
     !busy &&
+    !photoBusy &&
     !(
       action === 'transfer' &&
       (targets.isPending || targets.isFetching || targets.isPaused || targets.isError || !selectedTarget)
@@ -116,7 +122,7 @@ export function ToolCustodyActions({
               <span className="eyebrow">Confirm action</span>
               <h3>
                 {action === 'request'
-                  ? 'Request this tool'
+                  ? `Request from ${detail.tool.holder.name}`
                   : action === 'transfer'
                     ? 'Transfer'
                     : action === 'report-damaged'
@@ -161,12 +167,13 @@ export function ToolCustodyActions({
           {action !== 'transfer' || selectedTarget ? (
             <CustodyEvidenceFields
               className="detail-action-field"
-              context={action === 'transfer' ? 'transfer' : 'request'}
+              context={action === 'transfer' ? 'transfer' : action.startsWith('report-') ? 'condition' : 'request'}
               note={note}
-              mockPhoto={mockPhoto}
+              photo={photo}
               showPhoto={!isCheckoutRequest}
               onNoteChange={onNoteChange}
-              onMockPhotoChange={onMockPhotoChange}
+              onPhotoChange={onPhotoChange}
+              onPhotoBusyChange={onPhotoBusyChange}
             />
           ) : null}
           <Button
@@ -176,13 +183,19 @@ export function ToolCustodyActions({
             disabled={!canSubmit}
             onClick={onSubmit}
           >
-            {busy || detailRefreshing
-              ? 'Saving…'
-              : action === 'transfer'
-                ? selectedTarget
-                  ? `Send to ${selectedTarget.name}`
-                  : 'Choose a destination'
-                : 'Confirm'}
+            {photoBusy
+              ? 'Processing photo…'
+              : busy || detailRefreshing
+                ? 'Saving…'
+                : action === 'transfer'
+                  ? selectedTarget
+                    ? `Send to ${selectedTarget.name}`
+                    : 'Choose a destination'
+                  : action === 'request'
+                    ? `Request from ${detail.tool.holder.name}`
+                    : action === 'report-damaged'
+                      ? 'Report damage'
+                      : 'Report loss'}
           </Button>
           {action === 'transfer' && selectedTarget ? (
             <p className="transfer-submit-note">

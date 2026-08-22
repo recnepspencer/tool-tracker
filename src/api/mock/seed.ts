@@ -57,6 +57,15 @@ const seedUsers: Member[] = [
     homeWarehouseId: 'south-shop',
   },
   {
+    id: 'dana-kim',
+    name: 'Dana Kim',
+    email: 'dana@nelsonelectric.com',
+    role: 'warehouse-manager',
+    lifecycle: 'active',
+    title: 'Depot manager',
+    homeWarehouseId: 'riverside-depot',
+  },
+  {
     id: 'casey-reed',
     name: 'Casey Reed',
     email: 'casey@nelsonelectric.com',
@@ -87,8 +96,8 @@ const seedUsers: Member[] = [
 
 const seedWarehouses: Warehouse[] = [
   { id: 'north-yard', name: 'North Yard', address: '1420 Kerr Ave', managerId: 'sam-ochoa' },
-  { id: 'south-shop', name: 'South Shop', address: '88 Trade St', managerId: 'sam-ochoa' },
-  { id: 'riverside-depot', name: 'Riverside Depot', address: '3 Mill Rd', managerId: 'sam-ochoa' },
+  { id: 'south-shop', name: 'South Shop', address: '88 Trade St', managerId: 'morgan-price' },
+  { id: 'riverside-depot', name: 'Riverside Depot', address: '3 Mill Rd', managerId: 'dana-kim' },
 ];
 
 const seedUnits: ToolUnit[] = [
@@ -400,6 +409,50 @@ const seedEvents: AuditEvent[] = [
     warehouseId: 'north-yard',
     occurredAt: '2026-08-05T16:00:00-06:00',
   },
+  {
+    id: 'EV-SEED-7',
+    actorId: 'eli-warren',
+    action: 'Sent a cord reel to Ray Torres',
+    toolUnitId: 'TL-119',
+    kind: 'custody',
+    scope: 'worker',
+    participantIds: ['eli-warren', 'ray-torres'],
+    warehouseId: 'south-shop',
+    occurredAt: '2026-08-18T08:45:00-06:00',
+  },
+  {
+    id: 'EV-SEED-8',
+    actorId: 'ray-torres',
+    action: 'Started a return to North Yard',
+    toolUnitId: 'TL-112',
+    kind: 'request',
+    scope: 'warehouse',
+    participantIds: ['ray-torres'],
+    warehouseId: 'north-yard',
+    occurredAt: '2026-08-18T08:55:00-06:00',
+  },
+  {
+    id: 'EV-SEED-10',
+    actorId: 'eli-warren',
+    action: 'Requested a step ladder from Riverside Depot',
+    toolUnitId: 'TL-116',
+    kind: 'request',
+    scope: 'worker',
+    participantIds: ['eli-warren'],
+    warehouseId: 'riverside-depot',
+    occurredAt: '2026-08-18T09:10:00-06:00',
+  },
+  {
+    id: 'EV-SEED-11',
+    actorId: 'dana-kim',
+    action: 'Completed the Riverside Depot cycle count',
+    toolUnitId: 'TL-106',
+    kind: 'admin',
+    scope: 'warehouse',
+    participantIds: ['dana-kim'],
+    warehouseId: 'riverside-depot',
+    occurredAt: '2026-08-18T09:20:00-06:00',
+  },
 ];
 
 const seedHandoffs: HandoffRequest[] = [
@@ -422,7 +475,10 @@ const seedHandoffs: HandoffRequest[] = [
     requestedBy: 'ray-torres',
     requestedAt: '2026-08-18T08:20:00-06:00',
     status: 'pending',
-    evidence: { note: 'Return after the panel test', mockPhoto: true },
+    evidence: {
+      note: 'Return after the panel test',
+      photo: { fileName: 'circuit-tracer.jpg', src: './tool-images/circuit-tracer.jpg' },
+    },
   },
   {
     id: 'HO-DEMO-IN',
@@ -434,6 +490,28 @@ const seedHandoffs: HandoffRequest[] = [
     requestedAt: '2026-08-18T08:45:00-06:00',
     status: 'pending',
     evidence: { note: 'Ready for the west crew' },
+  },
+  {
+    id: 'HO-QUEUE-REQUEST-2',
+    kind: 'warehouse-request',
+    toolUnitId: 'TL-116',
+    from: { type: 'warehouse', warehouseId: 'riverside-depot' },
+    to: { type: 'worker', userId: 'eli-warren' },
+    requestedBy: 'eli-warren',
+    requestedAt: '2026-08-18T09:10:00-06:00',
+    status: 'pending',
+    evidence: { note: 'Needed for the riverside lighting crew' },
+  },
+  {
+    id: 'HO-QUEUE-RETURN-1',
+    kind: 'transfer',
+    toolUnitId: 'TL-112',
+    from: { type: 'worker', userId: 'ray-torres' },
+    to: { type: 'warehouse', warehouseId: 'north-yard' },
+    requestedBy: 'ray-torres',
+    requestedAt: '2026-08-18T08:55:00-06:00',
+    status: 'pending',
+    evidence: { note: 'Tracer tested and ready for stock' },
   },
 ];
 

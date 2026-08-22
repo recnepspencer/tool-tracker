@@ -1,4 +1,11 @@
-import { useId, useState, type ChangeEvent, type InputHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import {
+  useId,
+  useState,
+  type ChangeEvent,
+  type InputHTMLAttributes,
+  type Ref,
+  type TextareaHTMLAttributes,
+} from 'react';
 import { Field } from './Field';
 
 type SharedFieldProps = {
@@ -118,4 +125,46 @@ export function TextAreaField({
 
 export function SearchField(props: Omit<TextFieldProps, 'type'>) {
   return <TextField type="search" hideLabel {...props} />;
+}
+
+export function PhotoFileInput({
+  id,
+  inputRef,
+  ariaLabel,
+  onSelect,
+}: {
+  id?: string;
+  inputRef?: Ref<HTMLInputElement>;
+  ariaLabel?: string;
+  onSelect(file: File): void;
+}) {
+  return (
+    <input
+      ref={inputRef}
+      id={id}
+      className="visually-hidden"
+      type="file"
+      accept="image/*"
+      capture="environment"
+      aria-label={ariaLabel}
+      onChange={(event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) onSelect(file);
+      }}
+    />
+  );
+}
+
+export function RadioInput({
+  name,
+  value,
+  checked,
+  onChange,
+}: {
+  name: string;
+  value: string;
+  checked: boolean;
+  onChange(): void;
+}) {
+  return <input type="radio" name={name} value={value} checked={checked} onChange={onChange} />;
 }

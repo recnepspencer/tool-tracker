@@ -38,7 +38,10 @@ describe('createHttpApi custody commands', () => {
         body: {
           actor_id: 'ray-torres',
           to: { kind: 'warehouse', id: 'south-shop' },
-          evidence: { note: 'transfer note', mock_photo: true },
+          evidence: {
+            note: 'transfer note',
+            photo: { file_name: 'proof.jpg', src: 'data:image/jpeg;base64,cHJvb2Y=' },
+          },
         },
         response: { handoff_id: 'HO-9', tool_unit_id: 'TL-101', event_id: 'EV-9', status: 'pending' },
         invoke: (client: ReturnType<typeof createHttpApi>) =>
@@ -46,7 +49,10 @@ describe('createHttpApi custody commands', () => {
             toolUnitId: 'TL-101',
             actorId: 'ray-torres',
             to: { type: 'warehouse', warehouseId: 'south-shop' },
-            evidence: { note: ' transfer note ', mockPhoto: true },
+            evidence: {
+              note: ' transfer note ',
+              photo: { fileName: 'proof.jpg', src: 'data:image/jpeg;base64,cHJvb2Y=' },
+            },
           }),
       },
       {
@@ -63,14 +69,18 @@ describe('createHttpApi custody commands', () => {
       },
       {
         path: '/api/tools/handoffs/HO-9/decline',
-        body: { actor_id: 'jordan-lee', tool_unit_id: 'TL-101', evidence: { mock_photo: true } },
+        body: {
+          actor_id: 'jordan-lee',
+          tool_unit_id: 'TL-101',
+          evidence: { photo: { file_name: 'proof.jpg', src: 'data:image/jpeg;base64,cHJvb2Y=' } },
+        },
         response: { handoff_id: 'HO-9', tool_unit_id: 'TL-101', event_id: 'EV-9', status: 'declined' },
         invoke: (client: ReturnType<typeof createHttpApi>) =>
           client.custody.declineTransfer({
             handoffId: 'HO-9',
             toolUnitId: 'TL-101',
             actorId: 'jordan-lee',
-            evidence: { mockPhoto: true },
+            evidence: { photo: { fileName: 'proof.jpg', src: 'data:image/jpeg;base64,cHJvb2Y=' } },
           }),
       },
       {

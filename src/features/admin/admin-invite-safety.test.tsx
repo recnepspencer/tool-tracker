@@ -71,7 +71,7 @@ describe('admin invite query safety', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Invite a person' });
     const submit = within(dialog).getByRole('button', { name: 'Send invite' });
     await user.type(within(dialog).getByLabelText('Name'), 'Fresh person');
-    await user.type(within(dialog).getByLabelText('Email'), 'fresh@nelsonelectric.com');
+    await user.type(within(dialog).getByLabelText('Email address'), 'fresh@nelsonelectric.com');
     await user.type(within(dialog).getByLabelText('Title'), 'Field specialist');
     await waitFor(() => expect(within(dialog).getByLabelText('Home warehouse')).toHaveValue('North Yard'));
     await waitFor(() => expect(submit).not.toBeDisabled());
@@ -108,7 +108,7 @@ describe('admin invite query safety', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Invite a person' });
     const submit = within(dialog).getByRole('button', { name: 'Send invite' });
     await user.type(within(dialog).getByLabelText('Name'), 'Offline person');
-    await user.type(within(dialog).getByLabelText('Email'), 'offline@nelsonelectric.com');
+    await user.type(within(dialog).getByLabelText('Email address'), 'offline@nelsonelectric.com');
     await user.type(within(dialog).getByLabelText('Title'), 'Field specialist');
     await user.click(screen.getByRole('button', { name: 'Refresh admin people' }));
     await waitFor(() => expect(errorCalls).toBeGreaterThanOrEqual(2));

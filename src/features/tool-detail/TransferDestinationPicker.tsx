@@ -24,7 +24,7 @@ export function TransferDestinationPicker({
   const destinationOptions = (mode === 'person' ? people : warehouses).map((candidate) => ({
     value: holderSelectionKey(candidate),
     label: candidate.name,
-    description: candidate.type === 'warehouse' ? 'Warehouse' : 'Person',
+    ...(candidate.type === 'warehouse' ? { description: 'Warehouse · returns to available stock' } : {}),
   }));
   const modeValue = mode ?? '';
   const modeOptions = [

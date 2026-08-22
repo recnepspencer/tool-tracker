@@ -88,7 +88,7 @@ describe('public auth parity routes', () => {
     window.location.hash = '#/login';
   });
 
-  it('previews signup and company setup without calling an adapter or persisting the draft', async () => {
+  it('validates signup and fails company setup closed without claiming persistence', async () => {
     const user = userEvent.setup();
     const calls: Record<string, number> = {};
     const tracking = trackStorageWrites();
@@ -114,24 +114,24 @@ describe('public auth parity routes', () => {
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Enter a company name to continue.');
     await user.clear(screen.getByLabelText('Company name'));
-    await user.type(screen.getByLabelText('Company name'), 'Preview Electric');
+    await user.type(screen.getByLabelText('Company name'), 'Nelson Electric');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
-    expect(await screen.findByRole('heading', { name: 'Your workspace is ready' })).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('Workspace creation is currently unavailable');
+    expect(screen.queryByText('Your workspace is ready')).not.toBeInTheDocument();
     expect(Object.values(calls).every((count) => count === 0)).toBe(true);
     expect(storageKeys(localStorage)).toEqual(['nelson-demo-theme']);
     expect(storageKeys(sessionStorage)).toEqual([]);
     expectOnlyThemeWrite(tracking.writes);
   });
 
-  it('shows valid and unknown invitation states without activating a person', async () => {
-    const user = userEvent.setup();
+  it('does not expose or accept a fixed invitation without invitation authority', async () => {
     const calls: Record<string, number> = {};
     const tracking = trackStorageWrites();
-    window.location.hash = '#/invite/sample-invite';
+    window.location.hash = '#/invite/invite-token';
     renderApp(<AppRoutes />, { api: guardedApi(calls) });
-    expect(await screen.findByRole('heading', { name: 'Join the workspace' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Accept invitation' }));
-    expect(await screen.findByRole('heading', { name: 'Your invitation is ready' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'That invitation is unavailable' })).toBeInTheDocument();
+    expect(screen.getByText('Ask an administrator for a current invitation.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Accept invitation' })).not.toBeInTheDocument();
     expect(Object.values(calls).every((count) => count === 0)).toBe(true);
     expect(storageKeys(localStorage)).toEqual(['nelson-demo-theme']);
     expect(storageKeys(sessionStorage)).toEqual([]);
@@ -141,51 +141,31 @@ describe('public auth parity routes', () => {
     const unknownCalls: Record<string, number> = {};
     renderApp(<AppRoutes />, { api: guardedApi(unknownCalls) });
     expect(await screen.findByRole('heading', { name: 'That invitation is unavailable' })).toBeInTheDocument();
-    expect(screen.getByText('No invitation matches this link.')).toBeInTheDocument();
+    expect(screen.getByText('Ask an administrator for a current invitation.')).toBeInTheDocument();
     expect(Object.values(unknownCalls).every((count) => count === 0)).toBe(true);
     expect(storageKeys(localStorage)).toEqual(['nelson-demo-theme']);
     expect(storageKeys(sessionStorage)).toEqual([]);
     expectOnlyThemeWrite(tracking.writes);
   });
 
-  it('walks through recovery locally and never writes a password', async () => {
+  it('fails recovery closed without simulating a code or password update', async () => {
     const user = userEvent.setup();
     const calls: Record<string, number> = {};
     const tracking = trackStorageWrites();
     window.location.hash = '#/reset-password';
     renderApp(<AppRoutes />, { api: guardedApi(calls) });
     const email = await screen.findByLabelText('Email address');
-    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Request recovery link' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Enter a valid email address.');
     await user.type(email, 'not-an-email');
-    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Request recovery link' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Enter a valid email address.');
     await user.clear(email);
     await user.type(email, 'ray@example.test');
-    await user.click(screen.getByRole('button', { name: 'Continue' }));
-    const codeHeading = await screen.findByRole('heading', { name: 'Enter the recovery code' });
-    expect(document.activeElement).toBe(codeHeading);
-    const code = screen.getByLabelText('Recovery code');
-    await user.click(screen.getByRole('button', { name: 'Verify code' }));
-    expect(screen.getByRole('alert')).toHaveTextContent('Enter the six-digit recovery code 123456.');
-    await user.type(code, '123');
-    await user.click(screen.getByRole('button', { name: 'Verify code' }));
-    expect(screen.getByRole('alert')).toHaveTextContent('Enter the six-digit recovery code 123456.');
-    await user.clear(code);
-    await user.type(code, '123456');
-    await user.click(screen.getByRole('button', { name: 'Verify code' }));
-    const passwordHeading = await screen.findByRole('heading', { name: 'Choose a new password' });
-    expect(document.activeElement).toBe(passwordHeading);
-    const password = screen.getByLabelText('New password');
-    await user.click(screen.getByRole('button', { name: 'Update password' }));
-    expect(screen.getByRole('alert')).toHaveTextContent('Use at least eight characters for your password.');
-    await user.type(password, 'short');
-    await user.click(screen.getByRole('button', { name: 'Update password' }));
-    expect(screen.getByRole('alert')).toHaveTextContent('Use at least eight characters for your password.');
-    await user.clear(password);
-    await user.type(password, 'not-persisted');
-    await user.click(screen.getByRole('button', { name: 'Update password' }));
-    expect(await screen.findByRole('heading', { name: 'Your recovery steps are complete' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Request recovery link' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Account recovery is currently unavailable');
+    expect(screen.queryByLabelText('Recovery code')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('New password')).not.toBeInTheDocument();
     expect(localStorage.getItem('nelson-demo-password')).toBeNull();
     expect(sessionStorage.getItem('nelson-demo-password')).toBeNull();
     expect(Object.values(calls).every((count) => count === 0)).toBe(true);
@@ -195,7 +175,7 @@ describe('public auth parity routes', () => {
   });
 
   it('redirects authenticated visitors from every public walkthrough to their role home', async () => {
-    const routes = ['/login', '/signup', '/company-setup', '/invite/sample-invite', '/reset-password'];
+    const routes = ['/login', '/signup', '/company-setup', '/invite/invite-token', '/reset-password'];
     for (const [profileId, heading, home] of [
       ['ray-torres', 'My tools', '/worker/tools'],
       ['sam-ochoa', 'Control room', '/admin/dashboard'],

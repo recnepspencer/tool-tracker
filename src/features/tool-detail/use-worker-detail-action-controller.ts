@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { AuthSession } from '../../domain/auth';
 import type { ToolDetailView } from '../../domain/read-models/tools';
 import type { ToolHolderView } from '../../domain/read-models/holder';
+import type { CustodyPhotoEvidence } from '../../domain/evidence';
 import { useCustodyMutations } from '../custody/use-custody-mutations';
 import type { DetailAction } from './detail-action-types';
 import type { TransferDestinationMode } from './TransferDestinationPicker';
@@ -29,6 +30,7 @@ interface WorkerDetailActionControllerInput {
   targets: TargetQueryState;
   session: AuthSession | null;
   canStartHandoff: boolean;
+  hasPendingHandoff: boolean;
   initialAction?: DetailAction | null;
   onSuccess?(action: DetailAction): void;
 }
@@ -39,6 +41,7 @@ export function useWorkerDetailActionController({
   targets,
   session,
   canStartHandoff,
+  hasPendingHandoff,
   initialAction = null,
   onSuccess,
 }: WorkerDetailActionControllerInput) {
@@ -47,39 +50,61 @@ export function useWorkerDetailActionController({
   const [target, setTarget] = useState('');
   const [transferMode, setTransferMode] = useState<TransferDestinationMode | null>(null);
   const [note, setNote] = useState('');
-  const [mockPhoto, setMockPhoto] = useState(false);
+  const [photo, setPhoto] = useState<CustodyPhotoEvidence | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [dismissedInitialActionKey, setDismissedInitialActionKey] = useState<string | null>(null);
+  const submissionVersion = useRef(0);
+  const currentToolUnitId = useRef(toolUnitId);
+  currentToolUnitId.current = toolUnitId;
+  const initialActionKey = toolUnitId && initialAction ? `${toolUnitId}:${initialAction}` : null;
   const busy =
     mutations.requestTool.isPending || mutations.startTransfer.isPending || mutations.reportToolCondition.isPending;
 
-  useEffect(() => {
-    setAction(initialAction);
+  const clearActionDraft = () => {
     setTarget('');
     setTransferMode(null);
     setNote('');
-    setMockPhoto(false);
+    setPhoto(null);
+    setPhotoBusy(false);
+  };
+
+  useEffect(() => {
+    submissionVersion.current += 1;
+    setAction(initialAction);
+    setDismissedInitialActionKey(null);
+    setTarget('');
+    setTransferMode(null);
+    setNote('');
+    setPhoto(null);
+    setPhotoBusy(false);
     setError(null);
     setNotice(null);
   }, [initialAction, toolUnitId]);
 
   useEffect(() => {
-    if (initialAction && canStartHandoff && action === null) setAction(initialAction);
-  }, [action, canStartHandoff, initialAction]);
+    if (initialAction && canStartHandoff && action === null && dismissedInitialActionKey !== initialActionKey) {
+      setAction(initialAction);
+    }
+  }, [action, canStartHandoff, dismissedInitialActionKey, initialAction, initialActionKey]);
 
   useEffect(() => {
-    if (detail.data && (detail.data.lifecycle !== 'active' || !canStartHandoff)) setAction(null);
-  }, [canStartHandoff, detail.data]);
+    if (detail.data && (detail.data.lifecycle !== 'active' || hasPendingHandoff)) setAction(null);
+  }, [detail.data, hasPendingHandoff]);
 
   const submit = async () => {
-    if (!action || !detail.data || !session || busy || detail.isFetching || detail.isPaused) return;
+    if (!action || !detail.data || !session || busy || photoBusy || detail.isFetching || detail.isPaused) return;
     if (detail.data.lifecycle !== 'active' || !canStartHandoff) {
       setAction(null);
       setError('This action is no longer available.');
       return;
     }
     setError(null);
-    const evidence = buildWorkerActionEvidence(note, mockPhoto);
+    const submittedToolUnitId = toolUnitId;
+    const version = submissionVersion.current + 1;
+    submissionVersion.current = version;
+    const evidence = buildWorkerActionEvidence(note, photo);
     try {
       const nextNotice = await submitWorkerDetailAction({
         action,
@@ -90,32 +115,37 @@ export function useWorkerDetailActionController({
         evidence,
         mutations,
       });
+      if (version !== submissionVersion.current || currentToolUnitId.current !== submittedToolUnitId) return;
       setNotice(nextNotice);
+      setDismissedInitialActionKey(initialActionKey);
       setAction(null);
       setTarget('');
       setTransferMode(null);
       setNote('');
-      setMockPhoto(false);
+      setPhoto(null);
+      setPhotoBusy(false);
       onSuccess?.(action);
     } catch (caught) {
+      if (version !== submissionVersion.current || currentToolUnitId.current !== submittedToolUnitId) return;
       setError(caught instanceof Error ? caught.message : 'This action could not be completed.');
     }
   };
 
   return {
-    action,
+    action: detail.data?.lifecycle === 'active' && !hasPendingHandoff ? action : null,
     target,
     note,
-    mockPhoto,
+    photo,
+    photoBusy,
     error,
     notice,
     busy,
     detailRefreshing: detail.isFetching,
     onAction: (nextAction: DetailAction) => {
+      submissionVersion.current += 1;
       setNotice(null);
       setError(null);
-      setTarget('');
-      setTransferMode(null);
+      clearActionDraft();
       setAction(nextAction);
     },
     onTargetChange: setTarget,
@@ -125,11 +155,16 @@ export function useWorkerDetailActionController({
       setTarget('');
     },
     onNoteChange: setNote,
-    onMockPhotoChange: setMockPhoto,
+    onPhotoChange: setPhoto,
+    onPhotoBusyChange: setPhotoBusy,
     onCloseAction: () => {
+      submissionVersion.current += 1;
+      setDismissedInitialActionKey(initialActionKey);
       setAction(null);
-      setTarget('');
-      setTransferMode(null);
+      clearActionDraft();
+    },
+    onDismiss: () => {
+      submissionVersion.current += 1;
     },
     submit,
   };

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useSession } from '../../app/session-context';
 import { useModalFocusTrap } from '../../components/ui/use-modal-focus-trap';
 import { useToolCatalog } from '../worker-catalog/use-tool-catalog';
@@ -11,24 +11,15 @@ import '../../styles/add-tool.css';
 export function AddToolWizard({ onClose }: { onClose(): void }) {
   const { session } = useSession();
   const panelRef = useRef<HTMLElement>(null);
-  const uploadTimerRef = useRef<number | null>(null);
   const [step, setStep] = useState<'capture' | 'details'>('capture');
-  const [captured, setCaptured] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [photoDataUrl, setPhotoDataUrl] = useState('');
   const [draft, setDraft] = useState<ToolDraft>(() => ({
     ...initialToolDraft,
     warehouseId: session?.homeWarehouseId ?? '',
   }));
-  const controller = useAddToolController({ session, captured, draft, onClose });
+  const controller = useAddToolController({ session, photoDataUrl, draft, onClose });
   const catalog = useToolCatalog();
   useModalFocusTrap(Boolean(session), onClose, panelRef);
-
-  useEffect(() => {
-    return () => {
-      if (uploadTimerRef.current !== null) window.clearInterval(uploadTimerRef.current);
-    };
-  }, []);
 
   const warehouses = useMemo(() => {
     const options = new Map<string, string>();
@@ -41,29 +32,13 @@ export function AddToolWizard({ onClose }: { onClose(): void }) {
 
   const update = (key: keyof ToolDraft, value: string) => setDraft((current) => ({ ...current, [key]: value }));
 
-  const capture = () => {
-    setCaptured(true);
+  const capture = (nextPhotoDataUrl: string) => {
+    setPhotoDataUrl(nextPhotoDataUrl);
     setStep('details');
-    setUploadProgress(5);
-    setUploading(true);
-    if (uploadTimerRef.current !== null) window.clearInterval(uploadTimerRef.current);
-    uploadTimerRef.current = window.setInterval(() => {
-      setUploadProgress((current) => {
-        const next = Math.min(100, current + 8 + Math.round(Math.random() * 9));
-        if (next >= 100) {
-          if (uploadTimerRef.current !== null) window.clearInterval(uploadTimerRef.current);
-          setUploading(false);
-        }
-        return next;
-      });
-    }, 600);
   };
 
   const retake = () => {
-    if (uploadTimerRef.current !== null) window.clearInterval(uploadTimerRef.current);
-    setCaptured(false);
-    setUploading(false);
-    setUploadProgress(0);
+    setPhotoDataUrl('');
     setStep('capture');
   };
 
@@ -82,8 +57,7 @@ export function AddToolWizard({ onClose }: { onClose(): void }) {
             busy={controller.busy}
             categories={controller.categories}
             warehouses={warehouses}
-            uploading={uploading}
-            uploadProgress={uploadProgress}
+            photoDataUrl={photoDataUrl}
             active={step === 'details'}
             onUpdate={update}
             onRetake={retake}

@@ -13,6 +13,7 @@
 .tool-photo--small {
   flex-basis: var(--control-height);
   height: var(--control-height);
+  width: var(--control-height);
 }
 .tool-photo--medium {
   height: var(--space-150);

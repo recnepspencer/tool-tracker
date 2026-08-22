@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useSession } from '../../../app/session-context';
 import { DemoProfileCard } from './DemoProfileCard';
 import { LoadingState, ErrorState, EmptyState, PausedState } from '../../../components/ui/AsyncState';
@@ -36,13 +35,6 @@ export function LoginPage() {
       eyebrow="Choose your profile"
       title="Sign in to continue"
       description="Select your profile to continue."
-      footer={
-        <div className="auth-experience-links">
-          <Link to="/signup">Create a company</Link>
-          <Link to="/reset-password">Recover access</Link>
-          <Link to="/invite/sample-invite">Accept an invitation</Link>
-        </div>
-      }
     >
       {profiles.isPending && !profiles.isPaused && <LoadingState label="Loading profiles…" />}
       {profiles.isFetching && !profiles.isPending && !profiles.isPaused && (

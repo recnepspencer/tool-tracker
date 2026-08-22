@@ -18,20 +18,24 @@ describe('worker tools surfaces', () => {
   it('keeps warehouse requests distinct from person-to-person transfers', async () => {
     renderApp(<AppRoutes />, { sessionStore: createMemorySessionStore('ray-torres') });
     expect(await screen.findByRole('heading', { name: 'My tools' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Waiting on someone else' })).toBeInTheDocument();
     const pendingRequest = screen.getByRole('article', { name: 'Bandsaw pending handoff' });
     expect(within(pendingRequest).getByText('Bandsaw')).toBeInTheDocument();
-    expect(within(pendingRequest).getByText('Request')).toBeInTheDocument();
     expect(within(pendingRequest).getByText('Requested from North Yard')).toBeInTheDocument();
+    expect(within(pendingRequest).getByText('Waiting for North Yard to release it')).toBeInTheDocument();
     expect(within(pendingRequest).getByRole('button', { name: 'Review request' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Transfer Hammer drill unit TL-101' }).closest('article')).toHaveClass(
-      'worker-tool-row--checked-out',
-    );
+    const readyInventoryRow = screen
+      .getByRole('button', { name: 'Transfer Hammer drill unit TL-101' })
+      .closest('article')!;
+    expect(readyInventoryRow).toHaveClass('worker-tool-row--checked-out');
+    expect(within(readyInventoryRow).getByText('Ready to transfer')).toBeInTheDocument();
+    expect(within(readyInventoryRow).getByText('Start transfer')).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'Transfer Fish tape, 240 ft unit TL-104' }).closest('article'),
     ).toHaveClass('worker-tool-row--damaged');
   });
 
-  it('shows incoming and editable outgoing demo transfers', async () => {
+  it('distinguishes transfers that need a response from those waiting on someone else', async () => {
     const user = userEvent.setup();
     const database = createMockDatabase({ clock: () => '2026-08-18T09:00:00-06:00' });
     renderApp(<AppRoutes />, {
@@ -39,45 +43,61 @@ describe('worker tools surfaces', () => {
       sessionStore: createMemorySessionStore('ray-torres'),
     });
     expect(await screen.findByRole('heading', { name: 'My tools' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Needs your response' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Waiting on someone else' })).toBeInTheDocument();
 
-    const outgoing = screen.getByRole('article', { name: 'Klein 10" pump pliers pending handoff' });
-    expect(within(outgoing).getByText('Outgoing')).toBeInTheDocument();
-    expect(within(outgoing).getByText('To Eli Warren')).toBeInTheDocument();
+    const outgoing = screen
+      .getAllByRole('article', { name: 'Klein 10" pump pliers pending handoff' })
+      .find((card) => within(card).queryByText('Sent to Eli Warren'))!;
+    expect(within(outgoing).getByText('Waiting for Eli Warren to accept')).toBeInTheDocument();
+    const outgoingInventoryRow = screen
+      .getByRole('button', { name: 'Open details for Klein 10" pump pliers unit TL-120' })
+      .closest('article')!;
+    expect(within(outgoingInventoryRow).getByText('In transfer')).toBeInTheDocument();
+    expect(within(outgoingInventoryRow).getByText('Pending')).toBeInTheDocument();
+    expect(
+      within(outgoingInventoryRow).queryByRole('button', {
+        name: 'Transfer Klein 10" pump pliers unit TL-120',
+      }),
+    ).not.toBeInTheDocument();
     await user.click(within(outgoing).getByRole('button', { name: 'Edit transfer' }));
     const outgoingDialog = await screen.findByRole('dialog', {
       name: 'Klein 10" pump pliers transfer review',
     });
-    expect(within(outgoingDialog).getByText('Outgoing transfer')).toBeInTheDocument();
-    expect(within(outgoingDialog).getByText('Awaiting acceptance')).toBeInTheDocument();
-    expect(within(outgoingDialog).getByText(/Photos are optional/)).toBeInTheDocument();
+    expect(within(outgoingDialog).getByText('Sent to Eli Warren')).toBeInTheDocument();
+    expect(within(outgoingDialog).getByText('Waiting for Eli Warren to accept')).toBeInTheDocument();
+    expect(within(outgoingDialog).getByText('Photo attached')).toBeInTheDocument();
     await chooseTransferDestination(user, outgoingDialog, 'warehouse', /South Shop Warehouse/);
     const note = within(outgoingDialog).getByPlaceholderText('e.g. reason for the transfer');
     await user.clear(note);
     await user.type(note, 'Use at the south shop');
-    await user.click(within(outgoingDialog).getByRole('switch', { name: /Add an optional photo/ }));
+    await user.click(within(outgoingDialog).getByRole('button', { name: 'Remove attached photo' }));
     await user.click(within(outgoingDialog).getByRole('button', { name: 'Save changes' }));
     await waitFor(() => expect(screen.queryByRole('dialog', { name: /Klein 10/ })).not.toBeInTheDocument());
     expect(database.read().handoffs.find((handoff) => handoff.id === 'HO-DEMO-OUT')).toMatchObject({
       to: { type: 'warehouse', warehouseId: 'south-shop' },
       evidence: { note: 'Use at the south shop' },
     });
+    expect(database.read().handoffs.find((handoff) => handoff.id === 'HO-DEMO-OUT')?.evidence?.photo).toBeUndefined();
     expect(
-      database.read().handoffs.find((handoff) => handoff.id === 'HO-DEMO-OUT')?.evidence?.mockPhoto,
-    ).toBeUndefined();
-    expect(
-      within(screen.getByRole('article', { name: 'Klein 10" pump pliers pending handoff' })).getByText('To South Shop'),
+      within(
+        screen
+          .getAllByRole('article', { name: 'Klein 10" pump pliers pending handoff' })
+          .find((card) => card.dataset.handoffId === 'HO-DEMO-OUT')!,
+      ).getByText('Sent to South Shop'),
     ).toBeInTheDocument();
 
     const incoming = screen.getByRole('article', { name: 'Cord reel, 100 ft pending handoff' });
-    expect(within(incoming).getByText('Incoming')).toBeInTheDocument();
-    expect(within(incoming).getByText('From Eli Warren')).toBeInTheDocument();
-    await user.click(within(incoming).getByRole('button', { name: 'Review' }));
+    expect(within(incoming).getByText('Accept from Eli Warren')).toBeInTheDocument();
+    expect(within(incoming).getByText('Eli Warren sent this tool to you')).toBeInTheDocument();
+    await user.click(within(incoming).getByRole('button', { name: 'Review and accept' }));
     const incomingDialog = await screen.findByRole('dialog', { name: 'Cord reel, 100 ft transfer review' });
-    expect(within(incomingDialog).getByText('Incoming transfer')).toBeInTheDocument();
-    expect(within(incomingDialog).getByText('Needs your acceptance')).toBeInTheDocument();
-    expect(within(incomingDialog).getByRole('button', { name: 'Accept — take custody' })).toBeInTheDocument();
+    expect(within(incomingDialog).getByText('Accept from Eli Warren')).toBeInTheDocument();
+    expect(within(incomingDialog).getByText('Eli Warren sent this tool to you')).toBeInTheDocument();
+    expect(within(incomingDialog).getByRole('button', { name: 'Accept — take custody' })).toBeDisabled();
+    expect(within(incomingDialog).getByRole('checkbox', { name: 'I have inspected this tool' })).toBeInTheDocument();
     expect(within(incomingDialog).getByRole('button', { name: 'Decline' })).toBeInTheDocument();
-    expect(within(incomingDialog).getByRole('switch', { name: /Add an optional photo/ })).toBeInTheDocument();
+    expect(incomingDialog.querySelector('input[type="file"]')).toBeInTheDocument();
   });
 
   it('excludes another worker’s custody from the authenticated Ray surface', async () => {
@@ -130,9 +150,13 @@ describe('worker tools surfaces', () => {
     renderApp(<AppRoutes />, { api: pendingApi, sessionStore: createMemorySessionStore('ray-torres') });
     expect(await screen.findByRole('heading', { name: 'My tools' })).toBeInTheDocument();
     expect(screen.getByText('Checking pending handoffs…')).toBeInTheDocument();
+    expect(screen.getAllByText('Transfer status').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Checking…').length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: 'Transfer Hammer drill unit TL-101' })).not.toBeInTheDocument();
     expect(requestedProfile).toBe('ray-torres');
     resolvePending(await baseApi.custody.listPendingHandoffs('ray-torres'));
     expect(await screen.findByRole('article', { name: 'Bandsaw pending handoff' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Transfer Hammer drill unit TL-101' })).toBeInTheDocument();
     cleanup();
     const rejectingApi = {
       ...baseApi,
@@ -142,5 +166,8 @@ describe('worker tools surfaces', () => {
     renderApp(<AppRoutes />, { api: rejectingApi, sessionStore: createMemorySessionStore('ray-torres') });
     expect(await screen.findByRole('heading', { name: 'My tools' })).toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Pending handoffs could not be loaded'));
+    expect(screen.getAllByText('Transfer status').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Unavailable').length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: 'Transfer Hammer drill unit TL-101' })).not.toBeInTheDocument();
   });
 });

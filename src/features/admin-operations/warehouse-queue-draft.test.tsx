@@ -41,7 +41,9 @@ describe('warehouse queue draft safety', () => {
     };
     renderApp(<AppRoutes />, { api, sessionStore: createMemorySessionStore('sam-ochoa') });
     await screen.findByRole('heading', { name: 'Queue' });
-    await user.click(screen.getByRole('button', { name: 'Review' }));
+    await user.click(
+      within(screen.getByText('Bandsaw').closest('article')!).getByRole('button', { name: 'Release to worker' }),
+    );
     const dialog = await screen.findByRole('dialog', { name: 'Review Bandsaw' });
     const note = within(dialog).getByLabelText('Decision note');
     await user.type(note, 'Retry after connectivity returns');
@@ -73,7 +75,9 @@ describe('warehouse queue draft safety', () => {
     };
     renderApp(<AppRoutes />, { api, sessionStore: createMemorySessionStore('sam-ochoa') });
     await screen.findByRole('heading', { name: 'Queue' });
-    await user.click(screen.getByRole('button', { name: 'Review' }));
+    await user.click(
+      within(screen.getByText('Bandsaw').closest('article')!).getByRole('button', { name: 'Release to worker' }),
+    );
     const dialog = await screen.findByRole('dialog', { name: 'Review Bandsaw' });
     await user.click(within(dialog).getByRole('button', { name: 'Release to worker' }));
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Review Bandsaw' })).not.toBeInTheDocument());
@@ -106,7 +110,9 @@ describe('warehouse queue draft safety', () => {
       { api, sessionStore: createMemorySessionStore('sam-ochoa') },
     );
     await screen.findByRole('heading', { name: 'Queue' });
-    await user.click(screen.getByRole('button', { name: 'Review' }));
+    await user.click(
+      within(screen.getByText('Bandsaw').closest('article')!).getByRole('button', { name: 'Release to worker' }),
+    );
     const dialog = await screen.findByRole('dialog', { name: 'Review Bandsaw' });
     await user.click(screen.getByRole('button', { name: 'Refresh queue' }));
     await waitFor(() => expect(queueReads).toBeGreaterThan(1));

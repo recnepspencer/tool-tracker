@@ -1,12 +1,16 @@
 import type { ToolView } from '../../domain/read-models/tools';
-import { ToolCard } from './ToolCard';
+import { ToolCard, type ToolTransferState } from './ToolCard';
 
 export function WorkerToolGrid({
   tools,
+  pendingToolUnitIds,
+  transferStatus,
   onSelect,
   onTransfer,
 }: {
   tools: ToolView[];
+  pendingToolUnitIds: ReadonlySet<string>;
+  transferStatus: Exclude<ToolTransferState, 'pending'>;
   onSelect(toolUnitId: string): void;
   onTransfer(toolUnitId: string): void;
 }) {
@@ -19,9 +23,18 @@ export function WorkerToolGrid({
         <span className="worker-section-count">{tools.length}</span>
       </div>
       <div className="worker-tool-list">
-        {tools.map((tool) => (
-          <ToolCard key={tool.id} tool={tool} onSelect={onSelect} onTransfer={onTransfer} />
-        ))}
+        {tools.map((tool) => {
+          const toolTransferState = pendingToolUnitIds.has(tool.id) ? 'pending' : transferStatus;
+          return (
+            <ToolCard
+              key={tool.id}
+              tool={tool}
+              transferState={toolTransferState}
+              onSelect={onSelect}
+              onTransfer={onTransfer}
+            />
+          );
+        })}
       </div>
     </section>
   );

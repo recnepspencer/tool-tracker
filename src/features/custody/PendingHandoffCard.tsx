@@ -21,7 +21,8 @@ export function PendingHandoffCard({
   const incoming = !warehouseRequest && handoff.direction === 'incoming';
   const editable = handoff.canEdit;
   const [note, setNote] = useState(handoff.evidence?.note ?? '');
-  const [mockPhoto, setMockPhoto] = useState(handoff.evidence?.mockPhoto === true);
+  const [photo, setPhoto] = useState(handoff.evidence?.photo ?? null);
+  const [photoBusy, setPhotoBusy] = useState(false);
   const [target, setTarget] = useState(() => holderSelectionKey(handoff.to));
   const [transferMode, setTransferMode] = useState<TransferDestinationMode | null>(() =>
     handoff.to.type === 'worker' ? 'person' : 'warehouse',
@@ -42,10 +43,21 @@ export function PendingHandoffCard({
     handoff,
     profileId,
     note,
-    mockPhoto,
+    photo,
+    photoBusy,
     queryBlocked,
   });
   const selectedTarget = transferTargets.data?.find((candidate) => holderSelectionKey(candidate) === target);
+  const actionHeading = warehouseRequest
+    ? `Requested from ${handoff.from.name}`
+    : incoming
+      ? `Accept from ${handoff.from.name}`
+      : `Sent to ${handoff.to.name}`;
+  const statusCopy = warehouseRequest
+    ? `Waiting for ${handoff.from.name} to release it`
+    : incoming
+      ? `${handoff.from.name} sent this tool to you`
+      : `Waiting for ${handoff.to.name} to accept`;
   const saveOutgoingEdit = () => {
     if (!selectedTarget) return Promise.resolve(false);
     return saveEdit(toHolderRef(selectedTarget));
@@ -56,30 +68,31 @@ export function PendingHandoffCard({
       data-handoff-id={handoff.id}
       aria-label={`${handoff.toolName} pending handoff`}
     >
-      <span className="worker-pending-direction">
-        {warehouseRequest ? 'Request' : incoming ? 'Incoming' : 'Outgoing'}
-      </span>
+      <span className="worker-pending-direction">{actionHeading}</span>
       <strong className="worker-pending-title">{handoff.toolName}</strong>
-      <span className="worker-pending-subtitle">
-        {warehouseRequest
-          ? `Requested from ${handoff.from.name}`
-          : incoming
-            ? `From ${handoff.from.name}`
-            : `To ${handoff.to.name}`}
-      </span>
+      <span className="worker-pending-subtitle">{statusCopy}</span>
       <button
         type="button"
         className="worker-pending-review"
         onClick={() => setReviewOpen((current) => !current)}
         aria-expanded={reviewOpen}
       >
-        {editable ? 'Edit transfer' : warehouseRequest ? 'Review request' : 'Review'}
+        {editable
+          ? warehouseRequest
+            ? 'Edit request'
+            : 'Edit transfer'
+          : warehouseRequest
+            ? 'Review request'
+            : incoming
+              ? 'Review and accept'
+              : 'Review transfer'}
       </button>
       {reviewOpen ? (
         <PendingHandoffReviewSheet
           handoff={handoff}
           note={note}
-          mockPhoto={mockPhoto}
+          photo={photo}
+          photoBusy={photoBusy}
           busy={busy}
           queryBlocked={handoffQueryBlocked}
           error={error}
@@ -88,7 +101,8 @@ export function PendingHandoffCard({
           target={target}
           transferMode={transferMode}
           onNoteChange={setNote}
-          onMockPhotoChange={setMockPhoto}
+          onPhotoChange={setPhoto}
+          onPhotoBusyChange={setPhotoBusy}
           onTargetChange={setTarget}
           onTransferModeChange={(mode) => {
             setTransferMode(mode);

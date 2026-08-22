@@ -3,6 +3,49 @@ import { createHttpApi } from './create-http-api';
 import { validTool } from './http-validation-fixtures';
 
 describe('createHttpApi tool commands', () => {
+  it('posts warehouse stock as one batch command and validates every receipt', async () => {
+    const calls: Array<{ path: string; body: unknown }> = [];
+    const api = createHttpApi({
+      transport: {
+        get: async <T>() => [] as T,
+        post: async <T>(path: string, body: unknown) => {
+          calls.push({ path, body });
+          return ['TL-301', 'TL-302'].map((toolId) => ({
+            ...validTool,
+            tool_id: toolId,
+            display_status: 'in-stock',
+            holder: { kind: 'warehouse', id: 'south-shop', label: 'South Shop' },
+          })) as T;
+        },
+      },
+    });
+    const input = (model: string) => ({
+      actorId: 'morgan-price',
+      definition: {
+        name: 'Conduit bender',
+        brand: 'Greenlee',
+        model,
+        categoryId: 'category-hand-tools',
+        imageKey: 'tool-photo-placeholder.svg',
+      },
+      warehouseId: 'south-shop',
+      destination: 'warehouse' as const,
+      photoCaptured: false,
+    });
+
+    await expect(api.tools.createTools([input('B-1'), input('B-2')])).resolves.toHaveLength(2);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toMatchObject({
+      path: '/api/tools/batch',
+      body: {
+        tools: [
+          { actor_id: 'morgan-price', warehouse_id: 'south-shop', destination: 'warehouse' },
+          { actor_id: 'morgan-price', warehouse_id: 'south-shop', destination: 'warehouse' },
+        ],
+      },
+    });
+  });
+
   it('posts a normalized create-tool command and maps the created unit', async () => {
     const calls: Array<{ path: string; body: unknown }> = [];
     const api = createHttpApi({
@@ -31,7 +74,7 @@ describe('createHttpApi tool commands', () => {
         },
         warehouseId: 'north-yard',
         photoCaptured: true,
-        evidence: { note: '  captured  ', mockPhoto: false },
+        evidence: { note: '  captured  ' },
       }),
     ).resolves.toMatchObject({ id: 'TL-201', name: 'Hammer drill' });
     expect(calls).toEqual([

@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import { ErrorState, LoadingState } from '../../components/ui/AsyncState';
 import { PageHeading } from '../../components/layout/PageHeading';
 import { SelectField } from '../../components/ui/SelectField';
+import { SearchField } from '../../components/ui/TextField';
+import { Button } from '../../components/ui/Button';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { useWarehouseQueue } from './use-warehouse-queue';
 import { useWarehouseScopes } from './use-warehouse-scopes';
@@ -10,19 +12,29 @@ import { WarehouseQueueItem } from './WarehouseQueueItem';
 import { WarehouseQueueReviewDialog } from './WarehouseQueueReviewDialog';
 import { useWarehouseQueueReviewController } from './use-warehouse-queue-review-controller';
 import './admin-operations.css';
+import { WarehouseStockDialog } from './WarehouseStockDialog';
+import type { WarehouseQueueItemView } from '../../domain/read-models/warehouse-operations';
 
 type QueueFilter = 'all' | 'request' | 'return';
 
 export function WarehouseQueuePage() {
   const [warehouseId, setWarehouseId] = useState('all');
   const [filter, setFilter] = useState<QueueFilter>('all');
+  const [search, setSearch] = useState('');
+  const [stockOpen, setStockOpen] = useState(false);
   const warehouses = useWarehouseScopes();
   const queue = useWarehouseQueue(warehouseId);
   const summary = useWarehouseOperationsSummary(warehouseId);
-  const items = useMemo(
-    () => (queue.data ?? []).filter((item) => filter === 'all' || item.kind === filter),
-    [filter, queue.data],
-  );
+  const items = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase();
+    return (queue.data ?? []).filter(
+      (item) =>
+        (filter === 'all' || item.kind === filter) &&
+        (!query || `${item.toolName} ${item.personName} ${item.warehouseName}`.toLocaleLowerCase().includes(query)),
+    );
+  }, [filter, queue.data, search]);
+  const requests = items.filter((item) => item.kind === 'request');
+  const returns = items.filter((item) => item.kind === 'return');
   const queryBlocked =
     queue.isFetching ||
     queue.isPaused ||
@@ -72,16 +84,25 @@ export function WarehouseQueuePage() {
             </button>
           ))}
         </div>
-        <SelectField
-          compact
-          label="Warehouse"
-          value={warehouseId}
-          onChange={setWarehouseId}
-          options={[
-            { value: 'all', label: 'All warehouses' },
-            ...(warehouses.data ?? []).map((warehouse) => ({ value: warehouse.id, label: warehouse.name })),
-          ]}
-        />
+        <div className="operations-filters">
+          <SearchField
+            label="Search queue"
+            placeholder="Tool, person, or warehouse…"
+            value={search}
+            onChange={setSearch}
+          />
+          <SelectField
+            compact
+            label="Warehouse"
+            value={warehouseId}
+            onChange={setWarehouseId}
+            options={[
+              { value: 'all', label: 'All warehouses' },
+              ...(warehouses.data ?? []).map((warehouse) => ({ value: warehouse.id, label: warehouse.name })),
+            ]}
+          />
+          <Button onClick={() => setStockOpen(true)}>Add tools</Button>
+        </div>
       </div>
       {queue.isError && <ErrorState message="The queue could not be refreshed." onRetry={() => void queue.refetch()} />}
       {summary.isError && (
@@ -99,16 +120,20 @@ export function WarehouseQueuePage() {
       )}
       <SurfaceCard className="queue-card">
         {items.length ? (
-          <div className="queue-list">
-            {items.map((item) => (
-              <WarehouseQueueItem
-                item={item}
-                busy={reviewController.busy}
-                onReview={reviewController.setReview}
-                key={item.id}
-              />
-            ))}
-          </div>
+          <>
+            <QueueGroup
+              label="Requests to release"
+              items={requests}
+              busy={reviewController.busy}
+              onReview={reviewController.setReview}
+            />
+            <QueueGroup
+              label="Returns to accept"
+              items={returns}
+              busy={reviewController.busy}
+              onReview={reviewController.setReview}
+            />
+          </>
         ) : (
           <p className="admin-empty">Nothing waiting in this view. Requests and returns land here.</p>
         )}
@@ -124,6 +149,39 @@ export function WarehouseQueuePage() {
           onResolve={(decision) => void reviewController.resolve(decision)}
         />
       )}
+      {stockOpen && (
+        <WarehouseStockDialog
+          defaultWarehouseId={warehouseId === 'all' ? undefined : warehouseId}
+          onClose={() => setStockOpen(false)}
+        />
+      )}
     </div>
+  );
+}
+
+function QueueGroup({
+  label,
+  items,
+  busy,
+  onReview,
+}: {
+  label: string;
+  items: WarehouseQueueItemView[];
+  busy: boolean;
+  onReview(item: WarehouseQueueItemView): void;
+}) {
+  if (!items.length) return null;
+  return (
+    <section className="operations-queue-group">
+      <div className="operations-queue-group__heading">
+        <h2>{label}</h2>
+        <span>{items.length}</span>
+      </div>
+      <div className="queue-list">
+        {items.map((item) => (
+          <WarehouseQueueItem item={item} busy={busy} onReview={onReview} key={item.id} />
+        ))}
+      </div>
+    </section>
   );
 }

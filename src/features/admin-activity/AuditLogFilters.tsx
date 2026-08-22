@@ -32,33 +32,46 @@ export function AuditLogFilters({
     [events],
   );
   return (
-    <div className="activity-toolbar">
-      <SearchField
-        label="Search audit log"
-        value={search}
-        onChange={onSearchChange}
-        placeholder="Search actor, tool, action…"
-      />
-      <SelectField
-        compact
-        label="Kind"
-        value={kind}
-        onChange={(value) => onKindChange(value as AuditKindFilter)}
-        options={[
-          { value: 'all', label: 'Everything' },
-          { value: 'custody', label: 'Custody' },
-          { value: 'request', label: 'Requests' },
-          { value: 'flag', label: 'Flags' },
-          { value: 'admin', label: 'Admin' },
-        ]}
-      />
-      <SelectField
-        compact
-        label="Warehouse"
-        value={warehouseId}
-        onChange={onWarehouseChange}
-        options={[{ value: 'all', label: 'All warehouses' }, ...warehouses.map(([value, label]) => ({ value, label }))]}
-      />
-    </div>
+    <>
+      <div className="activity-kind-chips" aria-label="Audit event type">
+        {(
+          [
+            ['all', 'Everything'],
+            ['custody', 'Custody'],
+            ['request', 'Requests'],
+            ['flag', 'Flags'],
+            ['admin', 'Admin'],
+          ] as const
+        ).map(([value, label]) => (
+          <button
+            type="button"
+            key={value}
+            className={kind === value ? 'activity-kind-chip activity-kind-chip--active' : 'activity-kind-chip'}
+            aria-pressed={kind === value}
+            onClick={() => onKindChange(value)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="activity-toolbar">
+        <SearchField
+          label="Search audit log"
+          value={search}
+          onChange={onSearchChange}
+          placeholder="Search actor, tool, action…"
+        />
+        <SelectField
+          compact
+          label="Warehouse"
+          value={warehouseId}
+          onChange={onWarehouseChange}
+          options={[
+            { value: 'all', label: 'All warehouses' },
+            ...warehouses.map(([value, label]) => ({ value, label })),
+          ]}
+        />
+      </div>
+    </>
   );
 }

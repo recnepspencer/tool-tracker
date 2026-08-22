@@ -1,4 +1,3 @@
-import { Button } from '../../components/ui/Button';
 import { OverlayDialog } from '../../components/ui/OverlayDialog';
 import { MEMBER_LIFECYCLE_LABELS, MEMBER_ROLE_LABELS } from '../../domain/people';
 import type { AdminPersonDetail } from '../../domain/read-models/admin';
@@ -22,6 +21,7 @@ export function PersonDrawer({
       label={'Person details for ' + person.name}
       onClose={onClose}
       panelClassName="admin-drawer admin-drawer--person"
+      showCloseButton
     >
       <div className="dialog-heading">
         <span className="eyebrow">Person record</span>
@@ -61,22 +61,19 @@ export function PersonDrawer({
         ))}
         {!person.heldTools.length && <span>No tools in this person’s custody.</span>}
       </div>
-      <div className="admin-detail-list">
-        <span className="eyebrow">Recent audit</span>
-        {person.recentEvents.slice(0, 5).map((event) => (
-          <div key={event.id}>
-            <strong>{event.action}</strong>
-            <span>{event.time}</span>
-          </div>
-        ))}
-      </div>
+      {person.recentEvents.length ? (
+        <div className="admin-detail-list">
+          <span className="eyebrow">Recent audit</span>
+          {person.recentEvents.slice(0, 5).map((event) => (
+            <div key={event.id}>
+              <strong>{event.action}</strong>
+              <span>{event.time}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
       <PersonAccessActions person={person} commandBlocked={commandBlocked} mutation={mutations.setAccess} />
       <PersonRemovalForm person={person} commandBlocked={commandBlocked} mutation={mutations.remove} />
-      <div className="dialog-actions">
-        <Button variant="ghost" onClick={onClose}>
-          Close
-        </Button>
-      </div>
     </OverlayDialog>
   );
 }

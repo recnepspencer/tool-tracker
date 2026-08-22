@@ -118,6 +118,12 @@
   padding-bottom: var(--space-4);
   scrollbar-width: none;
 }
+@media (max-width: 620px) {
+  .worker-activity-screen .activity-filters {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+}
 .worker-activity-screen .activity-filters::-webkit-scrollbar {
   display: none;
 }
@@ -144,7 +150,8 @@
   margin-top: var(--space-16);
 }
 .worker-activity-day {
-  background: var(--side);
+  background: var(--bg);
+  border-bottom: var(--border-width) solid var(--border);
   color: var(--dim);
   font: 500 var(--space-10)/1 var(--font-mono);
   letter-spacing: 0.16em;
@@ -207,6 +214,10 @@
 }
 .worker-activity-screen .worker-activity-copy > span:last-child {
   color: inherit;
+}
+.worker-activity-context {
+  color: var(--muted) !important;
+  font-size: var(--text-md) !important;
 }
 .worker-activity-tags {
   align-items: center;

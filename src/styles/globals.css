@@ -35,3 +35,14 @@ a {
     transition-duration: var(--duration-none) !important;
   }
 }
+.visually-hidden {
+  height: var(--space-1);
+  margin: calc(var(--space-1) * -1);
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: var(--space-1);
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

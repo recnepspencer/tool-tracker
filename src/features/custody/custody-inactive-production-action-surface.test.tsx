@@ -31,7 +31,7 @@ const idleTargetState: TargetState = {
 
 async function expectSelectedWarehouse(user: UserEvent) {
   const listbox = await openFieldOptions(user, screen.getByRole('combobox', { name: 'Warehouse' }));
-  expect(within(listbox).getByRole('option', { name: 'South Shop Warehouse' })).toHaveAttribute(
+  expect(within(listbox).getByRole('option', { name: /South Shop Warehouse/ })).toHaveAttribute(
     'aria-selected',
     'true',
   );
@@ -105,7 +105,7 @@ function ProductionActionPanelHarness({ detail, session }: { detail: ToolDetailV
           action="transfer"
           target={target}
           note=""
-          mockPhoto={false}
+          photo={null}
           canStartHandoff
           detailRefreshing={false}
           busy={mutations.startTransfer.isPending}
@@ -113,7 +113,7 @@ function ProductionActionPanelHarness({ detail, session }: { detail: ToolDetailV
           onAction={() => undefined}
           onTargetChange={setTarget}
           onNoteChange={() => undefined}
-          onMockPhotoChange={() => undefined}
+          onPhotoChange={() => undefined}
           onCloseAction={() => undefined}
           onSubmit={() =>
             void mutations.startTransfer.mutateAsync({

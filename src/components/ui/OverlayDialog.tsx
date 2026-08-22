@@ -1,4 +1,5 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
+import { X } from 'lucide-react';
 import { cx } from '../../lib/cx';
 import { useModalFocusTrap } from './use-modal-focus-trap';
 import './OverlayDialog.css';
@@ -9,12 +10,16 @@ export function OverlayDialog({
   children,
   backdropClassName,
   panelClassName,
+  showCloseButton = false,
+  closeLabel = 'Close dialog',
 }: {
   label: string;
   onClose(): void;
   children: ReactNode;
   backdropClassName?: string;
   panelClassName?: string;
+  showCloseButton?: boolean;
+  closeLabel?: string;
 }) {
   const panelRef = useRef<HTMLElement>(null);
   useModalFocusTrap(true, onClose, panelRef);
@@ -25,6 +30,11 @@ export function OverlayDialog({
       document.body.style.overflow = previousOverflow;
     };
   }, []);
+  useLayoutEffect(() => {
+    if (panelRef.current) panelRef.current.scrollTop = 0;
+    const scrollRegion = panelRef.current?.querySelector<HTMLElement>('[data-overlay-scroll]');
+    if (scrollRegion) scrollRegion.scrollTop = 0;
+  }, [label]);
   return (
     <div
       className={cx('overlay-backdrop', backdropClassName)}
@@ -38,6 +48,11 @@ export function OverlayDialog({
         aria-modal="true"
         aria-label={label}
       >
+        {showCloseButton ? (
+          <button type="button" className="overlay-close" aria-label={closeLabel} onClick={onClose}>
+            <X aria-hidden="true" />
+          </button>
+        ) : null}
         {children}
       </section>
     </div>

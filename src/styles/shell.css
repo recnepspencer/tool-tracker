@@ -9,7 +9,7 @@
   border-bottom: var(--border-width) solid var(--border);
   display: flex;
   justify-content: space-between;
-  min-height: var(--header-height);
+  min-height: var(--header-height-sm);
   padding: 0 var(--pad-header-x);
   position: sticky;
   top: 0;
@@ -40,7 +40,7 @@
 .shell-body {
   display: grid;
   grid-template-columns: var(--space-236) minmax(0, 1fr);
-  min-height: calc(var(--size-viewport) - var(--header-height));
+  min-height: calc(var(--size-viewport) - var(--header-height-sm));
 }
 .side-nav {
   background: var(--side);
@@ -48,7 +48,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
-  padding: var(--space-28) var(--space-14);
+  padding: var(--space-22) var(--space-14);
 }
 .side-nav-heading {
   color: var(--dim);
@@ -113,20 +113,20 @@
 .page-content {
   margin: 0 auto;
   max-width: var(--space-1320);
-  padding: var(--pad-page-y) var(--pad-page-x) var(--pad-page-bottom);
+  padding: var(--space-28) var(--pad-page-x) var(--pad-page-bottom);
 }
 .page-heading {
   align-items: flex-start;
   display: flex;
   gap: var(--space-22);
   justify-content: space-between;
-  margin-bottom: var(--space-30);
+  margin-bottom: var(--space-22);
 }
 .page-heading h1 {
-  font-size: var(--text-hero);
-  letter-spacing: var(--tracking-tighter);
-  line-height: var(--leading-display);
-  margin: var(--space-12) 0;
+  font-size: var(--text-8xl);
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-snug);
+  margin: var(--space-7) 0 var(--space-8);
 }
 .page-heading p {
   color: var(--muted);
@@ -199,7 +199,7 @@
     padding: 0 var(--space-16);
   }
   .page-content {
-    padding: var(--space-28) var(--space-16) var(--space-60);
+    padding: var(--space-24) var(--space-16) var(--space-60);
   }
   .page-heading {
     display: block;

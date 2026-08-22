@@ -48,9 +48,24 @@
 
 .worker-pending-section {
   display: grid;
+  gap: var(--space-18);
+  margin-bottom: var(--space-22);
+}
+.worker-pending-group {
+  display: grid;
+  gap: var(--space-9);
+}
+.worker-pending-group > h2 {
+  color: var(--muted);
+  font: var(--font-eyebrow);
+  letter-spacing: var(--tracking-eyebrow);
+  margin: 0 var(--space-6);
+  text-transform: uppercase;
+}
+.worker-pending-grid {
+  display: grid;
   gap: var(--space-8);
   grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--space-260)), 1fr));
-  margin-bottom: var(--space-22);
 }
 .worker-possession-section {
   margin-top: 0;
@@ -89,6 +104,9 @@
 .worker-tool-row--damaged:hover,
 .worker-tool-row--lost:hover {
   border-color: var(--amber-border);
+}
+.worker-tool-row--transfer-pending {
+  border-color: var(--border-strong);
 }
 .worker-tool-main {
   align-items: center;
@@ -197,21 +215,54 @@
   color: var(--dim-deep);
   margin-left: auto;
 }
-.worker-transfer-button {
+.worker-transfer-control {
+  align-items: stretch;
+  display: grid;
+  flex: 0 0 auto;
+  gap: var(--space-5);
+  justify-items: stretch;
+}
+.worker-transfer-label {
+  color: var(--dim);
+  font: 400 var(--space-9)/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.worker-transfer-button,
+.worker-transfer-state {
+  align-items: center;
   appearance: none;
   background: var(--card-2);
   border: var(--space-1) solid var(--border-strong);
   border-radius: var(--space-999);
   color: var(--ink);
-  cursor: pointer;
+  display: inline-flex;
   flex: 0 0 auto;
   font-size: var(--space-13);
   height: var(--space-34);
+  justify-content: center;
   padding: 0 var(--space-15);
+  white-space: nowrap;
+}
+.worker-transfer-button {
+  cursor: pointer;
   transition:
     background var(--duration-180) ease,
     transform var(--duration-120) ease;
-  white-space: nowrap;
+}
+.worker-transfer-state {
+  color: var(--muted);
+}
+.worker-transfer-state--pending {
+  background: var(--hover);
+  color: var(--ink);
+}
+.worker-transfer-state--checking,
+.worker-transfer-state--unavailable {
+  border-color: var(--border);
+  color: var(--dim);
 }
 .worker-transfer-button:hover {
   background: var(--hover);
@@ -263,7 +314,8 @@
     flex-basis: var(--space-54);
     height: var(--space-54);
   }
-  .worker-transfer-button {
+  .worker-transfer-button,
+  .worker-transfer-state {
     padding: 0 var(--space-11);
   }
 }

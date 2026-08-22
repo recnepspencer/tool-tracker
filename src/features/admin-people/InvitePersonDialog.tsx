@@ -6,6 +6,7 @@ import { TextField } from '../../components/ui/TextField';
 import { MEMBER_ROLE_LABELS, MEMBER_ROLES, type MemberRole } from '../../domain/people';
 import { useAdminMutations, useAdminPeople } from '../admin/use-admin-people';
 import { useAdminWarehouses } from '../admin/use-admin-warehouses';
+import { isValidEmailAddress, normalizeEmailAddress } from '../../domain/email-address';
 
 export function InvitePersonDialog({ onClose }: { onClose(): void }) {
   const warehouses = useAdminWarehouses();
@@ -17,6 +18,7 @@ export function InvitePersonDialog({ onClose }: { onClose(): void }) {
   const [title, setTitle] = useState('');
   const [role, setRole] = useState<MemberRole>('worker');
   const [homeWarehouseId, setHomeWarehouseId] = useState(firstWarehouse);
+  const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
     if (!homeWarehouseId && firstWarehouse) setHomeWarehouseId(firstWarehouse);
@@ -35,23 +37,42 @@ export function InvitePersonDialog({ onClose }: { onClose(): void }) {
     !warehouses.data?.length;
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    const address = normalizeEmailAddress(email);
+    if (!address) {
+      setSubmitError('Enter an email address.');
+      return;
+    }
+    if (!isValidEmailAddress(address)) {
+      setSubmitError('Enter a valid email address.');
+      return;
+    }
+    setSubmitError('');
     try {
-      await mutations.invite.mutateAsync({ name, email, title, role, homeWarehouseId });
+      await mutations.invite.mutateAsync({ name, email: address, title, role, homeWarehouseId });
       onClose();
     } catch {
-      // Keep the draft in place so the server/mock validation message is actionable.
+      // The form stays mounted with its draft and the mutation error below.
     }
   };
-
   return (
-    <OverlayDialog label="Invite a person" onClose={onClose} panelClassName="admin-dialog">
+    <OverlayDialog label="Invite a person" onClose={onClose} panelClassName="admin-dialog" showCloseButton>
       <div className="dialog-heading">
         <span className="eyebrow">People</span>
         <h2>Invite someone new</h2>
       </div>
-      <form className="admin-form" onSubmit={submit}>
+      <form className="admin-form" onSubmit={submit} noValidate>
         <TextField label="Name" value={name} onChange={setName} required />
-        <TextField label="Email" type="email" value={email} onChange={setEmail} required />
+        <TextField
+          label="Email address"
+          type="email"
+          value={email}
+          onChange={(value) => {
+            setEmail(value);
+            setSubmitError('');
+          }}
+          placeholder="name@company.com"
+          required
+        />
         <TextField label="Title" value={title} onChange={setTitle} required />
         <SelectField
           label="Role"
@@ -66,7 +87,10 @@ export function InvitePersonDialog({ onClose }: { onClose(): void }) {
           required
           options={(warehouses.data ?? []).map((warehouse) => ({ value: warehouse.id, label: warehouse.name }))}
         />
-        {mutations.invite.isError && <p className="form-error">{(mutations.invite.error as Error).message}</p>}
+        {submitError ? <p className="form-error">{submitError}</p> : null}
+        {!submitError && mutations.invite.isError ? (
+          <p className="form-error">{(mutations.invite.error as Error).message}</p>
+        ) : null}
         <div className="dialog-actions">
           <Button type="button" variant="ghost" onClick={onClose}>
             Cancel

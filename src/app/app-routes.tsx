@@ -7,7 +7,6 @@ import { PasswordRecoveryPage } from '../features/auth/recovery/PasswordRecovery
 import { WorkerToolsPage } from '../features/worker-tools/WorkerToolsPage';
 import { CheckoutPage } from '../features/worker-catalog/CheckoutPage';
 import { WorkerActivityPage } from '../features/worker-activity/WorkerActivityPage';
-import { WorkerAccountPage } from '../features/worker-account/WorkerAccountPage';
 import { AdminDashboardPage } from '../features/admin-dashboard/AdminDashboardPage';
 import { PeoplePage } from '../features/admin-people/PeoplePage';
 import { PermissionsPage } from '../features/admin-permissions/PermissionsPage';
@@ -21,10 +20,12 @@ import { SettingsPage } from '../features/admin-settings/SettingsPage';
 import { WorkerShell } from './WorkerShell';
 import { AdminShell } from './AdminShell';
 import { RequireAnonymous, RequireRole, RequireSession } from './route-guards';
+import { RouteScrollRestoration } from './RouteScrollRestoration';
 
 export function AppRoutes() {
   return (
     <HashRouter>
+      <RouteScrollRestoration />
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route element={<RequireAnonymous />}>
@@ -41,7 +42,6 @@ export function AppRoutes() {
               <Route path="/worker/tools" element={<WorkerToolsPage />} />
               <Route path="/worker/checkout" element={<CheckoutPage />} />
               <Route path="/worker/activity" element={<WorkerActivityPage />} />
-              <Route path="/worker/account" element={<WorkerAccountPage />} />
             </Route>
           </Route>
           <Route element={<RequireRole role="admin" />}>

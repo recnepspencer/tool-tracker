@@ -338,11 +338,18 @@
   white-space: nowrap;
 }
 .worker-checkout-screen .catalog-availability {
+  background: var(--green-bg);
+  border: var(--border-width) solid var(--green-border);
+  border-radius: var(--radius-pill);
   display: inline-block;
   font-size: var(--space-9);
   margin-top: var(--space-9);
   padding: var(--space-4) var(--space-8);
   text-align: left;
+}
+.worker-checkout-screen .catalog-availability:not(.catalog-availability--available) {
+  background: var(--surface-2);
+  border-color: var(--border);
 }
 .worker-checkout-screen .catalog-card-subtitle {
   font-size: var(--space-11);

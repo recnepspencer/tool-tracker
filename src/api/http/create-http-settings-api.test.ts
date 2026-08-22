@@ -106,13 +106,13 @@ describe('HTTP settings boundary', () => {
       body: { actor_id: 'sam-ochoa', expected_revision: 1 },
     });
     response = { operation: 'reset-demo-data', seed_revision: 'seed-v1' };
-    await expect(api.resetDemoData({ actorId: 'sam-ochoa', confirmation: 'RESET DEMO DATA' })).resolves.toEqual({
+    await expect(api.resetDemoData({ actorId: 'sam-ochoa', confirmation: 'RESET WORKSPACE DATA' })).resolves.toEqual({
       operation: 'reset-demo-data',
       seedRevision: 'seed-v1',
     });
     expect(calls[4]).toEqual({
       path: '/api/admin/settings/reset-demo-data',
-      body: { actor_id: 'sam-ochoa', confirmation: 'RESET DEMO DATA' },
+      body: { actor_id: 'sam-ochoa', confirmation: 'RESET WORKSPACE DATA' },
     });
     response = mutationReceipt('delete-category');
     await expect(
@@ -125,7 +125,7 @@ describe('HTTP settings boundary', () => {
     ).rejects.toThrow('settings handoffs');
 
     response = { operation: 'reset-demo-data', seed_revision: '' };
-    await expect(api.resetDemoData({ actorId: 'sam-ochoa', confirmation: 'RESET DEMO DATA' })).rejects.toThrow(
+    await expect(api.resetDemoData({ actorId: 'sam-ochoa', confirmation: 'RESET WORKSPACE DATA' })).rejects.toThrow(
       'seed revision',
     );
   });

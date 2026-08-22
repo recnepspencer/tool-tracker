@@ -1,4 +1,5 @@
 import type { ActivityView } from '../../domain/read-models/activity';
+import { responsiveToolImageSource } from '../../components/ui/responsive-image';
 import '../../styles/activity-indicator.css';
 
 export function ActivityFeed({ events, onSelect }: { events: ActivityView[]; onSelect(toolUnitId: string): void }) {
@@ -13,10 +14,22 @@ export function ActivityFeed({ events, onSelect }: { events: ActivityView[]; onS
           aria-label={`Open ${event.toolName} details`}
         >
           <span className="worker-activity-photo">
-            <img src={event.imageSrc} alt="" loading="lazy" />
+            <img
+              src={event.imageSrc}
+              srcSet={responsiveToolImageSource(event.imageSrc)}
+              sizes="46px"
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
           </span>
           <span className="worker-activity-copy">
-            <strong>{event.action}</strong>
+            <strong>
+              {event.actor} · {event.action}
+            </strong>
+            <span className="worker-activity-context">
+              {event.toolName} · {event.warehouseName}
+            </span>
             <span className="worker-activity-tags">
               <span className={`worker-activity-tag worker-activity-tag--${event.kind}`}>
                 {activityLabel(event.kind)}

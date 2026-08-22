@@ -24,6 +24,9 @@ export function useModalFocusTrap(open: boolean, onClose: () => void, containerR
       container.focus();
     }
     const onKeyDown = (event: KeyboardEvent) => {
+      const modalDialogs = [...document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]')];
+      const topModal = modalDialogs[modalDialogs.length - 1];
+      if (topModal && topModal !== container) return;
       if (event.key === 'Escape') {
         event.preventDefault();
         onCloseRef.current();

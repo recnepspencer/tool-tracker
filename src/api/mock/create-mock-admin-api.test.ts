@@ -55,7 +55,14 @@ describe('createMockApi admin projections', () => {
     const database = createMockDatabase();
     database.update((state) => ({ ...state, events: [...state.events].reverse() }));
     const summary = await createMockApi(database).admin.getSummary({ actorId: 'sam-ochoa' });
-    expect(summary.recentEvents.map((event) => event.id)).toEqual(['EV-4', 'EV-1', 'EV-2', 'EV-3', 'EV-5', 'EV-6']);
-    expect(summary.recentEvents[0].timestamp).toBe('2026-08-17T10:18:00-06:00');
+    expect(summary.recentEvents.map((event) => event.id)).toEqual([
+      'EV-SEED-11',
+      'EV-SEED-10',
+      'EV-SEED-8',
+      'EV-SEED-7',
+      'EV-4',
+      'EV-1',
+    ]);
+    expect(summary.recentEvents[0].timestamp).toBe('2026-08-18T09:20:00-06:00');
   });
 });

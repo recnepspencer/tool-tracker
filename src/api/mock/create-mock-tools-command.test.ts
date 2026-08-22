@@ -3,6 +3,40 @@ import { createMockApi } from './create-mock-api';
 import { createMockDatabase } from './mock-database';
 
 describe('createMockApi tool creation commands', () => {
+  it('creates warehouse batches atomically and enforces the manager warehouse scope', async () => {
+    const database = createMockDatabase({ clock: () => '2026-08-18T09:00:00-06:00' });
+    const api = createMockApi(database);
+    const warehouseTool = (warehouseId: string, model: string) => ({
+      actorId: 'morgan-price',
+      definition: {
+        name: 'Batch conduit bender',
+        brand: 'Greenlee',
+        model,
+        categoryId: 'category-hand-tools',
+        imageKey: 'tool-photo-placeholder.svg',
+      },
+      warehouseId,
+      destination: 'warehouse' as const,
+      photoCaptured: false,
+    });
+    const before = database.read();
+
+    await expect(
+      api.tools.createTools([warehouseTool('south-shop', 'B-1'), warehouseTool('north-yard', 'B-2')]),
+    ).rejects.toThrow('cannot manage that warehouse');
+    expect(database.read()).toEqual(before);
+
+    const created = await api.tools.createTools([
+      warehouseTool('south-shop', 'B-1'),
+      warehouseTool('south-shop', 'B-2'),
+    ]);
+    expect(created).toHaveLength(2);
+    expect(new Set(created.map((tool) => tool.id)).size).toBe(2);
+    expect(database.read().events.filter((event) => created.some((tool) => tool.id === event.toolUnitId))).toHaveLength(
+      2,
+    );
+  });
+
   it('creates a captured tool through the shared adapter and projects it everywhere', async () => {
     const database = createMockDatabase({ clock: () => '2026-08-18T09:00:00-06:00' });
     const api = createMockApi(database);
@@ -17,13 +51,19 @@ describe('createMockApi tool creation commands', () => {
       },
       warehouseId: 'north-yard',
       photoCaptured: true,
-      evidence: { note: 'Captured at the truck', mockPhoto: true },
+      evidence: {
+        note: 'Captured at the truck',
+        photo: { fileName: 'proof.jpg', src: 'data:image/jpeg;base64,cHJvb2Y=' },
+      },
     });
     expect(created.name).toBe('Field clamp');
     expect((await api.tools.listTools()).some((tool) => tool.id === created.id)).toBe(true);
     expect((await api.activity.listActivity()).find((event) => event.toolUnitId === created.id)).toMatchObject({
       action: "Added Field clamp to Ray Torres's tools",
-      evidence: { note: 'Captured at the truck', mockPhoto: true },
+      evidence: {
+        note: 'Captured at the truck',
+        photo: { fileName: 'proof.jpg', src: 'data:image/jpeg;base64,cHJvb2Y=' },
+      },
     });
     await expect(
       api.tools.createTool({
@@ -86,7 +126,7 @@ describe('createMockApi tool creation commands', () => {
         warehouseId: 'north-yard',
         photoCaptured: false,
       }),
-    ).rejects.toThrow('mock tool photo');
+    ).rejects.toThrow('A tool photo is required');
     expect(database.read()).toEqual(before);
     const first = await api.tools.createTool({
       actorId: 'ray-torres',
@@ -124,6 +164,28 @@ describe('createMockApi tool creation commands', () => {
       userId: 'ray-torres',
     });
     expect(database.read().events.filter((event) => event.toolUnitId === second.id)).toHaveLength(1);
+  });
+
+  it('rejects malformed destinations instead of treating them as worker custody', async () => {
+    const database = createMockDatabase();
+    const api = createMockApi(database);
+    const before = database.read();
+    await expect(
+      api.tools.createTool({
+        actorId: 'ray-torres',
+        definition: {
+          name: 'Malformed destination tool',
+          brand: 'Klein',
+          model: 'MD-1',
+          categoryId: 'category-hand-tools',
+          imageKey: 'hammer-drill.png',
+        },
+        warehouseId: 'north-yard',
+        photoCaptured: true,
+        destination: 'truck' as unknown as 'worker',
+      }),
+    ).rejects.toThrow('destination must be worker or warehouse');
+    expect(database.read()).toEqual(before);
   });
 
   it('keeps tool creation on the canonical warehouse id when its display name changes', async () => {

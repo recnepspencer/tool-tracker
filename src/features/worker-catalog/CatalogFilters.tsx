@@ -1,5 +1,6 @@
 import { createPortal } from 'react-dom';
-import { useEffect, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useRef, type Dispatch, type SetStateAction } from 'react';
+import { useModalFocusTrap } from '../../components/ui/use-modal-focus-trap';
 import type { ToolCatalogItem } from '../../domain/read-models/tools';
 import { catalogCategories, catalogWarehouses, type CatalogFilters as CatalogFiltersState } from './catalog-selectors';
 
@@ -16,6 +17,8 @@ export function CatalogFilters({
   onClear(): void;
   onClose(): void;
 }) {
+  const sheetRef = useRef<HTMLElement>(null);
+  useModalFocusTrap(true, onClose, sheetRef);
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -35,7 +38,13 @@ export function CatalogFilters({
         aria-label="Close filters"
         onClick={onClose}
       />
-      <section className="worker-filter-sheet" role="dialog" aria-modal="true" aria-label="Catalog filters">
+      <section
+        ref={sheetRef}
+        className="worker-filter-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Catalog filters"
+      >
         <span className="worker-sheet-handle" />
         <div className="worker-filter-heading">
           <h2>Filter</h2>

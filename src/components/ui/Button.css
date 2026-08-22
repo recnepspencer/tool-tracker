@@ -18,8 +18,14 @@ a:focus-visible {
   outline-offset: var(--focus-ring-offset);
 }
 .button:disabled {
-  cursor: wait;
-  opacity: var(--opacity-disabled);
+  box-shadow: none;
+  cursor: not-allowed;
+  filter: saturate(0.25);
+  opacity: var(--opacity-disabled-strong);
+}
+.button:focus:not(:focus-visible),
+a:focus:not(:focus-visible) {
+  outline: none;
 }
 .button--full {
   width: 100%;

@@ -6,6 +6,7 @@ import { createMockApi } from '../../api/mock/create-mock-api';
 import { createMockDatabase } from '../../api/mock/mock-database';
 import { createMemorySessionStore, renderApp } from '../../test/render-app';
 import { WarehousePrefetchHarness, WarehouseProjectionToggle } from './test-support/warehouse-projection-harness';
+import { chooseFieldOption } from '../../test/choose-field-option';
 
 describe('warehouse operations surfaces', () => {
   beforeEach(() => {
@@ -21,15 +22,14 @@ describe('warehouse operations surfaces', () => {
     renderApp(<AppRoutes />, { api: createMockApi(database), sessionStore: createMemorySessionStore('sam-ochoa') });
     expect(await screen.findByRole('heading', { name: 'Queue' })).toBeInTheDocument();
     expect(screen.getByText('Bandsaw')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Review' }));
+    const requestCard = screen.getByText('Bandsaw').closest('article');
+    expect(requestCard).not.toBeNull();
+    await user.click(within(requestCard!).getByRole('button', { name: 'Release to worker' }));
     const dialog = await screen.findByRole('dialog', { name: 'Review Bandsaw' });
     expect(dialog).toContainElement(document.activeElement as HTMLElement);
     await user.type(within(dialog).getByLabelText('Decision note'), 'Approved for the morning crew');
     await user.click(within(dialog).getByRole('button', { name: 'Release to worker' }));
     await waitFor(() => expect(screen.queryByText('Bandsaw')).not.toBeInTheDocument());
-    await user.click(screen.getByRole('link', { name: 'Operations' }));
-    expect(await screen.findByRole('heading', { name: 'Queue' })).toBeInTheDocument();
-    await user.click(screen.getByRole('link', { name: 'Operations' }));
     await waitFor(() =>
       expect(database.read().handoffs.find((handoff) => handoff.id === 'HO-1')?.status).toBe('accepted'),
     );
@@ -40,6 +40,40 @@ describe('warehouse operations surfaces', () => {
     expect(await screen.findByRole('heading', { name: 'Inventory' })).toBeInTheDocument();
     const row = screen.getByText('Bandsaw').closest('tr');
     expect(row).toHaveTextContent('Ray Torres');
+  });
+
+  it('adds a matching batch directly to warehouse inventory', async () => {
+    const user = userEvent.setup();
+    const database = createMockDatabase({ clock: () => '2026-08-19T09:00:00-06:00' });
+    renderApp(<AppRoutes />, { api: createMockApi(database), sessionStore: createMemorySessionStore('sam-ochoa') });
+    expect(await screen.findByRole('heading', { name: 'Queue' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Add tools' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Add tools to inventory' });
+    await user.type(within(dialog).getByLabelText('Tool name'), 'Warehouse cart');
+    await user.type(within(dialog).getByLabelText('Brand'), 'Greenlee');
+    await user.type(within(dialog).getByLabelText('Model'), 'WC-2');
+    await chooseFieldOption(user, within(dialog).getByRole('combobox', { name: 'Category' }), 'Power tools');
+    const quantity = within(dialog).getByLabelText('Quantity');
+    await user.clear(quantity);
+    await user.type(quantity, '2');
+    const submit = within(dialog).getByRole('button', { name: 'Add 2 tools' });
+    await waitFor(() => expect(submit).toBeEnabled());
+    await user.click(submit);
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Add tools to inventory' })).not.toBeInTheDocument(),
+    );
+    const state = database.read();
+    const definitionIds = new Set(
+      state.definitions.filter((definition) => definition.name.includes('Warehouse cart')).map(({ id }) => id),
+    );
+    const createdUnits = state.units.filter((unit) => definitionIds.has(unit.definitionId));
+    expect(createdUnits).toHaveLength(2);
+    createdUnits.forEach((unit) => {
+      expect(state.custody.find((record) => record.toolUnitId === unit.id)?.holder).toEqual({
+        type: 'warehouse',
+        warehouseId: 'north-yard',
+      });
+    });
   });
 
   it('refetches active and inactive warehouse projections after a decision', async () => {
@@ -128,12 +162,14 @@ describe('warehouse operations surfaces', () => {
     await waitFor(() => {
       expect(screen.getByTestId('warehouse-probe-tool-holder')).toHaveTextContent('North Yard');
       expect(screen.getByTestId('warehouse-probe-summary-checked-out')).toHaveTextContent('8');
-      expect(screen.getByTestId('warehouse-probe-pending')).toHaveTextContent('3');
+      expect(screen.getByTestId('warehouse-probe-pending')).toHaveTextContent('4');
     });
     await user.click(screen.getByRole('button', { name: 'Disable projection probes' }));
     expect(screen.queryByTestId('warehouse-projection-probe')).not.toBeInTheDocument();
     const before = { ...calls };
-    const release = screen.getByRole('button', { name: 'Release to worker' });
+    const bandsawRequest = screen.getByText('Bandsaw').closest('article');
+    expect(bandsawRequest).not.toBeNull();
+    const release = within(bandsawRequest!).getByRole('button', { name: 'Release to worker' });
     await waitFor(() => expect(release).toBeEnabled());
     await user.click(release);
     const dialog = await screen.findByRole('dialog', { name: 'Review Bandsaw' });
@@ -163,7 +199,7 @@ describe('warehouse operations surfaces', () => {
       expect(screen.getByTestId('warehouse-probe-ray-held-tools')).toHaveTextContent('8');
       expect(screen.getByTestId('warehouse-probe-person-held-tools')).toHaveTextContent('8');
       expect(screen.getByTestId('warehouse-probe-north-out')).toHaveTextContent('5');
-      expect(screen.getByTestId('warehouse-probe-pending')).toHaveTextContent('2');
+      expect(screen.getByTestId('warehouse-probe-pending')).toHaveTextContent('3');
       expect(screen.getByTestId('warehouse-probe-targets')).not.toHaveTextContent('0');
       expect(screen.getByTestId('warehouse-probe-detail-holder')).toHaveTextContent('Ray Torres');
     });
@@ -238,15 +274,16 @@ describe('warehouse operations surfaces', () => {
     expect(
       await screen.findByText('The queue summary could not be refreshed. Queue decisions remain available.'),
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Release to worker' })).toBeEnabled();
+    expect(screen.queryByLabelText('Warehouse operations summary')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Release to worker' })[0]).toBeEnabled();
     cleanup();
 
     window.location.hash = '#/admin/operations/queue';
     renderApp(<AppRoutes />, { api: baseApi, sessionStore: createMemorySessionStore('sam-ochoa') });
-    expect(await screen.findByRole('tab', { name: 'Requests 1' })).toBeInTheDocument();
-    await user.click(screen.getByRole('tab', { name: 'Returns 0' }));
-    expect(screen.getByText('Nothing waiting in this view. Requests and returns land here.')).toBeInTheDocument();
-    await user.click(screen.getByRole('tab', { name: 'All waiting 1' }));
+    expect(await screen.findByRole('tab', { name: 'Requests 2' })).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'Returns 1' }));
+    expect(screen.getByRole('heading', { name: 'Returns to accept' })).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'All waiting 3' }));
     const warehouse = screen.getByRole('combobox', { name: 'Warehouse' });
     await user.click(warehouse);
     await user.click(screen.getByRole('option', { name: 'South Shop' }));

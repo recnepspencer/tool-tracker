@@ -1,6 +1,7 @@
 import type { HolderDto } from './http-holder-types';
 import type { ToolLifecycle } from '../../domain/tool';
 import type { HandoffKind } from '../../domain/custody';
+import type { EvidenceDto } from './http-evidence';
 
 export interface PendingHandoffDto {
   handoff_id: string;
@@ -14,5 +15,5 @@ export interface PendingHandoffDto {
   requested_at: string;
   lifecycle: ToolLifecycle;
   kind?: HandoffKind;
-  evidence?: { note?: string; mock_photo?: boolean };
+  evidence?: EvidenceDto;
 }

@@ -7,6 +7,7 @@ import { filterAuditEvents, type AuditKindFilter } from './activity-selectors';
 import { AuditLog } from './AuditLog';
 import { AuditLogFilters } from './AuditLogFilters';
 import './admin-activity.css';
+import { Button } from '../../components/ui/Button';
 
 export function AdminActivityPage() {
   const audit = useAdminAudit();
@@ -28,6 +29,12 @@ export function AdminActivityPage() {
         description="Immutable operational history across tools, people, and settings."
         status="Read only"
       />
+      <div className="admin-toolbar admin-toolbar--audit">
+        <span className="section-count">{events.length} events</span>
+        <Button variant="secondary" onClick={() => exportAuditLog(events)}>
+          Export log
+        </Button>
+      </div>
       <AuditLogFilters
         events={audit.data}
         search={search}
@@ -43,4 +50,30 @@ export function AdminActivityPage() {
       </Link>
     </div>
   );
+}
+
+function exportAuditLog(events: ReturnType<typeof filterAuditEvents>) {
+  const quote = (value: string) => `"${value.replaceAll('"', '""')}"`;
+  const rows = events.map((event) =>
+    [
+      event.timestamp,
+      event.actor,
+      event.action,
+      event.toolName ?? '',
+      event.toolUnitId ?? '',
+      event.warehouseName ?? '',
+      event.kind,
+    ]
+      .map(quote)
+      .join(','),
+  );
+  const blob = new Blob([['Timestamp,Actor,Action,Tool,Unit,Warehouse,Kind', ...rows].join('\n')], {
+    type: 'text/csv',
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'nelson-electric-audit.csv';
+  link.click();
+  URL.revokeObjectURL(url);
 }

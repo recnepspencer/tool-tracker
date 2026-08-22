@@ -28,7 +28,6 @@ export function CompanySettingsForm({
     <SurfaceCard>
       <div className="settings-card-heading">
         <span className="eyebrow">Company profile</span>
-        <span className="admin-meta-kind">Revision {company.revision}</span>
       </div>
       <TextField label="Company name" value={name} onChange={setName} />
       <TextField label="Address" value={address} onChange={setAddress} />

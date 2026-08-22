@@ -11,8 +11,7 @@ interface ToolDetailsFormProps {
   busy: boolean;
   categories: readonly ToolCategoryView[];
   warehouses: readonly { id: string; name: string }[];
-  uploading: boolean;
-  uploadProgress: number;
+  photoDataUrl: string;
   active: boolean;
   onUpdate(key: keyof ToolDraft, value: string): void;
   onRetake(): void;
@@ -26,8 +25,7 @@ export function ToolDetailsForm({
   busy,
   categories,
   warehouses,
-  uploading,
-  uploadProgress,
+  photoDataUrl,
   active,
   onUpdate,
   onRetake,
@@ -37,7 +35,7 @@ export function ToolDetailsForm({
   const [optionalOpen, setOptionalOpen] = useState(false);
 
   return (
-    <div className="worker-add-step worker-add-details-step" aria-hidden={!active}>
+    <div className="worker-add-step worker-add-details-step" aria-hidden={!active} {...(!active ? { inert: '' } : {})}>
       <div className="worker-add-step-header">
         <button type="button" className="worker-retake-button" onClick={onRetake}>
           ‹&nbsp; Retake
@@ -50,15 +48,11 @@ export function ToolDetailsForm({
         </div>
       </div>
       <div className="worker-details-scroll">
-        <div className={`worker-upload-tile${uploading ? ' worker-upload-tile--uploading' : ''}`}>
-          <span className="worker-camera-label">Tool photo</span>
-          {uploading ? <span className="worker-upload-sweep" aria-hidden="true" /> : null}
+        <div className="worker-upload-tile">
+          <img src={photoDataUrl} alt="Selected tool" />
           <span className="worker-upload-chip">
-            <span className={`worker-upload-dot${uploading ? ' worker-upload-dot--blink' : ''}`} />
-            {uploading ? `Uploading ${uploadProgress}%` : 'Photo saved'}
-          </span>
-          <span className="worker-upload-progress">
-            <span style={{ width: `${uploadProgress}%` }} />
+            <span className="worker-upload-dot" />
+            Photo selected
           </span>
         </div>
 

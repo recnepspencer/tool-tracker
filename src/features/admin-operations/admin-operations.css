@@ -37,13 +37,14 @@
 }
 .operations-filters {
   align-items: end;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: var(--space-10);
+  grid-template-columns: minmax(var(--space-220), 1fr) minmax(var(--space-170), var(--space-220)) auto;
   min-width: min(100%, var(--space-420));
+  width: min(100%, var(--space-680));
 }
 .operations-filters .field--search {
-  flex: 1 1 var(--space-220);
+  min-width: 0;
 }
 .operations-callout {
   color: var(--muted);
@@ -143,6 +144,47 @@
   display: grid;
   gap: var(--space-12);
 }
+.operations-form-grid {
+  display: grid;
+  gap: var(--space-10);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.operations-metrics {
+  display: grid;
+  gap: var(--space-10);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: var(--space-16);
+}
+.operations-metric {
+  background: var(--card);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-panel);
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-14);
+}
+.operations-metric strong {
+  font-size: var(--text-5xl);
+  font-weight: var(--weight-medium);
+}
+.operations-queue-group + .operations-queue-group {
+  border-top: var(--border-width) solid var(--border-strong);
+}
+.operations-queue-group__heading {
+  align-items: center;
+  background: var(--surface-2);
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-10) var(--space-20);
+}
+.operations-queue-group__heading h2 {
+  font-size: var(--text-base);
+  margin: 0;
+}
+.operations-queue-group__heading span {
+  color: var(--dim);
+  font: var(--font-mono-xs);
+}
 .inventory-table-wrap {
   overflow-x: auto;
 }
@@ -196,20 +238,29 @@
     flex-direction: column;
   }
   .operations-filters {
-    flex-direction: column;
+    grid-template-columns: minmax(0, 1fr);
     min-width: 0;
+    width: 100%;
   }
   .operations-filters > * {
     width: 100%;
+  }
+  .operations-filters .field--search {
+    flex: none;
+  }
+  .operations-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .queue-item {
     grid-template-columns: 1fr;
   }
   .flagged-row {
-    grid-template-columns: 1fr;
+    gap: var(--space-12);
+    grid-template-columns: var(--control-height) minmax(0, 1fr);
+    padding: var(--space-14);
   }
   .flagged-row__heading {
-    flex-direction: column;
+    gap: var(--space-8);
   }
   .queue-item__heading {
     flex-direction: column;
@@ -270,5 +321,8 @@
     color: var(--dim);
     font: var(--font-mono-xs);
     text-transform: uppercase;
+  }
+  .operations-form-grid {
+    grid-template-columns: 1fr;
   }
 }

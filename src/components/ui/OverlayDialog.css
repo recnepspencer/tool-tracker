@@ -1,12 +1,42 @@
 .overlay-backdrop {
-  align-items: stretch;
+  align-items: center;
   background: var(--scrim);
   display: flex;
   inset: 0;
-  justify-content: flex-end;
+  justify-content: center;
   position: fixed;
   z-index: var(--z-overlay);
 }
 .overlay-panel {
   min-width: 0;
+  position: relative;
+}
+.overlay-close {
+  align-items: center;
+  appearance: none;
+  background: var(--field);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-full);
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: var(--icon-button-size);
+  justify-content: center;
+  position: absolute;
+  right: var(--space-18);
+  top: var(--space-18);
+  width: var(--icon-button-size);
+  z-index: var(--z-2);
+}
+.overlay-close:hover {
+  border-color: var(--border-strong);
+  color: var(--ink);
+}
+.overlay-close:focus-visible {
+  outline: var(--focus-ring-width) solid var(--blue);
+  outline-offset: var(--focus-ring-offset);
+}
+.overlay-close svg {
+  height: var(--space-18);
+  width: var(--space-18);
 }

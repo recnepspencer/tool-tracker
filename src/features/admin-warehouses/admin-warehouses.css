@@ -14,6 +14,15 @@
   color: var(--muted);
   margin: 0;
 }
+.warehouse-admin-status {
+  display: flex;
+  gap: var(--space-6);
+  margin-bottom: var(--space-8);
+}
+.warehouse-admin-manager {
+  font-size: var(--text-body);
+  margin-top: var(--space-7) !important;
+}
 .warehouse-admin-card .card-heading {
   align-items: flex-start;
 }

@@ -1,10 +1,8 @@
 import { ErrorState, LoadingState } from '../../components/ui/AsyncState';
 import { PageHeading } from '../../components/layout/PageHeading';
-import { useTheme } from '../../app/theme-context';
 import { useSession } from '../../app/session-context';
 import { useCompanyProfile } from '../settings/use-company-profile';
 import { useToolCategories } from '../settings/use-tool-categories';
-import { AppearanceSettingsCard } from './AppearanceSettingsCard';
 import { AccountSettingsCard } from './AccountSettingsCard';
 import { CategoryManager } from './CategoryManager';
 import { CompanySettingsForm } from './CompanySettingsForm';
@@ -16,7 +14,6 @@ export function SettingsPage() {
   const company = useCompanyProfile();
   const categories = useToolCategories();
   const mutations = useSettingsMutations();
-  const { theme, toggleTheme } = useTheme();
   const { session } = useSession();
   if (company.isPending || categories.isPending) return <LoadingState label="Loading settings…" />;
   if (company.isError || categories.isError || !company.data || !categories.data)
@@ -48,8 +45,7 @@ export function SettingsPage() {
       <PageHeading
         eyebrow="Admin view · Settings"
         title="Settings"
-        description="Manage the company profile, tool taxonomy, appearance, and workspace lifecycle."
-        status="Local system"
+        description="Manage the company profile, tool categories, account, and workspace lifecycle."
       />
       {mutationError && (
         <p className="form-error" role="alert">
@@ -58,7 +54,6 @@ export function SettingsPage() {
       )}
       <div className="settings-grid">
         <CompanySettingsForm company={company.data} mutations={mutations} blocked={queryBlocked} />
-        <AppearanceSettingsCard theme={theme} onToggle={toggleTheme} />
         <CategoryManager categories={categories.data} mutations={mutations} blocked={queryBlocked} />
         <AccountSettingsCard session={session} />
         <DangerZone mutations={mutations} blocked={queryBlocked} />

@@ -98,6 +98,9 @@
   letter-spacing: var(--tracking-tight);
   margin: var(--space-11) 0 var(--space-8);
 }
+.panel-heading h2:focus {
+  outline: none;
+}
 .panel-heading p {
   color: var(--muted);
   line-height: var(--leading-prose);
@@ -217,5 +220,27 @@
   }
   .auth-panel {
     padding: var(--space-42) var(--space-24) var(--space-60);
+  }
+}
+@media (max-width: 620px) {
+  .auth-hero {
+    min-height: 0;
+    padding: var(--space-20);
+  }
+  .auth-brand {
+    margin-bottom: var(--space-18);
+  }
+  .auth-hero h1 {
+    font-size: var(--text-9xl);
+  }
+  .auth-hero p {
+    font-size: var(--text-base);
+    max-width: var(--space-420);
+  }
+  .auth-proof {
+    display: none;
+  }
+  .auth-panel {
+    padding: var(--space-30) var(--space-20) var(--space-60);
   }
 }

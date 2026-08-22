@@ -17,6 +17,8 @@ export interface CreateToolInput {
   };
   warehouseId: string;
   photoCaptured: boolean;
+  /** Workers take custody by default; warehouse operations can add stock directly to the selected warehouse. */
+  destination?: 'worker' | 'warehouse';
   serial?: string;
   price?: string;
   evidence?: CustodyEvidence;
@@ -67,6 +69,7 @@ export interface ToolsApi {
   listCatalog(): Promise<ToolCatalogItem[]>;
   getToolDetail(toolUnitId: string): Promise<ToolDetailView>;
   createTool(input: CreateToolInput): Promise<ToolView>;
+  createTools(inputs: CreateToolInput[]): Promise<ToolView[]>;
   updateTool(input: UpdateToolInput): Promise<ToolView>;
   flagTool(input: FlagToolInput): Promise<ToolView>;
   restoreTool(input: RestoreToolInput): Promise<ToolView>;

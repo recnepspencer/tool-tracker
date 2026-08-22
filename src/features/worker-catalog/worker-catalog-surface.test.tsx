@@ -23,6 +23,14 @@ describe('worker catalog surfaces', () => {
     expect(screen.getByAltText('Hammer drill product photo')).toHaveAttribute('fetchpriority', 'high');
     expect(within(filters).getByRole('button', { name: 'Available only' })).toHaveAttribute('aria-pressed', 'true');
     await user.click(within(filters).getByRole('button', { name: 'Done' }));
+    const filterButton = screen.getByRole('button', { name: 'Filter catalog' });
+    await user.click(filterButton);
+    filters = screen.getByRole('dialog', { name: 'Catalog filters' });
+    await user.tab({ shift: true });
+    expect(within(filters).getByRole('button', { name: 'Done' })).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog', { name: 'Catalog filters' })).not.toBeInTheDocument();
+    expect(filterButton).toHaveFocus();
     const hammerCard = screen.getByText('Hammer drill').closest('article') as HTMLElement;
     expect(hammerCard).toHaveAttribute('aria-label', 'Open Hammer drill');
     expect(within(hammerCard).queryByRole('button', { name: /Check out/ })).not.toBeInTheDocument();
@@ -30,8 +38,8 @@ describe('worker catalog surfaces', () => {
     expect(within(hammerCard).queryByText('Riverside Depot')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Open Hammer drill' }));
     const requestDialog = await screen.findByRole('dialog', { name: 'Tool details' });
-    expect(within(requestDialog).getByText('Request this tool')).toBeInTheDocument();
-    expect(within(requestDialog).queryByRole('switch', { name: /Add an optional photo/ })).not.toBeInTheDocument();
+    expect(within(requestDialog).getByRole('heading', { name: 'Request from South Shop' })).toBeInTheDocument();
+    expect(requestDialog.querySelector('input[type="file"]')).not.toBeInTheDocument();
     await user.click(within(requestDialog).getByRole('combobox', { name: 'Warehouse' }));
     const warehouseOptions = screen.getByRole('dialog', { name: 'Choose Warehouse' });
     expect(within(warehouseOptions).getByRole('option', { name: /South Shop/ })).toBeInTheDocument();
@@ -68,7 +76,7 @@ describe('worker catalog surfaces', () => {
     await user.click(screen.getByRole('button', { name: 'Clear filters' }));
     await user.click(screen.getByRole('button', { name: 'Open Rotary hammer' }));
     const dialog = await screen.findByRole('dialog', { name: 'Tool details' });
-    expect(within(dialog).getByText('Request this tool')).toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', { name: 'Request from North Yard' })).toBeInTheDocument();
     expect(within(dialog).getAllByText('North Yard')).toHaveLength(2);
     expect(within(dialog).getByText('Added a tool to inventory')).toBeInTheDocument();
   }, 15000);

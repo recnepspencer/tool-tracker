@@ -2,13 +2,15 @@ import { useState } from 'react';
 import type { HolderRef } from '../../domain/custody';
 import type { HandoffAction } from '../../domain/custody';
 import type { PendingHandoffView } from '../../domain/read-models/custody';
+import type { CustodyPhotoEvidence } from '../../domain/evidence';
 import { useCustodyMutations } from './use-custody-mutations';
 
 interface PendingHandoffActionControllerInput {
   handoff: PendingHandoffView;
   profileId: string;
   note: string;
-  mockPhoto: boolean;
+  photo: CustodyPhotoEvidence | null;
+  photoBusy: boolean;
   queryBlocked: boolean;
 }
 
@@ -16,7 +18,8 @@ export function usePendingHandoffActionController({
   handoff,
   profileId,
   note,
-  mockPhoto,
+  photo,
+  photoBusy,
   queryBlocked,
 }: PendingHandoffActionControllerInput) {
   const mutations = useCustodyMutations();
@@ -29,12 +32,10 @@ export function usePendingHandoffActionController({
     mutations.updateTransfer.isPending;
 
   const act = async (action: HandoffAction): Promise<boolean> => {
-    if (queryBlocked || mutationBusy) return false;
+    if (queryBlocked || mutationBusy || photoBusy) return false;
     setError(null);
     const evidence =
-      note.trim() || mockPhoto
-        ? { ...(note.trim() ? { note: note.trim() } : {}), ...(mockPhoto ? { mockPhoto: true } : {}) }
-        : undefined;
+      note.trim() || photo ? { ...(note.trim() ? { note: note.trim() } : {}), ...(photo ? { photo } : {}) } : undefined;
     try {
       const input = { handoffId: handoff.id, toolUnitId: handoff.toolUnitId, actorId: profileId, evidence };
       if (action === 'accept') await mutations.acceptTransfer.mutateAsync(input);
@@ -49,12 +50,10 @@ export function usePendingHandoffActionController({
   };
 
   const saveEdit = async (to: HolderRef): Promise<boolean> => {
-    if (queryBlocked || mutationBusy) return false;
+    if (queryBlocked || mutationBusy || photoBusy) return false;
     setError(null);
     const evidence =
-      note.trim() || mockPhoto
-        ? { ...(note.trim() ? { note: note.trim() } : {}), ...(mockPhoto ? { mockPhoto: true } : {}) }
-        : undefined;
+      note.trim() || photo ? { ...(note.trim() ? { note: note.trim() } : {}), ...(photo ? { photo } : {}) } : undefined;
     try {
       await mutations.updateTransfer.mutateAsync({
         handoffId: handoff.id,

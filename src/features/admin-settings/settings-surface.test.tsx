@@ -121,7 +121,18 @@ describe('settings surface', () => {
     const database = createMockDatabase();
     const themeStore = createMemoryThemeStore('light');
     const sessionStore = createMemorySessionStore('sam-ochoa');
-    const api = createMockApi(database);
+    const baseApi = createMockApi(database);
+    let submittedConfirmation = '';
+    const api = {
+      ...baseApi,
+      settings: {
+        ...baseApi.settings,
+        resetDemoData: async (input: Parameters<typeof baseApi.settings.resetDemoData>[0]) => {
+          submittedConfirmation = input.confirmation;
+          return baseApi.settings.resetDemoData(input);
+        },
+      },
+    };
     await api.settings.updateCompany({
       actorId: 'sam-ochoa',
       expectedRevision: 1,
@@ -137,6 +148,7 @@ describe('settings surface', () => {
     await user.type(within(dialog).getByRole('textbox', { name: 'Confirmation' }), 'RESET WORKSPACE DATA');
     await user.click(reset);
     await waitFor(() => expect(database.read().company.name).toBe('Nelson Electric'));
+    expect(submittedConfirmation).toBe('RESET WORKSPACE DATA');
     expect(sessionStore.value).toBe('sam-ochoa');
     expect(themeStore.value).toBe('light');
     expect(screen.queryByRole('dialog', { name: 'Reset workspace data' })).not.toBeInTheDocument();

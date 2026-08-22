@@ -50,6 +50,7 @@ export function WarehouseDialog({ warehouse, onClose }: { warehouse?: EditableWa
       label={warehouse ? 'Edit warehouse' : 'Create warehouse'}
       onClose={onClose}
       panelClassName="admin-dialog"
+      showCloseButton
     >
       <div className="dialog-heading">
         <span className="eyebrow">Warehouses</span>

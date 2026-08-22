@@ -24,6 +24,7 @@ export function WorkerRoleShell({ session, onSignOut, theme, onToggleTheme }: Wo
   useEffect(() => {
     setNavigationOpen(false);
     setAccountOpen(false);
+    setAddToolOpen(false);
   }, [location.pathname]);
 
   const openAddTool = () => {

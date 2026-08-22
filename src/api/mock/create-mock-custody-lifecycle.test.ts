@@ -37,7 +37,7 @@ describe('createMockApi custody lifecycle', () => {
       handoffId: started.handoffId!,
       toolUnitId: 'TL-101',
       actorId: 'jordan-lee',
-      evidence: { mockPhoto: true },
+      evidence: { photo: { fileName: 'proof.jpg', src: 'data:image/jpeg;base64,cHJvb2Y=' } },
     });
     expect((await api.tools.getToolDetail('TL-101')).tool.holder).toMatchObject({
       type: 'worker',
@@ -45,13 +45,18 @@ describe('createMockApi custody lifecycle', () => {
     });
     expect(database.read().events.at(-1)).toMatchObject({
       action: 'Accepted Hammer drill handoff',
-      evidence: { mockPhoto: true },
+      evidence: { photo: { fileName: 'proof.jpg', src: 'data:image/jpeg;base64,cHJvb2Y=' } },
     });
     expect(database.read().handoffs.find((handoff) => handoff.id === started.handoffId)).toMatchObject({
-      resolutionEvidence: { mockPhoto: true },
+      resolutionEvidence: { photo: { fileName: 'proof.jpg', src: 'data:image/jpeg;base64,cHJvb2Y=' } },
     });
     await expect(api.activity.listActivity()).resolves.toEqual(
-      expect.arrayContaining([expect.objectContaining({ id: accepted.eventId, evidence: { mockPhoto: true } })]),
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: accepted.eventId,
+          evidence: { photo: { fileName: 'proof.jpg', src: 'data:image/jpeg;base64,cHJvb2Y=' } },
+        }),
+      ]),
     );
     await expect(
       api.custody.acceptTransfer({ handoffId: started.handoffId!, toolUnitId: 'TL-101', actorId: 'jordan-lee' }),

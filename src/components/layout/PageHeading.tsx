@@ -9,7 +9,7 @@ export function PageHeading({
   eyebrow: string;
   title: string;
   description: string;
-  status: string;
+  status?: string;
 }) {
   return (
     <div className="page-heading">
@@ -18,9 +18,11 @@ export function PageHeading({
         <h1>{title}</h1>
         <p>{description}</p>
       </div>
-      <span className="live-indicator">
-        <i /> {status}
-      </span>
+      {status ? (
+        <span className="live-indicator">
+          <i /> {status}
+        </span>
+      ) : null}
     </div>
   );
 }

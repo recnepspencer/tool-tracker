@@ -68,6 +68,7 @@ describe('createMockApi custody projections', () => {
       'HO-1',
       'HO-DEMO-OUT',
       'HO-DEMO-IN',
+      'HO-QUEUE-RETURN-1',
       'HO-30',
       'HO-40',
     ]);
@@ -102,7 +103,10 @@ describe('createMockApi custody projections', () => {
     const mutation = await api.custody.requestTool({
       toolUnitId: 'TL-105',
       actorId: 'ray-torres',
-      evidence: { note: 'Need it for tomorrow', mockPhoto: true },
+      evidence: {
+        note: 'Need it for tomorrow',
+        photo: { fileName: 'proof.jpg', src: 'data:image/jpeg;base64,cHJvb2Y=' },
+      },
     });
     const after = database.read();
     expect(mutation.status).toBe('pending');
@@ -112,17 +116,26 @@ describe('createMockApi custody projections', () => {
     expect(after.handoffs.find((handoff) => handoff.id === mutation.handoffId)).toMatchObject({
       kind: 'warehouse-request',
       status: 'pending',
-      evidence: { note: 'Need it for tomorrow', mockPhoto: true },
+      evidence: {
+        note: 'Need it for tomorrow',
+        photo: { fileName: 'proof.jpg', src: 'data:image/jpeg;base64,cHJvb2Y=' },
+      },
     });
     expect(after.events.find((event) => event.id === mutation.eventId)).toMatchObject({
       action: 'Requested Rotary hammer from North Yard',
-      evidence: { note: 'Need it for tomorrow', mockPhoto: true },
+      evidence: {
+        note: 'Need it for tomorrow',
+        photo: { fileName: 'proof.jpg', src: 'data:image/jpeg;base64,cHJvb2Y=' },
+      },
     });
     await expect(api.activity.listActivity()).resolves.toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           id: mutation.eventId,
-          evidence: { note: 'Need it for tomorrow', mockPhoto: true },
+          evidence: {
+            note: 'Need it for tomorrow',
+            photo: { fileName: 'proof.jpg', src: 'data:image/jpeg;base64,cHJvb2Y=' },
+          },
         }),
       ]),
     );

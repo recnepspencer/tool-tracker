@@ -18,12 +18,12 @@ describe('worker activity surfaces', () => {
     renderApp(<AppRoutes />, { sessionStore: createMemorySessionStore('ray-torres') });
     expect(await screen.findByRole('heading', { name: 'Movement record' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Mine' }));
-    expect(screen.getByText('Requested a bandsaw handoff')).toBeInTheDocument();
+    expect(screen.getByText(/Requested a bandsaw handoff/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Warehouse' }));
-    expect(screen.getByText('Added a tool to inventory')).toBeInTheDocument();
-    expect(screen.queryByText('Reported a tool damaged')).not.toBeInTheDocument();
+    expect(screen.getByText(/Added a tool to inventory/)).toBeInTheDocument();
+    expect(screen.queryByText(/Reported a tool damaged/)).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Damage & loss' }));
-    expect(screen.getByText('Marked a cable cutter lost')).toBeInTheDocument();
+    expect(screen.getByText(/Marked a cable cutter lost/)).toBeInTheDocument();
   });
 
   it('isolates activity loading, empty, and error states', async () => {

@@ -16,11 +16,13 @@ import { countInventoryFilter, filterInventoryItems, type InventoryFilter } from
 import { useInventoryDecisionController } from './use-inventory-decision-controller';
 import { warehouseToolDecisionPolicy } from '../../domain/warehouse-tool-policy';
 import { toHolderRef } from './holder-ref';
+import { WarehouseStockDialog } from './WarehouseStockDialog';
 
 export function WarehouseInventoryPage() {
   const [warehouseId, setWarehouseId] = useState('all');
   const [filter, setFilter] = useState<InventoryFilter>('all');
   const [search, setSearch] = useState('');
+  const [stockOpen, setStockOpen] = useState(false);
   const warehouses = useWarehouseScopes();
   const inventory = useWarehouseInventory(warehouseId, true);
   const rows = useMemo(
@@ -61,7 +63,6 @@ export function WarehouseInventoryPage() {
         eyebrow="Admin view · Warehouse operations"
         title="Inventory"
         description="Search every tool unit, its custody, and its lifecycle."
-        status="Inventory ledger"
       />
       <div className="operations-toolbar operations-toolbar--inventory">
         <div className="operations-tabs" role="tablist" aria-label="Inventory filter">
@@ -91,6 +92,7 @@ export function WarehouseInventoryPage() {
               ...(warehouses.data ?? []).map((warehouse) => ({ value: warehouse.id, label: warehouse.name })),
             ]}
           />
+          <Button onClick={() => setStockOpen(true)}>Add tools</Button>
         </div>
       </div>
       {inventory.isError && (
@@ -138,6 +140,12 @@ export function WarehouseInventoryPage() {
           error={decisions.flagError}
           onClose={decisions.closeFlag}
           onSave={decisions.saveFlag}
+        />
+      )}
+      {stockOpen && (
+        <WarehouseStockDialog
+          defaultWarehouseId={warehouseId === 'all' ? undefined : warehouseId}
+          onClose={() => setStockOpen(false)}
         />
       )}
     </div>

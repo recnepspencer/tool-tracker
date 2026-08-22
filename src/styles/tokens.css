@@ -13,8 +13,8 @@
   --ink: #eef1f6;
   --ink-2: #c9d2dd;
   --muted: #9aa3b2;
-  --dim: #6c7688;
-  --dim-deep: #3d4552;
+  --dim: #8791a1;
+  --dim-deep: #758091;
   --blue: #3e9bff;
   --blue-soft: #a8d3ff;
   --blue-bg: rgba(62, 155, 255, 0.13);
@@ -326,6 +326,7 @@
   --opacity-locked: 0.55;
   --opacity-soon: 0.58;
   --opacity-disabled: 0.6;
+  --opacity-disabled-strong: 0.42;
   --opacity-mark: 0.7;
   --opacity-015: 0.15;
   --opacity-05: 0.5;
@@ -407,8 +408,8 @@
   --ink: #152131;
   --ink-2: #33445a;
   --muted: #596b80;
-  --dim: #718197;
-  --dim-deep: #9aa9ba;
+  --dim: #53677f;
+  --dim-deep: #64778d;
   --blue: #1769c2;
   --blue-soft: #15579f;
   --blue-bg: rgba(23, 105, 194, 0.1);

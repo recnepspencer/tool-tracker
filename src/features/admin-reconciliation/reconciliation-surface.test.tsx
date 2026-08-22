@@ -44,7 +44,7 @@ describe('reconciliation surface', () => {
     await user.click(within(duplicateCard()).getByRole('button', { name: 'Review' }));
     const dialog = await screen.findByRole('dialog', { name: 'Review reconciliation issue' });
     await user.type(within(dialog).getByRole('textbox', { name: 'Evidence note' }), 'Verified duplicate');
-    await user.click(within(dialog).getByRole('button', { name: 'Merge records' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Keep selected record' }));
     await waitFor(() => expect(screen.queryByText('Hammer drill · TL-101')).not.toBeInTheDocument());
     expect(database.read().units.find((unit) => unit.id === 'TL-103')?.lifecycle).toBe('archived');
     expect(database.read().events.at(-1)).toMatchObject({ action: 'Merged TL-103 into TL-101' });
@@ -63,9 +63,7 @@ describe('reconciliation surface', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Keep recorded custody' }));
     await user.type(within(dialog).getByRole('textbox', { name: 'Evidence note' }), 'Scan not trusted');
     await user.click(within(dialog).getByRole('button', { name: 'Resolve mismatch' }));
-    await waitFor(() =>
-      expect(screen.queryByText('Recorded at North Yard; observed at South Shop.')).not.toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.queryByText('Rotary hammer')).not.toBeInTheDocument());
     expect(database.read().custody).toEqual(before.custody);
   });
 
@@ -114,7 +112,7 @@ describe('reconciliation surface', () => {
     expect(await screen.findByRole('heading', { name: 'Reconciliation' })).toBeInTheDocument();
     await user.click(within(duplicateCard()).getByRole('button', { name: 'Review' }));
     const dialog = await screen.findByRole('dialog', { name: 'Review reconciliation issue' });
-    const merge = within(dialog).getByRole('button', { name: 'Merge records' });
+    const merge = within(dialog).getByRole('button', { name: 'Keep selected record' });
     onlineManager.setOnline(false);
     await user.click(screen.getByRole('button', { name: 'Refresh reconciliation authority' }));
     await waitFor(() => expect(merge).toBeDisabled());
@@ -144,7 +142,7 @@ describe('reconciliation surface', () => {
     expect(await screen.findByRole('heading', { name: 'Reconciliation' })).toBeInTheDocument();
     await user.click(within(duplicateCard()).getByRole('button', { name: 'Review' }));
     const dialog = await screen.findByRole('dialog', { name: 'Review reconciliation issue' });
-    const merge = within(dialog).getByRole('button', { name: 'Merge records' });
+    const merge = within(dialog).getByRole('button', { name: 'Keep selected record' });
     await user.click(merge);
     await waitFor(() => expect(calls).toBe(1));
     expect(merge).toBeDisabled();
@@ -172,7 +170,7 @@ describe('reconciliation surface', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Review reconciliation issue' });
     const note = within(dialog).getByRole('textbox', { name: 'Evidence note' });
     await user.type(note, 'Keep this proof');
-    await user.click(within(dialog).getByRole('button', { name: 'Merge records' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Keep selected record' }));
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('merge conflict');
     expect(note).toHaveValue('Keep this proof');
     expect(screen.getByRole('dialog', { name: 'Review reconciliation issue' })).toBeInTheDocument();

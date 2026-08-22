@@ -7,6 +7,8 @@ import { AppRoutes } from '../../app/app-routes';
 import { createMemorySessionStore, renderApp } from '../../test/render-app';
 import { chooseFieldOption, chooseTransferDestination } from '../../test/choose-field-option';
 import { useCustodyMutations } from './use-custody-mutations';
+import { attachPhoto } from '../../test/attach-photo';
+import { WorkerToolDetailSheet } from '../tool-detail/WorkerToolDetailSheet';
 
 function MutationHarness() {
   const mutations = useCustodyMutations();
@@ -35,10 +37,10 @@ describe('custody workflow surfaces', () => {
     expect(await screen.findByRole('heading', { name: 'Browse tools' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Open Rotary hammer' }));
     const dialog = await screen.findByRole('dialog', { name: 'Tool details' });
-    expect(within(dialog).getByRole('heading', { name: 'Request this tool' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', { name: 'Request from North Yard' })).toBeInTheDocument();
     await user.type(within(dialog).getByPlaceholderText('Add context for the record'), 'Tomorrow job');
-    expect(within(dialog).queryByRole('switch', { name: /Add an optional photo/ })).not.toBeInTheDocument();
-    await user.click(within(dialog).getByRole('button', { name: 'Confirm' }));
+    expect(dialog.querySelector('input[type="file"]')).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Request from North Yard' }));
     expect(await within(dialog).findByText('Request sent to the warehouse.')).toBeInTheDocument();
     expect(database.read().custody.find((record) => record.toolUnitId === 'TL-105')?.holder).toEqual({
       type: 'warehouse',
@@ -53,7 +55,15 @@ describe('custody workflow surfaces', () => {
     database.update((state) => ({
       ...state,
       handoffs: state.handoffs.map((handoff) =>
-        handoff.id === 'HO-1' ? { ...handoff, evidence: { note: 'Bring the long bit', mockPhoto: true } } : handoff,
+        handoff.id === 'HO-1'
+          ? {
+              ...handoff,
+              evidence: {
+                note: 'Bring the long bit',
+                photo: { fileName: 'proof.jpg', src: 'data:image/jpeg;base64,cHJvb2Y=' },
+              },
+            }
+          : handoff,
       ),
     }));
     window.location.hash = '#/worker/tools';
@@ -61,6 +71,8 @@ describe('custody workflow surfaces', () => {
     const card = await screen.findByRole('article', { name: 'Bandsaw pending handoff' });
     await userEvent.setup().click(within(card).getByRole('button', { name: 'Review request' }));
     expect(within(card).getByLabelText('Note')).toHaveValue('Bring the long bit');
+    expect(within(card).getByText('proof.jpg')).toBeInTheDocument();
+    expect(within(card).getByText('Aug 17, 2026, 10:18 AM')).toHaveAttribute('datetime', '2026-08-17T10:18:00-06:00');
   });
 
   it('does not carry a completed action notice into another tool detail', async () => {
@@ -71,7 +83,7 @@ describe('custody workflow surfaces', () => {
     await user.click(await screen.findByRole('button', { name: 'Open details for Hammer drill unit TL-101' }));
     let dialog = await screen.findByRole('dialog', { name: 'Tool details' });
     await user.click(within(dialog).getByRole('button', { name: 'Report damaged' }));
-    await user.click(within(dialog).getByRole('button', { name: 'Confirm' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Report damage' }));
     expect(await within(dialog).findByText('Tool reported damaged.')).toBeInTheDocument();
     await user.click(within(dialog).getByRole('button', { name: 'Close tool details' }));
     await user.click(await screen.findByRole('button', { name: 'Open details for Fluke 87V multimeter unit TL-102' }));
@@ -100,6 +112,28 @@ describe('custody workflow surfaces', () => {
     expect(within(dialog).queryByRole('button', { name: 'Transfer tool' })).not.toBeInTheDocument();
     expect(within(dialog).queryByRole('button', { name: 'Report damaged' })).not.toBeInTheDocument();
     expect(within(dialog).queryByRole('button', { name: 'Report lost' })).not.toBeInTheDocument();
+  });
+
+  it('does not reopen a shortcut action for an inactive tool', async () => {
+    const baseApi = createMockApi();
+    const api = {
+      ...baseApi,
+      tools: {
+        ...baseApi.tools,
+        getToolDetail: async (toolUnitId: string) => ({
+          ...(await baseApi.tools.getToolDetail(toolUnitId)),
+          lifecycle: 'archived' as const,
+        }),
+      },
+    };
+    renderApp(<WorkerToolDetailSheet toolUnitId="TL-101" initialAction="transfer" onClose={() => undefined} />, {
+      api,
+      sessionStore: createMemorySessionStore('ray-torres'),
+    });
+    const dialog = await screen.findByRole('dialog', { name: 'Tool details' });
+    expect(await within(dialog).findByText('Archived')).toBeInTheDocument();
+    await waitFor(() => expect(within(dialog).queryByRole('heading', { name: 'Transfer' })).not.toBeInTheDocument());
+    expect(within(dialog).queryByRole('button', { name: /Send to/ })).not.toBeInTheDocument();
   });
 
   it('does not offer a person destination for a damaged tool', async () => {
@@ -217,8 +251,9 @@ describe('custody workflow surfaces', () => {
 
   it('keeps person transfers on the standard destination sheet', async () => {
     const user = userEvent.setup();
+    const database = createMockDatabase({ clock: () => '2026-08-18T09:00:00-06:00' });
     window.location.hash = '#/worker/tools';
-    renderApp(<AppRoutes />, { sessionStore: createMemorySessionStore('ray-torres') });
+    renderApp(<AppRoutes />, { api: createMockApi(database), sessionStore: createMemorySessionStore('ray-torres') });
     await user.click(await screen.findByRole('button', { name: 'Open details for Hammer drill unit TL-101' }));
     const dialog = await screen.findByRole('dialog', { name: 'Tool details' });
     await user.click(within(dialog).getByRole('button', { name: 'Transfer tool' }));
@@ -235,12 +270,31 @@ describe('custody workflow surfaces', () => {
     await user.click(search);
     await user.type(search, 'eli');
     const personOptions = within(chooser).getByRole('listbox', { name: 'Person' });
-    expect(within(personOptions).getByRole('option', { name: /Eli Warren Person/ })).toBeInTheDocument();
-    expect(within(personOptions).queryByRole('option', { name: /Avery Cole Person/ })).not.toBeInTheDocument();
-    await user.click(within(personOptions).getByRole('option', { name: /Eli Warren Person/ }));
+    expect(within(personOptions).getByRole('option', { name: 'Eli Warren' })).toBeInTheDocument();
+    expect(within(personOptions).queryByRole('option', { name: 'Avery Cole' })).not.toBeInTheDocument();
+    await user.click(within(personOptions).getByRole('option', { name: 'Eli Warren' }));
 
     expect(person).toHaveTextContent('Eli Warren');
-    expect(within(dialog).getByRole('button', { name: 'Send to Eli Warren' })).toBeEnabled();
+    await attachPhoto(user, dialog);
+    await user.click(within(dialog).getByRole('button', { name: 'Send to Eli Warren' }));
+    await waitFor(() =>
+      expect(database.read().handoffs.at(-1)?.evidence?.photo).toEqual({
+        fileName: 'tool-photo.jpg',
+        src: 'data:image/jpeg;base64,dG9vbCBwaG90bw==',
+      }),
+    );
+  });
+
+  it('keeps a shortcut-opened transfer panel closed after Close', async () => {
+    const user = userEvent.setup();
+    window.location.hash = '#/worker/tools';
+    renderApp(<AppRoutes />, { sessionStore: createMemorySessionStore('ray-torres') });
+    await user.click(await screen.findByRole('button', { name: 'Transfer Hammer drill unit TL-101' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Tool details' });
+    expect(within(dialog).getByRole('heading', { name: 'Transfer' })).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(within(dialog).queryByRole('heading', { name: 'Transfer' })).not.toBeInTheDocument());
+    expect(within(dialog).getByRole('button', { name: 'Transfer tool' })).toBeInTheDocument();
   });
 
   it('keeps transfer evidence drafts when the adapter rejects the command', async () => {
@@ -261,11 +315,11 @@ describe('custody workflow surfaces', () => {
     await chooseTransferDestination(user, dialog, 'warehouse', /South Shop Warehouse/);
     const note = within(dialog).getByPlaceholderText('e.g. battery is in the case');
     await user.type(note, 'Keep this note');
-    await user.click(within(dialog).getByRole('switch', { name: /Add an optional photo/ }));
+    const photoInput = await attachPhoto(user, dialog);
     await user.click(within(dialog).getByRole('button', { name: 'Send to South Shop' }));
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('transfer conflict');
     expect(note).toHaveValue('Keep this note');
-    expect(within(dialog).getByRole('switch', { name: /Add an optional photo/ })).toBeChecked();
+    expect(photoInput.files).toHaveLength(1);
   });
 
   it('preserves pending request evidence drafts when resolution is rejected', async () => {
@@ -284,11 +338,11 @@ describe('custody workflow surfaces', () => {
     await user.click(within(card).getByRole('button', { name: 'Review request' }));
     const note = within(card).getByPlaceholderText('Add context for the record');
     await user.type(note, 'Keep this pending note');
-    await user.click(within(card).getByRole('switch', { name: /Add an optional photo/ }));
+    const photoInput = await attachPhoto(user, card);
     await user.click(within(card).getByRole('button', { name: 'Withdraw request' }));
     expect(await within(card).findByRole('alert')).toHaveTextContent('withdraw conflict');
     expect(note).toHaveValue('Keep this pending note');
-    expect(within(card).getByRole('switch', { name: /Add an optional photo/ })).toBeChecked();
+    expect(photoInput.files).toHaveLength(1);
   });
 
   it('disables a pending detail command and sends it once on a repeated click', async () => {
@@ -316,8 +370,8 @@ describe('custody workflow surfaces', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Tool details' });
     await user.click(within(dialog).getByRole('button', { name: 'Report damaged' }));
     await user.type(within(dialog).getByPlaceholderText('Add context for the record'), 'Deferred report');
-    await user.click(within(dialog).getByRole('switch', { name: /Add an optional photo/ }));
-    const confirm = within(dialog).getByRole('button', { name: 'Confirm' });
+    await attachPhoto(user, dialog);
+    const confirm = within(dialog).getByRole('button', { name: 'Report damage' });
     await user.click(confirm);
     expect(confirm).toBeDisabled();
     expect(reportCalls).toBe(1);
@@ -325,6 +379,55 @@ describe('custody workflow surfaces', () => {
     expect(reportCalls).toBe(1);
     resolveReport({ toolUnitId: 'TL-101', eventId: 'EV-DEFERRED', status: 'reported' });
     expect(await within(dialog).findByText('Tool reported damaged.')).toBeInTheDocument();
+  });
+
+  it('does not let an old tool command completion clear a new tool draft', async () => {
+    const user = userEvent.setup();
+    const baseApi = createMockApi();
+    const pendingHandoffs = await baseApi.custody.listPendingHandoffs('ray-torres');
+    let resolveReport: (result: Awaited<ReturnType<typeof baseApi.custody.reportToolCondition>>) => void = () =>
+      undefined;
+    let resolvePendingRefetch: (result: typeof pendingHandoffs) => void = () => undefined;
+    let pendingCalls = 0;
+    const reportPromise = new Promise<Awaited<ReturnType<typeof baseApi.custody.reportToolCondition>>>((resolve) => {
+      resolveReport = resolve;
+    });
+    const pendingRefetch = new Promise<typeof pendingHandoffs>((resolve) => {
+      resolvePendingRefetch = resolve;
+    });
+    const api = {
+      ...baseApi,
+      custody: {
+        ...baseApi.custody,
+        reportToolCondition: async () => reportPromise,
+        listPendingHandoffs: async (profileId: string) => {
+          pendingCalls += 1;
+          return pendingCalls === 1 ? baseApi.custody.listPendingHandoffs(profileId) : pendingRefetch;
+        },
+      },
+    };
+    window.location.hash = '#/worker/tools';
+    renderApp(<AppRoutes />, { api, sessionStore: createMemorySessionStore('ray-torres') });
+
+    await user.click(await screen.findByRole('button', { name: 'Open details for Hammer drill unit TL-101' }));
+    let dialog = await screen.findByRole('dialog', { name: 'Tool details' });
+    await user.click(within(dialog).getByRole('button', { name: 'Report damaged' }));
+    await user.type(within(dialog).getByLabelText('Note'), 'Old tool note');
+    await user.click(within(dialog).getByRole('button', { name: 'Report damage' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Close tool details' }));
+
+    await user.click(await screen.findByRole('button', { name: 'Open details for Fluke 87V multimeter unit TL-102' }));
+    dialog = await screen.findByRole('dialog', { name: 'Tool details' });
+    await user.click(within(dialog).getByRole('button', { name: 'Report damaged' }));
+    const currentNote = within(dialog).getByLabelText('Note');
+    await user.type(currentNote, 'Current tool note');
+
+    resolveReport({ toolUnitId: 'TL-101', eventId: 'EV-OLD-TOOL', status: 'reported' });
+    await waitFor(() => expect(pendingCalls).toBeGreaterThan(1));
+    expect(currentNote).toHaveValue('Current tool note');
+    expect(within(dialog).getByRole('heading', { name: 'Report damage' })).toBeInTheDocument();
+    expect(within(dialog).queryByText('Tool reported damaged.')).not.toBeInTheDocument();
+    resolvePendingRefetch(pendingHandoffs);
   });
 
   it('disables a pending request resolution and preserves its evidence draft', async () => {
@@ -352,7 +455,7 @@ describe('custody workflow surfaces', () => {
     await user.click(within(card).getByRole('button', { name: 'Review request' }));
     const note = within(card).getByPlaceholderText('Add context for the record');
     await user.type(note, 'Deferred handoff');
-    await user.click(within(card).getByRole('switch', { name: /Add an optional photo/ }));
+    const photoInput = await attachPhoto(user, card);
     const withdraw = within(card).getByRole('button', { name: 'Withdraw request' });
     await user.click(withdraw);
     expect(withdraw).toBeDisabled();
@@ -360,7 +463,7 @@ describe('custody workflow surfaces', () => {
     await user.click(withdraw);
     expect(withdrawCalls).toBe(1);
     expect(note).toHaveValue('Deferred handoff');
-    expect(within(card).getByRole('switch', { name: /Add an optional photo/ })).toBeChecked();
+    expect(photoInput.files).toHaveLength(1);
     resolveWithdraw({ toolUnitId: 'TL-108', handoffId: 'HO-1', eventId: 'EV-DEFERRED-2', status: 'withdrawn' });
   });
 });

@@ -8,6 +8,9 @@ import { toHolderView } from './mock-holder-projection';
 import { warehouseFor } from './holder-state';
 import type { MockState } from './mock-state';
 
+const toolImageSource = (imageKey: string) =>
+  /^(?:data:|blob:|https?:\/\/|\/)/.test(imageKey) ? imageKey : './tool-images/' + imageKey;
+
 export const toToolView = (state: MockState, unitId: string): ToolView => {
   const unit = state.units.find((candidate) => candidate.id === unitId);
   if (!unit) throw new Error('Tool unit not found: ' + unitId);
@@ -26,7 +29,7 @@ export const toToolView = (state: MockState, unitId: string): ToolView => {
     brand: definition.brand,
     model: definition.model,
     category,
-    imageSrc: './tool-images/' + (unit.photoKey ?? definition.imageKey),
+    imageSrc: toolImageSource(unit.photoKey ?? definition.imageKey),
     status,
     holder: toHolderView(custody.holder, userNames, warehouseNames),
     lastMoved: formatActivityTimestamp(custody.sinceAt),
@@ -62,7 +65,7 @@ export const toCatalogItem = (state: MockState, definitionId: string): ToolCatal
     brand: definition.brand,
     model: definition.model,
     category,
-    imageSrc: './tool-images/' + definition.imageKey,
+    imageSrc: toolImageSource(definition.imageKey),
     unitIds: units.map((unit) => unit.id),
     units: catalogUnits,
     totalCount: views.length,

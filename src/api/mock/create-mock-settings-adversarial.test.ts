@@ -66,10 +66,10 @@ describe('mock settings adversarial authority', () => {
       address: 'Changed',
     });
     await expect(
-      api.settings.resetDemoData({ actorId: 'sam-ochoa', confirmation: ' RESET DEMO DATA ' }),
-    ).rejects.toThrow('Type RESET DEMO DATA');
+      api.settings.resetDemoData({ actorId: 'sam-ochoa', confirmation: ' RESET WORKSPACE DATA ' }),
+    ).rejects.toThrow('Type RESET WORKSPACE DATA');
     await expect(
-      api.settings.resetDemoData({ actorId: 'sam-ochoa', confirmation: 'RESET DEMO DATA' }),
+      api.settings.resetDemoData({ actorId: 'sam-ochoa', confirmation: 'RESET WORKSPACE DATA' }),
     ).resolves.toEqual({
       operation: 'reset-demo-data',
       seedRevision: 'seed-v1',

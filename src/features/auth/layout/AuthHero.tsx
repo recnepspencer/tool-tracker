@@ -21,7 +21,7 @@ export function AuthHero() {
           <strong>Role-based</strong> views
         </span>
         <span>
-          <strong>0</strong> network required
+          <strong>Complete</strong> movement history
         </span>
       </div>
     </section>

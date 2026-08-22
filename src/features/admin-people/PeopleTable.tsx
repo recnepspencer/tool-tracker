@@ -7,7 +7,7 @@ import { adminPersonPath } from './admin-person-path';
 export function PeopleTable({ people, onOpen }: { people: AdminPersonView[]; onOpen(personId: string): void }) {
   return (
     <div className="admin-table-wrap">
-      <table className="admin-table">
+      <table className="admin-table admin-table--responsive people-table">
         <thead>
           <tr>
             <th>Person</th>
@@ -21,7 +21,7 @@ export function PeopleTable({ people, onOpen }: { people: AdminPersonView[]; onO
         <tbody>
           {people.map((person) => (
             <tr key={person.id}>
-              <td>
+              <td data-label="Person">
                 <Link className="admin-person-link" to={adminPersonPath(person.id)}>
                   {person.name}
                 </Link>
@@ -29,17 +29,19 @@ export function PeopleTable({ people, onOpen }: { people: AdminPersonView[]; onO
                   {person.email} · {person.title}
                 </span>
               </td>
-              <td>{MEMBER_ROLE_LABELS[person.role]}</td>
-              <td>
+              <td data-label="Role">{MEMBER_ROLE_LABELS[person.role]}</td>
+              <td data-label="Access">
                 <span className={'lifecycle-pill lifecycle-pill--' + person.lifecycle}>
                   {MEMBER_LIFECYCLE_LABELS[person.lifecycle]}
                 </span>
               </td>
-              <td>{person.homeWarehouse}</td>
-              <td>
-                {person.heldToolCount} held · {person.pendingHandoffCount} pending
+              <td data-label="Home warehouse">{person.homeWarehouse}</td>
+              <td data-label="Custody">
+                {person.heldToolCount || person.pendingHandoffCount
+                  ? `${person.heldToolCount} held · ${person.pendingHandoffCount} pending`
+                  : 'None'}
               </td>
-              <td>
+              <td data-label="Actions">
                 <Button variant="ghost" onClick={() => onOpen(person.id)}>
                   View
                 </Button>

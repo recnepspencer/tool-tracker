@@ -12,14 +12,15 @@ export function WarehousesPage() {
   const [editing, setEditing] = useState<EditableWarehouse | null | undefined>(undefined);
   if (warehouses.isPending) return <LoadingState label="Loading warehouses…" />;
   if (warehouses.isError || !warehouses.data)
-    return <ErrorState message="The warehouse directory could not be loaded." />;
+    return (
+      <ErrorState message="The warehouse directory could not be loaded." onRetry={() => void warehouses.refetch()} />
+    );
   return (
     <div className="page-content">
       <PageHeading
         eyebrow="Admin view · Warehouses"
         title="Warehouses"
         description="Keep coverage, managers, and stock authority aligned across every yard."
-        status="Coverage"
       />
       <div className="admin-toolbar">
         <span className="section-count">{warehouses.data.length} connected</span>
@@ -30,7 +31,9 @@ export function WarehousesPage() {
           <SurfaceCard key={warehouse.id} className="warehouse-admin-card">
             <div className="card-heading">
               <div>
-                <span className="eyebrow">{warehouse.manager}</span>
+                <div className="warehouse-admin-status">
+                  <span className="lifecycle-pill lifecycle-pill--active">Active</span>
+                </div>
                 <h2>{warehouse.name}</h2>
               </div>
               <Button
@@ -48,6 +51,7 @@ export function WarehousesPage() {
               </Button>
             </div>
             <p>{warehouse.address}</p>
+            <p className="warehouse-admin-manager">Managed by {warehouse.manager} · accepts returns</p>
             <div className="warehouse-admin-stats">
               <span>
                 <b>{warehouse.tools}</b> in stock
@@ -56,7 +60,7 @@ export function WarehousesPage() {
                 <b>{warehouse.out}</b> checked out
               </span>
             </div>
-            <span className="lifecycle-pill lifecycle-pill--active">
+            <span className="lifecycle-pill">
               {warehouse.managerRole === 'admin' ? 'Admin manager' : 'Warehouse manager'}
             </span>
           </SurfaceCard>

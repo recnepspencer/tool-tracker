@@ -9,6 +9,7 @@ import { normalizeCustodyEvidence } from '../../domain/evidence';
 import { appendAuditEvent } from './audit-events';
 import { normalizeCreateToolInput } from '../tool-command-normalization';
 import { isActiveMember } from '../../domain/people';
+import { requireWarehouseActor } from './warehouse-authorization';
 
 const text = (value: string, label: string) => {
   const normalized = value.trim();
@@ -38,11 +39,15 @@ const findDefinition = (state: MockDatabaseState, input: CreateToolInput) => {
 
 const authorizeToolCreation = (state: MockDatabaseState, input: CreateToolInput) => {
   const actor = state.users.find((user) => user.id === input.actorId);
-  if (!actor || actor.role !== 'worker' || !isActiveMember(actor)) {
-    throw new WorkflowError('forbidden', 'Only a worker can add a tool; actor must be active');
-  }
+  const warehouseStock = input.destination === 'warehouse';
   if (!state.warehouses.some((warehouse) => warehouse.id === input.warehouseId)) {
     throw new WorkflowError('not-found', 'Warehouse not found: ' + input.warehouseId);
+  }
+  if (warehouseStock) {
+    return requireWarehouseActor(state, input.actorId, input.warehouseId).actor;
+  }
+  if (!actor || actor.role !== 'worker' || !isActiveMember(actor)) {
+    throw new WorkflowError('forbidden', 'Only a worker can add a tool; actor must be active');
   }
   return actor;
 };
@@ -104,12 +109,16 @@ const appendToolCreationEvent = (
   unit: ToolUnit,
   occurredAt: string,
 ) => {
+  const warehouse = state.warehouses.find((candidate) => candidate.id === input.warehouseId);
+  const warehouseStock = input.destination === 'warehouse';
   appendAuditEvent(state, database, {
     actorId: actor.id,
-    action: `Added ${definition.name} to ${actor.name}'s tools`,
+    action: warehouseStock
+      ? `Added ${definition.name} to ${warehouse?.name ?? 'warehouse'} inventory`
+      : `Added ${definition.name} to ${actor.name}'s tools`,
     toolUnitId: unit.id,
     kind: 'admin',
-    scope: 'worker',
+    scope: warehouseStock ? 'warehouse' : 'worker',
     participantIds: [actor.id],
     warehouseId: input.warehouseId,
     occurredAt,
@@ -117,19 +126,37 @@ const appendToolCreationEvent = (
   });
 };
 
-export const createTool = (database: MockDatabase, input: CreateToolInput): ToolView => {
-  const normalizedInput = normalizeCreateToolInput(input);
-  if (!normalizedInput.photoCaptured) throw new WorkflowError('invalid', 'A mock tool photo is required');
+export const createTools = (database: MockDatabase, inputs: CreateToolInput[]): ToolView[] => {
+  if (!inputs.length) throw new WorkflowError('invalid', 'At least one tool is required');
+  const normalizedInputs = inputs.map(normalizeCreateToolInput);
+  normalizedInputs.forEach((input) => {
+    if (!input.photoCaptured && input.destination !== 'warehouse') {
+      throw new WorkflowError('invalid', 'A tool photo is required');
+    }
+  });
   const occurredAt = database.clock();
-  let createdUnitId = '';
+  const createdUnitIds: string[] = [];
   database.update((state) => {
-    const actor = authorizeToolCreation(state, normalizedInput);
-    const { definition } = findOrCreateDefinition(state, database, normalizedInput);
-    const unit = createToolUnit(state, database, normalizedInput, definition);
-    state.custody.push({ toolUnitId: unit.id, holder: { type: 'worker', userId: actor.id }, sinceAt: occurredAt });
-    appendToolCreationEvent(state, database, normalizedInput, actor, definition, unit, occurredAt);
-    createdUnitId = unit.id;
+    normalizedInputs.forEach((input) => {
+      const actor = authorizeToolCreation(state, input);
+      const { definition } = findOrCreateDefinition(state, database, input);
+      const unit = createToolUnit(state, database, input, definition);
+      state.custody.push({
+        toolUnitId: unit.id,
+        holder:
+          input.destination === 'warehouse'
+            ? { type: 'warehouse', warehouseId: input.warehouseId }
+            : { type: 'worker', userId: actor.id },
+        sinceAt: occurredAt,
+      });
+      appendToolCreationEvent(state, database, input, actor, definition, unit, occurredAt);
+      createdUnitIds.push(unit.id);
+    });
     return state;
   });
-  return toToolView(database.read(), createdUnitId);
+  const state = database.read();
+  return createdUnitIds.map((unitId) => toToolView(state, unitId));
 };
+
+export const createTool = (database: MockDatabase, input: CreateToolInput): ToolView =>
+  createTools(database, [input])[0];

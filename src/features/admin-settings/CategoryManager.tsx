@@ -31,7 +31,6 @@ export function CategoryManager({
     <SurfaceCard className="settings-card--wide">
       <div className="settings-card-heading">
         <span className="eyebrow">Tool categories</span>
-        <span className="admin-meta-kind">Stable IDs</span>
       </div>
       <div className="category-create">
         <TextField label="New category" value={newCategory} onChange={setNewCategory} placeholder="e.g. Safety" />
@@ -97,7 +96,7 @@ function CategoryRow({
       <div>
         <strong>{category.name}</strong>
         <small>
-          {category.usageCount} tool definitions · {category.id}
+          {category.usageCount} {category.usageCount === 1 ? 'tool' : 'tools'}
         </small>
       </div>
       <Button variant="ghost" onClick={onRename} disabled={blocked}>

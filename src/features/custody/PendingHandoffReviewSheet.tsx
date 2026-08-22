@@ -7,6 +7,9 @@ import { CustodyEvidenceFields } from './CustodyEvidenceFields';
 import { TransferDestinationPicker, type TransferDestinationMode } from '../tool-detail/TransferDestinationPicker';
 import { ErrorState, LoadingState } from '../../components/ui/AsyncState';
 import { pendingHandoffDirectionLabel, pendingHandoffStatusLabel } from './pending-handoff-copy';
+import { useState } from 'react';
+import { responsiveToolImageSource } from '../../components/ui/responsive-image';
+import type { CustodyPhotoEvidence } from '../../domain/evidence';
 
 const actionLabel: Record<HandoffAction, string> = {
   accept: 'Accept — take custody',
@@ -26,7 +29,8 @@ interface TransferTargetsState {
 export function PendingHandoffReviewSheet({
   handoff,
   note,
-  mockPhoto,
+  photo,
+  photoBusy,
   busy,
   queryBlocked,
   error,
@@ -35,7 +39,8 @@ export function PendingHandoffReviewSheet({
   target = '',
   transferMode = null,
   onNoteChange,
-  onMockPhotoChange,
+  onPhotoChange,
+  onPhotoBusyChange,
   onTargetChange = () => undefined,
   onTransferModeChange = () => undefined,
   onSaveEdit = async () => false,
@@ -44,7 +49,8 @@ export function PendingHandoffReviewSheet({
 }: {
   handoff: PendingHandoffView;
   note: string;
-  mockPhoto: boolean;
+  photo: CustodyPhotoEvidence | null;
+  photoBusy: boolean;
   busy: boolean;
   queryBlocked: boolean;
   error: string | null;
@@ -53,7 +59,8 @@ export function PendingHandoffReviewSheet({
   target?: string;
   transferMode?: TransferDestinationMode | null;
   onNoteChange(note: string): void;
-  onMockPhotoChange(mockPhoto: boolean): void;
+  onPhotoChange(photo: CustodyPhotoEvidence | null): void;
+  onPhotoBusyChange(busy: boolean): void;
   onTargetChange?(target: string): void;
   onTransferModeChange?(mode: TransferDestinationMode | null): void;
   onSaveEdit?(): Promise<boolean>;
@@ -61,9 +68,15 @@ export function PendingHandoffReviewSheet({
   onClose(): void;
 }) {
   const incoming = handoff.direction === 'incoming';
+  const [toolVerified, setToolVerified] = useState(false);
   const DirectionIcon = incoming ? ArrowDownToLine : ArrowUpFromLine;
-  const directionLabel = pendingHandoffDirectionLabel(handoff.direction, handoff.kind);
-  const statusLabel = pendingHandoffStatusLabel(handoff.direction, handoff.kind);
+  const otherParty = incoming
+    ? handoff.from.name
+    : handoff.kind === 'warehouse-request'
+      ? handoff.from.name
+      : handoff.to.name;
+  const directionLabel = pendingHandoffDirectionLabel(handoff.direction, handoff.kind, otherParty);
+  const statusLabel = pendingHandoffStatusLabel(handoff.direction, handoff.kind, otherParty);
   const transferEditBlocked =
     editable &&
     (!transferTargets ||
@@ -72,11 +85,6 @@ export function PendingHandoffReviewSheet({
       transferTargets.isPaused ||
       transferTargets.isError ||
       !transferTargets.data?.some((candidate) => holderSelectionKey(candidate) === target));
-  const subtitle = incoming
-    ? `From ${handoff.from.name} · check it matches the photo`
-    : handoff.kind === 'warehouse-request'
-      ? `Requested from ${handoff.from.name}`
-      : `Sent to ${handoff.to.name}`;
   const runAction = async (action: HandoffAction) => {
     if (await onAction(action)) onClose();
   };
@@ -91,7 +99,7 @@ export function PendingHandoffReviewSheet({
       <div className="worker-pending-review-handle-wrap">
         <span className="worker-sheet-handle" />
       </div>
-      <div className="worker-pending-review-scroll">
+      <div className="worker-pending-review-scroll" data-overlay-scroll>
         <div className="worker-pending-review-heading">
           <span
             className={
@@ -101,28 +109,24 @@ export function PendingHandoffReviewSheet({
             <DirectionIcon aria-hidden="true" className="worker-pending-direction-icon" />
             {directionLabel}
           </span>
-          <time>{handoff.requestedAt}</time>
+          <time dateTime={handoff.requestedAtInstant}>{handoff.requestedAt}</time>
         </div>
         <span className="worker-pending-review-status">{statusLabel}</span>
         <div className="worker-pending-review-hero">
           <div className="worker-pending-review-photo">
-            <img src={handoff.imageSrc} alt={`${handoff.toolName} transfer photo`} />
+            <img
+              src={handoff.imageSrc}
+              srcSet={responsiveToolImageSource(handoff.imageSrc)}
+              sizes="78px"
+              alt={`${handoff.toolName} transfer photo`}
+              loading="lazy"
+              decoding="async"
+            />
           </div>
           <div>
             <h2>{handoff.toolName}</h2>
-            <p>{subtitle}</p>
           </div>
         </div>
-        {incoming ? (
-          <p className="worker-pending-review-callout">
-            Check the tool in front of you against the photo before accepting. Accepting is the proof of handoff.
-          </p>
-        ) : null}
-        {editable ? (
-          <p className="worker-pending-review-callout worker-pending-review-callout--edit">
-            Update the destination or evidence before the recipient accepts. Photos are optional.
-          </p>
-        ) : null}
         {editable && transferTargets ? (
           transferTargets.isPending || transferTargets.isFetching || transferTargets.isPaused ? (
             <LoadingState label="Loading transfer destinations…" />
@@ -145,10 +149,23 @@ export function PendingHandoffReviewSheet({
             incoming ? 'e.g. chuck is loose' : handoff.kind === 'transfer' ? 'e.g. reason for the transfer' : undefined
           }
           note={note}
-          mockPhoto={mockPhoto}
+          photo={photo}
           onNoteChange={onNoteChange}
-          onMockPhotoChange={onMockPhotoChange}
+          onPhotoChange={onPhotoChange}
+          onPhotoBusyChange={onPhotoBusyChange}
         />
+        {incoming && handoff.allowedActions.includes('accept') ? (
+          <button
+            type="button"
+            className={`worker-pending-verification${toolVerified ? ' worker-pending-verification--checked' : ''}`}
+            role="checkbox"
+            aria-checked={toolVerified}
+            onClick={() => setToolVerified((current) => !current)}
+          >
+            <span aria-hidden="true">{toolVerified ? '✓' : ''}</span>
+            <strong>I have inspected this tool</strong>
+          </button>
+        ) : null}
         {error ? (
           <small className="pending-handoff-error" role="alert">
             {error}
@@ -160,10 +177,16 @@ export function PendingHandoffReviewSheet({
           <button
             type="button"
             className="worker-primary-button worker-primary-button--compact"
-            disabled={busy || queryBlocked || transferEditBlocked}
+            disabled={busy || photoBusy || queryBlocked || transferEditBlocked}
             onClick={() => void onSaveEdit().then((saved) => saved && onClose())}
           >
-            {busy ? 'Saving…' : transferEditBlocked ? 'Choose a destination' : 'Save changes'}
+            {photoBusy
+              ? 'Processing photo…'
+              : busy
+                ? 'Saving…'
+                : transferEditBlocked
+                  ? 'Choose a destination'
+                  : 'Save changes'}
           </button>
         ) : null}
         {handoff.allowedActions.map((action) => (
@@ -173,10 +196,10 @@ export function PendingHandoffReviewSheet({
             className={
               action === 'accept' ? 'worker-primary-button worker-primary-button--compact' : 'worker-secondary-button'
             }
-            disabled={busy || queryBlocked}
+            disabled={busy || photoBusy || queryBlocked || (action === 'accept' && !toolVerified)}
             onClick={() => void runAction(action)}
           >
-            {busy ? 'Saving…' : queryBlocked ? 'Unavailable' : actionLabel[action]}
+            {photoBusy ? 'Processing photo…' : busy ? 'Saving…' : queryBlocked ? 'Unavailable' : actionLabel[action]}
           </button>
         ))}
       </div>

@@ -8,9 +8,17 @@ describe('WarehouseApi mock authority', () => {
   it('projects the seeded request and approves it atomically for Sam', async () => {
     const database = createMockDatabase({ clock: () => '2026-08-19T09:00:00-06:00' });
     const api = createMockApi(database);
-    await expect(api.warehouse.listQueue({ actorId: 'sam-ochoa' })).resolves.toMatchObject([
-      { id: 'HO-1', kind: 'request', toolUnitId: 'TL-108', warehouseId: 'north-yard', personName: 'Ray Torres' },
-    ]);
+    await expect(api.warehouse.listQueue({ actorId: 'sam-ochoa' })).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'HO-1',
+          kind: 'request',
+          toolUnitId: 'TL-108',
+          warehouseId: 'north-yard',
+          personName: 'Ray Torres',
+        }),
+      ]),
+    );
     const before = database.read();
     const receipt = await api.warehouse.approveRequest({
       actorId: 'sam-ochoa',
@@ -44,7 +52,9 @@ describe('WarehouseApi mock authority', () => {
     expect(after.handoffs.find((handoff) => handoff.id === 'HO-1')?.resolutionEvidence).toEqual({
       note: 'Approved for the morning crew',
     });
-    expect(await api.warehouse.listQueue({ actorId: 'sam-ochoa' })).toEqual([]);
+    const remainingQueue = await api.warehouse.listQueue({ actorId: 'sam-ochoa' });
+    expect(remainingQueue).toHaveLength(2);
+    expect(remainingQueue.some((item) => item.id === 'HO-1')).toBe(false);
     expect((await api.tools.listTools()).find((tool) => tool.id === 'TL-108')?.holder).toMatchObject({
       userId: 'ray-torres',
     });
@@ -128,7 +138,7 @@ describe('WarehouseApi mock authority', () => {
       ],
     }));
     const api = createMockApi(database);
-    expect(await api.warehouse.listQueue({ actorId: 'sam-ochoa' })).toHaveLength(1);
+    expect(await api.warehouse.listQueue({ actorId: 'sam-ochoa' })).toHaveLength(3);
     const before = database.read();
     await expect(api.warehouse.listQueue({ actorId: 'ray-torres' })).rejects.toThrow('warehouse operator');
     await expect(

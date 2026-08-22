@@ -24,7 +24,6 @@ export function AdminDashboardPage() {
         eyebrow={`Admin view · ${company.data?.name ?? 'Nelson Electric'}`}
         title="Control room"
         description="A single operational picture of tools, people, and custody across every yard."
-        status="Local system"
       />
       <MetricGrid columns={4}>
         <MetricCard label="Tools tracked" value={data.totalTools} detail="all yards" tone="blue" />

@@ -23,7 +23,12 @@ export function WarehouseQueueReviewDialog({
   onResolve: (decision: 'approve' | 'decline') => void;
 }) {
   return (
-    <OverlayDialog label={`Review ${review.toolName}`} onClose={onClose} panelClassName="operations-dialog">
+    <OverlayDialog
+      label={`Review ${review.toolName}`}
+      onClose={onClose}
+      panelClassName="admin-dialog operations-dialog"
+      showCloseButton
+    >
       <div className="dialog-heading">
         <span className="eyebrow">{review.kind === 'request' ? 'Release request' : 'Accept return'}</span>
         <h2>{review.toolName}</h2>

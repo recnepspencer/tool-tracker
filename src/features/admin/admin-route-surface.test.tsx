@@ -19,8 +19,8 @@ describe('admin route surfaces', () => {
     const user = userEvent.setup();
     renderApp(<AppRoutes />, { sessionStore: createMemorySessionStore('sam-ochoa') });
     expect(await screen.findByRole('heading', { name: 'People' })).toBeInTheDocument();
-    await user.click(screen.getByRole('link', { name: 'Permissions' }));
-    expect(await screen.findByRole('heading', { name: 'Permission matrix' })).toBeInTheDocument();
+    await user.click(screen.getByRole('link', { name: 'Access' }));
+    expect(await screen.findByRole('heading', { name: 'Access guide' })).toBeInTheDocument();
     await user.click(screen.getByRole('link', { name: 'Warehouses' }));
     expect(await screen.findByRole('heading', { name: 'Warehouses' })).toBeInTheDocument();
   });
@@ -72,10 +72,7 @@ describe('admin route surfaces', () => {
     expect(navigation).toHaveAttribute('aria-modal', 'true');
     expect(within(navigation).getByRole('link', { name: 'Dashboard' })).toBeInTheDocument();
     expect(within(navigation).getByRole('link', { name: 'People' })).toBeInTheDocument();
-    expect(within(navigation).getByRole('link', { name: 'Operations' })).toHaveAttribute(
-      'href',
-      '#/admin/operations/queue',
-    );
+    expect(within(navigation).getByRole('link', { name: 'Queue' })).toHaveAttribute('href', '#/admin/operations/queue');
     expect(screen.getByRole('button', { name: 'Close navigation' })).toHaveFocus();
     await user.keyboard('{Tab}');
     expect(navigation).toContainElement(document.activeElement as HTMLElement);
@@ -147,8 +144,8 @@ describe('admin route surfaces', () => {
       },
     };
     renderApp(<AppRoutes />, { api, sessionStore: createMemorySessionStore('sam-ochoa') });
-    await user.click(await screen.findByRole('link', { name: 'Permissions' }));
-    expect(await screen.findByRole('heading', { name: 'Permission matrix' })).toBeInTheDocument();
+    await user.click(await screen.findByRole('link', { name: 'Access' }));
+    expect(await screen.findByRole('heading', { name: 'Access guide' })).toBeInTheDocument();
     expect(screen.getAllByText('Worker').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Worker', { selector: 'strong' })).toHaveLength(1);
     expect(screen.getByText('request tools')).toBeInTheDocument();
@@ -167,7 +164,6 @@ describe('admin route surfaces', () => {
     expect(screen.getByRole('list', { name: 'Locked structural rules' })).toHaveTextContent(
       'Only administrators can invite, change, suspend, or remove people.',
     );
-    expect(screen.getByLabelText('Structural rules are locked')).toHaveTextContent('Locked');
     await user.click(screen.getByRole('link', { name: 'Dashboard' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('admin dashboard could not be loaded');
     await user.click(screen.getByRole('button', { name: 'Retry' }));
@@ -182,13 +178,14 @@ describe('admin route surfaces', () => {
     expect(await screen.findByRole('heading', { name: 'Control room' })).toBeInTheDocument();
     const pending = screen.getByText('Handoffs waiting for a decision.').closest('section');
     const longHeld = screen.getByText('Worker custody older than seven days.').closest('section');
-    expect(pending).toHaveTextContent('1');
+    expect(pending).toHaveTextContent('3');
     expect(longHeld).toHaveTextContent('1');
     expect(screen.getByText(/TL-103/)).toBeInTheDocument();
-    expect(screen.getByText('Requested a bandsaw handoff')).toBeInTheDocument();
+    expect(screen.getByText('Completed the Riverside Depot cycle count')).toBeInTheDocument();
     expect(Array.from(document.querySelectorAll('.activity-row strong'))[0]).toHaveTextContent(
-      'Requested a bandsaw handoff',
+      'Completed the Riverside Depot cycle count',
     );
+    expect(document.querySelector('.activity-row time')).toHaveAttribute('datetime', '2026-08-18T09:20:00-06:00');
   });
 
   it('states dashboard empty coverage and movement explicitly', async () => {
@@ -218,6 +215,7 @@ describe('admin route surfaces', () => {
   });
 
   it('renders permission loading and error states through the query boundary', async () => {
+    const user = userEvent.setup();
     const pendingApi = {
       ...createMockApi(),
       admin: { ...createMockApi().admin, getPermissionMatrix: async () => await new Promise<never>(() => {}) },
@@ -227,20 +225,27 @@ describe('admin route surfaces', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('Loading permissions');
 
     cleanup();
+    const recoveryApi = createMockApi();
+    let permissionCalls = 0;
     const errorApi = {
-      ...createMockApi(),
+      ...recoveryApi,
       admin: {
-        ...createMockApi().admin,
-        getPermissionMatrix: async () => {
-          throw new Error('offline');
+        ...recoveryApi.admin,
+        getPermissionMatrix: async (input: Parameters<typeof recoveryApi.admin.getPermissionMatrix>[0]) => {
+          permissionCalls += 1;
+          if (permissionCalls === 1) throw new Error('offline');
+          return recoveryApi.admin.getPermissionMatrix(input);
         },
       },
     };
     renderApp(<AppRoutes />, { api: errorApi, sessionStore: createMemorySessionStore('sam-ochoa') });
     expect(await screen.findByRole('alert')).toHaveTextContent('permission matrix could not be loaded');
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByRole('heading', { name: 'Access guide' })).toBeInTheDocument();
   });
 
   it('renders warehouse loading, error, and empty states through the query boundary', async () => {
+    const user = userEvent.setup();
     const pendingApi = {
       ...createMockApi(),
       admin: { ...createMockApi().admin, listWarehouses: async () => await new Promise<never>(() => {}) },
@@ -250,17 +255,23 @@ describe('admin route surfaces', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('Loading warehouses');
 
     cleanup();
+    const recoveryApi = createMockApi();
+    let warehouseCalls = 0;
     const errorApi = {
-      ...createMockApi(),
+      ...recoveryApi,
       admin: {
-        ...createMockApi().admin,
-        listWarehouses: async () => {
-          throw new Error('offline');
+        ...recoveryApi.admin,
+        listWarehouses: async (input: Parameters<typeof recoveryApi.admin.listWarehouses>[0]) => {
+          warehouseCalls += 1;
+          if (warehouseCalls === 1) throw new Error('offline');
+          return recoveryApi.admin.listWarehouses(input);
         },
       },
     };
     renderApp(<AppRoutes />, { api: errorApi, sessionStore: createMemorySessionStore('sam-ochoa') });
     expect(await screen.findByRole('alert')).toHaveTextContent('warehouse directory could not be loaded');
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByRole('heading', { name: 'Warehouses' })).toBeInTheDocument();
 
     cleanup();
     const emptyApi = {

@@ -79,14 +79,27 @@ describe('createHttpApi custody validation', () => {
     const path = '/api/tools/pending-handoffs?profile_id=ray-torres';
     await expect(
       apiFor(path, [
-        { ...validHandoff, evidence: { note: '  bring bit ', mock_photo: true } },
+        {
+          ...validHandoff,
+          evidence: {
+            note: '  bring bit ',
+            photo: { file_name: 'proof.jpg', src: 'data:image/jpeg;base64,cHJvb2Y=' },
+          },
+        },
       ]).custody.listPendingHandoffs('ray-torres'),
-    ).resolves.toMatchObject([{ evidence: { note: 'bring bit', mockPhoto: true } }]);
+    ).resolves.toMatchObject([
+      {
+        evidence: {
+          note: 'bring bit',
+          photo: { fileName: 'proof.jpg', src: 'data:image/jpeg;base64,cHJvb2Y=' },
+        },
+      },
+    ]);
     await expect(
       apiFor(path, [{ ...validHandoff, kind: 'unknown' }]).custody.listPendingHandoffs('ray-torres'),
     ).rejects.toThrow('handoff kind');
     await expect(
-      apiFor(path, [{ ...validHandoff, evidence: { mock_photo: 1 } }]).custody.listPendingHandoffs('ray-torres'),
+      apiFor(path, [{ ...validHandoff, evidence: { photo: 1 } }]).custody.listPendingHandoffs('ray-torres'),
     ).rejects.toThrow('handoff evidence photo');
   });
 });

@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { SearchField, TextAreaField, TextField } from './TextField';
 import { SelectField } from './SelectField';
 import { Switch } from './Switch';
+import { OverlayDialog } from './OverlayDialog';
 
 function TextHarness() {
   const [value, setValue] = useState('');
@@ -61,6 +62,15 @@ function SearchableSheetSelectHarness() {
       presentation="sheet"
       searchable
     />
+  );
+}
+
+function NestedSheetSelectHarness() {
+  return (
+    <OverlayDialog label="Transfer tool" onClose={() => undefined}>
+      <button type="button">Underlying action</button>
+      <SearchableSheetSelectHarness />
+    </OverlayDialog>
   );
 }
 
@@ -158,6 +168,21 @@ describe('shared field primitives', () => {
 
     await user.click(within(listbox).getByRole('option', { name: 'Hand tools' }));
     expect(combobox).toHaveTextContent('Hand tools');
+  });
+
+  it('keeps Tab and Shift-Tab in a sheet opened over another dialog', async () => {
+    const user = userEvent.setup();
+    render(<NestedSheetSelectHarness />);
+    await user.click(screen.getByRole('combobox', { name: 'Category' }));
+    const sheet = screen.getByRole('dialog', { name: 'Choose Category' });
+    const firstOption = within(sheet).getByRole('option', { name: 'Meters & testers' });
+    expect(firstOption).toHaveFocus();
+
+    await user.tab({ shift: true });
+    expect(within(sheet).getByRole('searchbox', { name: 'Search Category' })).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(within(sheet).getByRole('option', { name: 'Hand tools' })).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Underlying action' })).not.toHaveFocus();
   });
 
   it('toggles a labeled switch and ignores locked controls', async () => {

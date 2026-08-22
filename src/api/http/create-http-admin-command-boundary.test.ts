@@ -62,12 +62,24 @@ describe('HTTP admin command boundaries', () => {
       body: {
         actor_id: 'sam-ochoa',
         display_name: ' Jamie Park ',
-        email_address: ' JAMIE@NELSON.TEST ',
+        email_address: 'jamie@nelson.test',
         job_title: ' Estimator ',
         role: 'worker',
         home_warehouse_id: 'north-yard',
       },
     });
+    const callCountAfterInvite = calls.length;
+    await expect(
+      api.admin.invitePerson({
+        actorId: 'sam-ochoa',
+        name: 'Invalid Person',
+        email: 'not-an-email',
+        title: 'Estimator',
+        role: 'worker',
+        homeWarehouseId: 'north-yard',
+      }),
+    ).rejects.toThrow('Enter a valid email address');
+    expect(calls).toHaveLength(callCountAfterInvite);
 
     const roleRefs = { person_id: 'avery/cole' };
     response = receipt('update-person-role', 'EV-2', roleRefs, ['TL-101']);

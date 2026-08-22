@@ -192,6 +192,12 @@
   overflow: hidden;
   position: relative;
 }
+.worker-upload-tile > img {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
 .worker-upload-tile > .worker-camera-label {
   color: var(--dim);
 }

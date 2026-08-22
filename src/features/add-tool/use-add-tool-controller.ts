@@ -6,12 +6,12 @@ import { useToolCategories } from '../settings/use-tool-categories';
 
 interface AddToolControllerInput {
   session: AuthSession | null;
-  captured: boolean;
+  photoDataUrl: string;
   draft: ToolDraft;
   onClose(): void;
 }
 
-export function useAddToolController({ session, captured, draft, onClose }: AddToolControllerInput) {
+export function useAddToolController({ session, photoDataUrl, draft, onClose }: AddToolControllerInput) {
   const createTool = useCreateTool();
   const categories = useToolCategories();
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +27,7 @@ export function useAddToolController({ session, captured, draft, onClose }: AddT
       setError('Choose a current category from the list.');
       return;
     }
-    if (!captured || !draft.name.trim() || !draft.categoryId.trim() || !draft.warehouseId.trim()) {
+    if (!photoDataUrl || !draft.name.trim() || !draft.categoryId.trim() || !draft.warehouseId.trim()) {
       setError('Capture a photo, name the tool, choose a category, and confirm its warehouse.');
       return;
     }
@@ -39,13 +39,16 @@ export function useAddToolController({ session, captured, draft, onClose }: AddT
           brand: draft.brand || 'Unbranded',
           model: draft.model || 'Field record',
           categoryId: draft.categoryId,
-          imageKey: 'tool-photo-placeholder.svg',
+          imageKey: photoDataUrl,
         },
         warehouseId: draft.warehouseId,
         photoCaptured: true,
         serial: draft.serial,
         price: draft.price,
-        evidence: { ...(draft.note.trim() ? { note: draft.note.trim() } : {}), mockPhoto: true },
+        evidence: {
+          ...(draft.note.trim() ? { note: draft.note.trim() } : {}),
+          photo: { fileName: 'tool-photo.jpg', src: photoDataUrl },
+        },
       });
       onClose();
     } catch (caught) {

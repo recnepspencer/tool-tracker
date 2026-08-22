@@ -35,9 +35,6 @@ export function WarehouseQueueItem({
           <Button disabled={busy} onClick={() => onReview(item)}>
             {actionLabel(item)}
           </Button>
-          <Button variant="secondary" disabled={busy} onClick={() => onReview(item)}>
-            Review
-          </Button>
         </div>
       </div>
     </article>

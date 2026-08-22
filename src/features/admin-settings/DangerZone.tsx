@@ -3,15 +3,15 @@ import { Button } from '../../components/ui/Button';
 import { OverlayDialog } from '../../components/ui/OverlayDialog';
 import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { TextField } from '../../components/ui/TextField';
+import { WORKSPACE_RESET_CONFIRMATION } from '../../domain/workspace-reset';
 import type { SettingsMutations } from './use-settings-mutations';
 
 export function DangerZone({ mutations, blocked }: { mutations: SettingsMutations; blocked: boolean }) {
   const [open, setOpen] = useState(false);
   const [confirmation, setConfirmation] = useState('');
-  const confirmationPhrase = 'RESET WORKSPACE DATA';
   const reset = () =>
     void mutations.resetDemoData
-      .mutateAsync('RESET DEMO DATA')
+      .mutateAsync(confirmation)
       .then(() => {
         setOpen(false);
         setConfirmation('');
@@ -24,7 +24,7 @@ export function DangerZone({ mutations, blocked }: { mutations: SettingsMutation
           <span className="eyebrow">Danger zone</span>
         </div>
         <p className="settings-muted">
-          Restore the workspace to its seeded starting state. Your session and browser theme are preserved.
+          Restore the workspace to its original starting data. Your session and browser theme are preserved.
         </p>
         <Button variant="danger" onClick={() => setOpen(true)} disabled={blocked || mutations.resetDemoData.isPending}>
           Reset workspace data
@@ -34,17 +34,22 @@ export function DangerZone({ mutations, blocked }: { mutations: SettingsMutation
         <OverlayDialog
           label="Reset workspace data"
           onClose={() => !mutations.resetDemoData.isPending && setOpen(false)}
+          panelClassName="admin-dialog"
+          showCloseButton
         >
           <div className="dialog-heading">
             <span className="eyebrow">Danger zone</span>
             <h2>Reset all workspace data?</h2>
           </div>
-          <p>This restores the seeded workspace and cannot be undone. Type {confirmationPhrase} to continue.</p>
+          <p>
+            This restores the original workspace data and cannot be undone. Type {WORKSPACE_RESET_CONFIRMATION} to
+            continue.
+          </p>
           <TextField
             label="Confirmation"
             value={confirmation}
             onChange={setConfirmation}
-            placeholder={confirmationPhrase}
+            placeholder={WORKSPACE_RESET_CONFIRMATION}
           />
           <div className="dialog-actions">
             <Button variant="ghost" onClick={() => setOpen(false)} disabled={mutations.resetDemoData.isPending}>
@@ -53,7 +58,7 @@ export function DangerZone({ mutations, blocked }: { mutations: SettingsMutation
             <Button
               variant="danger"
               onClick={reset}
-              disabled={blocked || confirmation !== confirmationPhrase || mutations.resetDemoData.isPending}
+              disabled={blocked || confirmation !== WORKSPACE_RESET_CONFIRMATION || mutations.resetDemoData.isPending}
             >
               Reset data
             </Button>

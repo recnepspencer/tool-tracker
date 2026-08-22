@@ -154,6 +154,22 @@ describe('admin people and warehouse commands', () => {
     ).rejects.toMatchObject({ code: 'conflict' });
   });
 
+  it('rejects malformed invitation email addresses without mutating authority', async () => {
+    const database = createMockDatabase();
+    const before = database.read();
+    await expect(
+      createMockApi(database).admin.invitePerson({
+        actorId: 'sam-ochoa',
+        name: 'Invalid Person',
+        email: 'not-an-email',
+        title: 'Estimator',
+        role: 'worker',
+        homeWarehouseId: 'north-yard',
+      }),
+    ).rejects.toMatchObject({ code: 'invalid' });
+    expect(database.read()).toEqual(before);
+  });
+
   it('creates and updates warehouses only with active managers', async () => {
     const database = createMockDatabase();
     const api = createMockApi(database);

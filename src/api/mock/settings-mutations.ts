@@ -12,6 +12,7 @@ import {
 } from '../../domain/admin-mutation';
 import { categoryIdForName, normalizeCategoryName, normalizeOrganizationName } from '../../domain/organization';
 import { WorkflowError } from '../../domain/workflow-error';
+import { WORKSPACE_RESET_CONFIRMATION } from '../../domain/workspace-reset';
 import { requireAdminActor } from './admin-authorization';
 import { appendAuditEvent } from './audit-events';
 import type { MockDatabase } from './mock-database';
@@ -176,7 +177,8 @@ export const deleteCategory = (database: MockDatabase, input: DeleteCategoryInpu
 export const resetDemoData = (database: MockDatabase, input: ResetDemoDataInput) => {
   const state = database.read();
   admin(state, input.actorId);
-  if (input.confirmation !== 'RESET DEMO DATA') throw new WorkflowError('invalid', 'Type RESET DEMO DATA to confirm');
+  if (input.confirmation !== WORKSPACE_RESET_CONFIRMATION)
+    throw new WorkflowError('invalid', `Type ${WORKSPACE_RESET_CONFIRMATION} to confirm`);
   database.reset();
   return { operation: 'reset-demo-data' as const, seedRevision: 'seed-v1' };
 };

@@ -5,6 +5,36 @@
   gap: var(--space-12);
   margin-bottom: var(--space-16);
 }
+.activity-kind-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-7);
+  margin-bottom: var(--space-12);
+}
+.activity-kind-chip {
+  background: transparent;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-pill);
+  color: var(--muted);
+  cursor: pointer;
+  min-height: var(--space-36);
+  padding: 0 var(--space-12);
+}
+.activity-kind-chip--active,
+.activity-kind-chip:hover {
+  background: var(--blue-bg);
+  border-color: var(--blue-border);
+  color: var(--blue-soft);
+}
+.audit-group > h2 {
+  background: var(--surface-2);
+  color: var(--dim);
+  font: var(--font-mono-xs);
+  letter-spacing: var(--tracking-table);
+  margin: 0;
+  padding: var(--space-9) var(--space-20);
+  text-transform: uppercase;
+}
 .activity-toolbar > :first-child {
   flex: 1 1 18rem;
 }

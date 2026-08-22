@@ -23,6 +23,7 @@ import { pathWithBase, responseArray } from './http-transport';
 import { mapEvent } from './http-admin-event-mappers';
 import { assertUniqueIds } from './http-transport';
 import { compareActivityTimestamps } from '../../domain/activity';
+import { isValidEmailAddress, normalizeEmailAddress } from '../../domain/email-address';
 
 const withActor = (path: string, actorId?: string) =>
   actorId ? path + '?actor_id=' + encodeURIComponent(actorId) : path;
@@ -68,18 +69,21 @@ export const createHttpAdminApi = ({ transport, basePath = '/api' }: HttpApiOpti
       'admin audit',
     );
   },
-  invitePerson: async ({ actorId, name, email, title, role, homeWarehouseId }) =>
-    mapMutationReceipt(
+  invitePerson: async ({ actorId, name, email, title, role, homeWarehouseId }) => {
+    const normalizedEmail = normalizeEmailAddress(email);
+    if (!isValidEmailAddress(normalizedEmail)) throw new Error('Enter a valid email address');
+    return mapMutationReceipt(
       await transport.post<MutationReceiptDto>(pathWithBase(basePath, '/admin/people/invite'), {
         actor_id: actorId,
         display_name: name,
-        email_address: email,
+        email_address: normalizedEmail,
         job_title: title,
         role,
         home_warehouse_id: homeWarehouseId,
       }),
       { operation: ADMIN_MUTATION_OPERATIONS.invitePerson },
-    ),
+    );
+  },
   updatePersonRole: async ({ actorId, personId, role }) =>
     mapMutationReceipt(
       await transport.post<MutationReceiptDto>(

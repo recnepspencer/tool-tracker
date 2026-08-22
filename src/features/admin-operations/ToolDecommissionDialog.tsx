@@ -19,7 +19,12 @@ export function ToolDecommissionDialog({
 }) {
   const [note, setNote] = useState('');
   return (
-    <OverlayDialog label={`Decommission ${item.toolName}`} onClose={onClose} panelClassName="operations-dialog">
+    <OverlayDialog
+      label={`Decommission ${item.toolName}`}
+      onClose={onClose}
+      panelClassName="admin-dialog operations-dialog"
+      showCloseButton
+    >
       <div className="dialog-heading">
         <span className="eyebrow">Lifecycle decision</span>
         <h2>Decommission tool</h2>

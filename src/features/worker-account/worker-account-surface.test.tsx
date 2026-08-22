@@ -12,11 +12,17 @@ describe('worker account surfaces', () => {
     window.location.hash = '#/worker/account';
   });
 
-  it('renders authenticated profile metadata on the account page', async () => {
+  it('renders authenticated profile metadata from the worker identity control', async () => {
+    const user = userEvent.setup();
+    window.location.hash = '#/worker/tools';
     renderApp(<AppRoutes />, { sessionStore: createMemorySessionStore('ray-torres') });
-    expect(await screen.findByRole('heading', { name: 'Your account' })).toBeInTheDocument();
-    expect(screen.getByText('Journeyman electrician')).toBeInTheDocument();
-    expect(screen.getByText('North Yard')).toBeInTheDocument();
+    await screen.findByRole('heading', { name: 'My tools' });
+    await user.click(screen.getByRole('button', { name: 'Open navigation' }));
+    await user.click(screen.getByRole('button', { name: 'Open account for Ray Torres' }));
+    const account = screen.getByRole('dialog', { name: 'Ray Torres' });
+    expect(within(account).getByText(/Journeyman electrician/)).toBeInTheDocument();
+    expect(within(account).getByText(/North Yard/)).toBeInTheDocument();
+    expect(within(account).queryByText('Member since')).not.toBeInTheDocument();
   });
 
   it('keeps the account sheet and mobile navigation controls reachable', async () => {

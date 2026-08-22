@@ -19,15 +19,23 @@ export const dismissInput = (
 export const mergeInput = (
   issue: Extract<ReconciliationIssueView, { kind: 'duplicate-tool-record' }>,
   note: string,
+  survivorToolUnitId = issue.candidateToolUnitIds[0],
 ): Omit<MergeDuplicateInput, 'actorId'> => ({
+  ...(() => {
+    const survivorIndex = issue.candidateToolUnitIds.indexOf(survivorToolUnitId);
+    const safeSurvivorIndex = survivorIndex === -1 ? 0 : survivorIndex;
+    const retiredIndex = safeSurvivorIndex === 0 ? 1 : 0;
+    return {
+      survivorToolUnitId: issue.candidateToolUnitIds[safeSurvivorIndex],
+      retiredToolUnitId: issue.candidateToolUnitIds[retiredIndex],
+      expectedSurvivorRevision: issue.candidateRevisions[safeSurvivorIndex],
+      expectedRetiredRevision: issue.candidateRevisions[retiredIndex],
+      expectedSurvivorHolder: issue.candidateHolders[safeSurvivorIndex],
+      expectedRetiredHolder: issue.candidateHolders[retiredIndex],
+    };
+  })(),
   issueId: issue.id,
   expectedIssueRevision: issue.revision,
-  survivorToolUnitId: issue.candidateToolUnitIds[0],
-  retiredToolUnitId: issue.candidateToolUnitIds[1],
-  expectedSurvivorRevision: issue.candidateRevisions[0],
-  expectedRetiredRevision: issue.candidateRevisions[1],
-  expectedSurvivorHolder: issue.candidateHolders[0],
-  expectedRetiredHolder: issue.candidateHolders[1],
   ...(optionalNote(note) ? { note: optionalNote(note) } : {}),
 });
 

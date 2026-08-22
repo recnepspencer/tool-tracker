@@ -12,7 +12,12 @@ export function CustodyMismatchDialog({
   controller: ReconciliationController;
 }) {
   return (
-    <OverlayDialog label="Review reconciliation issue" onClose={controller.close}>
+    <OverlayDialog
+      label="Review reconciliation issue"
+      onClose={controller.close}
+      panelClassName="admin-dialog reconciliation-dialog"
+      showCloseButton
+    >
       <div className="dialog-heading">
         <span className="eyebrow">Custody mismatch</span>
         <h2>Record a decision</h2>

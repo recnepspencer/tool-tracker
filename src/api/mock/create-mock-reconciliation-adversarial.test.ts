@@ -28,7 +28,7 @@ describe('mock reconciliation adversarial authority', () => {
     });
     const board = await api.reconciliation.listIssues({ actorId: 'sam-ochoa' });
     expect(board.issues.some((candidate) => candidate.id === issue.id)).toBe(false);
-    expect(board.openCount).toBe(1);
+    expect(board.openCount).toBe(4);
     expect(database.read().units.find((unit) => unit.id === 'TL-103')?.lifecycle).toBe('archived');
   });
 

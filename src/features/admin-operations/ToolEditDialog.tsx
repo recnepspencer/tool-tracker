@@ -36,7 +36,12 @@ export function ToolEditDialog({
   const [price, setPrice] = useState(item.price ?? '');
   const [note, setNote] = useState('');
   return (
-    <OverlayDialog label={`Edit ${item.toolName}`} onClose={onClose} panelClassName="operations-dialog">
+    <OverlayDialog
+      label={`Edit ${item.toolName}`}
+      onClose={onClose}
+      panelClassName="admin-dialog operations-dialog"
+      showCloseButton
+    >
       <div className="dialog-heading">
         <span className="eyebrow">Inventory decision</span>
         <h2>Edit tool</h2>

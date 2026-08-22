@@ -32,22 +32,25 @@ export function WorkerToolDetailSheet({
   const { session } = useSession();
   const pending = usePendingHandoffs();
   const targets = useTransferTargets(session?.profileId ?? null, toolUnitId);
+  const hasPendingHandoff = Boolean(toolUnitId && pending.data?.some((handoff) => handoff.toolUnitId === toolUnitId));
   const canStartHandoff =
     Boolean(toolUnitId) &&
     !detail.isPending &&
     !detail.isFetching &&
     !detail.isPaused &&
+    detail.data?.lifecycle === 'active' &&
     !pending.isPending &&
     !pending.isFetching &&
     !pending.isPaused &&
     !pending.isError &&
-    !(toolUnitId ? (pending.data?.some((handoff) => handoff.toolUnitId === toolUnitId) ?? false) : false);
+    !hasPendingHandoff;
   const controller = useWorkerDetailActionController({
     toolUnitId,
     detail,
     targets,
     session,
     canStartHandoff,
+    hasPendingHandoff,
     initialAction,
     onSuccess: (action) => {
       if (action === 'transfer') onClose();
@@ -58,21 +61,32 @@ export function WorkerToolDetailSheet({
   return (
     <OverlayDialog
       label="Tool details"
-      onClose={onClose}
+      onClose={() => {
+        controller.onDismiss();
+        onClose();
+      }}
       backdropClassName="worker-sheet-backdrop"
-      panelClassName="worker-bottom-sheet worker-detail-sheet"
+      panelClassName={`worker-bottom-sheet worker-detail-sheet${controller.action ? ' worker-detail-sheet--action' : ''}`}
     >
       <span className="worker-sheet-handle" />
       <div className="detail-sheet-header">
         <span className="eyebrow">Tool details</span>
-        <button type="button" className="icon-button" aria-label="Close tool details" onClick={onClose}>
+        <button
+          type="button"
+          className="icon-button"
+          aria-label="Close tool details"
+          onClick={() => {
+            controller.onDismiss();
+            onClose();
+          }}
+        >
           ×
         </button>
       </div>
       {detail.isPending ? <LoadingState label="Loading tool details…" /> : null}
       {detail.isError ? <ErrorState message="This tool detail could not be loaded." /> : null}
       {!detail.isPending && !detail.isError && detail.data ? (
-        <div className="detail-sheet-content worker-detail-content">
+        <div className="detail-sheet-content worker-detail-content" data-overlay-scroll>
           <div className="detail-hero">
             <ToolPhoto
               src={detail.data.tool.imageSrc}
@@ -104,7 +118,8 @@ export function WorkerToolDetailSheet({
             action={controller.action}
             target={controller.target}
             note={controller.note}
-            mockPhoto={controller.mockPhoto}
+            photo={controller.photo}
+            photoBusy={controller.photoBusy}
             transferMode={controller.transferMode}
             canStartHandoff={canStartHandoff}
             detailRefreshing={controller.detailRefreshing}
@@ -116,7 +131,8 @@ export function WorkerToolDetailSheet({
             onRequestUnitChange={onRequestUnitChange}
             onTransferModeChange={controller.onTransferModeChange}
             onNoteChange={controller.onNoteChange}
-            onMockPhotoChange={controller.onMockPhotoChange}
+            onPhotoChange={controller.onPhotoChange}
+            onPhotoBusyChange={controller.onPhotoBusyChange}
             onCloseAction={controller.onCloseAction}
             onSubmit={() => void controller.submit()}
           />
