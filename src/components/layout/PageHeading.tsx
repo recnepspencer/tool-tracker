@@ -9,16 +9,22 @@ export function PageHeading({
   status,
   action,
 }: {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   description: string;
   status?: string;
   action?: ReactNode;
 }) {
   return (
-    <div className={cx('page-heading', Boolean(action) && 'page-heading--with-action')}>
+    <div
+      className={cx(
+        'page-heading',
+        Boolean(action) && 'page-heading--with-action',
+        !eyebrow && 'page-heading--without-eyebrow',
+      )}
+    >
       <div>
-        <span className="eyebrow">{eyebrow}</span>
+        {eyebrow ? <span className="eyebrow">{eyebrow}</span> : null}
         <h1>{title}</h1>
         <p>{description}</p>
       </div>

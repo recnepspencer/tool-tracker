@@ -52,7 +52,10 @@ describe('warehouse inventory query safety', () => {
       { api, sessionStore: createMemorySessionStore('sam-ochoa') },
     );
     expect(await screen.findByRole('heading', { name: 'Inventory' })).toBeInTheDocument();
-    const flagButton = (await screen.findAllByRole('button', { name: 'Flag' }))[0];
+    const inventoryRow = (await screen.findAllByRole('button', { name: /^Open .*, TL-\d+$/ }))[0];
+    await user.click(inventoryRow);
+    const drawer = await screen.findByRole('dialog', { name: / details$/ });
+    const flagButton = within(drawer).getByRole('button', { name: 'Mark damaged' });
     await waitFor(() => expect(flagButton).toBeEnabled());
     await user.click(flagButton);
     const dialog = await screen.findByRole('dialog', { name: /Flag / });
@@ -141,8 +144,10 @@ describe('warehouse inventory query safety', () => {
     window.location.hash = '#/admin/operations/inventory';
     renderApp(<AppRoutes />, { api, sessionStore: createMemorySessionStore('sam-ochoa') });
     expect(await screen.findByRole('heading', { name: 'Inventory' })).toBeInTheDocument();
-    const flagButton = (await screen.findAllByRole('button', { name: 'Flag' }))[0];
-    await user.click(flagButton);
+    const inventoryRow = (await screen.findAllByRole('button', { name: /^Open .*, TL-\d+$/ }))[0];
+    await user.click(inventoryRow);
+    const drawer = await screen.findByRole('dialog', { name: / details$/ });
+    await user.click(within(drawer).getByRole('button', { name: 'Mark damaged' }));
     const dialog = await screen.findByRole('dialog', { name: /Flag / });
     await user.click(within(dialog).getByRole('button', { name: 'Flag tool' }));
     expect(await within(screen.getByRole('dialog', { name: /Flag / })).findByRole('alert')).toHaveTextContent(

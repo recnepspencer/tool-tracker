@@ -36,7 +36,7 @@ describe('mock warehouse inventory decisions', () => {
     expect(database.read().events.filter((event) => event.toolUnitId === 'TL-104')).toHaveLength(3);
   });
 
-  it('fails closed for a manager outside scope and for decommissioning a worker-held tool', async () => {
+  it('fails closed for a manager outside scope and permits an authorized force return', async () => {
     const database = createMockDatabase();
     const api = createMockApi(database);
     const before = database.read();
@@ -45,13 +45,12 @@ describe('mock warehouse inventory decisions', () => {
     ).rejects.toThrow('cannot manage that warehouse');
     expect(database.read()).toEqual(before);
     await expect(
-      api.warehouse.returnTool({ actorId: 'sam-ochoa', toolUnitId: 'TL-101', expectedRevision: 1 }),
-    ).rejects.toThrow('only available for a flagged tool');
-    expect(database.read()).toEqual(before);
-    await expect(
       api.warehouse.decommissionTool({ actorId: 'sam-ochoa', toolUnitId: 'TL-101', expectedRevision: 1 }),
     ).rejects.toThrow('Return the tool to a warehouse');
     expect(database.read()).toEqual(before);
+    await expect(
+      api.warehouse.returnTool({ actorId: 'sam-ochoa', toolUnitId: 'TL-101', expectedRevision: 1 }),
+    ).resolves.toMatchObject({ operation: 'return-tool', toolUnitId: 'TL-101' });
 
     const outOfScopeDatabase = createMockDatabase();
     const outOfScopeApi = createMockApi(outOfScopeDatabase);

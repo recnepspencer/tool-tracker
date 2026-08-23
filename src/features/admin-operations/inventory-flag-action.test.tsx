@@ -21,7 +21,11 @@ describe('inventory flag action', () => {
     expect(await screen.findByRole('heading', { name: 'Inventory' })).toBeInTheDocument();
     const row = screen.getByText('Rotary hammer').closest('tr');
     expect(row).not.toBeNull();
-    await user.click(within(row as HTMLElement).getByRole('button', { name: 'Flag' }));
+    await user.click(row as HTMLElement);
+    const drawer = await screen.findByRole('dialog', { name: 'Rotary hammer details' });
+    expect(within(drawer).getByText('TL-105')).toBeInTheDocument();
+    expect(within(drawer).getByText('North Yard', { selector: 'strong' })).toBeInTheDocument();
+    await user.click(within(drawer).getByRole('button', { name: 'Mark damaged' }));
     const dialog = await screen.findByRole('dialog', { name: /Flag Rotary hammer/i });
     await user.type(within(dialog).getByRole('textbox', { name: 'Evidence note' }), 'Cracked housing');
     await user.click(within(dialog).getByRole('button', { name: 'Flag tool' }));

@@ -35,17 +35,19 @@ describe('tool decision invalidation completion', () => {
     };
     renderApp(<AppRoutes />, { api, sessionStore: createMemorySessionStore('sam-ochoa') });
     expect(await screen.findByRole('heading', { name: 'Inventory' })).toBeInTheDocument();
-    const row = screen.getByText(/TL-101/).closest('tr');
-    await user.click(within(row as HTMLElement).getByRole('button', { name: 'Flag' }));
-    const dialog = await screen.findByRole('dialog', { name: /Flag Hammer drill/i });
+    const row = screen.getByText(/TL-105/).closest('tr');
+    await user.click(row as HTMLElement);
+    const drawer = await screen.findByRole('dialog', { name: 'Rotary hammer details' });
+    await user.click(within(drawer).getByRole('button', { name: 'Mark damaged' }));
+    const dialog = await screen.findByRole('dialog', { name: /Flag Rotary hammer/i });
     await user.click(within(dialog).getByRole('button', { name: 'Flag tool' }));
     await waitFor(() => expect(inventoryReads).toBeGreaterThan(1));
     expect(
-      within(await screen.findByRole('dialog', { name: /Flag Hammer drill/i })).getByRole('button', {
+      within(await screen.findByRole('dialog', { name: /Flag Rotary hammer/i })).getByRole('button', {
         name: 'Flag tool',
       }),
     ).toBeDisabled();
-    releaseInventory?.(await baseApi.warehouse.listInventory({ actorId: 'sam-ochoa', includeArchived: true }));
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: /Flag Hammer drill/i })).not.toBeInTheDocument());
+    releaseInventory?.(await baseApi.warehouse.listInventory({ actorId: 'sam-ochoa', includeArchived: false }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /Flag Rotary hammer/i })).not.toBeInTheDocument());
   });
 });

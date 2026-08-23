@@ -131,6 +131,9 @@
   line-height: var(--leading-snug);
   margin: var(--space-7) 0 var(--space-8);
 }
+.page-heading--without-eyebrow h1 {
+  margin-top: 0;
+}
 .page-heading p {
   color: var(--muted);
   line-height: var(--leading-prose);

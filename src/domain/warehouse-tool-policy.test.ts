@@ -20,10 +20,18 @@ describe('warehouse tool decision policy', () => {
     ).toEqual({ canEdit: true, canFlag: false, canRestore: true, canForceReturn: false, canDecommission: true });
   });
 
-  it('requires a worker-held flagged unit for force return and closes archived actions', () => {
+  it('allows a warehouse override for any worker-held active unit and closes archived actions', () => {
     expect(
       warehouseToolDecisionPolicy({ lifecycle: 'active', condition: 'lost', status: 'lost', holder: worker }),
     ).toEqual({ canEdit: true, canFlag: false, canRestore: false, canForceReturn: true, canDecommission: false });
+    expect(
+      warehouseToolDecisionPolicy({
+        lifecycle: 'active',
+        condition: 'serviceable',
+        status: 'checked-out',
+        holder: worker,
+      }),
+    ).toEqual({ canEdit: true, canFlag: true, canRestore: false, canForceReturn: true, canDecommission: false });
     expect(
       warehouseToolDecisionPolicy({ lifecycle: 'archived', condition: 'lost', status: 'lost', holder: warehouse }),
     ).toEqual({ canEdit: false, canFlag: false, canRestore: false, canForceReturn: false, canDecommission: false });

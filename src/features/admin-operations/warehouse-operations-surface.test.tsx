@@ -240,9 +240,7 @@ describe('warehouse operations surfaces', () => {
     window.location.hash = '#/admin/operations/inventory';
     renderApp(<AppRoutes />, { api: createMockApi(), sessionStore: createMemorySessionStore('sam-ochoa') });
     expect(await screen.findByRole('heading', { name: 'Inventory' })).toBeInTheDocument();
-    await user.click(screen.getByRole('tab', { name: 'Flagged 2' }));
-    expect(screen.getByText('Cable cutter')).toBeInTheDocument();
-    await user.click(screen.getByRole('tab', { name: 'All 20' }));
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
     const search = screen.getByRole('searchbox', { name: 'Search inventory' });
     await user.type(search, 'Bandsaw');
     expect(screen.getByText('Bandsaw')).toBeInTheDocument();

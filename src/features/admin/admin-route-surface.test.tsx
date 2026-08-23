@@ -15,12 +15,11 @@ describe('admin route surfaces', () => {
   });
 
   it('guards and renders the new people, permissions, and warehouse destinations', async () => {
-    const user = userEvent.setup();
     renderApp(<AppRoutes />, { sessionStore: createMemorySessionStore('sam-ochoa') });
     expect(await screen.findByRole('heading', { name: 'People' })).toBeInTheDocument();
-    await user.click(screen.getByRole('link', { name: 'Access' }));
+    window.location.hash = '#/admin/permissions';
     expect(await screen.findByRole('heading', { name: 'Access guide' })).toBeInTheDocument();
-    await user.click(screen.getByRole('link', { name: 'Warehouses' }));
+    window.location.hash = '#/admin/warehouses';
     expect(await screen.findByRole('heading', { name: 'Warehouses' })).toBeInTheDocument();
   });
 
@@ -56,7 +55,8 @@ describe('admin route surfaces', () => {
     await user.click(await screen.findByRole('button', { name: 'Invite person' }));
     expect(await screen.findByRole('dialog', { name: 'Invite a person' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
-    await user.click(screen.getByRole('link', { name: 'Warehouses' }));
+    window.location.hash = '#/admin/warehouses';
+    expect(await screen.findByRole('heading', { name: 'Warehouses' })).toBeInTheDocument();
     await user.click(await screen.findByRole('button', { name: 'Add warehouse' }));
     expect(await screen.findByRole('dialog', { name: 'Create warehouse' })).toBeInTheDocument();
   });
@@ -74,7 +74,9 @@ describe('admin route surfaces', () => {
     expect(within(navigation).queryByRole('link', { name: 'Dashboard' })).not.toBeInTheDocument();
     expect(within(navigation).getByRole('link', { name: 'People' })).toBeInTheDocument();
     expect(within(navigation).getByRole('link', { name: 'Queue' })).toHaveAttribute('href', '#/admin/operations/queue');
-    expect(navigation.querySelectorAll('.worker-drawer-link-icon')).toHaveLength(9);
+    expect(navigation.querySelectorAll('.worker-drawer-link-icon')).toHaveLength(4);
+    expect(within(navigation).queryByRole('link', { name: 'Warehouses' })).not.toBeInTheDocument();
+    expect(within(navigation).queryByRole('link', { name: 'Access' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Close navigation' })).toHaveFocus();
     await user.keyboard('{Tab}');
     expect(navigation).toContainElement(document.activeElement as HTMLElement);
@@ -138,9 +140,8 @@ describe('admin route surfaces', () => {
   });
 
   it('renders every policy role and capability', async () => {
-    const user = userEvent.setup();
+    window.location.hash = '#/admin/permissions';
     renderApp(<AppRoutes />, { sessionStore: createMemorySessionStore('sam-ochoa') });
-    await user.click(await screen.findByRole('link', { name: 'Access' }));
     expect(await screen.findByRole('heading', { name: 'Access guide' })).toBeInTheDocument();
     expect(screen.getAllByText('Worker').length).toBeGreaterThan(0);
     expect(screen.getByText('Request tools')).toBeInTheDocument();
@@ -231,9 +232,8 @@ describe('admin route surfaces', () => {
 
   it('creates and edits a warehouse from eligible manager choices', async () => {
     const user = userEvent.setup();
+    window.location.hash = '#/admin/warehouses';
     renderApp(<AppRoutes />, { sessionStore: createMemorySessionStore('sam-ochoa') });
-    await screen.findByRole('heading', { name: 'People' });
-    await user.click(screen.getByRole('link', { name: 'Warehouses' }));
     expect(await screen.findByRole('heading', { name: 'Warehouses' })).toBeInTheDocument();
     const warehouseSearch = screen.getByRole('searchbox', { name: 'Search warehouses' });
     await user.type(warehouseSearch, 'south');

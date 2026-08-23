@@ -1,5 +1,4 @@
 import { cleanup, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { AppRoutes } from '../../app/app-routes';
 import { createMockApi } from '../../api/mock/create-mock-api';
@@ -15,7 +14,6 @@ describe('warehouse inventory count semantics', () => {
   });
 
   it('keeps active inventory counts separate from archived rows', async () => {
-    const user = userEvent.setup();
     const database = createMockDatabase();
     database.update((state) => ({
       ...state,
@@ -23,10 +21,9 @@ describe('warehouse inventory count semantics', () => {
     }));
     renderApp(<AppRoutes />, { api: createMockApi(database), sessionStore: createMemorySessionStore('sam-ochoa') });
     expect(await screen.findByRole('heading', { name: 'Inventory' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'All 19' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Flagged 2' })).toBeInTheDocument();
-    await user.click(screen.getByRole('tab', { name: 'Archived 1' }));
-    expect(screen.getByText('Rotary hammer')).toBeInTheDocument();
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+    expect(screen.queryByText('Rotary hammer')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /^Open .*, TL-\d+$/ })).toHaveLength(19);
   });
 
   it('keeps the warehouse summary archive count separate from active inventory', async () => {

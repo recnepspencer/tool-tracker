@@ -31,7 +31,7 @@ export const warehouseToolDecisionPolicy = ({
     canEdit: active,
     canFlag: active && condition === 'serviceable' && status !== 'damaged' && status !== 'lost',
     canRestore: active && flagged && warehouseHeld,
-    canForceReturn: active && flagged && workerHeld,
+    canForceReturn: active && workerHeld,
     canDecommission: active && warehouseHeld,
   };
 };

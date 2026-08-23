@@ -10,26 +10,23 @@ import { ToolPhoto } from '../../components/ui/ToolPhoto';
 import { useWarehouseInventory } from './use-warehouse-inventory';
 import { useWarehouseScopes } from './use-warehouse-scopes';
 import type { WarehouseInventoryItemView } from '../../domain/read-models/warehouse-operations';
-import { ToolFlagDialog } from './ToolDecisionDialogs';
+import { ToolDecommissionDialog, ToolEditDialog, ToolFlagDialog } from './ToolDecisionDialogs';
 import { Button } from '../../components/ui/Button';
 import './admin-operations.css';
-import { countInventoryFilter, filterInventoryItems, type InventoryFilter } from './inventory-selectors';
+import { filterInventoryItems } from './inventory-selectors';
 import { useInventoryDecisionController } from './use-inventory-decision-controller';
-import { warehouseToolDecisionPolicy } from '../../domain/warehouse-tool-policy';
-import { toHolderRef } from './holder-ref';
 import { WarehouseStockDialog } from './WarehouseStockDialog';
+import { InventoryToolDrawer } from './InventoryToolDrawer';
 
 export function WarehouseInventoryPage() {
   const [warehouseId, setWarehouseId] = useState('all');
-  const [filter, setFilter] = useState<InventoryFilter>('all');
   const [search, setSearch] = useState('');
+  const [selectedToolId, setSelectedToolId] = useState<string | null>(null);
   const [stockOpen, setStockOpen] = useState(false);
   const warehouses = useWarehouseScopes();
-  const inventory = useWarehouseInventory(warehouseId, true);
-  const rows = useMemo(
-    () => filterInventoryItems(inventory.data ?? [], filter, search),
-    [filter, inventory.data, search],
-  );
+  const inventory = useWarehouseInventory(warehouseId);
+  const rows = useMemo(() => filterInventoryItems(inventory.data ?? [], 'all', search), [inventory.data, search]);
+  const selectedItem = inventory.data?.find((item) => item.toolUnitId === selectedToolId) ?? null;
   const inventoryBlocked = inventory.isFetching || inventory.isPaused || inventory.isError;
   const scopesBlocked = warehouses.isFetching || warehouses.isPaused || warehouses.isError;
   const decisions = useInventoryDecisionController({
@@ -50,20 +47,15 @@ export function WarehouseInventoryPage() {
         onRetry={() => void warehouses.refetch()}
       />
     );
-  const labels: Array<[InventoryFilter, string]> = [
-    ['all', 'All'],
-    ['in-stock', 'In stock'],
-    ['checked-out', 'Checked out'],
-    ['flagged', 'Flagged'],
-    ['archived', 'Archived'],
-  ];
-  const inventoryActionsBlocked = decisions.busy;
+  const warehouseLabel =
+    warehouseId === 'all'
+      ? 'All warehouses'
+      : (warehouses.data?.find((warehouse) => warehouse.id === warehouseId)?.name ?? 'Warehouse');
   return (
     <div className="page-content admin-operations-page">
       <PageHeading
-        eyebrow="Admin view · Warehouse operations"
         title="Inventory"
-        description="Search every tool unit, its custody, and its lifecycle."
+        description={`${rows.length} of ${inventory.data.length} tools · ${warehouseLabel}`}
         action={
           <Button className="operations-add-button" onClick={() => setStockOpen(true)}>
             <Plus aria-hidden="true" />
@@ -72,21 +64,6 @@ export function WarehouseInventoryPage() {
         }
       />
       <div className="operations-toolbar operations-toolbar--inventory">
-        <div className="operations-tabs" role="tablist" aria-label="Inventory filter">
-          {labels.map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              role="tab"
-              aria-selected={filter === value}
-              className={filter === value ? 'operations-tab operations-tab--active' : 'operations-tab'}
-              onClick={() => setFilter(value)}
-            >
-              {label}
-              <span>{countInventoryFilter(inventory.data, value)}</span>
-            </button>
-          ))}
-        </div>
         <div className="operations-filters operations-filters--compact">
           <SearchField
             compact
@@ -119,25 +96,15 @@ export function WarehouseInventoryPage() {
               <thead>
                 <tr>
                   <th>Tool</th>
-                  <th>Warehouse</th>
-                  <th>Status</th>
                   <th>Holder</th>
+                  <th>Status</th>
+                  <th>Warehouse</th>
                   <th>Last moved</th>
-                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((item) => (
-                  <InventoryRow
-                    key={item.toolUnitId}
-                    item={item}
-                    onFlag={
-                      warehouseToolDecisionPolicy({ ...item, holder: toHolderRef(item.holder) }).canFlag &&
-                      !inventoryActionsBlocked
-                        ? () => decisions.openFlag(item)
-                        : undefined
-                    }
-                  />
+                  <InventoryRow key={item.toolUnitId} item={item} onOpen={() => setSelectedToolId(item.toolUnitId)} />
                 ))}
               </tbody>
             </table>
@@ -146,6 +113,27 @@ export function WarehouseInventoryPage() {
           <p className="admin-empty">No tools match this inventory view.</p>
         )}
       </SurfaceCard>
+      {selectedItem && (
+        <InventoryToolDrawer
+          item={selectedItem}
+          busy={decisions.busy}
+          onClose={() => setSelectedToolId(null)}
+          onEdit={() => decisions.openEdit(selectedItem)}
+          onFlag={() => decisions.openFlag(selectedItem)}
+          onRestore={() => decisions.restore(selectedItem)}
+          onForceReturn={() => decisions.returnTool(selectedItem)}
+          onDecommission={() => decisions.openDecommission(selectedItem)}
+        />
+      )}
+      {decisions.editItem && (
+        <ToolEditDialog
+          item={decisions.editItem}
+          busy={decisions.busy}
+          error={decisions.editError}
+          onClose={decisions.closeEdit}
+          onSave={decisions.saveEdit}
+        />
+      )}
       {decisions.flagError && <ErrorState message={decisions.flagError} onRetry={decisions.resetFlagError} />}
       {decisions.flagItem && (
         <ToolFlagDialog
@@ -156,6 +144,17 @@ export function WarehouseInventoryPage() {
           onSave={decisions.saveFlag}
         />
       )}
+      {decisions.decommissionItem && (
+        <ToolDecommissionDialog
+          item={decisions.decommissionItem}
+          busy={decisions.busy}
+          error={decisions.decommissionError}
+          onClose={decisions.closeDecommission}
+          onConfirm={decisions.decommission}
+        />
+      )}
+      {decisions.restoreError && <ErrorState message={decisions.restoreError} onRetry={decisions.resetRestoreError} />}
+      {decisions.returnError && <ErrorState message={decisions.returnError} onRetry={decisions.resetReturnError} />}
       {stockOpen && (
         <WarehouseStockDialog
           defaultWarehouseId={warehouseId === 'all' ? undefined : warehouseId}
@@ -166,9 +165,21 @@ export function WarehouseInventoryPage() {
   );
 }
 
-function InventoryRow({ item, onFlag }: { item: WarehouseInventoryItemView; onFlag?: () => void }) {
+function InventoryRow({ item, onOpen }: { item: WarehouseInventoryItemView; onOpen(): void }) {
   return (
-    <tr>
+    <tr
+      className="inventory-row"
+      role="button"
+      tabIndex={0}
+      aria-label={`Open ${item.toolName}, ${item.toolUnitId}`}
+      onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onOpen();
+        }
+      }}
+    >
       <td>
         <div className="inventory-tool">
           <ToolPhoto src={item.imageSrc} alt="" size="small" />
@@ -183,22 +194,12 @@ function InventoryRow({ item, onFlag }: { item: WarehouseInventoryItemView; onFl
           </div>
         </div>
       </td>
-      <td>{item.warehouseName}</td>
+      <td>{item.holder.name}</td>
       <td>
         <StatusBadge status={item.status} />
-        {item.lifecycle === 'archived' && <span className="lifecycle-pill lifecycle-pill--removed">Archived</span>}
       </td>
-      <td>{item.holder.name}</td>
+      <td>{item.warehouseName}</td>
       <td>{item.lastMoved}</td>
-      <td>
-        {onFlag ? (
-          <Button variant="secondary" onClick={onFlag}>
-            Flag
-          </Button>
-        ) : (
-          <span className="muted-action">—</span>
-        )}
-      </td>
     </tr>
   );
 }

@@ -50,9 +50,6 @@ export const returnTool = (database: MockDatabase, input: WarehouseToolCommandIn
     if (context.custody.holder.type !== 'worker') {
       throw new WorkflowError('conflict', 'This tool is already held by a warehouse');
     }
-    if (context.unit.condition === 'serviceable') {
-      throw new WorkflowError('conflict', 'Force return is only available for a flagged tool');
-    }
     const holder = context.custody.holder;
     const worker = state.users.find((candidate) => candidate.id === holder.userId);
     context.custody.holder = { type: 'warehouse', warehouseId: context.unit.assignedWarehouseId };
