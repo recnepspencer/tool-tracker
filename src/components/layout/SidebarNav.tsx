@@ -17,7 +17,9 @@ export function SidebarNav({
   return (
     <aside className="side-nav" aria-label={role + ' navigation'}>
       <div className="side-nav-heading">{isWorker ? 'Field view' : 'Control room'}</div>
-      <NavItems role={role} />
+      <nav className="side-nav-links" aria-label={`${role} destinations`}>
+        <NavItems role={role} />
+      </nav>
       <div className="side-nav-theme">
         <ThemeToggle theme={theme} onToggleTheme={onToggleTheme} />
       </div>

@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { LogOut, Settings, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { useModalFocusTrap } from '../ui/use-modal-focus-trap';
@@ -13,7 +14,6 @@ export interface AccountMenuProps {
 }
 
 export function AccountMenu({ role, session, onSignOut }: AccountMenuProps) {
-  const location = useLocation();
   const [open, setOpen] = useState(false);
   const sheetRef = useRef<HTMLElement>(null);
   const close = useCallback(() => setOpen(false), []);
@@ -51,25 +51,37 @@ export function AccountMenu({ role, session, onSignOut }: AccountMenuProps) {
             aria-labelledby="account-sheet-heading"
           >
             <div className="account-sheet-header">
-              <div>
-                <span className="eyebrow">Account</span>
-                <h2 id="account-sheet-heading">{session.name}</h2>
+              <div className="account-sheet-identity">
+                <Avatar initials={initials} tone={role === 'worker' ? 'amber' : 'blue'} />
+                <div>
+                  <span className="eyebrow">Account</span>
+                  <h2 id="account-sheet-heading">{session.name}</h2>
+                  <p>{session.title}</p>
+                </div>
               </div>
               <button type="button" className="icon-button" aria-label="Close account menu" onClick={close}>
-                ×
+                <X aria-hidden="true" />
               </button>
             </div>
-            <p>
-              {session.title} · {session.homeWarehouse}
-            </p>
-            <p>{session.email}</p>
-            {role === 'admin' && location.pathname !== '/admin/settings' ? (
-              <Link className="account-sheet-link" aria-label="Open settings" to="/admin/settings" onClick={close}>
-                Open settings
+            <dl className="account-sheet-facts">
+              <div>
+                <dt>Home warehouse</dt>
+                <dd>{session.homeWarehouse}</dd>
+              </div>
+              <div>
+                <dt>Email</dt>
+                <dd>{session.email}</dd>
+              </div>
+            </dl>
+            {role === 'admin' ? (
+              <Link className="account-sheet-action" aria-label="Open settings" to="/admin/settings" onClick={close}>
+                <Settings aria-hidden="true" />
+                <span>Settings</span>
               </Link>
             ) : null}
-            <Button variant="ghost" onClick={onSignOut}>
-              Sign out
+            <Button className="account-sheet-sign-out" variant="ghost" onClick={onSignOut}>
+              <LogOut aria-hidden="true" />
+              <span>Sign out</span>
             </Button>
           </section>
         </div>

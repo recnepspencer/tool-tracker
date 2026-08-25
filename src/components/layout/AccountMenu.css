@@ -23,44 +23,98 @@
   font-size: var(--text-body);
 }
 .account-sheet-backdrop {
-  background: var(--scrim);
+  background: transparent;
   inset: 0;
+  padding: calc(var(--header-height-sm) + var(--space-8)) var(--pad-header-x) 0;
   position: fixed;
   z-index: var(--z-account);
 }
 .account-sheet {
   background: var(--card);
   border: var(--border-width) solid var(--border-strong);
-  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  border-radius: var(--radius-card);
   box-shadow: var(--elevation-account);
   display: grid;
-  gap: var(--space-14);
+  gap: var(--space-16);
   margin-left: auto;
-  max-width: var(--space-360);
-  padding: var(--space-22);
-  width: min(var(--size-account-sheet), var(--space-360));
+  max-width: var(--space-320);
+  padding: var(--space-18);
+  width: min(var(--size-account-sheet), var(--space-320));
 }
 .account-sheet-header {
   align-items: flex-start;
   display: flex;
   justify-content: space-between;
 }
+.account-sheet-identity {
+  align-items: center;
+  display: flex;
+  gap: var(--space-12);
+  min-width: 0;
+}
+.account-sheet-identity > div {
+  min-width: 0;
+}
 .account-sheet h2 {
-  font-size: var(--text-5xl);
-  margin: var(--space-7) 0 0;
+  font-size: var(--text-3xl);
+  margin: var(--space-5) 0 var(--space-3);
 }
 .account-sheet p {
   color: var(--muted);
-  font-size: var(--text-body);
+  font-size: var(--text-sm);
   margin: 0;
 }
-.account-sheet-link {
-  color: var(--blue-soft);
+.account-sheet .icon-button svg {
+  height: var(--space-18);
+  width: var(--space-18);
+}
+.account-sheet-facts {
+  border-bottom: var(--border-width) solid var(--border);
+  border-top: var(--border-width) solid var(--border);
+  display: grid;
+  gap: var(--space-12);
+  margin: 0;
+  padding: var(--space-14) 0;
+}
+.account-sheet-facts div {
+  display: grid;
+  gap: var(--space-4);
+}
+.account-sheet-facts dt {
+  color: var(--dim);
+  font: var(--font-mono-xs);
+  letter-spacing: var(--tracking-table);
+  text-transform: uppercase;
+}
+.account-sheet-facts dd {
+  color: var(--ink-2);
   font-size: var(--text-body);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.account-sheet-action,
+.account-sheet-sign-out {
+  align-items: center;
+  display: flex;
+  gap: var(--space-10);
+  justify-content: flex-start;
   text-decoration: none;
 }
-.account-sheet-link:hover {
+.account-sheet-action {
+  border-radius: var(--radius-field);
+  color: var(--ink-2);
+  min-height: var(--space-44);
+  padding: 0 var(--space-12);
+}
+.account-sheet-action:hover {
+  background: var(--hover);
   color: var(--ink);
+}
+.account-sheet-action svg,
+.account-sheet-sign-out svg {
+  color: var(--dim);
+  height: var(--space-18);
+  width: var(--space-18);
 }
 .account-sheet .button {
   width: 100%;

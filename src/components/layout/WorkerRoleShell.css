@@ -332,15 +332,27 @@
 }
 
 .worker-sheet-secondary-button {
+  align-items: center;
   background: var(--btn2, var(--field));
   border: var(--border-width) solid var(--border-strong);
   border-radius: var(--radius-pill);
   color: var(--ink);
   cursor: pointer;
+  display: flex;
   font-size: var(--text-base);
   height: var(--space-48);
+  justify-content: center;
   margin-top: var(--space-12);
   width: 100%;
+}
+.worker-account-settings-link {
+  display: flex;
+  gap: var(--space-9);
+  text-decoration: none;
+}
+.worker-account-settings-link svg {
+  height: var(--space-18);
+  width: var(--space-18);
 }
 
 .worker-sheet-secondary-button:hover {

@@ -2,9 +2,13 @@ import {
   Activity,
   Boxes,
   ClipboardList,
+  GitMerge,
   PackageCheck,
+  Settings,
+  ShieldCheck,
   TriangleAlert,
   Users,
+  Warehouse,
   Wrench,
   type LucideIcon,
 } from 'lucide-react';
@@ -22,6 +26,11 @@ const navByRole: Record<Role, Array<{ label: string; path: string; enabled: bool
     { label: 'Inventory', path: '/admin/operations/inventory', enabled: true, icon: Boxes },
     { label: 'Damaged & lost', path: '/admin/operations/flagged', enabled: true, icon: TriangleAlert },
     { label: 'People', path: '/admin/people', enabled: true, icon: Users },
+    { label: 'Warehouses', path: '/admin/warehouses', enabled: true, icon: Warehouse },
+    { label: 'Access', path: '/admin/permissions', enabled: true, icon: ShieldCheck },
+    { label: 'Reconciliation', path: '/admin/reconciliation', enabled: true, icon: GitMerge },
+    { label: 'Activity', path: '/admin/activity', enabled: true, icon: Activity },
+    { label: 'Settings', path: '/admin/settings', enabled: true, icon: Settings },
   ],
 };
 

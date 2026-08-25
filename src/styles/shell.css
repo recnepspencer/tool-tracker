@@ -1,6 +1,7 @@
 .app-shell {
   background: var(--bg);
-  min-height: var(--size-viewport);
+  height: var(--size-viewport);
+  overflow: hidden;
 }
 .app-header {
   align-items: center;
@@ -43,7 +44,8 @@
 .shell-body {
   display: grid;
   grid-template-columns: var(--space-236) minmax(0, 1fr);
-  min-height: calc(var(--size-viewport) - var(--header-height-sm));
+  height: calc(var(--size-viewport) - var(--header-height-sm));
+  min-height: 0;
 }
 .side-nav {
   background: var(--side);
@@ -52,6 +54,8 @@
   flex-direction: column;
   gap: var(--space-5);
   padding: var(--space-22) var(--space-14);
+  min-height: 0;
+  overflow: hidden;
 }
 .side-nav-heading {
   color: var(--dim);
@@ -59,6 +63,13 @@
   letter-spacing: var(--tracking-nav);
   margin: 0 var(--space-12) var(--space-10);
   text-transform: uppercase;
+}
+.side-nav-links {
+  display: grid;
+  flex: 1 1 auto;
+  gap: var(--space-5);
+  min-height: 0;
+  overflow-y: auto;
 }
 .side-nav-link {
   align-items: center;
@@ -111,7 +122,9 @@
   margin-top: auto;
 }
 .shell-main {
+  height: 100%;
   min-width: 0;
+  overflow-y: auto;
 }
 .page-content {
   margin: 0 auto;
@@ -179,6 +192,7 @@
   }
   .shell-body {
     grid-template-columns: 1fr;
+    height: calc(100dvh - var(--worker-header-height) - env(safe-area-inset-top));
   }
   .side-nav {
     display: none;

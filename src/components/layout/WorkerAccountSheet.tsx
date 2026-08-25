@@ -1,5 +1,6 @@
 import { useRef } from 'react';
-import { X } from 'lucide-react';
+import { Settings, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useModalFocusTrap } from '../ui/use-modal-focus-trap';
 import type { AuthSession } from '../../domain/auth';
 
@@ -54,6 +55,16 @@ export function WorkerAccountSheet({ open, session, onSignOut, onClose }: Worker
             <strong>{session.email}</strong>
           </div>
         </div>
+        {session.role === 'admin' ? (
+          <Link
+            className="worker-sheet-secondary-button worker-account-settings-link"
+            to="/admin/settings"
+            onClick={onClose}
+          >
+            <Settings aria-hidden="true" />
+            <span>Settings</span>
+          </Link>
+        ) : null}
         <button type="button" className="worker-sheet-secondary-button" onClick={onSignOut}>
           Sign out
         </button>

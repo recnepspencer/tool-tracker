@@ -74,9 +74,10 @@ describe('admin route surfaces', () => {
     expect(within(navigation).queryByRole('link', { name: 'Dashboard' })).not.toBeInTheDocument();
     expect(within(navigation).getByRole('link', { name: 'People' })).toBeInTheDocument();
     expect(within(navigation).getByRole('link', { name: 'Queue' })).toHaveAttribute('href', '#/admin/operations/queue');
-    expect(navigation.querySelectorAll('.worker-drawer-link-icon')).toHaveLength(4);
-    expect(within(navigation).queryByRole('link', { name: 'Warehouses' })).not.toBeInTheDocument();
-    expect(within(navigation).queryByRole('link', { name: 'Access' })).not.toBeInTheDocument();
+    expect(navigation.querySelectorAll('.worker-drawer-link-icon')).toHaveLength(9);
+    expect(within(navigation).getByRole('link', { name: 'Warehouses' })).toBeInTheDocument();
+    expect(within(navigation).getByRole('link', { name: 'Access' })).toBeInTheDocument();
+    expect(within(navigation).getByRole('link', { name: 'Settings' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Close navigation' })).toHaveFocus();
     await user.keyboard('{Tab}');
     expect(navigation).toContainElement(document.activeElement as HTMLElement);
@@ -90,6 +91,7 @@ describe('admin route surfaces', () => {
     await user.click(screen.getByRole('button', { name: 'Open account for Sam Ochoa' }));
     const account = screen.getByRole('dialog', { name: 'Sam Ochoa' });
     expect(within(account).getByText('sam@nelsonelectric.com')).toBeInTheDocument();
+    expect(within(account).getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '#/admin/settings');
     expect(within(account).queryByRole('switch', { name: 'Appearance' })).not.toBeInTheDocument();
   });
 
