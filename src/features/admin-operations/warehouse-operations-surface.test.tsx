@@ -7,6 +7,7 @@ import { createMockDatabase } from '../../api/mock/mock-database';
 import { createMemorySessionStore, renderApp } from '../../test/render-app';
 import { WarehousePrefetchHarness, WarehouseProjectionToggle } from './test-support/warehouse-projection-harness';
 import { chooseFieldOption } from '../../test/choose-field-option';
+import { attachPhoto } from '../../test/attach-photo';
 
 describe('warehouse operations surfaces', () => {
   beforeEach(() => {
@@ -52,6 +53,10 @@ describe('warehouse operations surfaces', () => {
     await user.type(within(dialog).getByLabelText('Brand'), 'Greenlee');
     await user.type(within(dialog).getByLabelText('Model'), 'WC-2');
     await chooseFieldOption(user, within(dialog).getByRole('combobox', { name: 'Category' }), 'Power tools');
+    const photoInput = await attachPhoto(user, dialog);
+    expect(photoInput).toHaveAttribute('accept', 'image/*');
+    expect(photoInput).toHaveAttribute('capture', 'environment');
+    expect(await within(dialog).findByText('Tool photo attached')).toBeInTheDocument();
     const quantity = within(dialog).getByLabelText('Quantity');
     await user.clear(quantity);
     await user.type(quantity, '2');
@@ -68,6 +73,7 @@ describe('warehouse operations surfaces', () => {
     const createdUnits = state.units.filter((unit) => definitionIds.has(unit.definitionId));
     expect(createdUnits).toHaveLength(2);
     createdUnits.forEach((unit) => {
+      expect(unit.photoKey).toMatch(/^data:image\/jpeg/);
       expect(state.custody.find((record) => record.toolUnitId === unit.id)?.holder).toEqual({
         type: 'warehouse',
         warehouseId: 'north-yard',

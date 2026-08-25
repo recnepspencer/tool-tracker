@@ -1,0 +1,101 @@
+.photo-picker {
+  align-items: center;
+  background: var(--field);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-field);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: var(--space-64);
+  overflow: hidden;
+  position: relative;
+}
+.photo-picker--selected {
+  border-color: var(--border-strong);
+}
+.photo-picker__select {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: var(--space-12);
+  min-width: 0;
+  padding: var(--space-10) var(--space-12);
+}
+.photo-picker__visual {
+  align-items: center;
+  background: var(--surface-2);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--blue-soft);
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: var(--space-44);
+  justify-content: center;
+  overflow: hidden;
+  width: var(--space-44);
+}
+.photo-picker__visual svg,
+.photo-picker__remove svg {
+  height: var(--space-18);
+  width: var(--space-18);
+}
+.photo-picker__visual--preview {
+  background: var(--photo-matte);
+  border-color: var(--border-strong);
+}
+.photo-picker__visual--preview img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+.photo-picker__copy {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.photo-picker__copy strong {
+  color: var(--ink);
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+}
+.photo-picker__copy small {
+  color: var(--muted);
+  font-size: var(--text-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.photo-picker__optional {
+  color: var(--dim);
+  font: var(--font-mono-xs);
+  letter-spacing: var(--tracking-table);
+  padding-right: var(--space-14);
+  text-transform: uppercase;
+}
+.photo-picker__remove {
+  align-items: center;
+  align-self: stretch;
+  background: transparent;
+  border: 0;
+  border-left: var(--border-width) solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  min-width: var(--space-52);
+}
+.photo-picker__remove:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+.photo-picker:focus-within {
+  border-color: var(--blue-border-focus);
+  box-shadow: var(--elevation-focus);
+}
+@media (max-width: 620px) {
+  .photo-picker__select {
+    padding-inline: var(--space-10);
+  }
+  .photo-picker__optional {
+    padding-right: var(--space-10);
+  }
+}

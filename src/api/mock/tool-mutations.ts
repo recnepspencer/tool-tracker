@@ -92,7 +92,7 @@ const createToolUnit = (
     lifecycle: 'active',
     originWarehouseId: input.warehouseId,
     assignedWarehouseId: input.warehouseId,
-    photoKey: definition.imageKey,
+    photoKey: input.definition.imageKey,
     ...(input.serial?.trim() ? { serial: input.serial.trim() } : {}),
     ...(input.price?.trim() ? { price: input.price.trim() } : {}),
   };

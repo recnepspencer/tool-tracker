@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useSession } from '../../app/session-context';
 import { OverlayDialog } from '../../components/ui/OverlayDialog';
 import { Button } from '../../components/ui/Button';
+import { PhotoPicker } from '../../components/ui/PhotoPicker';
 import { SelectField } from '../../components/ui/SelectField';
 import { TextField } from '../../components/ui/TextField';
+import type { CustodyPhotoEvidence } from '../../domain/evidence';
 import { useToolCategories } from '../settings/use-tool-categories';
 import { useCreateWarehouseStock } from './use-create-warehouse-stock';
 import { useWarehouseScopes } from './use-warehouse-scopes';
@@ -29,6 +31,8 @@ export function WarehouseStockDialog({
   const [warehouseId, setWarehouseId] = useState(defaultWarehouseId ?? '');
   const [quantity, setQuantity] = useState('1');
   const [price, setPrice] = useState('');
+  const [photo, setPhoto] = useState<CustodyPhotoEvidence | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
 
   useEffect(() => {
     if (!warehouseId && scopes.data?.[0]) setWarehouseId(scopes.data[0].id);
@@ -59,18 +63,19 @@ export function WarehouseStockDialog({
         brand: brand || 'Unbranded',
         model: model || 'Warehouse stock',
         categoryId,
-        imageKey: 'tool-photo-placeholder.svg',
+        imageKey: photo?.src ?? 'tool-photo-placeholder.svg',
       },
       warehouseId,
       destination: 'warehouse' as const,
-      photoCaptured: false,
+      photoCaptured: Boolean(photo),
       price,
+      ...(photo ? { evidence: { photo } } : {}),
     }));
   };
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (blocked || !name.trim() || !warehouseId || !category || !validQuantity) return;
+    if (blocked || photoBusy || !name.trim() || !warehouseId || !category || !validQuantity) return;
     try {
       await addStock.mutateAsync(stockCommands());
       onClose();
@@ -109,6 +114,15 @@ export function WarehouseStockDialog({
           onChange={setWarehouseId}
           options={(scopes.data ?? []).map((item) => ({ value: item.id, label: item.name, description: item.address }))}
         />
+        <PhotoPicker
+          photo={photo}
+          hint="Take or choose a photo"
+          idleLabel="Add a tool photo"
+          selectedLabel="Tool photo attached"
+          preview
+          onPhotoChange={setPhoto}
+          onBusyChange={setPhotoBusy}
+        />
         <div className="operations-form-grid">
           <TextField label="Quantity" type="number" value={quantity} onChange={setQuantity} required />
           <TextField label="Price per tool" value={price} onChange={setPrice} />
@@ -125,9 +139,17 @@ export function WarehouseStockDialog({
           </Button>
           <Button
             type="submit"
-            disabled={blocked || addStock.isPending || !name.trim() || !warehouseId || !category || !validQuantity}
+            disabled={
+              blocked || photoBusy || addStock.isPending || !name.trim() || !warehouseId || !category || !validQuantity
+            }
           >
-            {addStock.isPending ? 'Adding…' : parsedQuantity === 1 ? 'Add tool' : `Add ${parsedQuantity} tools`}
+            {photoBusy
+              ? 'Processing photo…'
+              : addStock.isPending
+                ? 'Adding…'
+                : parsedQuantity === 1
+                  ? 'Add tool'
+                  : `Add ${parsedQuantity} tools`}
           </Button>
         </div>
       </form>
