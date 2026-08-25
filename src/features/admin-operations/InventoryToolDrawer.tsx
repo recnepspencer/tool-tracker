@@ -60,7 +60,7 @@ export function InventoryToolDrawer({
         </section>
 
         <div className="inventory-drawer__actions">
-          <div className={policy.canFlag ? 'inventory-drawer__actions--condition' : undefined}>
+          <div className="inventory-drawer__action-row">
             <Button variant="secondary" disabled={busy || !policy.canEdit} onClick={onEdit}>
               Edit
             </Button>
@@ -72,20 +72,23 @@ export function InventoryToolDrawer({
               <Button disabled={busy} onClick={onForceReturn}>
                 Force return
               </Button>
-            ) : policy.canFlag ? (
-              <>
-                <Button variant="secondary" disabled={busy} onClick={() => onFlag('damaged')}>
-                  Mark damaged
-                </Button>
-                <Button variant="danger" disabled={busy} onClick={() => onFlag('lost')}>
-                  Mark lost
-                </Button>
-              </>
             ) : null}
           </div>
-          <button type="button" disabled={busy || !policy.canDecommission} onClick={onDecommission}>
-            Decommission tool
-          </button>
+          {policy.canFlag ? (
+            <div className="inventory-drawer__action-row inventory-drawer__condition-row">
+              <Button variant="secondary" disabled={busy} onClick={() => onFlag('damaged')}>
+                Mark damaged
+              </Button>
+              <Button variant="danger" disabled={busy} onClick={() => onFlag('lost')}>
+                Mark lost
+              </Button>
+            </div>
+          ) : null}
+          {policy.canDecommission ? (
+            <button type="button" disabled={busy} onClick={onDecommission}>
+              Decommission tool
+            </button>
+          ) : null}
         </div>
 
         {detail.isPending ? <LoadingState label="Loading custody history…" /> : null}

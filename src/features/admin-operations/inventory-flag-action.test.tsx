@@ -68,4 +68,29 @@ describe('inventory flag action', () => {
       evidence: { note: 'Unable to locate' },
     });
   });
+
+  it('keeps checked-out custody and condition actions visible in equal rows', async () => {
+    const user = userEvent.setup();
+    const database = createMockDatabase({ clock: () => '2026-08-20T10:00:00-06:00' });
+    renderApp(<AppRoutes />, { api: createMockApi(database), sessionStore: createMemorySessionStore('sam-ochoa') });
+    expect(await screen.findByRole('heading', { name: 'Inventory' })).toBeInTheDocument();
+    await user.click(screen.getByText('Fluke 87V multimeter').closest('tr') as HTMLElement);
+    const drawer = await screen.findByRole('dialog', { name: 'Fluke 87V multimeter details' });
+    const rows = drawer.querySelectorAll('.inventory-drawer__action-row');
+    expect(rows).toHaveLength(2);
+    expect(within(rows[0] as HTMLElement).getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+    expect(within(rows[0] as HTMLElement).getByRole('button', { name: 'Force return' })).toBeInTheDocument();
+    expect(within(rows[1] as HTMLElement).getByRole('button', { name: 'Mark damaged' })).toBeInTheDocument();
+    expect(within(rows[1] as HTMLElement).getByRole('button', { name: 'Mark lost' })).toBeInTheDocument();
+    expect(within(drawer).queryByRole('button', { name: 'Decommission tool' })).not.toBeInTheDocument();
+
+    await user.click(within(rows[1] as HTMLElement).getByRole('button', { name: 'Mark lost' }));
+    const dialog = await screen.findByRole('dialog', { name: /Mark lost: Fluke 87V multimeter/i });
+    await user.click(within(dialog).getByRole('button', { name: 'Mark lost' }));
+    await waitFor(() => expect(database.read().units.find((unit) => unit.id === 'TL-102')?.condition).toBe('lost'));
+    expect(database.read().custody.find((record) => record.toolUnitId === 'TL-102')?.holder).toEqual({
+      type: 'worker',
+      userId: 'ray-torres',
+    });
+  });
 });
