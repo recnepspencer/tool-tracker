@@ -58,11 +58,11 @@ describe('warehouse inventory query safety', () => {
     const flagButton = within(drawer).getByRole('button', { name: 'Mark damaged' });
     await waitFor(() => expect(flagButton).toBeEnabled());
     await user.click(flagButton);
-    const dialog = await screen.findByRole('dialog', { name: /Flag / });
+    const dialog = await screen.findByRole('dialog', { name: /Mark damaged:/ });
     onlineManager.setOnline(false);
     await user.click(screen.getByRole('button', { name: 'Refresh authority' }));
-    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Flag tool' })).toBeDisabled());
-    await user.click(within(dialog).getByRole('button', { name: 'Flag tool' }));
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Mark damaged' })).toBeDisabled());
+    await user.click(within(dialog).getByRole('button', { name: 'Mark damaged' }));
     expect(flagCalls).toBe(0);
   });
 
@@ -148,12 +148,12 @@ describe('warehouse inventory query safety', () => {
     await user.click(inventoryRow);
     const drawer = await screen.findByRole('dialog', { name: / details$/ });
     await user.click(within(drawer).getByRole('button', { name: 'Mark damaged' }));
-    const dialog = await screen.findByRole('dialog', { name: /Flag / });
-    await user.click(within(dialog).getByRole('button', { name: 'Flag tool' }));
-    expect(await within(screen.getByRole('dialog', { name: /Flag / })).findByRole('alert')).toHaveTextContent(
+    const dialog = await screen.findByRole('dialog', { name: /Mark damaged:/ });
+    await user.click(within(dialog).getByRole('button', { name: 'Mark damaged' }));
+    expect(await within(screen.getByRole('dialog', { name: /Mark damaged:/ })).findByRole('alert')).toHaveTextContent(
       'flag unavailable',
     );
-    expect(screen.getByRole('dialog', { name: /Flag / })).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: 'Flag tool' })).toBeEnabled();
+    expect(screen.getByRole('dialog', { name: /Mark damaged:/ })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Mark damaged' })).toBeEnabled();
   });
 });

@@ -10,30 +10,37 @@ type FlagInput = Omit<FlagToolInput, 'actorId' | 'toolUnitId' | 'expectedRevisio
 
 export function ToolFlagDialog({
   item,
+  initialCondition,
   busy,
   error,
   onClose,
   onSave,
 }: {
   item: WarehouseInventoryItemView;
+  initialCondition: 'damaged' | 'lost';
   busy: boolean;
   error?: string;
   onClose(): void;
   onSave(input: FlagInput): void;
 }) {
-  const [condition, setCondition] = useState<'damaged' | 'lost'>('damaged');
+  const [condition, setCondition] = useState<'damaged' | 'lost'>(initialCondition);
   const [note, setNote] = useState('');
+  const actionLabel = condition === 'lost' ? 'Mark lost' : 'Mark damaged';
   return (
     <OverlayDialog
-      label={`Flag ${item.toolName}`}
+      label={`${actionLabel}: ${item.toolName}`}
       onClose={onClose}
       panelClassName="admin-dialog operations-dialog"
       showCloseButton
     >
       <div className="dialog-heading">
         <span className="eyebrow">Inventory decision</span>
-        <h2>Flag tool</h2>
-        <p>Record condition evidence against the same tool-unit history used by worker reports.</p>
+        <h2>{actionLabel}</h2>
+        <p>
+          {condition === 'lost'
+            ? 'Record that this tool cannot be located without removing its custody history.'
+            : 'Record the damage against the same tool-unit history used by worker reports.'}
+        </p>
       </div>
       <div className="operations-form">
         <SelectField
@@ -61,7 +68,7 @@ export function ToolFlagDialog({
           disabled={busy}
           onClick={() => onSave({ condition, ...(note.trim() ? { evidence: { note } } : {}) })}
         >
-          Flag tool
+          {actionLabel}
         </Button>
       </div>
     </OverlayDialog>

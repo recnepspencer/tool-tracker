@@ -26,10 +26,12 @@ describe('inventory flag action', () => {
     expect(within(drawer).getByText('TL-105')).toBeInTheDocument();
     expect(within(drawer).getByText('North Yard', { selector: 'strong' })).toBeInTheDocument();
     await user.click(within(drawer).getByRole('button', { name: 'Mark damaged' }));
-    const dialog = await screen.findByRole('dialog', { name: /Flag Rotary hammer/i });
+    const dialog = await screen.findByRole('dialog', { name: /Mark damaged: Rotary hammer/i });
     await user.type(within(dialog).getByRole('textbox', { name: 'Evidence note' }), 'Cracked housing');
-    await user.click(within(dialog).getByRole('button', { name: 'Flag tool' }));
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: /Flag Rotary hammer/i })).not.toBeInTheDocument());
+    await user.click(within(dialog).getByRole('button', { name: 'Mark damaged' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: /Mark damaged: Rotary hammer/i })).not.toBeInTheDocument(),
+    );
     expect(database.read().units.find((unit) => unit.id === 'TL-105')?.condition).toBe('damaged');
     expect(database.read().conditionReports.at(-1)).toMatchObject({
       toolUnitId: 'TL-105',
@@ -37,6 +39,33 @@ describe('inventory flag action', () => {
       condition: 'damaged',
       reportedAt: '2026-08-20T09:00:00-06:00',
       evidence: { note: 'Cracked housing' },
+    });
+  });
+
+  it('exposes and records lost as a first-class inventory action', async () => {
+    const user = userEvent.setup();
+    const database = createMockDatabase({ clock: () => '2026-08-20T09:30:00-06:00' });
+    renderApp(<AppRoutes />, { api: createMockApi(database), sessionStore: createMemorySessionStore('sam-ochoa') });
+    expect(await screen.findByRole('heading', { name: 'Inventory' })).toBeInTheDocument();
+    await user.click(screen.getByText('Rotary hammer').closest('tr') as HTMLElement);
+    const drawer = await screen.findByRole('dialog', { name: 'Rotary hammer details' });
+    expect(within(drawer).getByRole('button', { name: 'Mark lost' })).toBeInTheDocument();
+    await user.click(within(drawer).getByRole('button', { name: 'Mark lost' }));
+    const dialog = await screen.findByRole('dialog', { name: /Mark lost: Rotary hammer/i });
+    expect(within(dialog).getByRole('heading', { name: 'Mark lost' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('combobox', { name: 'Condition' })).toHaveTextContent('Lost');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Evidence note' }), 'Unable to locate');
+    await user.click(within(dialog).getByRole('button', { name: 'Mark lost' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: /Mark lost: Rotary hammer/i })).not.toBeInTheDocument(),
+    );
+    expect(database.read().units.find((unit) => unit.id === 'TL-105')?.condition).toBe('lost');
+    expect(database.read().conditionReports.at(-1)).toMatchObject({
+      toolUnitId: 'TL-105',
+      reporterId: 'sam-ochoa',
+      condition: 'lost',
+      reportedAt: '2026-08-20T09:30:00-06:00',
+      evidence: { note: 'Unable to locate' },
     });
   });
 });

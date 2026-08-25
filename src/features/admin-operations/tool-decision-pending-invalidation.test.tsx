@@ -39,15 +39,17 @@ describe('tool decision invalidation completion', () => {
     await user.click(row as HTMLElement);
     const drawer = await screen.findByRole('dialog', { name: 'Rotary hammer details' });
     await user.click(within(drawer).getByRole('button', { name: 'Mark damaged' }));
-    const dialog = await screen.findByRole('dialog', { name: /Flag Rotary hammer/i });
-    await user.click(within(dialog).getByRole('button', { name: 'Flag tool' }));
+    const dialog = await screen.findByRole('dialog', { name: /Mark damaged: Rotary hammer/i });
+    await user.click(within(dialog).getByRole('button', { name: 'Mark damaged' }));
     await waitFor(() => expect(inventoryReads).toBeGreaterThan(1));
     expect(
-      within(await screen.findByRole('dialog', { name: /Flag Rotary hammer/i })).getByRole('button', {
-        name: 'Flag tool',
+      within(await screen.findByRole('dialog', { name: /Mark damaged: Rotary hammer/i })).getByRole('button', {
+        name: 'Mark damaged',
       }),
     ).toBeDisabled();
     releaseInventory?.(await baseApi.warehouse.listInventory({ actorId: 'sam-ochoa', includeArchived: false }));
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: /Flag Rotary hammer/i })).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: /Mark damaged: Rotary hammer/i })).not.toBeInTheDocument(),
+    );
   });
 });

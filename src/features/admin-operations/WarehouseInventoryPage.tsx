@@ -119,7 +119,7 @@ export function WarehouseInventoryPage() {
           busy={decisions.busy}
           onClose={() => setSelectedToolId(null)}
           onEdit={() => decisions.openEdit(selectedItem)}
-          onFlag={() => decisions.openFlag(selectedItem)}
+          onFlag={(condition) => decisions.openFlag(selectedItem, condition)}
           onRestore={() => decisions.restore(selectedItem)}
           onForceReturn={() => decisions.returnTool(selectedItem)}
           onDecommission={() => decisions.openDecommission(selectedItem)}
@@ -138,6 +138,7 @@ export function WarehouseInventoryPage() {
       {decisions.flagItem && (
         <ToolFlagDialog
           item={decisions.flagItem}
+          initialCondition={decisions.flagCondition}
           busy={decisions.busy}
           error={decisions.flagError}
           onClose={decisions.closeFlag}

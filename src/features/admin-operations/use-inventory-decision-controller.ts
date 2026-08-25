@@ -23,6 +23,7 @@ export function useInventoryDecisionController({
 }) {
   const [editItem, setEditItem] = useState<WarehouseInventoryItemView | null>(null);
   const [flagItem, setFlagItem] = useState<WarehouseInventoryItemView | null>(null);
+  const [flagCondition, setFlagCondition] = useState<'damaged' | 'lost'>('damaged');
   const [decommissionItem, setDecommissionItem] = useState<WarehouseInventoryItemView | null>(null);
   const toolMutations = useToolDecisionMutations();
   const warehouseMutations = useWarehouseToolDecisionMutations();
@@ -58,8 +59,11 @@ export function useInventoryDecisionController({
   const openEdit = (item: WarehouseInventoryItemView) => {
     if (!busy && warehouseToolDecisionPolicy({ ...item, holder: toHolderRef(item.holder) }).canEdit) setEditItem(item);
   };
-  const openFlag = (item: WarehouseInventoryItemView) => {
-    if (!busy && warehouseToolDecisionPolicy({ ...item, holder: toHolderRef(item.holder) }).canFlag) setFlagItem(item);
+  const openFlag = (item: WarehouseInventoryItemView, condition: 'damaged' | 'lost') => {
+    if (!busy && warehouseToolDecisionPolicy({ ...item, holder: toHolderRef(item.holder) }).canFlag) {
+      setFlagCondition(condition);
+      setFlagItem(item);
+    }
   };
   const openDecommission = (item: WarehouseInventoryItemView) => {
     if (!busy && warehouseToolDecisionPolicy({ ...item, holder: toHolderRef(item.holder) }).canDecommission)
@@ -125,6 +129,7 @@ export function useInventoryDecisionController({
     decisionPending,
     editItem,
     flagItem,
+    flagCondition,
     decommissionItem,
     openEdit,
     openFlag,

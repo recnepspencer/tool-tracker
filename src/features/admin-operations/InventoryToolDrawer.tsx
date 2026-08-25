@@ -25,7 +25,7 @@ export function InventoryToolDrawer({
   busy: boolean;
   onClose(): void;
   onEdit(): void;
-  onFlag(): void;
+  onFlag(condition: 'damaged' | 'lost'): void;
   onRestore(): void;
   onForceReturn(): void;
   onDecommission(): void;
@@ -60,7 +60,7 @@ export function InventoryToolDrawer({
         </section>
 
         <div className="inventory-drawer__actions">
-          <div>
+          <div className={policy.canFlag ? 'inventory-drawer__actions--condition' : undefined}>
             <Button variant="secondary" disabled={busy || !policy.canEdit} onClick={onEdit}>
               Edit
             </Button>
@@ -72,11 +72,16 @@ export function InventoryToolDrawer({
               <Button disabled={busy} onClick={onForceReturn}>
                 Force return
               </Button>
-            ) : (
-              <Button disabled={busy || !policy.canFlag} onClick={onFlag}>
-                Mark damaged
-              </Button>
-            )}
+            ) : policy.canFlag ? (
+              <>
+                <Button variant="secondary" disabled={busy} onClick={() => onFlag('damaged')}>
+                  Mark damaged
+                </Button>
+                <Button variant="danger" disabled={busy} onClick={() => onFlag('lost')}>
+                  Mark lost
+                </Button>
+              </>
+            ) : null}
           </div>
           <button type="button" disabled={busy || !policy.canDecommission} onClick={onDecommission}>
             Decommission tool
