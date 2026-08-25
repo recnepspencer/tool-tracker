@@ -3,38 +3,42 @@ import { createMockApi } from './create-mock-api';
 import { createMockDatabase } from './mock-database';
 
 describe('createMockApi tool creation commands', () => {
-  it('creates warehouse batches atomically and enforces the manager warehouse scope', async () => {
+  it('creates warehouse units individually, enforces scope, and groups matching definitions', async () => {
     const database = createMockDatabase({ clock: () => '2026-08-18T09:00:00-06:00' });
     const api = createMockApi(database);
-    const warehouseTool = (warehouseId: string, model: string) => ({
+    const warehouseTool = (warehouseId: string, serial: string) => ({
       actorId: 'morgan-price',
       definition: {
-        name: 'Batch conduit bender',
+        name: 'Conduit bender',
         brand: 'Greenlee',
-        model,
+        model: 'B-1',
         categoryId: 'category-hand-tools',
         imageKey: 'tool-photo-placeholder.svg',
       },
       warehouseId,
       destination: 'warehouse' as const,
       photoCaptured: false,
+      serial,
     });
     const before = database.read();
 
-    await expect(
-      api.tools.createTools([warehouseTool('south-shop', 'B-1'), warehouseTool('north-yard', 'B-2')]),
-    ).rejects.toThrow('cannot manage that warehouse');
+    await expect(api.tools.createTool(warehouseTool('north-yard', 'CB-1'))).rejects.toThrow(
+      'cannot manage that warehouse',
+    );
     expect(database.read()).toEqual(before);
 
-    const created = await api.tools.createTools([
-      warehouseTool('south-shop', 'B-1'),
-      warehouseTool('south-shop', 'B-2'),
-    ]);
-    expect(created).toHaveLength(2);
-    expect(new Set(created.map((tool) => tool.id)).size).toBe(2);
-    expect(database.read().events.filter((event) => created.some((tool) => tool.id === event.toolUnitId))).toHaveLength(
-      2,
+    const first = await api.tools.createTool(warehouseTool('south-shop', 'CB-1'));
+    const second = await api.tools.createTool(warehouseTool('south-shop', 'CB-2'));
+    expect(first.id).not.toBe(second.id);
+    const catalogGroup = (await api.tools.listCatalog()).find(
+      (item) => item.name === 'Conduit bender' && item.model === 'B-1',
     );
+    expect(catalogGroup?.units.map((unit) => unit.id)).toEqual([first.id, second.id]);
+    expect(
+      database
+        .read()
+        .events.filter((event) => event.toolUnitId !== undefined && [first.id, second.id].includes(event.toolUnitId)),
+    ).toHaveLength(2);
   });
 
   it('creates a captured tool through the shared adapter and projects it everywhere', async () => {

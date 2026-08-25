@@ -86,23 +86,6 @@ export const createHttpToolsApi = ({ transport, basePath = '/api' }: HttpApiOpti
       normalizedInput,
     );
   },
-  createTools: async (inputs) => {
-    if (!inputs.length) throw new Error('At least one tool is required');
-    const normalizedInputs = inputs.map(normalizeCreateToolInput);
-    const receipts = responseArray<ToolDto>(
-      await transport.post(pathWithBase(basePath, '/tools/batch'), {
-        tools: normalizedInputs.map(createToolBody),
-      }),
-      'created tools',
-    );
-    if (receipts.length !== normalizedInputs.length) {
-      throw new Error('Invalid API response: created tool count');
-    }
-    return assertUniqueIds(
-      receipts.map((receipt, index) => mapCreateReceipt(receipt, normalizedInputs[index])),
-      'created tool',
-    );
-  },
   updateTool: async (input) => {
     const normalizedInput = normalizeUpdateToolInput(input);
     return mapUpdatedTool(

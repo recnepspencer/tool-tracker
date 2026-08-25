@@ -10,9 +10,6 @@ import { useToolCategories } from '../settings/use-tool-categories';
 import { useCreateWarehouseStock } from './use-create-warehouse-stock';
 import { useWarehouseScopes } from './use-warehouse-scopes';
 
-const minimumQuantity = 1;
-const maximumQuantity = 20;
-
 export function WarehouseStockDialog({
   defaultWarehouseId,
   onClose,
@@ -29,7 +26,7 @@ export function WarehouseStockDialog({
   const [model, setModel] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [warehouseId, setWarehouseId] = useState(defaultWarehouseId ?? '');
-  const [quantity, setQuantity] = useState('1');
+  const [serial, setSerial] = useState('');
   const [price, setPrice] = useState('');
   const [photo, setPhoto] = useState<CustodyPhotoEvidence | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -37,9 +34,6 @@ export function WarehouseStockDialog({
   useEffect(() => {
     if (!warehouseId && scopes.data?.[0]) setWarehouseId(scopes.data[0].id);
   }, [scopes.data, warehouseId]);
-  const parsedQuantity = Number.parseInt(quantity, 10);
-  const validQuantity =
-    Number.isInteger(parsedQuantity) && parsedQuantity >= minimumQuantity && parsedQuantity <= maximumQuantity;
   const blocked =
     !session ||
     scopes.isPending ||
@@ -54,9 +48,9 @@ export function WarehouseStockDialog({
     () => categories.data?.find((item) => item.id === categoryId),
     [categories.data, categoryId],
   );
-  const stockCommands = () => {
-    if (!session || !validQuantity) throw new Error(`Quantity must be ${minimumQuantity}–${maximumQuantity}.`);
-    return Array.from({ length: parsedQuantity }, () => ({
+  const stockCommand = () => {
+    if (!session) throw new Error('An active session is required.');
+    return {
       actorId: session.profileId,
       definition: {
         name,
@@ -68,16 +62,17 @@ export function WarehouseStockDialog({
       warehouseId,
       destination: 'warehouse' as const,
       photoCaptured: Boolean(photo),
+      serial,
       price,
       ...(photo ? { evidence: { photo } } : {}),
-    }));
+    };
   };
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (blocked || photoBusy || !name.trim() || !warehouseId || !category || !validQuantity) return;
+    if (blocked || photoBusy || !name.trim() || !warehouseId || !category) return;
     try {
-      await addStock.mutateAsync(stockCommands());
+      await addStock.mutateAsync(stockCommand());
       onClose();
     } catch {
       // The form stays mounted with its draft and the mutation error below.
@@ -86,15 +81,15 @@ export function WarehouseStockDialog({
 
   return (
     <OverlayDialog
-      label="Add tools to inventory"
+      label="Add tool to inventory"
       onClose={onClose}
       panelClassName="admin-dialog operations-dialog"
       showCloseButton
     >
       <div className="dialog-heading">
         <span className="eyebrow">Warehouse inventory</span>
-        <h2>Add tools</h2>
-        <p>Add one tool or a matching batch directly to warehouse stock.</p>
+        <h2>Add tool</h2>
+        <p>Create one individually tracked tool in warehouse inventory.</p>
       </div>
       <form className="operations-form" onSubmit={submit}>
         <TextField label="Tool name" value={name} onChange={setName} required />
@@ -116,22 +111,17 @@ export function WarehouseStockDialog({
         />
         <PhotoPicker
           photo={photo}
-          hint="Take or choose a photo"
-          idleLabel="Add a tool photo"
+          hint="Optional · Take or choose a photo"
+          idleLabel="Add an optional tool photo"
           selectedLabel="Tool photo attached"
           preview
           onPhotoChange={setPhoto}
           onBusyChange={setPhotoBusy}
         />
         <div className="operations-form-grid">
-          <TextField label="Quantity" type="number" value={quantity} onChange={setQuantity} required />
-          <TextField label="Price per tool" value={price} onChange={setPrice} />
+          <TextField label="Serial number" value={serial} onChange={setSerial} />
+          <TextField label="Price" value={price} onChange={setPrice} />
         </div>
-        {!validQuantity && (
-          <p className="form-error">
-            Quantity must be {minimumQuantity}–{maximumQuantity}.
-          </p>
-        )}
         {addStock.isError && <p className="form-error">{(addStock.error as Error).message}</p>}
         <div className="dialog-actions">
           <Button type="button" variant="ghost" onClick={onClose}>
@@ -139,17 +129,9 @@ export function WarehouseStockDialog({
           </Button>
           <Button
             type="submit"
-            disabled={
-              blocked || photoBusy || addStock.isPending || !name.trim() || !warehouseId || !category || !validQuantity
-            }
+            disabled={blocked || photoBusy || addStock.isPending || !name.trim() || !warehouseId || !category}
           >
-            {photoBusy
-              ? 'Processing photo…'
-              : addStock.isPending
-                ? 'Adding…'
-                : parsedQuantity === 1
-                  ? 'Add tool'
-                  : `Add ${parsedQuantity} tools`}
+            {photoBusy ? 'Processing photo…' : addStock.isPending ? 'Adding…' : 'Add tool'}
           </Button>
         </div>
       </form>

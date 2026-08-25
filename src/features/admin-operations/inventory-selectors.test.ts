@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { WarehouseInventoryItemView } from '../../domain/read-models/warehouse-operations';
-import { countInventoryFilter, filterInventoryItems } from './inventory-selectors';
+import { countInventoryFilter, filterInventoryItems, groupInventoryItems } from './inventory-selectors';
 
 const item = (
   id: string,
@@ -39,5 +39,13 @@ describe('inventory selectors', () => {
     expect(countInventoryFilter(items, 'flagged')).toBe(1);
     expect(countInventoryFilter(items, 'archived')).toBe(1);
     expect(filterInventoryItems(items, 'all', 'bandsaw').map((row) => row.toolUnitId)).toEqual(['TL-1']);
+  });
+
+  it('keeps individual units nested under their shared definition', () => {
+    const first = item('TL-1', 'in-stock', 'active');
+    const second = { ...item('TL-2', 'checked-out', 'active'), toolName: first.toolName };
+    const groups = groupInventoryItems([first, second, item('TL-3', 'in-stock', 'active')]);
+    expect(groups).toHaveLength(2);
+    expect(groups[0]?.items.map(({ toolUnitId }) => toolUnitId)).toEqual(['TL-1', 'TL-2']);
   });
 });

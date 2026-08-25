@@ -41,14 +41,15 @@ describe('warehouse operations surfaces', () => {
     expect(row).toHaveTextContent('Ray Torres');
   });
 
-  it('adds a matching batch directly to warehouse inventory', async () => {
+  it('adds one individually tracked tool directly to warehouse inventory', async () => {
     const user = userEvent.setup();
     const database = createMockDatabase({ clock: () => '2026-08-19T09:00:00-06:00' });
     window.location.hash = '#/admin/operations/inventory';
     renderApp(<AppRoutes />, { api: createMockApi(database), sessionStore: createMemorySessionStore('sam-ochoa') });
     expect(await screen.findByRole('heading', { name: 'Inventory' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Add tool' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Add tools to inventory' });
+    const dialog = await screen.findByRole('dialog', { name: 'Add tool to inventory' });
+    expect(within(dialog).queryByLabelText('Quantity')).not.toBeInTheDocument();
     await user.type(within(dialog).getByLabelText('Tool name'), 'Warehouse cart');
     await user.type(within(dialog).getByLabelText('Brand'), 'Greenlee');
     await user.type(within(dialog).getByLabelText('Model'), 'WC-2');
@@ -57,28 +58,42 @@ describe('warehouse operations surfaces', () => {
     expect(photoInput).toHaveAttribute('accept', 'image/*');
     expect(photoInput).toHaveAttribute('capture', 'environment');
     expect(await within(dialog).findByText('Tool photo attached')).toBeInTheDocument();
-    const quantity = within(dialog).getByLabelText('Quantity');
-    await user.clear(quantity);
-    await user.type(quantity, '2');
-    const submit = within(dialog).getByRole('button', { name: 'Add 2 tools' });
+    await user.type(within(dialog).getByLabelText('Serial number'), 'WC-2-001');
+    const submit = within(dialog).getByRole('button', { name: 'Add tool' });
     await waitFor(() => expect(submit).toBeEnabled());
     await user.click(submit);
     await waitFor(() =>
-      expect(screen.queryByRole('dialog', { name: 'Add tools to inventory' })).not.toBeInTheDocument(),
+      expect(screen.queryByRole('dialog', { name: 'Add tool to inventory' })).not.toBeInTheDocument(),
     );
     const state = database.read();
     const definitionIds = new Set(
       state.definitions.filter((definition) => definition.name.includes('Warehouse cart')).map(({ id }) => id),
     );
     const createdUnits = state.units.filter((unit) => definitionIds.has(unit.definitionId));
-    expect(createdUnits).toHaveLength(2);
-    createdUnits.forEach((unit) => {
-      expect(unit.photoKey).toMatch(/^data:image\/jpeg/);
-      expect(state.custody.find((record) => record.toolUnitId === unit.id)?.holder).toEqual({
-        type: 'warehouse',
-        warehouseId: 'north-yard',
-      });
+    expect(createdUnits).toHaveLength(1);
+    expect(createdUnits[0]).toMatchObject({ serial: 'WC-2-001' });
+    expect(createdUnits[0]?.photoKey).toMatch(/^data:image\/jpeg/);
+    expect(state.custody.find((record) => record.toolUnitId === createdUnits[0]?.id)?.holder).toEqual({
+      type: 'warehouse',
+      warehouseId: 'north-yard',
     });
+  });
+
+  it('nests matching individual tools under one expandable inventory group', async () => {
+    const user = userEvent.setup();
+    window.location.hash = '#/admin/operations/inventory';
+    renderApp(<AppRoutes />, {
+      api: createMockApi(),
+      sessionStore: createMemorySessionStore('sam-ochoa'),
+    });
+    const group = await screen.findByRole('button', { name: 'Expand Hammer drill, 4 tools' });
+    expect(group).toHaveTextContent('4 individual tools');
+    expect(screen.queryByRole('button', { name: 'Open Hammer drill, TL-101' })).not.toBeInTheDocument();
+
+    await user.click(group);
+    expect(screen.getByRole('button', { name: 'Collapse Hammer drill, 4 tools' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open Hammer drill, TL-101' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open Hammer drill, TL-118' })).toBeInTheDocument();
   });
 
   it('refetches active and inactive warehouse projections after a decision', async () => {

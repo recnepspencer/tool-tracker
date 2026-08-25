@@ -7,7 +7,7 @@ export function useCreateWarehouseStock() {
   const api = useApi();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (commands: CreateToolInput[]) => api.tools.createTools(commands),
+    mutationFn: (command: CreateToolInput) => api.tools.createTool(command),
     onSuccess: () => invalidateToolProjections(queryClient),
   });
 }

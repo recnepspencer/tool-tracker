@@ -85,7 +85,7 @@ describe('warehouse scope failure surfaces', () => {
       { api: createMockApi(), sessionStore: createMemorySessionStore('sam-ochoa') },
     );
     await user.click(await screen.findByRole('button', { name: 'Add tool' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Add tools to inventory' });
+    const dialog = await screen.findByRole('dialog', { name: 'Add tool to inventory' });
     await user.type(screen.getByLabelText('Tool name'), 'Paused stock');
     await chooseFieldOption(user, screen.getByRole('combobox', { name: 'Category' }), 'Power tools');
     const submit = within(dialog).getByRole('button', { name: 'Add tool' });

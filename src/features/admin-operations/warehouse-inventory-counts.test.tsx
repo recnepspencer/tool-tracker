@@ -21,9 +21,14 @@ describe('warehouse inventory count semantics', () => {
     }));
     renderApp(<AppRoutes />, { api: createMockApi(database), sessionStore: createMemorySessionStore('sam-ochoa') });
     expect(await screen.findByRole('heading', { name: 'Inventory' })).toBeInTheDocument();
+    expect(screen.getByText('19 of 19 tools · All warehouses')).toBeInTheDocument();
     expect(screen.queryByRole('tab')).not.toBeInTheDocument();
     expect(screen.queryByText('Rotary hammer')).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /^Open .*, TL-\d+$/ })).toHaveLength(19);
+    const individualRows = screen.getAllByRole('button', { name: /^Open .*, TL-\d+$/ }).length;
+    const groupedUnits = screen
+      .getAllByRole('button', { name: /^Expand .*, \d+ tools$/ })
+      .reduce((total, group) => total + Number(group.getAttribute('aria-label')?.match(/(\d+) tools$/)?.[1] ?? 0), 0);
+    expect(individualRows + groupedUnits).toBe(19);
   });
 
   it('keeps the warehouse summary archive count separate from active inventory', async () => {

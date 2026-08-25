@@ -69,7 +69,6 @@ export interface ToolsApi {
   listCatalog(): Promise<ToolCatalogItem[]>;
   getToolDetail(toolUnitId: string): Promise<ToolDetailView>;
   createTool(input: CreateToolInput): Promise<ToolView>;
-  createTools(inputs: CreateToolInput[]): Promise<ToolView[]>;
   updateTool(input: UpdateToolInput): Promise<ToolView>;
   flagTool(input: FlagToolInput): Promise<ToolView>;
   restoreTool(input: RestoreToolInput): Promise<ToolView>;

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { ErrorState, LoadingState } from '../../components/ui/AsyncState';
 import { PageHeading } from '../../components/layout/PageHeading';
@@ -13,19 +13,22 @@ import type { WarehouseInventoryItemView } from '../../domain/read-models/wareho
 import { ToolDecommissionDialog, ToolEditDialog, ToolFlagDialog } from './ToolDecisionDialogs';
 import { Button } from '../../components/ui/Button';
 import './admin-operations.css';
-import { filterInventoryItems } from './inventory-selectors';
+import { filterInventoryItems, groupInventoryItems, type InventoryToolGroup } from './inventory-selectors';
 import { useInventoryDecisionController } from './use-inventory-decision-controller';
 import { WarehouseStockDialog } from './WarehouseStockDialog';
 import { InventoryToolDrawer } from './InventoryToolDrawer';
+import { ChevronDownIcon } from '../../components/ui/ChevronDownIcon';
 
 export function WarehouseInventoryPage() {
   const [warehouseId, setWarehouseId] = useState('all');
   const [search, setSearch] = useState('');
   const [selectedToolId, setSelectedToolId] = useState<string | null>(null);
   const [stockOpen, setStockOpen] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
   const warehouses = useWarehouseScopes();
   const inventory = useWarehouseInventory(warehouseId);
   const rows = useMemo(() => filterInventoryItems(inventory.data ?? [], 'all', search), [inventory.data, search]);
+  const groups = useMemo(() => groupInventoryItems(rows), [rows]);
   const selectedItem = inventory.data?.find((item) => item.toolUnitId === selectedToolId) ?? null;
   const inventoryBlocked = inventory.isFetching || inventory.isPaused || inventory.isError;
   const scopesBlocked = warehouses.isFetching || warehouses.isPaused || warehouses.isError;
@@ -103,9 +106,45 @@ export function WarehouseInventoryPage() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((item) => (
-                  <InventoryRow key={item.toolUnitId} item={item} onOpen={() => setSelectedToolId(item.toolUnitId)} />
-                ))}
+                {groups.map((group) => {
+                  if (group.items.length === 1) {
+                    const item = group.items[0];
+                    return (
+                      <InventoryRow
+                        key={item.toolUnitId}
+                        item={item}
+                        onOpen={() => setSelectedToolId(item.toolUnitId)}
+                      />
+                    );
+                  }
+                  const expanded = expandedGroups.has(group.id);
+                  return (
+                    <Fragment key={group.id}>
+                      <InventoryGroupRow
+                        group={group}
+                        expanded={expanded}
+                        onToggle={() =>
+                          setExpandedGroups((current) => {
+                            const next = new Set(current);
+                            if (next.has(group.id)) next.delete(group.id);
+                            else next.add(group.id);
+                            return next;
+                          })
+                        }
+                      />
+                      {expanded
+                        ? group.items.map((item) => (
+                            <InventoryRow
+                              key={item.toolUnitId}
+                              item={item}
+                              nested
+                              onOpen={() => setSelectedToolId(item.toolUnitId)}
+                            />
+                          ))
+                        : null}
+                    </Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -166,10 +205,70 @@ export function WarehouseInventoryPage() {
   );
 }
 
-function InventoryRow({ item, onOpen }: { item: WarehouseInventoryItemView; onOpen(): void }) {
+function InventoryGroupRow({
+  group,
+  expanded,
+  onToggle,
+}: {
+  group: InventoryToolGroup;
+  expanded: boolean;
+  onToggle(): void;
+}) {
+  const statusCounts = new Map<string, number>();
+  group.items.forEach((item) => statusCounts.set(item.status, (statusCounts.get(item.status) ?? 0) + 1));
+  const statusSummary = [...statusCounts.entries()]
+    .map(([status, count]) => `${count} ${status.replace('-', ' ')}`)
+    .join(' · ');
+  const warehouseNames = [...new Set(group.items.map((item) => item.warehouseName))];
+  const latest = [...group.items].sort((left, right) => right.lastMovedAt.localeCompare(left.lastMovedAt))[0];
   return (
     <tr
-      className="inventory-row"
+      className="inventory-group-row"
+      role="button"
+      tabIndex={0}
+      aria-expanded={expanded}
+      aria-label={`${expanded ? 'Collapse' : 'Expand'} ${group.name}, ${group.items.length} tools`}
+      onClick={onToggle}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onToggle();
+        }
+      }}
+    >
+      <td>
+        <div className="inventory-tool inventory-tool--group">
+          <ChevronDownIcon className="inventory-group-chevron" />
+          <ToolPhoto src={group.imageSrc} alt="" size="small" />
+          <div>
+            <strong>{group.name}</strong>
+            <span>
+              {group.brand} · {group.model} · {group.category}
+            </span>
+            <span className="inventory-tool__mobile-context">{statusSummary}</span>
+          </div>
+        </div>
+      </td>
+      <td>{group.items.length} individual tools</td>
+      <td className="inventory-group-status">{statusSummary}</td>
+      <td>{warehouseNames.length === 1 ? warehouseNames[0] : `${warehouseNames.length} warehouses`}</td>
+      <td>{latest?.lastMoved}</td>
+    </tr>
+  );
+}
+
+function InventoryRow({
+  item,
+  nested = false,
+  onOpen,
+}: {
+  item: WarehouseInventoryItemView;
+  nested?: boolean;
+  onOpen(): void;
+}) {
+  return (
+    <tr
+      className={`inventory-row${nested ? ' inventory-row--nested' : ''}`}
       role="button"
       tabIndex={0}
       aria-label={`Open ${item.toolName}, ${item.toolUnitId}`}
@@ -185,10 +284,8 @@ function InventoryRow({ item, onOpen }: { item: WarehouseInventoryItemView; onOp
         <div className="inventory-tool">
           <ToolPhoto src={item.imageSrc} alt="" size="small" />
           <div>
-            <strong>{item.toolName}</strong>
-            <span>
-              {item.toolUnitId} · {item.category}
-            </span>
+            <strong>{nested ? item.serial || item.toolUnitId : item.toolName}</strong>
+            <span>{nested ? `${item.toolUnitId} · ${item.toolName}` : `${item.toolUnitId} · ${item.category}`}</span>
             <span className="inventory-tool__mobile-context">
               {item.warehouseName} · {item.holder.name} · {item.lastMoved}
             </span>

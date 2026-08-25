@@ -126,37 +126,28 @@ const appendToolCreationEvent = (
   });
 };
 
-export const createTools = (database: MockDatabase, inputs: CreateToolInput[]): ToolView[] => {
-  if (!inputs.length) throw new WorkflowError('invalid', 'At least one tool is required');
-  const normalizedInputs = inputs.map(normalizeCreateToolInput);
-  normalizedInputs.forEach((input) => {
-    if (!input.photoCaptured && input.destination !== 'warehouse') {
-      throw new WorkflowError('invalid', 'A tool photo is required');
-    }
-  });
+export const createTool = (database: MockDatabase, rawInput: CreateToolInput): ToolView => {
+  const input = normalizeCreateToolInput(rawInput);
+  if (!input.photoCaptured && input.destination !== 'warehouse') {
+    throw new WorkflowError('invalid', 'A tool photo is required');
+  }
   const occurredAt = database.clock();
-  const createdUnitIds: string[] = [];
+  let createdUnitId = '';
   database.update((state) => {
-    normalizedInputs.forEach((input) => {
-      const actor = authorizeToolCreation(state, input);
-      const { definition } = findOrCreateDefinition(state, database, input);
-      const unit = createToolUnit(state, database, input, definition);
-      state.custody.push({
-        toolUnitId: unit.id,
-        holder:
-          input.destination === 'warehouse'
-            ? { type: 'warehouse', warehouseId: input.warehouseId }
-            : { type: 'worker', userId: actor.id },
-        sinceAt: occurredAt,
-      });
-      appendToolCreationEvent(state, database, input, actor, definition, unit, occurredAt);
-      createdUnitIds.push(unit.id);
+    const actor = authorizeToolCreation(state, input);
+    const { definition } = findOrCreateDefinition(state, database, input);
+    const unit = createToolUnit(state, database, input, definition);
+    state.custody.push({
+      toolUnitId: unit.id,
+      holder:
+        input.destination === 'warehouse'
+          ? { type: 'warehouse', warehouseId: input.warehouseId }
+          : { type: 'worker', userId: actor.id },
+      sinceAt: occurredAt,
     });
+    appendToolCreationEvent(state, database, input, actor, definition, unit, occurredAt);
+    createdUnitId = unit.id;
     return state;
   });
-  const state = database.read();
-  return createdUnitIds.map((unitId) => toToolView(state, unitId));
+  return toToolView(database.read(), createdUnitId);
 };
-
-export const createTool = (database: MockDatabase, input: CreateToolInput): ToolView =>
-  createTools(database, [input])[0];

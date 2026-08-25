@@ -26,3 +26,37 @@ export const countInventoryFilter = (items: WarehouseInventoryItemView[], filter
 
 export const flaggedInventoryItems = (items: WarehouseInventoryItemView[], search = '') =>
   filterInventoryItems(items, 'flagged', search);
+
+export interface InventoryToolGroup {
+  id: string;
+  name: string;
+  brand: string;
+  model: string;
+  category: string;
+  imageSrc: string;
+  items: WarehouseInventoryItemView[];
+}
+
+const normalizedGroupPart = (value: string) => value.trim().toLocaleLowerCase();
+
+export const groupInventoryItems = (items: WarehouseInventoryItemView[]): InventoryToolGroup[] => {
+  const groups = new Map<string, InventoryToolGroup>();
+  items.forEach((item) => {
+    const id = [item.categoryId, item.toolName, item.brand, item.model].map(normalizedGroupPart).join('::');
+    const existing = groups.get(id);
+    if (existing) {
+      existing.items.push(item);
+      return;
+    }
+    groups.set(id, {
+      id,
+      name: item.toolName,
+      brand: item.brand,
+      model: item.model,
+      category: item.category,
+      imageSrc: item.imageSrc,
+      items: [item],
+    });
+  });
+  return [...groups.values()];
+};
