@@ -18,19 +18,19 @@ function findAdapterBoundaryBypasses(sources: Record<string, string>) {
         !path.endsWith('/providers.tsx')
       ) {
         const directPropertyCall =
-          /\b[A-Za-z_$][\w$]*\s*(?:\?\.|\.)\s*(auth|tools|activity|admin|custody|warehouse|reconciliation|settings)\s*(?:\?\.|\.)/.test(
+          /\b[A-Za-z_$][\w$]*\s*(?:\?\.|\.)\s*(auth|tools|activity|admin|custody|warehouse|settings)\s*(?:\?\.|\.)/.test(
             source,
           );
         const destructuredAdapter =
-          /\b(?:const|let|var)\s*\{[^}]*\b(?:auth|tools|activity|admin|custody|warehouse|reconciliation|settings)\b[^}]*\}\s*=\s*[A-Za-z_$][\w$]*/.test(
+          /\b(?:const|let|var)\s*\{[^}]*\b(?:auth|tools|activity|admin|custody|warehouse|settings)\b[^}]*\}\s*=\s*[A-Za-z_$][\w$]*/.test(
             source,
           );
         const computedAdapter =
-          /\b[A-Za-z_$][\w$]*\s*(?:\?\.\s*)?\[\s*['"](?:auth|tools|activity|admin|custody|warehouse|reconciliation|settings)['"]\s*\]/.test(
+          /\b[A-Za-z_$][\w$]*\s*(?:\?\.\s*)?\[\s*['"](?:auth|tools|activity|admin|custody|warehouse|settings)['"]\s*\]/.test(
             source,
           );
         const memberAlias =
-          /\b(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*[A-Za-z_$][\w$]*\s*(?:\?\.|\.)\s*(auth|tools|activity|admin|custody|warehouse|reconciliation|settings)\b/.test(
+          /\b(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*[A-Za-z_$][\w$]*\s*(?:\?\.|\.)\s*(auth|tools|activity|admin|custody|warehouse|settings)\b/.test(
             source,
           );
         if (directPropertyCall || destructuredAdapter || computedAdapter || memberAlias) {

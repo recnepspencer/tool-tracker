@@ -69,24 +69,6 @@ export const invalidateWarehouseProjections = async (queryClient: QueryClient) =
   ]);
 };
 
-export const invalidateReconciliationProjections = async (queryClient: QueryClient) => {
-  await Promise.all([
-    queryClient.invalidateQueries({ queryKey: queryKeys.reconciliationRoot, refetchType: 'all' }),
-    queryClient.invalidateQueries({ queryKey: queryKeys.adminAuditRoot, refetchType: 'all' }),
-    queryClient.invalidateQueries({ queryKey: queryKeys.adminSummary, refetchType: 'all' }),
-    queryClient.invalidateQueries({ queryKey: queryKeys.adminPeopleRoot, refetchType: 'all' }),
-    queryClient.invalidateQueries({ queryKey: queryKeys.adminPersonRoot, refetchType: 'all' }),
-    queryClient.invalidateQueries({ queryKey: queryKeys.adminWarehousesRoot, refetchType: 'all' }),
-    queryClient.invalidateQueries({ queryKey: queryKeys.tools, refetchType: 'all' }),
-    queryClient.invalidateQueries({ queryKey: queryKeys.catalog, refetchType: 'all' }),
-    queryClient.invalidateQueries({ queryKey: queryKeys.activity, refetchType: 'all' }),
-    queryClient.invalidateQueries({ queryKey: queryKeys.toolDetailRoot, refetchType: 'all' }),
-    queryClient.invalidateQueries({ queryKey: queryKeys.transferTargetsRoot, refetchType: 'all' }),
-    queryClient.invalidateQueries({ queryKey: queryKeys.warehouseInventoryRoot, refetchType: 'all' }),
-    queryClient.invalidateQueries({ queryKey: queryKeys.warehouseOperationsRoot, refetchType: 'all' }),
-  ]);
-};
-
 export const invalidateSettingsProjections = async (queryClient: QueryClient) => {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: queryKeys.companyProfile, refetchType: 'all' }),

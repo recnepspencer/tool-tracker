@@ -74,7 +74,9 @@ describe('admin route surfaces', () => {
     expect(within(navigation).queryByRole('link', { name: 'Dashboard' })).not.toBeInTheDocument();
     expect(within(navigation).getByRole('link', { name: 'People' })).toBeInTheDocument();
     expect(within(navigation).getByRole('link', { name: 'Queue' })).toHaveAttribute('href', '#/admin/operations/queue');
-    expect(navigation.querySelectorAll('.worker-drawer-link-icon')).toHaveLength(9);
+    expect(navigation.querySelectorAll('.worker-drawer-link-icon')).toHaveLength(
+      within(navigation).getAllByRole('link').length,
+    );
     expect(within(navigation).getByRole('link', { name: 'Warehouses' })).toBeInTheDocument();
     expect(within(navigation).getByRole('link', { name: 'Access' })).toBeInTheDocument();
     expect(within(navigation).getByRole('link', { name: 'Settings' })).toBeInTheDocument();

@@ -30,6 +30,9 @@ describe('application route guards', () => {
     await user.click(await screen.findByRole('button', { name: 'Enter as Sam' }));
     expect(await screen.findByRole('heading', { name: 'Queue' })).toBeInTheDocument();
     expect(window.location.hash).toBe('#/admin/operations/queue');
+    expect(screen.queryByRole('link', { name: 'Reconciliation' })).not.toBeInTheDocument();
+    window.location.hash = '#/admin/reconciliation';
+    await waitFor(() => expect(window.location.hash).toBe('#/admin/operations/queue'));
     window.location.hash = '#/worker/tools';
     await waitFor(() => expect(window.location.hash).toBe('#/admin/operations/queue'));
     expect(screen.queryByRole('heading', { name: 'My tools' })).not.toBeInTheDocument();

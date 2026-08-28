@@ -39,20 +39,6 @@ const cloneState = (state: SeedSnapshot): MockDatabaseState => ({
     participantIds: [...event.participantIds],
     ...(event.evidence ? { evidence: { ...event.evidence } } : {}),
   })),
-  reconciliationIssues: state.reconciliationIssues.map((issue) =>
-    issue.kind === 'duplicate-tool-record'
-      ? {
-          ...issue,
-          candidateToolUnitIds: [issue.candidateToolUnitIds[0], issue.candidateToolUnitIds[1]],
-          ...(issue.resolution ? { resolution: { ...issue.resolution } } : {}),
-        }
-      : {
-          ...issue,
-          recordedHolder: { ...issue.recordedHolder },
-          observedHolder: { ...issue.observedHolder },
-          ...(issue.resolution ? { resolution: { ...issue.resolution } } : {}),
-        },
-  ),
 });
 
 export const createMockDatabase = (options: MockDatabaseOptions = {}): MockDatabase => {
@@ -70,7 +56,6 @@ export const createMockDatabase = (options: MockDatabaseOptions = {}): MockDatab
       ...state.conditionReports.map((report) => report.id),
       ...state.events.map((event) => event.id),
       ...state.categories.map((category) => category.id),
-      ...state.reconciliationIssues.map((issue) => issue.id),
     ]);
     do {
       sequence += 1;

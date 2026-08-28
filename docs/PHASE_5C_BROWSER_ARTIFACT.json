@@ -13,7 +13,6 @@
     "ray": ["#/worker/tools", "#/worker/activity", "#/worker/checkout", "#/worker/account"],
     "sam": [
       "#/admin/dashboard",
-      "#/admin/reconciliation",
       "#/admin/activity",
       "#/admin/settings",
       "#/admin/operations/inventory",
@@ -35,11 +34,6 @@
     "workerDuplicateIdentity": {
       "hammerDrillCards": 2,
       "stableAccessibleIdentityObserved": ["TL-101", "TL-103"]
-    },
-    "reconciliationMerge": {
-      "openIssuesBefore": 2,
-      "openIssuesAfter": 1,
-      "duplicateCardRemoved": true
     },
     "resetDemoData": {
       "confirmation": "RESET DEMO DATA",

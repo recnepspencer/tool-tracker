@@ -5,7 +5,6 @@ import type { CustodyRecord, HandoffRequest } from '../../domain/custody';
 import type { ToolDefinition, ToolUnit } from '../../domain/tool';
 import type { Warehouse } from '../../domain/warehouse';
 import type { CompanyProfile, ToolCategory } from '../../domain/organization';
-import type { ReconciliationIssue } from '../../domain/reconciliation';
 
 /** Mutable runtime authority owned by the mock database transaction boundary. */
 export interface MockDatabaseState {
@@ -20,7 +19,6 @@ export interface MockDatabaseState {
   handoffs: HandoffRequest[];
   conditionReports: ConditionReport[];
   events: AuditEvent[];
-  reconciliationIssues: ReconciliationIssue[];
 }
 
 /** Deeply immutable read-side view; projections cannot mutate nested seed records. */

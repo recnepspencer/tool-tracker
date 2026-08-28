@@ -4,7 +4,6 @@ import type { CustodyRecord, HandoffRequest } from '../../domain/custody';
 import type { ToolUnit } from '../../domain/tool';
 import type { Warehouse } from '../../domain/warehouse';
 import { seedCategories, seedCompany } from './seed-organization';
-import { seedReconciliationIssues } from './seed-reconciliation';
 import { demoProfileIds, seedConditionReports } from './seed-activity';
 import { assertReferences } from './seed-validation';
 import { seedDefinitions } from './seed-definitions';
@@ -528,12 +527,6 @@ export const createSeedState = (): MockDatabaseState => {
     handoffs: seedHandoffs.map((handoff) => ({ ...handoff, from: { ...handoff.from }, to: { ...handoff.to } })),
     conditionReports: seedConditionReports.map((report) => ({ ...report })),
     events: seedEvents.map((event) => ({ ...event, participantIds: [...event.participantIds] })),
-    reconciliationIssues: seedReconciliationIssues.map((issue) => ({
-      ...issue,
-      ...(issue.kind === 'duplicate-tool-record'
-        ? { candidateToolUnitIds: [...issue.candidateToolUnitIds] as [string, string] }
-        : { recordedHolder: { ...issue.recordedHolder }, observedHolder: { ...issue.observedHolder } }),
-    })),
   };
   assertReferences(state);
   return state;

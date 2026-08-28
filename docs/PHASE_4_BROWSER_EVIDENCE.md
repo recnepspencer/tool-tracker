@@ -10,7 +10,7 @@ The in-app browser was run against the local production-compatible dev server at
 - `/admin/people` rendered the lifecycle-aware directory (active, invited, suspended, and removed members), search/lifecycle/role/capability filters, and the Invite person dialog. The no-access filter returned Casey, Quinn, and Taylor plus the active warehouse manager Morgan; the admin-capable filter returned Sam.
 - `/admin/permissions` rendered Worker, Warehouse manager, and Administrator rows from the shared capability vocabulary.
 - `/admin/warehouses` rendered three canonical warehouse cards and the Add warehouse/Edit dialogs.
-- Desktop/mobile navigation exposed Dashboard, People, Permissions, and Warehouses while Operations and Reconciliation remained visibly unavailable.
+- Desktop/mobile navigation exposed Dashboard, People, Permissions, and Warehouses while Operations remained visibly unavailable.
 - At 320px, the mobile navigation opened as a modal drawer, moved focus to its close control, trapped Tab focus, closed on Escape, and restored focus to the Open navigation trigger.
 - The account sheet used the same modal-focus contract: opening moves focus to Close account menu, Escape closes it, and focus returns to Open account menu.
 - The Permissions route rendered the domain-owned locked structural rules for accepting-party custody, immutable audit history, and administrator-only people administration, with an explicit Locked indicator.

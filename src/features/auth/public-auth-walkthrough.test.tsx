@@ -29,7 +29,6 @@ function guardedApi(calls: Record<string, number>): NelsonApi {
     activity: guardGroup('activity', base.activity),
     admin: guardGroup('admin', base.admin),
     warehouse: guardGroup('warehouse', base.warehouse),
-    reconciliation: guardGroup('reconciliation', base.reconciliation),
     settings: guardGroup('settings', base.settings),
   };
 }

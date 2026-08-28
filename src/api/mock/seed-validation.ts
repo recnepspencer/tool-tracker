@@ -6,7 +6,6 @@ import { TOOL_CONDITIONS, TOOL_LIFECYCLES } from '../../domain/tool';
 import { DEMO_ROLES, MEMBER_LIFECYCLES, MEMBER_ROLES } from '../../domain/people';
 import { isEligibleWarehouseManager } from '../../domain/warehouse';
 import { normalizeCategoryName } from '../../domain/organization';
-import { RECONCILIATION_ISSUE_KINDS, RECONCILIATION_STATUSES } from '../../domain/reconciliation';
 import type { MockDatabaseState } from './seed-state';
 
 interface ReferenceIndex {
@@ -52,7 +51,6 @@ const assertCollectionIdentity = (state: MockDatabaseState) => {
   assertUniqueIds(state.conditionReports, 'condition report');
   assertUniqueIds(state.events, 'audit event');
   assertUniqueIds(state.categories, 'tool category');
-  assertUniqueIds(state.reconciliationIssues, 'reconciliation issue');
   if (
     state.company.id !== 'company' ||
     !nonBlank(state.company.name) ||
@@ -296,69 +294,6 @@ const assertConditionReports = (state: MockDatabaseState, refs: ReferenceIndex) 
   });
 };
 
-const assertReconciliationIssues = (state: MockDatabaseState, refs: ReferenceIndex) => {
-  const openKeys = new Set<string>();
-  state.reconciliationIssues.forEach((issue) => {
-    if (!RECONCILIATION_ISSUE_KINDS.includes(issue.kind) || !RECONCILIATION_STATUSES.includes(issue.status)) {
-      throw new Error('Invalid reconciliation issue: ' + issue.id);
-    }
-    if (!nonBlank(issue.reason) || issue.revision < 1 || parseCanonicalInstant(issue.detectedAt) === null) {
-      throw new Error('Invalid reconciliation issue: ' + issue.id);
-    }
-    if (issue.status === 'open') {
-      const key =
-        issue.kind === 'duplicate-tool-record'
-          ? issue.kind + ':' + [...issue.candidateToolUnitIds].sort().join('|')
-          : issue.kind + ':' + issue.toolUnitId;
-      if (openKeys.has(key)) throw new Error('Duplicate open reconciliation issue: ' + issue.id);
-      openKeys.add(key);
-      if (issue.resolution) throw new Error('Open reconciliation issue has resolution: ' + issue.id);
-    } else if (
-      !issue.resolution ||
-      !refs.userIds.has(issue.resolution.actorId) ||
-      parseCanonicalInstant(issue.resolution.resolvedAt) === null
-    ) {
-      throw new Error('Invalid reconciliation resolution: ' + issue.id);
-    }
-    if (issue.kind === 'duplicate-tool-record') {
-      const [first, second] = issue.candidateToolUnitIds;
-      if (first === second || !refs.unitIds.has(first) || !refs.unitIds.has(second)) {
-        throw new Error('Invalid duplicate candidates: ' + issue.id);
-      }
-      if (issue.status === 'resolved' && issue.resolution && !['dismissed', 'merged'].includes(issue.resolution.type)) {
-        throw new Error('Invalid duplicate resolution type: ' + issue.id);
-      }
-      if (
-        issue.status === 'resolved' &&
-        issue.resolution?.type === 'merged' &&
-        (!issue.resolution.survivorToolUnitId ||
-          !issue.resolution.retiredToolUnitId ||
-          new Set([first, second]).size !==
-            new Set([issue.resolution.survivorToolUnitId, issue.resolution.retiredToolUnitId]).size ||
-          ![first, second].includes(issue.resolution.survivorToolUnitId) ||
-          ![first, second].includes(issue.resolution.retiredToolUnitId))
-      ) {
-        throw new Error('Invalid duplicate merge resolution: ' + issue.id);
-      }
-      if (issue.status === 'resolved' && issue.resolution?.type === 'merged') {
-        const survivor = state.units.find((unit) => unit.id === issue.resolution?.survivorToolUnitId);
-        const retired = state.units.find((unit) => unit.id === issue.resolution?.retiredToolUnitId);
-        if (!survivor || !retired || survivor.lifecycle !== 'active' || retired.lifecycle !== 'archived') {
-          throw new Error('Invalid duplicate merge lifecycle: ' + issue.id);
-        }
-      }
-    } else if (!refs.unitIds.has(issue.toolUnitId) || sameHolder(issue.recordedHolder, issue.observedHolder)) {
-      throw new Error('Invalid custody mismatch: ' + issue.id);
-    } else if (
-      issue.status === 'resolved' &&
-      issue.resolution &&
-      !['keep-recorded', 'accept-observed'].includes(issue.resolution.type)
-    ) {
-      throw new Error('Invalid custody resolution type: ' + issue.id);
-    }
-  });
-};
-
 export const assertReferences = (state: MockDatabaseState) => {
   assertCollectionIdentity(state);
   const refs = buildReferenceIndex(state);
@@ -371,5 +306,4 @@ export const assertReferences = (state: MockDatabaseState) => {
   assertPendingHandoffUniqueness(state);
   assertHandoffLifecycle(state, refs);
   assertConditionReports(state, refs);
-  assertReconciliationIssues(state, refs);
 };

@@ -14,7 +14,6 @@ import { WarehouseQueuePage } from '../features/admin-operations/WarehouseQueueP
 import { WarehouseInventoryPage } from '../features/admin-operations/WarehouseInventoryPage';
 import { FlaggedToolsPage } from '../features/admin-operations/FlaggedToolsPage';
 import { AdminActivityPage } from '../features/admin-activity/AdminActivityPage';
-import { ReconciliationPage } from '../features/admin-reconciliation/ReconciliationPage';
 import { SettingsPage } from '../features/admin-settings/SettingsPage';
 import { WorkerShell } from './WorkerShell';
 import { AdminShell } from './AdminShell';
@@ -55,7 +54,6 @@ export function AppRoutes() {
               <Route path="/admin/operations/inventory" element={<WarehouseInventoryPage />} />
               <Route path="/admin/operations/flagged" element={<FlaggedToolsPage />} />
               <Route path="/admin/activity" element={<AdminActivityPage />} />
-              <Route path="/admin/reconciliation" element={<ReconciliationPage />} />
               <Route path="/admin/settings" element={<SettingsPage />} />
             </Route>
           </Route>

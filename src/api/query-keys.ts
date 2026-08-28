@@ -35,8 +35,6 @@ export const queryKeys = {
     ['warehouse-operations', actorId, warehouseId, 'summary'] as const,
   adminAuditRoot: ['admin-audit'] as const,
   adminAudit: (actorId: string) => ['admin-audit', actorId] as const,
-  reconciliationRoot: ['reconciliation'] as const,
-  reconciliation: (actorId: string) => ['reconciliation', actorId] as const,
   companyProfile: ['company-profile'] as const,
   toolCategories: ['tool-categories'] as const,
 };
