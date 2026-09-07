@@ -5,6 +5,7 @@ import type { CustodyApi } from './contracts/custody-api';
 import type { ToolsApi } from './contracts/tools-api';
 import type { WarehouseApi } from './contracts/warehouse-api';
 import type { SettingsApi } from './contracts/settings-api';
+import type { JobsApi } from './contracts/jobs-api';
 
 export type { AdminApi } from './contracts/admin-api';
 export type { ActivityApi } from './contracts/activity-api';
@@ -22,4 +23,5 @@ export interface NelsonApi {
   admin: AdminApi;
   warehouse: WarehouseApi;
   settings: SettingsApi;
+  jobs: JobsApi;
 }

@@ -38,7 +38,7 @@ describe('worker account surfaces', () => {
     expect(within(navigation).getByRole('link', { name: 'Activity' })).toBeInTheDocument();
     expect(within(navigation).getByRole('button', { name: 'Add a tool' })).toBeInTheDocument();
     expect(within(navigation).queryByText('Warehouses')).not.toBeInTheDocument();
-    expect(navigation.querySelectorAll('.worker-drawer-link-icon')).toHaveLength(4);
+    expect(navigation.querySelectorAll('.worker-drawer-link-icon')).toHaveLength(6);
     const theme = navigation.querySelector('.worker-drawer-theme');
     expect(theme).not.toBeNull();
     expect(navigation.querySelector('.worker-drawer-nav')!.compareDocumentPosition(theme!)).toBe(

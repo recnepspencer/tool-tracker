@@ -6,6 +6,7 @@ import { createHttpCustodyApi } from './create-http-custody-api';
 import { createHttpToolsApi } from './create-http-tools-api';
 import { createHttpWarehouseApi } from './create-http-warehouse-api';
 import { createHttpSettingsApi } from './create-http-settings-api';
+import { createHttpJobsApi } from './create-http-jobs-api';
 import type { HttpApiOptions } from './http-options';
 
 export type { HttpApiOptions, HttpTransport } from './http-options';
@@ -18,4 +19,5 @@ export const createHttpApi = (options: HttpApiOptions): NelsonApi => ({
   admin: createHttpAdminApi(options),
   warehouse: createHttpWarehouseApi(options),
   settings: createHttpSettingsApi(options),
+  jobs: createHttpJobsApi(options),
 });

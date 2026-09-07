@@ -5,6 +5,7 @@ import { useToolCategories } from '../settings/use-tool-categories';
 import { CategoryManager } from './CategoryManager';
 import { CompanySettingsForm } from './CompanySettingsForm';
 import { DangerZone } from './DangerZone';
+import { JobManager } from '../jobs/JobManager';
 import { useSettingsMutations } from './use-settings-mutations';
 import './admin-settings.css';
 
@@ -42,7 +43,7 @@ export function SettingsPage() {
       <PageHeading
         eyebrow="Admin view · Settings"
         title="Settings"
-        description="Manage company details, tool categories, and workspace data."
+        description="Manage company details, jobs, tool categories, and workspace data."
       />
       {mutationError && (
         <p className="form-error" role="alert">
@@ -51,6 +52,7 @@ export function SettingsPage() {
       )}
       <div className="settings-grid">
         <CompanySettingsForm company={company.data} mutations={mutations} blocked={queryBlocked} />
+        <JobManager />
         <CategoryManager categories={categories.data} mutations={mutations} blocked={queryBlocked} />
         <DangerZone mutations={mutations} blocked={queryBlocked} />
       </div>

@@ -15,6 +15,8 @@ import { WarehouseInventoryPage } from '../features/admin-operations/WarehouseIn
 import { FlaggedToolsPage } from '../features/admin-operations/FlaggedToolsPage';
 import { AdminActivityPage } from '../features/admin-activity/AdminActivityPage';
 import { SettingsPage } from '../features/admin-settings/SettingsPage';
+import { MyJobsPage } from '../features/jobs/MyJobsPage';
+import { ForemenPage } from '../features/jobs/ForemenPage';
 import { WorkerShell } from './WorkerShell';
 import { AdminShell } from './AdminShell';
 import { RequireAnonymous, RequireRole, RequireSession } from './route-guards';
@@ -40,6 +42,8 @@ export function AppRoutes() {
               <Route path="/worker/tools" element={<WorkerToolsPage />} />
               <Route path="/worker/checkout" element={<CheckoutPage />} />
               <Route path="/worker/activity" element={<WorkerActivityPage />} />
+              <Route path="/worker/jobs" element={<MyJobsPage />} />
+              <Route path="/worker/foremen" element={<ForemenPage />} />
             </Route>
           </Route>
           <Route element={<RequireRole role="admin" />}>

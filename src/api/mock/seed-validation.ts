@@ -7,6 +7,7 @@ import { DEMO_ROLES, MEMBER_LIFECYCLES, MEMBER_ROLES } from '../../domain/people
 import { isEligibleWarehouseManager } from '../../domain/warehouse';
 import { normalizeCategoryName } from '../../domain/organization';
 import type { MockDatabaseState } from './seed-state';
+import { assertJobs } from './job-validation';
 
 interface ReferenceIndex {
   userIds: Set<string>;
@@ -295,6 +296,7 @@ const assertConditionReports = (state: MockDatabaseState, refs: ReferenceIndex) 
 };
 
 export const assertReferences = (state: MockDatabaseState) => {
+  assertJobs(state);
   assertCollectionIdentity(state);
   const refs = buildReferenceIndex(state);
   assertDemoProfiles(state, refs);

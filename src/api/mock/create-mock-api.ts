@@ -6,6 +6,7 @@ import { createMockCustodyApi } from './create-mock-custody-api';
 import { createMockToolsApi } from './create-mock-tools-api';
 import { createMockWarehouseApi } from './create-mock-warehouse-api';
 import { createMockSettingsApi } from './create-mock-settings-api';
+import { createMockJobsApi } from './create-mock-jobs-api';
 import { createMockDatabase, type MockDatabase } from './mock-database';
 
 export const createMockApi = (database: MockDatabase = createMockDatabase()): NelsonApi => ({
@@ -16,4 +17,5 @@ export const createMockApi = (database: MockDatabase = createMockDatabase()): Ne
   admin: createMockAdminApi(database),
   warehouse: createMockWarehouseApi(database),
   settings: createMockSettingsApi(database),
+  jobs: createMockJobsApi(database),
 });

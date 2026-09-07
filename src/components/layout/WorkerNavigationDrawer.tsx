@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { Activity, PackageCheck, Plus, Wrench, X, type LucideIcon } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { Plus, X, type LucideIcon } from 'lucide-react';
+import { NavItems } from './NavItems';
 import { useModalFocusTrap } from '../ui/use-modal-focus-trap';
 import type { AuthSession } from '../../domain/auth';
 import { ThemeToggle } from './ThemeToggle';
@@ -67,9 +67,7 @@ export function WorkerNavigationDrawer({
         </button>
 
         <nav className="worker-drawer-nav" aria-label="Worker navigation">
-          <WorkerNavLink to="/worker/tools" label="My tools" icon={Wrench} onClick={onClose} />
-          <WorkerNavLink to="/worker/checkout" label="Checkout" icon={PackageCheck} onClick={onClose} />
-          <WorkerNavLink to="/worker/activity" label="Activity" icon={Activity} onClick={onClose} />
+          <NavItems role="worker" variant="drawer" onNavigate={onClose} />
           <WorkerNavAction label="Add a tool" icon={Plus} onClick={onOpenAddTool} />
         </nav>
 
@@ -78,29 +76,6 @@ export function WorkerNavigationDrawer({
         </div>
       </aside>
     </div>
-  );
-}
-
-function WorkerNavLink({
-  to,
-  label,
-  icon: Icon,
-  onClick,
-}: {
-  to: string;
-  label: string;
-  icon: LucideIcon;
-  onClick(): void;
-}) {
-  return (
-    <NavLink
-      to={to}
-      onClick={onClick}
-      className={({ isActive }) => `worker-drawer-link${isActive ? ' worker-drawer-link--active' : ''}`}
-    >
-      <Icon className="worker-drawer-link-icon" aria-hidden="true" />
-      <span>{label}</span>
-    </NavLink>
   );
 }
 

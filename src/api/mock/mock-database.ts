@@ -18,6 +18,8 @@ const cloneState = (state: SeedSnapshot): MockDatabaseState => ({
   demoProfileIds: [...state.demoProfileIds],
   company: { ...state.company },
   categories: state.categories.map((category) => ({ ...category })),
+  jobs: state.jobs.map((job) => ({ ...job })),
+  jobAssignments: state.jobAssignments.map((assignment) => ({ ...assignment })),
   users: state.users.map((user) => ({ ...user })),
   warehouses: state.warehouses.map((warehouse) => ({ ...warehouse })),
   definitions: state.definitions.map((definition) => ({ ...definition })),
@@ -56,6 +58,8 @@ export const createMockDatabase = (options: MockDatabaseOptions = {}): MockDatab
       ...state.conditionReports.map((report) => report.id),
       ...state.events.map((event) => event.id),
       ...state.categories.map((category) => category.id),
+      ...state.jobs.map((job) => job.id),
+      ...state.jobAssignments.map((assignment) => assignment.id),
     ]);
     do {
       sequence += 1;

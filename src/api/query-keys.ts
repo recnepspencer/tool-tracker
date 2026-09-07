@@ -1,4 +1,8 @@
 export const queryKeys = {
+  jobsRoot: ['jobs'] as const,
+  jobs: (actorId: string) => ['jobs', actorId] as const,
+  foremenRoot: ['foremen'] as const,
+  foremen: (actorId: string) => ['foremen', actorId] as const,
   demoProfiles: ['demo-profiles'] as const,
   authSessionRoot: ['auth-session'] as const,
   authSession: (profileId: string, restoreNonce: number) => ['auth-session', profileId, restoreNonce] as const,

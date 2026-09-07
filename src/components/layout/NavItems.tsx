@@ -1,6 +1,7 @@
 import {
   Activity,
   Boxes,
+  BriefcaseBusiness,
   ClipboardList,
   PackageCheck,
   Settings,
@@ -18,6 +19,8 @@ const navByRole: Record<Role, Array<{ label: string; path: string; enabled: bool
   worker: [
     { label: 'My tools', path: '/worker/tools', enabled: true, icon: Wrench },
     { label: 'Checkout', path: '/worker/checkout', enabled: true, icon: PackageCheck },
+    { label: 'My jobs', path: '/worker/jobs', enabled: true, icon: BriefcaseBusiness },
+    { label: 'Foremen', path: '/worker/foremen', enabled: true, icon: Users },
     { label: 'Activity', path: '/worker/activity', enabled: true, icon: Activity },
   ],
   admin: [

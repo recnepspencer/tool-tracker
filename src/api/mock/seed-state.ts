@@ -5,12 +5,15 @@ import type { CustodyRecord, HandoffRequest } from '../../domain/custody';
 import type { ToolDefinition, ToolUnit } from '../../domain/tool';
 import type { Warehouse } from '../../domain/warehouse';
 import type { CompanyProfile, ToolCategory } from '../../domain/organization';
+import type { Job, JobAssignment } from '../../domain/jobs';
 
 /** Mutable runtime authority owned by the mock database transaction boundary. */
 export interface MockDatabaseState {
   demoProfileIds: string[];
   company: CompanyProfile;
   categories: ToolCategory[];
+  jobs: Job[];
+  jobAssignments: JobAssignment[];
   users: Member[];
   warehouses: Warehouse[];
   definitions: ToolDefinition[];

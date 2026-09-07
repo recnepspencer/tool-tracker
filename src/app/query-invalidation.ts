@@ -8,6 +8,7 @@ import { queryKeys } from '../api/query-keys';
  */
 export const invalidateToolProjections = async (queryClient: QueryClient) => {
   await Promise.all([
+    queryClient.invalidateQueries({ queryKey: queryKeys.foremenRoot, refetchType: 'all' }),
     queryClient.invalidateQueries({ queryKey: queryKeys.tools, refetchType: 'all' }),
     queryClient.invalidateQueries({ queryKey: queryKeys.catalog, refetchType: 'all' }),
     queryClient.invalidateQueries({ queryKey: queryKeys.activity, refetchType: 'all' }),
@@ -28,6 +29,8 @@ export const invalidateToolProjections = async (queryClient: QueryClient) => {
 
 export const invalidateAdminProjections = async (queryClient: QueryClient) => {
   await Promise.all([
+    queryClient.invalidateQueries({ queryKey: queryKeys.foremenRoot, refetchType: 'all' }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.jobsRoot, refetchType: 'all' }),
     queryClient.invalidateQueries({ queryKey: queryKeys.adminSummary, refetchType: 'all' }),
     queryClient.invalidateQueries({ queryKey: queryKeys.adminPeopleRoot, refetchType: 'all' }),
     queryClient.invalidateQueries({ queryKey: queryKeys.adminPersonRoot, refetchType: 'all' }),
@@ -50,6 +53,7 @@ export const invalidateAdminProjections = async (queryClient: QueryClient) => {
 
 export const invalidateWarehouseProjections = async (queryClient: QueryClient) => {
   await Promise.all([
+    queryClient.invalidateQueries({ queryKey: queryKeys.foremenRoot, refetchType: 'all' }),
     queryClient.invalidateQueries({ queryKey: queryKeys.warehouseQueueRoot, refetchType: 'all' }),
     queryClient.invalidateQueries({ queryKey: queryKeys.warehouseScopesRoot, refetchType: 'all' }),
     queryClient.invalidateQueries({ queryKey: queryKeys.warehouseInventoryRoot, refetchType: 'all' }),
@@ -71,6 +75,7 @@ export const invalidateWarehouseProjections = async (queryClient: QueryClient) =
 
 export const invalidateSettingsProjections = async (queryClient: QueryClient) => {
   await Promise.all([
+    queryClient.invalidateQueries({ queryKey: queryKeys.foremenRoot, refetchType: 'all' }),
     queryClient.invalidateQueries({ queryKey: queryKeys.companyProfile, refetchType: 'all' }),
     queryClient.invalidateQueries({ queryKey: queryKeys.toolCategories, refetchType: 'all' }),
     queryClient.invalidateQueries({ queryKey: queryKeys.adminAuditRoot, refetchType: 'all' }),

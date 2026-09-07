@@ -18,19 +18,19 @@ function findAdapterBoundaryBypasses(sources: Record<string, string>) {
         !path.endsWith('/providers.tsx')
       ) {
         const directPropertyCall =
-          /\b[A-Za-z_$][\w$]*\s*(?:\?\.|\.)\s*(auth|tools|activity|admin|custody|warehouse|settings)\s*(?:\?\.|\.)/.test(
+          /\b[A-Za-z_$][\w$]*\s*(?:\?\.|\.)\s*(auth|tools|activity|admin|custody|warehouse|settings|jobs)\s*(?:\?\.|\.)\s*(?!(?:map|flatMap|filter|some|find|length)\b)/.test(
             source,
           );
         const destructuredAdapter =
-          /\b(?:const|let|var)\s*\{[^}]*\b(?:auth|tools|activity|admin|custody|warehouse|settings)\b[^}]*\}\s*=\s*[A-Za-z_$][\w$]*/.test(
+          /\b(?:const|let|var)\s*\{[^}]*\b(?:auth|tools|activity|admin|custody|warehouse|settings|jobs)\b[^}]*\}\s*=\s*[A-Za-z_$][\w$]*/.test(
             source,
           );
         const computedAdapter =
-          /\b[A-Za-z_$][\w$]*\s*(?:\?\.\s*)?\[\s*['"](?:auth|tools|activity|admin|custody|warehouse|settings)['"]\s*\]/.test(
+          /\b[A-Za-z_$][\w$]*\s*(?:\?\.\s*)?\[\s*['"](?:auth|tools|activity|admin|custody|warehouse|settings|jobs)['"]\s*\]/.test(
             source,
           );
         const memberAlias =
-          /\b(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*[A-Za-z_$][\w$]*\s*(?:\?\.|\.)\s*(auth|tools|activity|admin|custody|warehouse|settings)\b/.test(
+          /\b(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*[A-Za-z_$][\w$]*\s*(?:\?\.|\.)\s*(auth|tools|activity|admin|custody|warehouse|settings|jobs)\b/.test(
             source,
           );
         if (directPropertyCall || destructuredAdapter || computedAdapter || memberAlias) {
@@ -152,6 +152,14 @@ describe('adapter-backed route boundaries', () => {
   });
 
   it('fails closed for synthetic transport, adapter, and useApi boundary violations', () => {
+    expect(
+      findAdapterBoundaryBypasses({
+        '../components/Directory.tsx': 'person.tools.map(renderTool); person.jobs.some(matches);',
+      }),
+    ).toEqual([]);
+    expect(findAdapterBoundaryBypasses({ '../components/Fake.tsx': 'api.jobs.listForemen();' })).toEqual([
+      '../components/Fake.tsx: direct adapter call',
+    ]);
     expect(
       findAdapterBoundaryBypasses({
         '../components/Fake.tsx': "import { createHttpApi } from '../api/http/create-http-api';",
