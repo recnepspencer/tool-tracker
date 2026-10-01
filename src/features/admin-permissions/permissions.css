@@ -47,10 +47,20 @@
   display: none;
 }
 .permission-rules-card {
+  padding: var(--space-20);
   max-width: var(--space-900);
   margin-top: var(--space-18);
 }
+.permission-legend {
+  display: none;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  margin: var(--space-12) 0 0;
+}
 @media (max-width: 620px) {
+  .permission-legend {
+    display: block;
+  }
   .permission-matrix__row {
     gap: var(--space-8);
     grid-template-columns: minmax(0, 1fr) repeat(3, var(--space-38));

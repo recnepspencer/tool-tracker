@@ -167,7 +167,15 @@ export function ToolCustodyActions({
           {action !== 'transfer' || selectedTarget ? (
             <CustodyEvidenceFields
               className="detail-action-field"
-              context={action === 'transfer' ? 'transfer' : action.startsWith('report-') ? 'condition' : 'request'}
+              context={
+                action === 'transfer'
+                  ? 'transfer'
+                  : action === 'report-lost'
+                    ? 'loss'
+                    : action.startsWith('report-')
+                      ? 'condition'
+                      : 'request'
+              }
               note={note}
               photo={photo}
               showPhoto={!isCheckoutRequest}
@@ -201,7 +209,7 @@ export function ToolCustodyActions({
             <p className="transfer-submit-note">
               {selectedTarget.type === 'warehouse'
                 ? 'The warehouse manager accepts the return before it goes back in stock.'
-                : 'Custody moves only when they accept. Expires in 48 hours.'}
+                : 'The tool stays in your custody until they accept.'}
             </p>
           ) : null}
         </section>

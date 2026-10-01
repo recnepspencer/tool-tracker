@@ -30,7 +30,7 @@ export function WorkerAccountPage() {
         <dl className="account-facts">
           <div>
             <dt>Role</dt>
-            <dd>Field worker</dd>
+            <dd>Foreman</dd>
           </div>
           <div>
             <dt>Title</dt>

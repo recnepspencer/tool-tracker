@@ -28,10 +28,16 @@ const navByRole: Record<Role, Array<{ label: string; path: string; enabled: bool
     { label: 'Inventory', path: '/admin/operations/inventory', enabled: true, icon: Boxes },
     { label: 'Damaged & lost', path: '/admin/operations/flagged', enabled: true, icon: TriangleAlert },
     { label: 'People', path: '/admin/people', enabled: true, icon: Users },
+    { label: 'Foremen', path: '/admin/foremen', enabled: true, icon: BriefcaseBusiness },
     { label: 'Warehouses', path: '/admin/warehouses', enabled: true, icon: Warehouse },
     { label: 'Access', path: '/admin/permissions', enabled: true, icon: ShieldCheck },
     { label: 'Activity', path: '/admin/activity', enabled: true, icon: Activity },
     { label: 'Settings', path: '/admin/settings', enabled: true, icon: Settings },
+  ],
+  'warehouse-manager': [
+    { label: 'Queue', path: '/warehouse/operations/queue', enabled: true, icon: ClipboardList },
+    { label: 'Inventory', path: '/warehouse/operations/inventory', enabled: true, icon: Boxes },
+    { label: 'Damaged & lost', path: '/warehouse/operations/flagged', enabled: true, icon: TriangleAlert },
   ],
 };
 
@@ -59,11 +65,7 @@ export function NavItems({
                 : `side-nav-link${isActive ? ' side-nav-link--active' : ''}`
             }
           >
-            {variant === 'drawer' ? (
-              <Icon className="worker-drawer-link-icon" aria-hidden="true" />
-            ) : (
-              <span className="nav-dot" />
-            )}
+            <Icon className={variant === 'drawer' ? 'worker-drawer-link-icon' : 'side-nav-icon'} aria-hidden="true" />
             {item.label}
           </NavLink>
         ) : (

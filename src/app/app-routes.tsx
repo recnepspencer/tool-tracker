@@ -21,6 +21,7 @@ import { WorkerShell } from './WorkerShell';
 import { AdminShell } from './AdminShell';
 import { RequireAnonymous, RequireRole, RequireSession } from './route-guards';
 import { RouteScrollRestoration } from './RouteScrollRestoration';
+import { RoleShellRoute } from './RoleShellRoute';
 
 export function AppRoutes() {
   return (
@@ -32,7 +33,6 @@ export function AppRoutes() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/company-setup" element={<CompanySetupPage />} />
-          <Route path="/invite/:token" element={<InviteAcceptancePage />} />
           <Route path="/reset-password" element={<PasswordRecoveryPage />} />
         </Route>
         <Route element={<RequireSession />}>
@@ -51,6 +51,7 @@ export function AppRoutes() {
               <Route path="/admin" element={<Navigate to="/admin/operations/queue" replace />} />
               <Route path="/admin/dashboard" element={<Navigate to="/admin/operations/queue" replace />} />
               <Route path="/admin/people" element={<PeoplePage />} />
+              <Route path="/admin/foremen" element={<ForemenPage />} />
               <Route path="/admin/people/:personId" element={<PeoplePage />} />
               <Route path="/admin/permissions" element={<PermissionsPage />} />
               <Route path="/admin/warehouses" element={<WarehousesPage />} />
@@ -61,8 +62,17 @@ export function AppRoutes() {
               <Route path="/admin/settings" element={<SettingsPage />} />
             </Route>
           </Route>
+          <Route element={<RequireRole role="warehouse-manager" />}>
+            <Route element={<RoleShellRoute role="warehouse-manager" />}>
+              <Route path="/warehouse" element={<Navigate to="/warehouse/operations/queue" replace />} />
+              <Route path="/warehouse/operations/queue" element={<WarehouseQueuePage />} />
+              <Route path="/warehouse/operations/inventory" element={<WarehouseInventoryPage />} />
+              <Route path="/warehouse/operations/flagged" element={<FlaggedToolsPage />} />
+            </Route>
+          </Route>
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="/invite/:token" element={<InviteAcceptancePage />} />
       </Routes>
     </HashRouter>
   );

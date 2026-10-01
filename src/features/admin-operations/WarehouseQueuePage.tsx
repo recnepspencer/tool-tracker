@@ -46,7 +46,7 @@ export function WarehouseQueuePage() {
   return (
     <div className="page-content admin-operations-page">
       <PageHeading
-        eyebrow="Admin view · Warehouse operations"
+        eyebrow="Warehouse operations"
         title="Queue"
         description="Review requests and returns at the gate before custody changes."
       />

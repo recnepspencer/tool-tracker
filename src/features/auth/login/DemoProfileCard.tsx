@@ -1,6 +1,7 @@
 import { Avatar } from '../../../components/ui/Avatar';
 import { Button } from '../../../components/ui/Button';
 import type { DemoProfileView } from '../../../domain/read-models/auth';
+import { MEMBER_ROLE_LABELS } from '../../../domain/people';
 
 export function DemoProfileCard({
   profile,
@@ -23,7 +24,7 @@ export function DemoProfileCard({
     <article className="profile-card">
       <div className="profile-card-topline">
         <Avatar initials={initials} tone={tone} size="large" />
-        <span className="role-label">{profile.role === 'worker' ? 'Worker' : 'Admin'}</span>
+        <span className="role-label">{profile.role === 'worker' ? 'Foreman' : MEMBER_ROLE_LABELS[profile.role]}</span>
       </div>
       <h2>{profile.name}</h2>
       <p>{profile.title}</p>

@@ -35,6 +35,7 @@ export function LoginPage() {
       eyebrow="Choose your profile"
       title="Sign in to continue"
       description="Select your profile to continue."
+      footer={<></>}
     >
       {profiles.isPending && !profiles.isPaused && <LoadingState label="Loading profiles…" />}
       {profiles.isFetching && !profiles.isPending && !profiles.isPaused && (

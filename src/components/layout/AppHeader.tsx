@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { AccountMenu } from './AccountMenu';
 import { BrandMark } from './BrandMark';
 import type { AuthSession, Role } from '../../domain/auth';
+import { homePathForRole } from '../../app/role-home-path';
 
 export interface AppHeaderProps {
   role: Role;
@@ -12,8 +13,6 @@ export interface AppHeaderProps {
 }
 
 export function AppHeader({ role, session, onSignOut, onOpenNavigation }: AppHeaderProps) {
-  const isWorker = role === 'worker';
-
   return (
     <header className="app-header">
       <div className="header-leading">
@@ -25,7 +24,7 @@ export function AppHeader({ role, session, onSignOut, onOpenNavigation }: AppHea
         >
           <Menu aria-hidden="true" />
         </button>
-        <NavLink className="wordmark" to={isWorker ? '/worker/tools' : '/admin/operations/queue'}>
+        <NavLink className="wordmark" to={homePathForRole(role)}>
           <span className="desktop-wordmark-mark">
             <BrandMark />
           </span>

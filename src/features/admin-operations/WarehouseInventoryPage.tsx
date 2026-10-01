@@ -162,6 +162,7 @@ export function WarehouseInventoryPage() {
           onRestore={() => decisions.restore(selectedItem)}
           onForceReturn={() => decisions.returnTool(selectedItem)}
           onDecommission={() => decisions.openDecommission(selectedItem)}
+          error={decisions.returnError || decisions.restoreError}
         />
       )}
       {decisions.editItem && (
@@ -295,6 +296,11 @@ function InventoryRow({
       <td>{item.holder.name}</td>
       <td>
         <StatusBadge status={item.status} />
+        {item.pendingHandoff && (
+          <span className="inventory-pending-label">
+            {item.pendingHandoff.kind === 'warehouse-request' ? 'Requested' : 'In transfer'}
+          </span>
+        )}
       </td>
       <td>{item.warehouseName}</td>
       <td>{item.lastMoved}</td>

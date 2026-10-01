@@ -1,7 +1,7 @@
 export const MEMBER_ROLES = ['worker', 'warehouse-manager', 'admin'] as const;
 export type MemberRole = (typeof MEMBER_ROLES)[number];
 
-export const DEMO_ROLES = ['worker', 'admin'] as const;
+export const DEMO_ROLES = ['worker', 'warehouse-manager', 'admin'] as const;
 export type DemoRole = (typeof DEMO_ROLES)[number];
 
 export const MEMBER_LIFECYCLES = ['active', 'invited', 'suspended', 'removed'] as const;

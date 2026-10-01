@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState, type PropsWithChildren } from 'react';
+import { useState, useEffect, type PropsWithChildren } from 'react';
 import type { NelsonApi } from '../api/contracts';
-import { createMockApi } from '../api/mock/create-mock-api';
+import { createBrowserPrototypeApi, PROTOTYPE_STORAGE_KEY } from '../api/mock/browser-prototype';
 import { ApiProvider } from '../api/api-context';
 import { browserSessionStore, type SessionStore } from '../api/auth/session-store';
 import { browserThemeStore, type ThemeStore } from '../api/theme/theme-store';
@@ -28,7 +28,15 @@ export function AppProviders({
         defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
       }),
   );
-  const [defaultApi] = useState(() => createMockApi());
+  const [defaultApi] = useState(() => api ?? createBrowserPrototypeApi());
+  useEffect(() => {
+    if (api) return;
+    const refresh = (event: StorageEvent) => {
+      if (event.key === PROTOTYPE_STORAGE_KEY) void (queryClient ?? defaultQueryClient).invalidateQueries();
+    };
+    window.addEventListener('storage', refresh);
+    return () => window.removeEventListener('storage', refresh);
+  }, [api, queryClient, defaultQueryClient]);
 
   return (
     <QueryClientProvider client={queryClient ?? defaultQueryClient}>

@@ -1,6 +1,6 @@
 import type { ConditionReport } from '../../domain/condition-report';
 
-export const demoProfileIds = ['ray-torres', 'sam-ochoa'];
+export const demoProfileIds = ['ray-torres', 'eli-warren', 'morgan-price', 'sam-ochoa'];
 
 export const seedConditionReports: ConditionReport[] = [
   {

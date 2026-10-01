@@ -96,7 +96,7 @@ function CategoryRow({
       <div>
         <strong>{category.name}</strong>
         <small>
-          {category.usageCount} {category.usageCount === 1 ? 'tool' : 'tools'}
+          {category.usageCount} tracked {category.usageCount === 1 ? 'tool' : 'tools'}
         </small>
       </div>
       <Button variant="ghost" onClick={onRename} disabled={blocked}>

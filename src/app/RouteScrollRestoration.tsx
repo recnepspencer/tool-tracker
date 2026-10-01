@@ -9,6 +9,10 @@ export function RouteScrollRestoration() {
     document.documentElement.scrollLeft = 0;
     document.body.scrollTop = 0;
     document.body.scrollLeft = 0;
+    document.querySelectorAll('.shell-main').forEach((element) => {
+      element.scrollTop = 0;
+      element.scrollLeft = 0;
+    });
   }, [location.pathname]);
 
   return null;

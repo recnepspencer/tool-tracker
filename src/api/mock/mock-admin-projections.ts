@@ -28,6 +28,7 @@ const warehouseCoverage = (state: MockState, warehouse: MockState['warehouses'][
   const stock = state.custody.filter(
     (record) =>
       activeUnitIds.has(record.toolUnitId) &&
+      toToolView(state, record.toolUnitId).status === 'in-stock' &&
       record.holder.type === 'warehouse' &&
       record.holder.warehouseId === warehouse.id,
   ).length;

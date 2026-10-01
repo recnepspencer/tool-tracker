@@ -28,6 +28,30 @@
 .job-row-copy small {
   color: var(--muted);
 }
+.job-members-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--blue-soft);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.job-roster {
+  display: grid;
+  gap: var(--space-12);
+}
+.job-roster a {
+  display: grid;
+  gap: var(--space-4);
+  color: var(--ink);
+  text-decoration: none;
+  padding-block: var(--space-12);
+  border-top: var(--border-width) solid var(--border);
+}
+.job-roster span {
+  color: var(--muted);
+}
 .job-row-actions {
   display: flex;
   gap: var(--space-6);

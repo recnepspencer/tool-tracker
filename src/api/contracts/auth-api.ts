@@ -6,4 +6,6 @@ export interface AuthApi {
   signInAs(profileId: string): Promise<AuthSession>;
   restoreSession(profileId: string): Promise<AuthSession | null>;
   signOut(): Promise<void>;
+  getInvitation?(token: string): Promise<DemoProfileView | null>;
+  acceptInvitation?(token: string): Promise<DemoProfileView>;
 }

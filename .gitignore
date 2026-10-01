@@ -1,6 +1,7 @@
 # Dependencies and generated build output
 node_modules/
 dist/
+artifacts/
 
 # Local editor and OS noise
 .DS_Store

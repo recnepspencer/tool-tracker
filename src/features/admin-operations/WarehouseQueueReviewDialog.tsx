@@ -33,7 +33,7 @@ export function WarehouseQueueReviewDialog({
         <span className="eyebrow">{review.kind === 'request' ? 'Release request' : 'Accept return'}</span>
         <h2>{review.toolName}</h2>
         <p>
-          {review.from.name} → {review.to.name} · {review.warehouseName}
+          {review.from.name} → {review.to.name}
         </p>
       </div>
       <TextAreaField

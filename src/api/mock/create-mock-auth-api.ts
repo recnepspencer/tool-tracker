@@ -32,4 +32,33 @@ export const createMockAuthApi = (database: MockDatabase): AuthApi => ({
     return toSession(user, warehouse?.name ?? 'Unassigned');
   },
   signOut: async () => undefined,
+  getInvitation: async (token) => {
+    const state = database.read();
+    const user = state.users.find((person) => person.id === token && person.lifecycle === 'invited');
+    return user
+      ? toProfileView(user, state.warehouses.find((yard) => yard.id === user.homeWarehouseId)?.name ?? 'Unassigned')
+      : null;
+  },
+  acceptInvitation: async (token) => {
+    database.update((state) => {
+      const user = state.users.find((person) => person.id === token && person.lifecycle === 'invited');
+      if (!user) throw new Error('This invitation is no longer available.');
+      user.lifecycle = 'active';
+      if (!state.demoProfileIds.includes(user.id)) state.demoProfileIds.push(user.id);
+      state.events.push({
+        id: database.nextId('EV'),
+        actorId: user.id,
+        action: 'Accepted an invitation to Nelson Electric',
+        kind: 'admin',
+        scope: 'admin',
+        participantIds: [user.id],
+        warehouseId: user.homeWarehouseId,
+        occurredAt: database.clock(),
+      });
+      return state;
+    });
+    const state = database.read();
+    const user = state.users.find((person) => person.id === token)!;
+    return toProfileView(user, state.warehouses.find((yard) => yard.id === user.homeWarehouseId)?.name ?? 'Unassigned');
+  },
 });

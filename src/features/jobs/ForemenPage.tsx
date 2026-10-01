@@ -29,6 +29,10 @@ export function ForemenPage() {
       />
     );
   const needle = search.trim().toLowerCase();
+  const toolMatches = (tool: (typeof query.data)[number]['tools'][number]) =>
+    [tool.name, tool.id, tool.brand, tool.model, tool.serial ?? ''].some((value) =>
+      value.toLowerCase().includes(needle),
+    );
   const foremen = query.data.filter(
     (foreman) =>
       (jobId === 'all' || (jobId === 'none' ? !foreman.jobs.length : foreman.jobs.some((job) => job.id === jobId))) &&
@@ -66,53 +70,59 @@ export function ForemenPage() {
         <p className="jobs-muted">{query.data.length ? 'No foremen match these filters.' : 'No active foremen yet.'}</p>
       )}
       <div className="foremen-list">
-        {foremen.map((foreman) => (
-          <details className="foreman-card" key={`${foreman.id}:${needle}`} open={Boolean(needle)}>
-            <summary>
-              <Avatar
-                tone="neutral"
-                initials={foreman.name
-                  .split(' ')
-                  .map((part) => part[0])
-                  .slice(0, 2)
-                  .join('')}
-              />
-              <div className="foreman-copy">
-                <h2>
-                  {foreman.name}
-                  {foreman.id === session?.profileId && <span className="foreman-self"> · You</span>}
-                </h2>
-                <p>{foreman.jobs.length ? foreman.jobs.map((job) => job.name).join(' / ') : 'No current jobs'}</p>
-              </div>
-              <span className="foreman-count">
-                {foreman.tools.length} {foreman.tools.length === 1 ? 'tool' : 'tools'}
-              </span>
-              <ChevronDown className="foreman-chevron" aria-hidden="true" />
-            </summary>
-            <div className="foreman-tools">
-              {!foreman.tools.length ? (
-                <p className="jobs-muted">No tools in custody.</p>
-              ) : (
-                foreman.tools.map((tool) => (
-                  <div className="foreman-tool" key={tool.id}>
-                    <ToolPhoto src={tool.imageSrc} alt={tool.name} size="small" />
-                    <div className="foreman-tool-copy">
-                      <strong>{tool.name}</strong>
-                      <small>
-                        {tool.brand} · {tool.model} · {tool.id}
-                        {tool.serial ? ` · ${tool.serial}` : ''}
-                      </small>
-                      <div className="foreman-tool-status">
-                        <StatusBadge status={tool.status} />
-                        {tool.transferTo && <span>In transfer to {tool.transferTo}</span>}
+        {foremen.map((foreman) => {
+          const personMatches = [foreman.name, ...foreman.jobs.map((job) => job.name)].some((value) =>
+            value.toLowerCase().includes(needle),
+          );
+          const visibleTools = personMatches ? foreman.tools : foreman.tools.filter(toolMatches);
+          return (
+            <details className="foreman-card" key={`${foreman.id}:${needle}`} open={Boolean(needle)}>
+              <summary>
+                <Avatar
+                  tone="neutral"
+                  initials={foreman.name
+                    .split(' ')
+                    .map((part) => part[0])
+                    .slice(0, 2)
+                    .join('')}
+                />
+                <div className="foreman-copy">
+                  <h2>
+                    {foreman.name}
+                    {foreman.id === session?.profileId && <span className="foreman-self"> · You</span>}
+                  </h2>
+                  <p>{foreman.jobs.length ? foreman.jobs.map((job) => job.name).join(' / ') : 'No current jobs'}</p>
+                </div>
+                <span className="foreman-count">
+                  {visibleTools.length} {visibleTools.length === 1 ? 'tool' : 'tools'}
+                </span>
+                <ChevronDown className="foreman-chevron" aria-hidden="true" />
+              </summary>
+              <div className="foreman-tools">
+                {!visibleTools.length ? (
+                  <p className="jobs-muted">No tools in custody.</p>
+                ) : (
+                  visibleTools.map((tool) => (
+                    <div className="foreman-tool" key={tool.id}>
+                      <ToolPhoto src={tool.imageSrc} alt={tool.name} size="small" />
+                      <div className="foreman-tool-copy">
+                        <strong>{tool.name}</strong>
+                        <small>
+                          {tool.brand} · {tool.model} · {tool.id}
+                          {tool.serial ? ` · ${tool.serial}` : ''}
+                        </small>
+                        <div className="foreman-tool-status">
+                          <StatusBadge status={tool.status} />
+                          {tool.transferTo && <span>In transfer to {tool.transferTo}</span>}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </details>
-        ))}
+                  ))
+                )}
+              </div>
+            </details>
+          );
+        })}
       </div>
     </div>
   );

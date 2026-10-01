@@ -16,7 +16,7 @@ const seedUsers: Member[] = [
     email: 'ray@nelsonelectric.com',
     role: 'worker',
     lifecycle: 'active',
-    title: 'Journeyman electrician',
+    title: 'Foreman · North crew',
     homeWarehouseId: 'north-yard',
   },
   {
@@ -34,7 +34,7 @@ const seedUsers: Member[] = [
     email: 'avery@nelsonelectric.com',
     role: 'worker',
     lifecycle: 'active',
-    title: 'Apprentice electrician',
+    title: 'Foreman · Service crew',
     homeWarehouseId: 'south-shop',
   },
   {
@@ -43,7 +43,7 @@ const seedUsers: Member[] = [
     email: 'eli@nelsonelectric.com',
     role: 'worker',
     lifecycle: 'active',
-    title: 'Field electrician',
+    title: 'Foreman · Riverside crew',
     homeWarehouseId: 'south-shop',
   },
   {
@@ -344,6 +344,17 @@ const seedCustody: CustodyRecord[] = [
 
 const seedEvents: AuditEvent[] = [
   {
+    id: 'EV-SEED-OUT',
+    actorId: 'ray-torres',
+    action: 'Sent pump pliers to Eli Warren',
+    toolUnitId: 'TL-120',
+    kind: 'custody',
+    scope: 'worker',
+    participantIds: ['ray-torres', 'eli-warren'],
+    warehouseId: 'north-yard',
+    occurredAt: '2026-08-18T08:20:00-06:00',
+  },
+  {
     id: 'EV-1',
     actorId: 'sam-ochoa',
     action: 'Added a tool to inventory',
@@ -444,7 +455,7 @@ const seedEvents: AuditEvent[] = [
   {
     id: 'EV-SEED-11',
     actorId: 'dana-kim',
-    action: 'Completed the Riverside Depot cycle count',
+    action: 'Updated hydraulic bender details',
     toolUnitId: 'TL-106',
     kind: 'admin',
     scope: 'warehouse',
@@ -475,8 +486,7 @@ const seedHandoffs: HandoffRequest[] = [
     requestedAt: '2026-08-18T08:20:00-06:00',
     status: 'pending',
     evidence: {
-      note: 'Return after the panel test',
-      photo: { fileName: 'circuit-tracer.jpg', src: './tool-images/circuit-tracer.jpg' },
+      note: 'For the Riverside lighting crew',
     },
   },
   {

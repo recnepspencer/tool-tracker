@@ -7,16 +7,19 @@ import { SurfaceCard } from '../../components/ui/SurfaceCard';
 import { OverlayDialog } from '../../components/ui/OverlayDialog';
 import { ErrorState, LoadingState } from '../../components/ui/AsyncState';
 import type { JobView } from '../../api/contracts/jobs-api';
-import { useJobs, useJobMutation } from './use-jobs';
+import { useJobs, useJobMutation, useForemen } from './use-jobs';
+import { Link } from 'react-router-dom';
 import './jobs.css';
 
 export function JobManager() {
   const query = useJobs();
+  const foremen = useForemen();
   const mutation = useJobMutation();
   const [filter, setFilter] = useState('active');
   const [editing, setEditing] = useState<JobView | 'new' | null>(null);
   const [name, setName] = useState('');
   const [archiving, setArchiving] = useState<JobView | null>(null);
+  const [roster, setRoster] = useState<JobView | null>(null);
   const blocked = mutation.isPending || query.isFetching || query.isPaused || query.isPending || query.isError;
   const jobs = (query.data ?? []).filter((job) => Boolean(job.archivedAt) === (filter === 'archived'));
   const close = () => {
@@ -86,9 +89,18 @@ export function JobManager() {
             <div className="job-row" key={job.id}>
               <div className="job-row-copy">
                 <strong>{job.name}</strong>
-                <small>
-                  {job.archivedAt ? 'Archived' : `${job.memberCount} ${job.memberCount === 1 ? 'foreman' : 'foremen'}`}
-                </small>
+                {job.archivedAt ? (
+                  <small>Archived</small>
+                ) : (
+                  <button
+                    className="job-members-link"
+                    type="button"
+                    onClick={() => setRoster(job)}
+                    aria-label={`View foremen on ${job.name}`}
+                  >
+                    {job.memberCount} {job.memberCount === 1 ? 'foreman' : 'foremen'}
+                  </button>
+                )}
               </div>
               <div className="job-row-actions">
                 <Button
@@ -122,6 +134,34 @@ export function JobManager() {
         </div>
       )}
       {!editing && !archiving && error}
+      {roster && (
+        <OverlayDialog
+          label={`Foremen on ${roster.name}`}
+          onClose={() => setRoster(null)}
+          showCloseButton
+          panelClassName="admin-dialog job-dialog"
+        >
+          <h2>{roster.name}</h2>
+          <p className="jobs-muted">Current foremen</p>
+          {foremen.isPending ? (
+            <LoadingState label="Loading foremen…" />
+          ) : foremen.isError ? (
+            <ErrorState message="Foremen could not be loaded." onRetry={() => void foremen.refetch()} />
+          ) : (
+            <div className="job-roster">
+              {foremen.data
+                .filter((foreman) => foreman.jobs.some((job) => job.id === roster.id))
+                .map((foreman) => (
+                  <Link key={foreman.id} to={`/admin/people/${foreman.id}`} onClick={() => setRoster(null)}>
+                    <strong>{foreman.name}</strong>
+                    <span>{foreman.tools.length} tools in custody</span>
+                  </Link>
+                ))}
+              {!roster.memberCount && <p className="jobs-muted">No foremen have joined this job yet.</p>}
+            </div>
+          )}
+        </OverlayDialog>
+      )}
       {editing && (
         <OverlayDialog
           label={editing === 'new' ? 'Add job' : 'Rename job'}

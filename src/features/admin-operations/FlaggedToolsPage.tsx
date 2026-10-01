@@ -52,7 +52,7 @@ export function FlaggedToolsPage() {
   return (
     <div className="page-content admin-operations-page">
       <PageHeading
-        eyebrow="Admin view · Warehouse operations"
+        eyebrow="Warehouse operations"
         title="Damaged & lost"
         description="Review flagged tools and decide what happens next."
       />
@@ -187,7 +187,7 @@ function FlaggedRow({
             </Button>
           </>
         ) : (
-          <Button disabled={busy || !policy.canForceReturn} onClick={onReturn}>
+          <Button disabled={busy || Boolean(item.pendingHandoff) || !policy.canForceReturn} onClick={onReturn}>
             Force return
           </Button>
         )}

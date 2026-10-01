@@ -13,7 +13,7 @@ interface CustodyEvidenceFieldsProps extends CustodyEvidenceDraft {
   onPhotoChange(photo: CustodyPhotoEvidence | null): void;
   onPhotoBusyChange?(busy: boolean): void;
   className?: string;
-  context?: 'transfer' | 'review' | 'request' | 'condition';
+  context?: 'transfer' | 'review' | 'request' | 'condition' | 'loss';
   notePlaceholder?: string;
   showPhoto?: boolean;
 }
@@ -59,9 +59,11 @@ export function CustodyEvidenceFields({
   const photoHint =
     context === 'review'
       ? 'Condition, damage, where you left it'
-      : context === 'condition'
-        ? 'Show the current condition clearly'
-        : 'Show its condition at handoff';
+      : context === 'loss'
+        ? 'Optional supporting photo'
+        : context === 'condition'
+          ? 'Show the current condition clearly'
+          : 'Show its condition at handoff';
   return (
     <div className={`custody-evidence-fields ${className}`.trim()}>
       <TextField

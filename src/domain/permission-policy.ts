@@ -6,7 +6,8 @@ export const STRUCTURAL_PERMISSION_RULES = [
   {
     id: 'accepting-party-custody',
     label: 'Custody handoffs',
-    description: 'Every handoff requires an accepting party before custody changes.',
+    description:
+      'Normal handoffs require acceptance. Warehouse managers can force a return when an override is necessary; it is recorded in the activity history.',
     locked: true,
   },
   {

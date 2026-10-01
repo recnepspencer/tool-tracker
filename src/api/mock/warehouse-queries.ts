@@ -95,6 +95,14 @@ const inventoryItem = (state: MockState, toolUnitId: string): WarehouseInventory
   const warehouse = state.warehouses.find((candidate) => candidate.id === warehouseId);
   if (!definition || !warehouse) throw new Error('Inventory definition is incomplete: ' + toolUnitId);
   const tool = toToolView(state, toolUnitId);
+  const pending = state.handoffs.find((handoff) => handoff.toolUnitId === toolUnitId && handoff.status === 'pending');
+  const destination = pending
+    ? toHolderView(
+        pending.to,
+        new Map(state.users.map((user) => [user.id, user.name])),
+        new Map(state.warehouses.map((yard) => [yard.id, yard.name])),
+      )
+    : null;
   return {
     toolUnitId: unit.id,
     revision: toolRevision(unit, definition),
@@ -114,6 +122,15 @@ const inventoryItem = (state: MockState, toolUnitId: string): WarehouseInventory
     lastMovedAt: tool.lastMovedAt,
     ...(unit.serial ? { serial: unit.serial } : {}),
     ...(unit.price ? { price: unit.price } : {}),
+    ...(pending && destination
+      ? {
+          pendingHandoff: {
+            kind: pending.kind,
+            destination: destination.name,
+            warehouseDestination: destination.type === 'warehouse',
+          },
+        }
+      : {}),
   };
 };
 

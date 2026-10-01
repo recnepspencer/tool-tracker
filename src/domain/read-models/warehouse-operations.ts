@@ -47,6 +47,7 @@ export interface WarehouseInventoryItemView {
   lastMovedAt: string;
   serial?: string;
   price?: string;
+  pendingHandoff?: { kind: 'warehouse-request' | 'transfer'; destination: string; warehouseDestination: boolean };
 }
 
 export interface WarehouseOperationsSummary {

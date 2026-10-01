@@ -57,6 +57,7 @@ export function PermissionsPage() {
           ))}
         </div>
       </SurfaceCard>
+      <p className="permission-legend">W · Worker &nbsp; WM · Warehouse manager &nbsp; A · Administrator</p>
       <SurfaceCard className="permission-rules-card">
         <div className="permission-rules-heading">
           <div>

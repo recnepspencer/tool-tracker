@@ -22,6 +22,9 @@ export function WorkerToolGrid({
         </div>
         <span className="worker-section-count">{tools.length}</span>
       </div>
+      {!tools.length && (
+        <p className="worker-empty-copy">No tools in your custody yet. Browse checkout to find what you need.</p>
+      )}
       <div className="worker-tool-list">
         {tools.map((tool) => {
           const toolTransferState = pendingToolUnitIds.has(tool.id) ? 'pending' : transferStatus;

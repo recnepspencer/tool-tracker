@@ -5,6 +5,7 @@ import { useAdminMutations } from '../admin/use-admin-people';
 import { PersonAccessActions } from './PersonAccessActions';
 import { PersonRemovalForm } from './PersonRemovalForm';
 import { PersonRoleEditor } from './PersonRoleEditor';
+import { useForemen } from '../jobs/use-jobs';
 
 export function PersonDrawer({
   person,
@@ -16,6 +17,8 @@ export function PersonDrawer({
   onClose(): void;
 }) {
   const mutations = useAdminMutations();
+  const foremen = useForemen();
+  const currentJobs = foremen.data?.find((foreman) => foreman.id === person.id)?.jobs;
   return (
     <OverlayDialog
       label={'Person details for ' + person.name}
@@ -49,6 +52,20 @@ export function PersonDrawer({
         </div>
       </div>
       <PersonRoleEditor person={person} commandBlocked={commandBlocked} mutation={mutations.updateRole} />
+      {person.role === 'worker' && (
+        <div className="admin-detail-list">
+          <span className="eyebrow">Current jobs</span>
+          {foremen.isPending ? (
+            <span>Loading jobs…</span>
+          ) : foremen.isError ? (
+            <span>Jobs could not be loaded.</span>
+          ) : currentJobs?.length ? (
+            currentJobs.map((job) => <strong key={job.id}>{job.name}</strong>)
+          ) : (
+            <span>No current jobs.</span>
+          )}
+        </div>
+      )}
       <div className="admin-detail-list">
         <span className="eyebrow">Custody held</span>
         {person.heldTools.map((tool) => (

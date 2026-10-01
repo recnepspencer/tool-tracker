@@ -17,7 +17,11 @@ export const listCategories = (database: MockDatabase, actorId: string): ToolCat
   return state.categories
     .map((category) => ({
       ...category,
-      usageCount: state.definitions.filter((definition) => definition.categoryId === category.id).length,
+      usageCount: state.units.filter((unit) =>
+        state.definitions.some(
+          (definition) => definition.id === unit.definitionId && definition.categoryId === category.id,
+        ),
+      ).length,
     }))
     .sort((left, right) => left.name.localeCompare(right.name));
 };

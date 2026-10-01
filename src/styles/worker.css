@@ -75,6 +75,12 @@
   flex-direction: column;
   gap: var(--space-9);
 }
+.worker-empty-copy {
+  color: var(--muted);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  margin-block: var(--space-16);
+}
 .worker-tool-row {
   align-items: center;
   background: var(--card);

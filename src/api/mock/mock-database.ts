@@ -12,6 +12,9 @@ export interface MockDatabase {
 export interface MockDatabaseOptions {
   clock?: () => string;
   idGenerator?: (prefix: string) => string;
+  initialState?: MockDatabaseState;
+  onCommit?: (state: SeedSnapshot) => void;
+  load?: () => MockDatabaseState | null;
 }
 
 const cloneState = (state: SeedSnapshot): MockDatabaseState => ({
@@ -44,7 +47,9 @@ const cloneState = (state: SeedSnapshot): MockDatabaseState => ({
 });
 
 export const createMockDatabase = (options: MockDatabaseOptions = {}): MockDatabase => {
-  let state: MockDatabaseState = createSeedState();
+  const startingState = options.initialState ?? createSeedState();
+  let state: MockDatabaseState = cloneState(startingState);
+  assertReferences(state);
   let sequence = 0;
   const clock = options.clock ?? (() => new Date().toISOString());
   const defaultIdGenerator = (prefix: string) => {
@@ -70,15 +75,23 @@ export const createMockDatabase = (options: MockDatabaseOptions = {}): MockDatab
   const idGenerator = options.idGenerator ?? defaultIdGenerator;
 
   return {
-    read: () => cloneState(state),
+    read: () => {
+      const saved = options.load?.();
+      if (saved) state = cloneState(saved);
+      return cloneState(state);
+    },
     update: (updater) => {
+      const saved = options.load?.();
+      if (saved) state = cloneState(saved);
       const next = updater(cloneState(state));
       assertReferences(next);
       state = cloneState(next);
+      options.onCommit?.(cloneState(state));
     },
     reset: () => {
-      state = createSeedState();
+      state = cloneState(startingState);
       sequence = 0;
+      options.onCommit?.(cloneState(state));
     },
     clock,
     nextId: idGenerator,
