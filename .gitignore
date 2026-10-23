@@ -2,6 +2,11 @@
 node_modules/
 dist/
 artifacts/
+backend/.venv/
+backend/.env
+**/__pycache__/
+backend/.pytest_cache/
+backend/.ruff_cache/
 
 # Local editor and OS noise
 .DS_Store

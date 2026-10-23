@@ -1,0 +1,80 @@
+name: API quality
+
+on:
+  workflow_call:
+    secrets:
+      CLEANFORCE_DEPLOY_KEY:
+        required: true
+  pull_request:
+  push:
+    branches: ["codex/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: PostgreSQL, migrations, contracts, and behavior
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: nelson_ci
+          POSTGRES_USER: nelson
+          POSTGRES_PASSWORD: ci-only-database-password
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U nelson -d nelson_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DJANGO_SECRET_KEY: ci-only-not-a-deployment-secret
+      DJANGO_DEBUG: "1"
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      POSTGRES_DB: nelson_ci
+      POSTGRES_USER: nelson
+      POSTGRES_PASSWORD: ci-only-database-password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+      NELSON_REVIEW_PASSWORD: ci-only-review-password
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.13.5"
+          enable-cache: false
+      - name: Install locked dependencies with read-only CleanForce access
+        env:
+          CLEANFORCE_DEPLOY_KEY: ${{ secrets.CLEANFORCE_DEPLOY_KEY }}
+        run: |
+          test -n "$CLEANFORCE_DEPLOY_KEY" || { echo "CLEANFORCE_DEPLOY_KEY is required"; exit 1; }
+          umask 077
+          key="$RUNNER_TEMP/cleanforce-deploy-key"
+          hosts="$RUNNER_TEMP/cleanforce-known-hosts"
+          trap 'rm -f "$key" "$hosts"; git config --global --unset-all url."ssh://git@github.com/recnepspencer/CleanForce".insteadOf || true' EXIT
+          printf '%s\n' "$CLEANFORCE_DEPLOY_KEY" > "$key"
+          curl --fail --silent --show-error https://api.github.com/meta | jq -r '.ssh_keys[] | "github.com " + .' > "$hosts"
+          git config --global url."ssh://git@github.com/recnepspencer/CleanForce".insteadOf "https://github.com/recnepspencer/CleanForce"
+          export GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$hosts"
+          uv sync --locked
+      - name: Apply all migrations to fresh PostgreSQL
+        run: uv run --no-sync python manage.py migrate --noinput
+      - name: Verify schema, upgrades, contracts, and regression tests
+        run: uv run --no-sync python scripts/check_api.py
+      - name: Exercise repeatable review seeding
+        run: |
+          uv run --no-sync python manage.py seed_review_data
+          uv run --no-sync python manage.py seed_review_data
+      - name: Generate reviewable API contract
+        run: uv run --no-sync python manage.py generate_platform_openapi --output ../artifacts/nelson-openapi.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nelson-openapi
+          path: artifacts/nelson-openapi.json
