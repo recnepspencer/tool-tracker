@@ -1,6 +1,19 @@
 {
   "components": {
     "schemas": {
+      "AccountMessage": {
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "AccountMessage",
+        "type": "object"
+      },
       "ActivityPage": {
         "properties": {
           "items": {
@@ -1957,6 +1970,34 @@
         "title": "InvitationPage",
         "type": "object"
       },
+      "InvitationPreview": {
+        "properties": {
+          "company_name": {
+            "title": "Company Name",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "preferred_name": {
+            "title": "Preferred Name",
+            "type": "string"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "company_name",
+          "email",
+          "preferred_name",
+          "role"
+        ],
+        "title": "InvitationPreview",
+        "type": "object"
+      },
       "InvitationView": {
         "properties": {
           "accepted_at": {
@@ -2396,6 +2437,13 @@
       },
       "MembershipView": {
         "properties": {
+          "capabilities": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Capabilities",
+            "type": "array"
+          },
           "company_id": {
             "format": "uuid",
             "title": "Company Id",
@@ -2405,16 +2453,31 @@
             "title": "Company Name",
             "type": "string"
           },
+          "managed_warehouse_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Managed Warehouse Ids",
+            "type": "array"
+          },
           "membership_id": {
             "format": "uuid",
             "title": "Membership Id",
+            "type": "string"
+          },
+          "preferred_name": {
+            "title": "Preferred Name",
             "type": "string"
           }
         },
         "required": [
           "company_id",
           "company_name",
-          "membership_id"
+          "membership_id",
+          "preferred_name",
+          "capabilities",
+          "managed_warehouse_ids"
         ],
         "title": "MembershipView",
         "type": "object"
@@ -3795,6 +3858,10 @@
       },
       "SessionView": {
         "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
           "memberships": {
             "items": {
               "$ref": "#/components/schemas/MembershipView"
@@ -3810,9 +3877,38 @@
         },
         "required": [
           "user_id",
+          "email",
           "memberships"
         ],
         "title": "SessionView",
+        "type": "object"
+      },
+      "SignupInput": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "invitation_token": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Invitation Token",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "name"
+        ],
+        "title": "SignupInput",
         "type": "object"
       },
       "StewardshipInput": {
@@ -3841,6 +3937,29 @@
           "note"
         ],
         "title": "StewardshipInput",
+        "type": "object"
+      },
+      "VerifySignupInput": {
+        "additionalProperties": false,
+        "properties": {
+          "password": {
+            "maxLength": 200,
+            "minLength": 12,
+            "title": "Password",
+            "type": "string"
+          },
+          "token": {
+            "maxLength": 200,
+            "minLength": 20,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "password"
+        ],
+        "title": "VerifySignupInput",
         "type": "object"
       },
       "WarehouseGrantInput": {
@@ -4372,6 +4491,188 @@
         "tags": [
           "identity",
           "identity"
+        ]
+      }
+    },
+    "/api/auth/recover": {
+      "post": {
+        "operationId": "accounts_api_recovery",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordResetRequestContract"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasswordResetDispatchProjection"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Recovery",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/auth/reset": {
+      "post": {
+        "operationId": "accounts_api_reset_password",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordResetCompleteContract"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasswordResetCompleteProjection"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Reset Password",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/auth/sign-in": {
+      "post": {
+        "operationId": "accounts_api_sign_in",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordLoginContract"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Sign In",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/auth/sign-out": {
+      "post": {
+        "operationId": "accounts_api_sign_out",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountMessage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Sign Out",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/auth/signup": {
+      "post": {
+        "operationId": "accounts_api_signup",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignupInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountMessage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Signup",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/auth/verify-signup": {
+      "post": {
+        "operationId": "accounts_api_verify_signup",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifySignupInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Verify Signup",
+        "tags": [
+          "accounts"
         ]
       }
     },
@@ -7838,6 +8139,38 @@
         "summary": "Invitation Accept",
         "tags": [
           "company and people"
+        ]
+      }
+    },
+    "/api/invitations/{token}/preview": {
+      "get": {
+        "operationId": "accounts_api_preview_invitation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationPreview"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Preview Invitation",
+        "tags": [
+          "accounts"
         ]
       }
     },

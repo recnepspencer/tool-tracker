@@ -150,7 +150,7 @@ def test_live_access_revocation_denies_existing_session(api_client, world, asset
     else:
         world.user.is_active = False
         world.user.save()
-    assert post(api_client, asset_url).status_code == 403
+    assert post(api_client, asset_url).status_code == (401 if revocation == "identity" else 403)
     assert ToolRequest.objects.count() == 0
 
 

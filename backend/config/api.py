@@ -6,7 +6,9 @@ from django.http import HttpRequest
 from django.middleware.csrf import get_token
 from ninja import Router, Schema
 
+from companies.access import capabilities
 from companies.models import CompanyMembership
+from equipment.models import WarehouseRoleGrant
 
 router = Router(tags=["session"])
 
@@ -19,10 +21,14 @@ class MembershipView(Schema):
     company_id: UUID
     company_name: str
     membership_id: UUID
+    preferred_name: str
+    capabilities: list[str]
+    managed_warehouse_ids: list[UUID]
 
 
 class SessionView(Schema):
     user_id: UUID
+    email: str
     memberships: list[MembershipView]
 
 
@@ -36,16 +42,24 @@ def session_info(request: HttpRequest):
         CompanyMembership.objects.filter(
             person__identity_user_id=identity.user_id, access_state="active", ended_at__isnull=True
         )
-        .select_related("company")
+        .select_related("company", "person")
         .order_by("company_id")
     )
     return {
         "user_id": identity.user_id,
+        "email": identity.email,
         "memberships": [
             {
                 "company_id": member.company_id,
                 "company_name": member.company.name,
                 "membership_id": member.id,
+                "preferred_name": member.person.preferred_name,
+                "capabilities": sorted(capabilities(member)),
+                "managed_warehouse_ids": list(
+                    WarehouseRoleGrant.objects.filter(
+                        membership=member, revoked_at__isnull=True
+                    ).values_list("warehouse_id", flat=True)
+                ),
             }
             for member in memberships
         ],

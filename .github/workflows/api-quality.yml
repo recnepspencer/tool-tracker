@@ -17,7 +17,7 @@ jobs:
   verify:
     name: PostgreSQL, migrations, contracts, and behavior
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     services:
       postgres:
         image: postgres:17-alpine
@@ -74,6 +74,42 @@ jobs:
           uv run --no-sync python manage.py seed_review_data
       - name: Generate reviewable API contract
         run: uv run --no-sync python manage.py generate_platform_openapi --output ../artifacts/nelson-openapi.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install web dependencies
+        working-directory: .
+        run: npm ci
+      - name: Verify generated TypeScript contract
+        working-directory: .
+        run: |
+          npm run api:generate
+          git diff --exit-code -- src/live/schema.d.ts
+      - name: Check and build the web application
+        working-directory: .
+        run: npm run check
+      - name: Install browser test runtime
+        working-directory: .
+        run: npx playwright install --with-deps chromium
+      - name: Exercise real accounts, email links, custody, and PWA behavior
+        working-directory: .
+        run: |
+          mkdir -p artifacts/mail
+          (cd backend && uv run --no-sync python manage.py runserver 127.0.0.1:8001 --noreload) > artifacts/browser-api.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            curl --fail --silent http://127.0.0.1:8001/api/auth/csrf >/dev/null && break
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:8001/api/auth/csrf >/dev/null
+          npm run test:browser
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-diagnostics
+          path: |
+            artifacts/browser-results
+            artifacts/browser-api.log
       - uses: actions/upload-artifact@v4
         with:
           name: nelson-openapi

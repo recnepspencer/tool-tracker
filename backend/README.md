@@ -46,7 +46,7 @@ Requests do not reserve tools. Approval creates a pending handoff; the recipient
 
 Mutable commands require `expected_revision` where declared. Stale revisions return 409. Request, registration, participation, and handoff creation use `request_key` with payload-bound retries. Replaying a resolved handoff returns the existing matching outcome; a conflicting decision returns 409. Search/list endpoints use bounded `limit`/`offset` pagination.
 
-Invitations return their single-use token once to an authorized administrator for delivery. Tokens are stored only as digests, expire after seven days, and require an authenticated matching email. This backend does not send invitation mail. CleanForce owns login and account recovery; production account provisioning/mail infrastructure needs its deployment configuration.
+Invitations deliver an email and return their single-use token once to an authorized administrator for sharing. Tokens are stored only as digests, expire after seven days, and require an authenticated matching email. `accounts` adds verified signup and JSON browser endpoints using CleanForce's password/session/recovery authority. Debug email is written to `artifacts/mail`; production SMTP configuration is deferred. See the root README for account and hosting configuration.
 
 ## Ownership and integrity
 
@@ -68,7 +68,7 @@ uv run --env-file .env python manage.py generate_platform_openapi --output contr
 
 The gate checks Django declarations, missing migrations, unapplied migrations, PostgreSQL scoped-constraint drift, OpenAPI drift, a fresh test database with migrations, regression tests, and formatting/lint. Migration tests upgrade populated historical records. Domain-owned fixtures keep job tests independent of equipment; HTTP tests validate real responses against the checked OpenAPI instead of importing implementation schemas. Tests exercise rollback, access revocation, tenant isolation, policy changes, competing receipt decisions, and seed preservation.
 
-[API quality](../.github/workflows/api-quality.yml) runs on branch pushes and PRs using real PostgreSQL. [Pages deployment](../.github/workflows/deploy-pages.yml) depends on the same reusable check. CI uses a dedicated read-only CleanForce deploy key, removed from the runner after dependency installation. Fork PRs without the secret fail closed. The generated OpenAPI document is uploaded as a workflow artifact.
+[API quality](../.github/workflows/api-quality.yml) runs on branch pushes and PRs using real PostgreSQL and production-browser journeys. The [web packaging workflow](../.github/workflows/deploy-pages.yml) invokes the same reusable check; it no longer publishes the retired static demo. CI uses a dedicated read-only CleanForce deploy key, removed from the runner after dependency installation. Fork PRs without the secret fail closed. The generated OpenAPI document is uploaded as a workflow artifact.
 
 The schema command checks declared scoped foreign keys and obsolete custody triggers; it is not a general comparison of every database object. Review generated migration and contract diffs alongside behavior tests.
 

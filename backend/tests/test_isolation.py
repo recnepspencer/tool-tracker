@@ -57,5 +57,18 @@ def test_current_session_exposes_only_active_company_memberships(api_client, wor
             "company_id": str(world.company.id),
             "company_name": world.company.name,
             "membership_id": str(world.member.id),
+            "preferred_name": "Ray",
+            "capabilities": [
+                "company.read",
+                "files.upload",
+                "jobs.participate",
+                "jobs.read",
+                "tools.read",
+                "tools.register",
+                "tools.report",
+                "tools.request",
+                "tools.transfer",
+            ],
+            "managed_warehouse_ids": [],
         }
     ]

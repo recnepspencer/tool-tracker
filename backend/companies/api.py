@@ -152,7 +152,17 @@ def member_update(
 
 @csrf_protect
 def invitation_create(request: HttpRequest, company_id: UUID, data: InvitationInput):
-    result, token = people.create_invitation(current_identity(request), company_id, data)
+    from django.db import transaction
+
+    from accounts.mail import app_url, send_account_mail
+
+    with transaction.atomic():
+        result, token = people.create_invitation(current_identity(request), company_id, data)
+        send_account_mail(
+            result.email,
+            f"Join {result.company.name}",
+            f"You have been invited to {result.company.name}.\n\nAccept your invitation: {app_url(f'invite/{token}')}\n\nThis link expires in seven days.",
+        )
     return {"invitation": InvitationView.model_validate(result), "token": token}
 
 

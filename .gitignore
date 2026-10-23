@@ -14,5 +14,5 @@ backend/.ruff_cache/
 *.local
 .phase-1-fingerprint.txt
 
-# Legacy prototype references stay local; the React app uses public/tool-images.
+# Legacy prototype references stay local; the real app serves only public/app.
 Nelson Electric tool custody system/
