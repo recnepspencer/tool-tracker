@@ -23,11 +23,24 @@ class ToolRequest(CompanyRecord):
     note = models.TextField(blank=True)
     status = models.CharField(max_length=16, choices=Status, default=Status.PENDING)
     requested_at = models.DateTimeField(auto_now_add=True)
+    decided_at = models.DateTimeField(null=True)
+    decided_by = models.ForeignKey(
+        "companies.CompanyMembership",
+        null=True,
+        on_delete=models.PROTECT,
+        related_name="tool_requests_decided",
+    )
+    decision_note = models.TextField(blank=True)
+    revision = models.PositiveIntegerField(default=1)
 
     class Meta(CompanyRecord.Meta):
         db_table = "tool_requests"
         constraints = [
             *CompanyRecord.Meta.constraints,
+            models.UniqueConstraint(
+                fields=["company", "asset", "id"], name="request_asset_identity"
+            ),
+            ScopedForeignKey(field="decided_by", name="request_decider_company"),
             ScopedForeignKey(field="asset", name="request_asset_company"),
             ScopedForeignKey(field="requester", name="request_member_company"),
             ScopedForeignKey(

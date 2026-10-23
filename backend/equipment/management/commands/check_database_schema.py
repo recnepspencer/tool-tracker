@@ -21,7 +21,7 @@ class Command(BaseCommand):
         count = 0
         with connection.cursor() as cursor:
             for model in apps.get_models():
-                if model._meta.app_label not in {"companies", "equipment"}:
+                if model._meta.app_label not in {"companies", "equipment", "work", "evidence"}:
                     continue
                 declared = {
                     c.name: c for c in model._meta.constraints if isinstance(c, ScopedForeignKey)

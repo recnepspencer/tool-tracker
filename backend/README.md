@@ -1,27 +1,13 @@
 # Nelson Electric API
 
-The first API slice supports an authenticated employee requesting a specific physical tool. Two identical drills share a `ToolModel`, but each has its own `ToolAsset`, tag, custody, and requests. This backend is a CleanForce consumer; the React demo is not connected yet.
+The tool-tracker backend uses CleanForce authentication and governed HTTP declarations, Django, and PostgreSQL. Business models follow the company/equipment/work domains in [the proposal](../docs/DATABASE_PROPOSAL.md). Future bidding can share company, people, and project identities. The existing React demo still uses its mock adapter; connecting that frontend and deploying an API service are separate tasks.
 
-## Implemented scope
+## Run and review
 
-- CleanForce password login, sessions, logout, recovery and its identity routes.
-- Company, person, company membership, and fixed company role grants.
-- Warehouses, tool categories/models, individual assets, custody periods, and incident records needed to determine availability.
-- Authenticated, paginated asset browsing with availability derived from current state.
-- Requests for one required asset ID, plus reading your own request.
-- Model-declared PostgreSQL company-integrity foreign keys, exclusive custodians, and nonoverlapping custody periods. Initial asset/custody creation is atomic application code.
-- Transactionally queued CleanForce audit, request-key retries, and prevention of duplicate open requests by one person for one asset.
-
-A request remains pending. It does not reserve the tool, alter custody, or substitute another unit. Multiple employees may request the same unit. Approval, fulfillment, withdrawal, and employee tool-registration endpoints are not part of this slice. The employee-registration setting and configurable job assignment rules remain specified in [the database proposal](../docs/DATABASE_PROPOSAL.md).
-
-## Run locally
-
-Requirements: Git access to the private CleanForce repository, uv, Docker with Compose. uv installs Python 3.13 when needed. CleanForce is pinned to commit `80ea29899246a4680f01624e03b896522770b6dd`; `uv.lock` pins the resolved dependencies.
-
-Run from `backend/`:
+Requirements: Git access to the private CleanForce repository, uv, Docker Compose. CleanForce is pinned to `80ea29899246a4680f01624e03b896522770b6dd`; `uv.lock` pins dependencies. Commands run from `backend/`:
 
 ```powershell
-Copy-Item .env.example .env  # First setup only; preserve an existing .env.
+Copy-Item .env.example .env # First setup only; preserve existing local configuration.
 uv sync --locked
 docker compose up -d --wait
 uv run --env-file .env python manage.py migrate
@@ -29,84 +15,72 @@ uv run --env-file .env python manage.py seed_review_data
 uv run --env-file .env python manage.py runserver 127.0.0.1:8001 --noreload
 ```
 
-On this workstation, uv is also available at `../artifacts/api-bootstrap/bin/uv.exe`; substitute that path for `uv` if it is not on PATH. PostgreSQL listens only on localhost port 55432. The compose volume retains review data; `docker compose stop` stops it without deleting records. This configuration and the example credentials are for local review only. Secrets are required through environment variables; secure cookies are enabled when DEBUG is off.
+This workstation also has uv at `../artifacts/api-bootstrap/bin/uv.exe`. PostgreSQL listens on localhost 55432. The volume retains review records. Example credentials, debug mode, and the local server are review configuration.
 
-The seed prints the company/asset IDs and creates `reviewer@example.com`. Its password is `NELSON_REVIEW_PASSWORD` from your local `.env`. Rerunning it preserves assets, custody and requests and does not reset an existing login password.
+Open [interactive API docs](http://127.0.0.1:8001/api/docs). The checked [OpenAPI contract](contracts/openapi.json) defines payloads, enums, pagination, revisions, and endpoint paths. Obtain `/api/auth/csrf`, sign in using CleanForce `/api/auth/password-login`, then use the session cookie and refreshed CSRF token for writes. Every business actor comes from the authenticated identity.
 
-Open [API documentation](http://127.0.0.1:8001/api/docs) or [OpenAPI JSON](http://127.0.0.1:8001/api/openapi.json). Swagger displays the contract, but browser mutations still require the real session and CSRF header; use the following script for a complete working request flow:
+Seeded accounts are `admin@example.com`, `manager@example.com`, `reviewer@example.com`, `apprentice@example.com`, `warehouse@example.com`, `estimator@example.com`, and `suspended@example.com`. New account passwords come from local `NELSON_REVIEW_PASSWORD`. Reruns preserve existing passwords, access changes, policies, tool edits, custody, and resolved requests. The warehouse profile manages North only; manager/admin profiles have company equipment authority.
+
+The seed includes ten assets, two identical independently tagged drills, worker-held tools, damaged/missing tools, pending transfers/returns, approved and pending requests, two active job assignments, an archived job, and an approval-required leave request. The basic repeatable HTTP walkthrough is:
 
 ```powershell
 uv run --env-file .env python scripts/review_api.py
 ```
 
-This script signs in, lists both drills, requests `NE-001`, retries the same request key, and reads the result. Its stable request key makes repeated review runs safe. It deliberately creates a pending request in the review database.
+## Public capabilities
 
-## HTTP contract
+All business routes are scoped under `/api/companies/{company_id}` except company bootstrap and authenticated invitation acceptance.
 
-| Method | Path | Behavior |
-| --- | --- | --- |
-| GET | `/api/auth/csrf` | Obtain a CSRF token and cookie before login. |
-| POST | `/api/auth/password-login` | CleanForce login; send email, password, CSRF header, and cookie. Successful login redirects. |
-| GET | `/api/me` | Active identity and active company memberships. |
-| GET | `/api/companies/{company_id}/tools?limit=50&offset=0` | Individually tagged assets; limit 1–100. Includes model identity and derived requestability. |
-| POST | `/api/companies/{company_id}/tools/{asset_id}/requests` | Request exactly that physical asset. New request returns 201; same-key retry returns 200. |
-| GET | `/api/companies/{company_id}/tool-requests/{request_id}` | Read your own request in this company. Other people's requests are not exposed. |
-
-```json
-{
-  "request_key": "cdf7f965-0fc5-4966-89f3-e87a5c2bf279",
-  "note": "Needed for rough-in"
-}
-```
-
-`request_key` is scoped to the requesting membership. Reusing it for a different asset or normalized note returns 409. Replaying the same request returns that resource's current state without repeating its audit event, even if the tool later becomes unavailable. Current authorization is still checked. A new key cannot create a second pending/approved request by the same person for that asset; the 409 response identifies the existing request.
-
-Requests derive the actor from the authenticated session. `actor_id`, model-only requests, and other extra body fields are rejected. Tools must be active, serviceable, not reported missing, and currently held by an unarchived warehouse in the company. Other-company IDs do not bypass scope checks. HTTP statuses: 400 invalid input using CleanForce's validation response, 401 unauthenticated, 403 unauthorized/CSRF, 404 inaccessible or absent record, and 409 business conflict.
-
-## Source map
-
-| File | Responsibility |
+| Domain | Capabilities |
 | --- | --- |
-| `companies/models.py`, `companies/access.py` | People/company identities and active capability checks. |
-| `equipment/models/` | Catalog, physical assets, custody, and request records. |
-| `companies/constraints.py` | Migration-serializable `ScopedForeignKey`, used in model `Meta.constraints`. |
-| `equipment/migrations/` | Versioned PostgreSQL schema; applied history is preserved. |
-| `equipment/asset_creation.py` | Atomic creation of an asset and its initial warehouse custody. |
-| `equipment/queries.py` | Availability and read projections. |
-| `equipment/request_tool.py` | Transactional request command and audit dispatch. |
-| `equipment/api.py` | CleanForce HTTP declarations and typed schemas. |
-| `config/urls.py` | Single governed API composition. |
-| `tests/` | Real HTTP authentication/CSRF tests and PostgreSQL integrity/concurrency tests. |
+| Company/access | Bootstrap a company; list people and permissions; grant/revoke roles; suspend, disable, end, and reactivate memberships; issue, revoke, and accept email-bound invitations. |
+| Catalog | Create/update/archive warehouses, categories, and shared tool models; grant warehouse authority; register individual assets; edit serials; reassign stewardship. |
+| Registration | Company-configurable employee creation; manager override; payload-bound request keys; atomic asset and initial custody creation; optional staged photo. |
+| Custody | Request a specific asset; approve/reject/withdraw; propose transfer/return; accept/decline/cancel; browse scoped queues and custody history. |
+| Condition | Independent damage and missing incidents; repair/service records; found reports; retirement, restoration, and disposal. |
+| Reconciliation | Investigate cases; record reasoned resolutions; correct custody with photo evidence and both case/asset revisions. |
+| Work | Projects, jobs, administrative assignments and responsibility changes; configurable direct/approval-required/disabled self-join and self-leave; decisions, archive/restore, historical assignments. |
+| Evidence/reporting | Validated staged JPEG/PNG/WebP uploads, authorized downloads, typed evidence links, company summary, person/job/tool directory, and scoped activity. |
 
-The first schema intentionally contains only the columns and entities needed by this slice. The proposal's full job, estimating, lifecycle-resolution, and registration models are not all installed. No separate generic repository/service framework or frontend-shaped state tables are introduced.
+Requests do not reserve tools. Approval creates a pending handoff; the recipient's acceptance records actual receipt. Only one handoff may be pending per asset. A warehouse receipt updates responsible warehouse; a worker transfer preserves it. Job changes preserve equipment custody. Suspension preserves accountability; employment end explicitly closes job assignments. Disposed assets cannot be restored. Duplicate reconciliation cases can record findings; automatic asset identity merging is outside this API.
 
-## Transactions and audit
+Mutable commands require `expected_revision` where declared. Stale revisions return 409. Request, registration, participation, and handoff creation use `request_key` with payload-bound retries. Replaying a resolved handoff returns the existing matching outcome; a conflicting decision returns 409. Search/list endpoints use bounded `limit`/`offset` pagination.
 
-Commands lock membership, then asset, then warehouse. Availability is queried in a new statement after acquiring the asset lock, so a waiting request does not use a pre-lock custody snapshot. Future membership/role changes must lock the affected membership; custody and condition mutations must lock the asset. This protocol serializes request checks with the commands that change their authority. `create_asset_at_warehouse` creates an active asset and its initial custody in one transaction; the review seed uses this operation. It is an internal persistence function, not an authorized employee-registration endpoint. The asset's current custody is the one open period, not a second holder field on the asset.
+Invitations return their single-use token once to an authorized administrator for delivery. Tokens are stored only as digests, expire after seven days, and require an authenticated matching email. This backend does not send invitation mail. CleanForce owns login and account recovery; production account provisioning/mail infrastructure needs its deployment configuration.
 
-PostgreSQL enforces at most one open custody period, valid holders, and nonoverlapping history. The application owns the requirement that an active asset has a custody period: arbitrary ORM/SQL writers can now bypass that existence rule. Future registration, handoff, and reconciliation commands must preserve it atomically. An asset with no custody is unavailable to the request API. The deferred existence triggers from migration `0002` are removed by `0003`; their historical SQL is retained so applied migrations remain reproducible and reversible.
+## Ownership and integrity
 
-The request, its captured source custody, and CleanForce's audit job commit together. Audit enqueue failure rolls the request back. The audit event itself is materialized by the platform worker:
+`companies` owns membership/role authority and the bridge to CleanForce audit. `equipment` owns catalog, asset identity, custody, conditions, and registration. `work` owns jobs and assignment histories. `evidence` owns staged photo storage; typed equipment links own attachment meaning. `config/read_api.py` composes read projections without mutation authority.
 
-```powershell
-uv run --env-file .env python manage.py run_platform_jobs --limit 100
-# Or run the persistent worker in another terminal:
-uv run --env-file .env python manage.py run_platform_worker
-```
+Commands lock participating memberships in UUID order, then the relevant policy/catalog/asset/job aggregates. Asset locks protect custody, condition, and handoff decisions; a fresh statement after waiting reads current custody. Registration and policy updates lock the same policy row. Shared catalog edits and asset metadata edits have separate revisions. File bytes are stored outside database command transactions; attaching a staged file participates in the domain transaction and rechecks current policy.
 
-Requests are not availability locks. Fulfillment must later lock the asset again and verify the captured source custody before creating a handoff. Company rules for granting capabilities are application code; a displayed title or Django staff flag confers no access.
+`ScopedForeignKey` declarations in model `Meta.constraints` augment normal foreign keys with company/asset matching. Keep its import path stable for historical migrations. PostgreSQL also enforces exclusive holders, valid status vocabularies, one open custody interval, and nonoverlapping histories. The application preserves the existence of custody for active assets; direct SQL/ORM writers can bypass that existence requirement. Applied migration SQL remains historical; new constraint changes are tracked in model state.
 
-## Verification
+New composite constraints must follow creation of their referenced unique keys. The initial work/equipment migrations order these operations explicitly. Fresh-install and populated-upgrade tests expose incorrect ordering before release.
 
-After applying migrations to the local review database, run the same complete gate before a release:
+## Checks, contracts, and CI
 
 ```powershell
 uv run --env-file .env python scripts/check_api.py
-uv run --env-file .env python manage.py generate_platform_openapi --output ../artifacts/nelson-openapi.json
+# After an intentional public-contract change, regenerate and review the diff:
+uv run --env-file .env python manage.py generate_platform_openapi --output contracts/openapi.json
 ```
 
-The gate fails on Django model errors, missing migration files, unapplied migrations, or scoped-foreign-key drift in the configured PostgreSQL database. `manage.py check_database_schema` compares declared names, source/target columns, target tables, validation status, and enforcement modes against PostgreSQL, and rejects company-owned relationships without a scope declaration. It specifically checks scoped foreign keys and obsolete custody triggers; it is not a general-purpose comparison of every database object. It does not apply migrations or change review records.
+The gate checks Django declarations, missing migrations, unapplied migrations, PostgreSQL scoped-constraint drift, OpenAPI drift, a fresh test database with migrations, regression tests, and formatting/lint. Migration tests upgrade populated historical records. Domain-owned fixtures keep job tests independent of equipment; HTTP tests validate real responses against the checked OpenAPI instead of importing implementation schemas. Tests exercise rollback, access revocation, tenant isolation, policy changes, competing receipt decisions, and seed preservation.
 
-The test step forces a new test database and applies the entire migration history. It also upgrades populated `0002` data to the latest schema and verifies that assets, custody, and requests survive. Tests prove that changing a scoped constraint generates executable remove/add migration operations, and deliberately remove, weaken, or add constraints to verify that drift is detected. Keep `companies.constraints.ScopedForeignKey` importable for historical migrations. Review generated migrations whenever changing fields or table names; automatic detection is backed by these checks, not a guarantee that every future schema change needs no review.
+[API quality](../.github/workflows/api-quality.yml) runs on branch pushes and PRs using real PostgreSQL. [Pages deployment](../.github/workflows/deploy-pages.yml) depends on the same reusable check. CI uses a dedicated read-only CleanForce deploy key, removed from the runner after dependency installation. Fork PRs without the secret fail closed. The generated OpenAPI document is uploaded as a workflow artifact.
 
-Other tests cover two identical tools, authentication, CSRF, live access revocation, cross-company access, request ownership, availability, retries, competing requests, concurrent duplicate submissions, audit rollback, atomic initial custody creation, and database-enforced custody/company integrity. Tests use a separate PostgreSQL test database and the local development database role, with no SQLite substitute. The frontend and existing static deployment remain separate. This gate is available locally; the existing Pages workflow does not run it, and API CI will need access to the private CleanForce dependency.
+The schema command checks declared scoped foreign keys and obsolete custody triggers; it is not a general comparison of every database object. Review generated migration and contract diffs alongside behavior tests.
+
+## Workers and storage
+
+Audit jobs commit with domain changes; a worker materializes the activity feed. A worker outage can delay activity without losing queued audit evidence.
+
+```powershell
+uv run --env-file .env python manage.py run_platform_worker
+uv run --env-file .env python manage.py cleanup_staged_photos
+```
+
+The cleanup command removes expired unattached photos and preserves attached evidence. `NELSON_MEDIA_ROOT` selects local storage; production can configure Django's storage backend. Downloads require current membership. The pinned CleanForce endpoint helper describes JSON responses only, so `evidence/openapi.py` adapts its public schema output for binary photo media types; a regression test compares the contract with actual streamed responses.
+
+Reservations, future estimating, consumable stock, financial costing, automatic duplicate merging, and optional site/allocation extensions remain future domains.

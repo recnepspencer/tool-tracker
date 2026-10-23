@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from backend_platform.api import define_http_endpoint
@@ -22,13 +23,16 @@ class AssetView(Schema):
     name: str
     manufacturer: str
     model_number: str
-    lifecycle: str
-    serviceability: str
+    lifecycle: Literal["active", "retired", "disposed"]
+    serviceability: Literal["serviceable", "damaged", "out_of_service"]
     missing: bool
     warehouse_id: UUID | None
     requestable: bool
     unavailable_reason: str | None
     revision: int
+    holder_membership_id: UUID | None
+    responsible_warehouse_id: UUID
+    registration_photo_id: UUID | None
 
 
 class AssetPage(Schema):
@@ -52,13 +56,31 @@ class RequestView(Schema):
     asset_id: UUID
     requester_id: UUID
     source_custody_id: UUID
-    status: str
+    status: Literal["pending", "approved", "rejected", "withdrawn", "fulfilled"]
     note: str
     requested_at: datetime
+    revision: int
+    decided_at: datetime | None
+    decision_note: str
 
 
-def browse_tools(request: HttpRequest, company_id: UUID, page: Query[PageInput]):
-    return list_assets(current_identity(request), company_id, limit=page.limit, offset=page.offset)
+def browse_tools(
+    request: HttpRequest,
+    company_id: UUID,
+    page: Query[PageInput],
+    search: str = "",
+    warehouse_id: UUID | None = None,
+    holder_membership_id: UUID | None = None,
+):
+    return list_assets(
+        current_identity(request),
+        company_id,
+        limit=page.limit,
+        offset=page.offset,
+        search=search,
+        warehouse_id=warehouse_id,
+        holder_membership_id=holder_membership_id,
+    )
 
 
 @csrf_protect

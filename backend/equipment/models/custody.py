@@ -85,11 +85,20 @@ class AssetIncident(CompanyRecord):
     reported_at = models.DateTimeField(auto_now_add=True)
     description = models.TextField()
     resolved_at = models.DateTimeField(null=True, blank=True)
+    resolved_by = models.ForeignKey(
+        "companies.CompanyMembership",
+        null=True,
+        on_delete=models.PROTECT,
+        related_name="incidents_resolved",
+    )
+    resolution_note = models.TextField(blank=True)
+    revision = models.PositiveIntegerField(default=1)
 
     class Meta(CompanyRecord.Meta):
         db_table = "asset_incidents"
         constraints = [
             *CompanyRecord.Meta.constraints,
+            ScopedForeignKey(field="resolved_by", name="incident_resolver_company"),
             ScopedForeignKey(field="asset", name="incident_asset_company"),
             ScopedForeignKey(field="reported_by", name="incident_reporter_company"),
             models.CheckConstraint(

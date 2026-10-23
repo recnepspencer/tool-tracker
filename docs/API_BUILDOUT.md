@@ -20,3 +20,9 @@ Future estimating, reservation scheduling, consumable stock, accounting, and opt
 Exercise HTTP contracts with real sessions/CSRF, use small domain-owned factories, and assert outcomes rather than helper call sequences. Validate real responses against the generated OpenAPI schemas. Test authorization independently of database setup where possible. Exercise invalid transitions, tenant isolation, optimistic revisions, replay behavior, concurrent mutations, and audit rollback. Migration tests cover a fresh database and upgrades preserving historical records. Seeding tests verify scenario meaning and repeatability without resetting user changes.
 
 CI uses a dedicated read-only CleanForce deploy key. It does not use a developer's account token. Fork PRs without the secret fail closed; do not switch to `pull_request_target` to run untrusted code with credentials.
+
+## Implemented evidence
+
+The completion scope above is implemented in the backend. The complete local gate passes 73 tests, including fresh migration installation, populated upgrades, generated-contract validation, registration-disable serialization, competing receipt decisions, audit enqueue rollback, and preservation of advanced seed scenarios. PostgreSQL verification compares 56 declared scoped foreign keys with the actual database. CI also executes the seeder twice and publishes the generated OpenAPI artifact.
+
+Operational boundaries: invitations return a token for administrator delivery and require an existing authenticated CleanForce account; external account provisioning and mail delivery remain deployment integration. The frontend still uses its mock adapter. Automatic duplicate identity merging, future bidding, optional site/allocation models, and production API hosting are outside this buildout.

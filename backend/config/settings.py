@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 DEBUG = os.getenv("DJANGO_DEBUG", "0") == "1"
@@ -15,6 +16,8 @@ INSTALLED_APPS = [
     "cleanforce_identity.apps.CleanForceIdentityConfig",
     "companies",
     "equipment",
+    "work",
+    "evidence",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -38,6 +41,8 @@ TEMPLATES = [
     }
 ]
 STATIC_URL = "static/"
+MEDIA_ROOT = os.getenv("NELSON_MEDIA_ROOT", str(Path(__file__).resolve().parents[1] / "media"))
+DATA_UPLOAD_MAX_MEMORY_SIZE = 9 * 1024 * 1024
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {

@@ -4,6 +4,7 @@ dist/
 artifacts/
 backend/.venv/
 backend/.env
+backend/media/
 **/__pycache__/
 backend/.pytest_cache/
 backend/.ruff_cache/

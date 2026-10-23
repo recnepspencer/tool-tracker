@@ -50,9 +50,9 @@ def test_existing_database_upgrades_without_losing_assets_custody_or_requests(wo
                 registered_by_id=world.member.pk,
             )
         MigrationExecutor(connection).migrate(latest)
-        assert list(ToolAsset.objects.order_by("id").values()) == asset_rows
+        assert list(ToolAsset.objects.order_by("id").values(*asset_rows[0])) == asset_rows
         assert list(CustodyPeriod.objects.order_by("id").values()) == custody_rows
-        assert list(ToolRequest.objects.order_by("id").values()) == request_rows
+        assert list(ToolRequest.objects.order_by("id").values(*request_rows[0])) == request_rows
         assert ToolRequest.objects.get(pk=request.pk).source_custody.asset_id == world.assets[0].pk
         call_command("check_database_schema", stdout=StringIO())
     finally:

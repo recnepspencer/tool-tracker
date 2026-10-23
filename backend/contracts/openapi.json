@@ -1,6 +1,124 @@
 {
   "components": {
     "schemas": {
+      "ActivityPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          }
+        },
+        "required": [
+          "items",
+          "next_offset"
+        ],
+        "title": "ActivityPage",
+        "type": "object"
+      },
+      "ActivityView": {
+        "properties": {
+          "actor_user_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor User Id"
+          },
+          "effective_user_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective User Id"
+          },
+          "event_key": {
+            "title": "Event Key",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Metadata",
+            "type": "object"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "subject_domain": {
+            "title": "Subject Domain",
+            "type": "string"
+          },
+          "subject_entity_id": {
+            "title": "Subject Entity Id",
+            "type": "string"
+          },
+          "subject_entity_type": {
+            "title": "Subject Entity Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "event_key",
+          "occurred_at",
+          "actor_user_id",
+          "effective_user_id",
+          "subject_domain",
+          "subject_entity_type",
+          "subject_entity_id",
+          "metadata"
+        ],
+        "title": "ActivityView",
+        "type": "object"
+      },
       "AssetPage": {
         "properties": {
           "items": {
@@ -29,11 +147,50 @@
         "title": "AssetPage",
         "type": "object"
       },
+      "AssetUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "serial_number": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Serial Number"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "AssetUpdate",
+        "type": "object"
+      },
       "AssetView": {
         "properties": {
           "asset_tag": {
             "title": "Asset Tag",
             "type": "string"
+          },
+          "holder_membership_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Membership Id"
           },
           "id": {
             "format": "uuid",
@@ -41,6 +198,11 @@
             "type": "string"
           },
           "lifecycle": {
+            "enum": [
+              "active",
+              "retired",
+              "disposed"
+            ],
             "title": "Lifecycle",
             "type": "string"
           },
@@ -60,9 +222,26 @@
             "title": "Name",
             "type": "string"
           },
+          "registration_photo_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Photo Id"
+          },
           "requestable": {
             "title": "Requestable",
             "type": "boolean"
+          },
+          "responsible_warehouse_id": {
+            "format": "uuid",
+            "title": "Responsible Warehouse Id",
+            "type": "string"
           },
           "revision": {
             "title": "Revision",
@@ -80,6 +259,11 @@
             "title": "Serial Number"
           },
           "serviceability": {
+            "enum": [
+              "serviceable",
+              "damaged",
+              "out_of_service"
+            ],
             "title": "Serviceability",
             "type": "string"
           },
@@ -126,9 +310,157 @@
           "warehouse_id",
           "requestable",
           "unavailable_reason",
-          "revision"
+          "revision",
+          "holder_membership_id",
+          "responsible_warehouse_id",
+          "registration_photo_id"
         ],
         "title": "AssetView",
+        "type": "object"
+      },
+      "AssignmentInput": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "membership_id": {
+            "format": "uuid",
+            "title": "Membership Id",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "responsibility": {
+            "default": "crew",
+            "enum": [
+              "crew",
+              "foreman",
+              "supervisor"
+            ],
+            "title": "Responsibility",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "membership_id",
+          "reason"
+        ],
+        "title": "AssignmentInput",
+        "type": "object"
+      },
+      "AssignmentPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AssignmentView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          }
+        },
+        "required": [
+          "items",
+          "next_offset"
+        ],
+        "title": "AssignmentPage",
+        "type": "object"
+      },
+      "AssignmentView": {
+        "properties": {
+          "assigned_by_id": {
+            "format": "uuid",
+            "title": "Assigned By Id",
+            "type": "string"
+          },
+          "end_reason": {
+            "title": "End Reason",
+            "type": "string"
+          },
+          "ended_by_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended By Id"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "job_id": {
+            "format": "uuid",
+            "title": "Job Id",
+            "type": "string"
+          },
+          "membership_id": {
+            "format": "uuid",
+            "title": "Membership Id",
+            "type": "string"
+          },
+          "responsibility": {
+            "enum": [
+              "crew",
+              "foreman",
+              "supervisor"
+            ],
+            "title": "Responsibility",
+            "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "job_id",
+          "membership_id",
+          "responsibility",
+          "starts_at",
+          "ends_at",
+          "assigned_by_id",
+          "ended_by_id",
+          "end_reason"
+        ],
+        "title": "AssignmentView",
         "type": "object"
       },
       "AuthorizationDecision": {
@@ -534,6 +866,244 @@
         "title": "BeginImpersonationContract",
         "type": "object"
       },
+      "CapabilityView": {
+        "properties": {
+          "capabilities": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Capabilities",
+            "type": "array"
+          },
+          "role": {
+            "enum": [
+              "field_member",
+              "company_admin",
+              "equipment_manager",
+              "dispatcher",
+              "estimator"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "capabilities"
+        ],
+        "title": "CapabilityView",
+        "type": "object"
+      },
+      "CategoryInput": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "CategoryInput",
+        "type": "object"
+      },
+      "CategoryPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          }
+        },
+        "required": [
+          "items",
+          "next_offset"
+        ],
+        "title": "CategoryPage",
+        "type": "object"
+      },
+      "CategoryUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "archived": {
+            "default": false,
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "name"
+        ],
+        "title": "CategoryUpdate",
+        "type": "object"
+      },
+      "CategoryView": {
+        "properties": {
+          "archived_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "archived_at",
+          "revision"
+        ],
+        "title": "CategoryView",
+        "type": "object"
+      },
+      "CompanyInput": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "preferred_name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Preferred Name",
+            "type": "string"
+          },
+          "request_key": {
+            "format": "uuid",
+            "title": "Request Key",
+            "type": "string"
+          },
+          "timezone": {
+            "default": "America/Denver",
+            "maxLength": 64,
+            "title": "Timezone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_key",
+          "name",
+          "preferred_name"
+        ],
+        "title": "CompanyInput",
+        "type": "object"
+      },
+      "CompanySummary": {
+        "properties": {
+          "active_assets": {
+            "title": "Active Assets",
+            "type": "integer"
+          },
+          "active_people": {
+            "title": "Active People",
+            "type": "integer"
+          },
+          "damaged_assets": {
+            "title": "Damaged Assets",
+            "type": "integer"
+          },
+          "missing_assets": {
+            "title": "Missing Assets",
+            "type": "integer"
+          },
+          "pending_handoffs": {
+            "title": "Pending Handoffs",
+            "type": "integer"
+          },
+          "pending_requests": {
+            "title": "Pending Requests",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "active_people",
+          "active_assets",
+          "missing_assets",
+          "damaged_assets",
+          "pending_requests",
+          "pending_handoffs"
+        ],
+        "title": "CompanySummary",
+        "type": "object"
+      },
+      "CompanyView": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "timezone",
+          "revision"
+        ],
+        "title": "CompanyView",
+        "type": "object"
+      },
       "CsrfToken": {
         "properties": {
           "csrf_token": {
@@ -545,6 +1115,528 @@
           "csrf_token"
         ],
         "title": "CsrfToken",
+        "type": "object"
+      },
+      "CustodyPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CustodyView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          }
+        },
+        "required": [
+          "items",
+          "next_offset"
+        ],
+        "title": "CustodyPage",
+        "type": "object"
+      },
+      "CustodyView": {
+        "properties": {
+          "asset_id": {
+            "format": "uuid",
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "holder_membership_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Membership Id"
+          },
+          "holder_warehouse_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Warehouse Id"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "asset_id",
+          "holder_membership_id",
+          "holder_warehouse_id",
+          "starts_at",
+          "ends_at"
+        ],
+        "title": "CustodyView",
+        "type": "object"
+      },
+      "DecisionInput": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "DecisionInput",
+        "type": "object"
+      },
+      "DirectoryJob": {
+        "properties": {
+          "job_id": {
+            "format": "uuid",
+            "title": "Job Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "responsibility": {
+            "title": "Responsibility",
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "number",
+          "name",
+          "responsibility"
+        ],
+        "title": "DirectoryJob",
+        "type": "object"
+      },
+      "DirectoryPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DirectoryPerson"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          }
+        },
+        "required": [
+          "items",
+          "next_offset"
+        ],
+        "title": "DirectoryPage",
+        "type": "object"
+      },
+      "DirectoryPerson": {
+        "properties": {
+          "jobs": {
+            "items": {
+              "$ref": "#/components/schemas/DirectoryJob"
+            },
+            "title": "Jobs",
+            "type": "array"
+          },
+          "membership_id": {
+            "format": "uuid",
+            "title": "Membership Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/DirectoryTool"
+            },
+            "title": "Tools",
+            "type": "array"
+          }
+        },
+        "required": [
+          "membership_id",
+          "name",
+          "jobs",
+          "tools"
+        ],
+        "title": "DirectoryPerson",
+        "type": "object"
+      },
+      "DirectoryTool": {
+        "properties": {
+          "asset_id": {
+            "format": "uuid",
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "asset_tag": {
+            "title": "Asset Tag",
+            "type": "string"
+          },
+          "missing": {
+            "title": "Missing",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "serviceability": {
+            "title": "Serviceability",
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_id",
+          "asset_tag",
+          "name",
+          "serviceability",
+          "missing"
+        ],
+        "title": "DirectoryTool",
+        "type": "object"
+      },
+      "FileView": {
+        "properties": {
+          "attached_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attached At"
+          },
+          "byte_count": {
+            "title": "Byte Count",
+            "type": "integer"
+          },
+          "content_type": {
+            "title": "Content Type",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "original_name": {
+            "title": "Original Name",
+            "type": "string"
+          },
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "original_name",
+          "content_type",
+          "byte_count",
+          "purpose",
+          "expires_at",
+          "attached_at"
+        ],
+        "title": "FileView",
+        "type": "object"
+      },
+      "HandoffInput": {
+        "additionalProperties": false,
+        "properties": {
+          "destination_membership_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Membership Id"
+          },
+          "destination_warehouse_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Warehouse Id"
+          },
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          },
+          "photo_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Id"
+          },
+          "request_key": {
+            "format": "uuid",
+            "title": "Request Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "request_key"
+        ],
+        "title": "HandoffInput",
+        "type": "object"
+      },
+      "HandoffPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/HandoffView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          }
+        },
+        "required": [
+          "items",
+          "next_offset"
+        ],
+        "title": "HandoffPage",
+        "type": "object"
+      },
+      "HandoffView": {
+        "properties": {
+          "asset_id": {
+            "format": "uuid",
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "destination_membership_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Membership Id"
+          },
+          "destination_warehouse_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Warehouse Id"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "photo_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Photo Ids",
+            "type": "array"
+          },
+          "proposed_at": {
+            "format": "date-time",
+            "title": "Proposed At",
+            "type": "string"
+          },
+          "proposed_by_id": {
+            "format": "uuid",
+            "title": "Proposed By Id",
+            "type": "string"
+          },
+          "resolution_note": {
+            "title": "Resolution Note",
+            "type": "string"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
+          },
+          "resolved_by_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved By Id"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "source_custody_id": {
+            "format": "uuid",
+            "title": "Source Custody Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "accepted",
+              "declined",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "tool_request_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Request Id"
+          }
+        },
+        "required": [
+          "id",
+          "asset_id",
+          "source_custody_id",
+          "destination_membership_id",
+          "destination_warehouse_id",
+          "tool_request_id",
+          "proposed_by_id",
+          "status",
+          "proposed_at",
+          "resolved_at",
+          "resolved_by_id",
+          "note",
+          "resolution_note",
+          "revision",
+          "photo_ids"
+        ],
+        "title": "HandoffView",
         "type": "object"
       },
       "IdentityImpersonationOperationResource": {
@@ -608,6 +1700,700 @@
         "title": "IdentityImpersonationSessionResource",
         "type": "object"
       },
+      "IncidentInput": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Description",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "damage",
+              "missing"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "photo_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Id"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "kind",
+          "description"
+        ],
+        "title": "IncidentInput",
+        "type": "object"
+      },
+      "IncidentPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/IncidentView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          }
+        },
+        "required": [
+          "items",
+          "next_offset"
+        ],
+        "title": "IncidentPage",
+        "type": "object"
+      },
+      "IncidentView": {
+        "properties": {
+          "asset_id": {
+            "format": "uuid",
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "damage",
+              "missing"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "photo_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Photo Ids",
+            "type": "array"
+          },
+          "reported_at": {
+            "format": "date-time",
+            "title": "Reported At",
+            "type": "string"
+          },
+          "reported_by_id": {
+            "format": "uuid",
+            "title": "Reported By Id",
+            "type": "string"
+          },
+          "resolution_note": {
+            "title": "Resolution Note",
+            "type": "string"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
+          },
+          "resolved_by_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved By Id"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "asset_id",
+          "kind",
+          "description",
+          "reported_by_id",
+          "reported_at",
+          "resolved_at",
+          "resolved_by_id",
+          "resolution_note",
+          "revision",
+          "photo_ids"
+        ],
+        "title": "IncidentView",
+        "type": "object"
+      },
+      "InvitationAcceptance": {
+        "additionalProperties": false,
+        "properties": {
+          "token": {
+            "maxLength": 200,
+            "minLength": 20,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "InvitationAcceptance",
+        "type": "object"
+      },
+      "InvitationCreated": {
+        "properties": {
+          "invitation": {
+            "$ref": "#/components/schemas/InvitationView"
+          },
+          "token": {
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "invitation",
+          "token"
+        ],
+        "title": "InvitationCreated",
+        "type": "object"
+      },
+      "InvitationInput": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "preferred_name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Preferred Name",
+            "type": "string"
+          },
+          "role": {
+            "default": "field_member",
+            "enum": [
+              "field_member",
+              "company_admin",
+              "equipment_manager",
+              "dispatcher",
+              "estimator"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "preferred_name"
+        ],
+        "title": "InvitationInput",
+        "type": "object"
+      },
+      "InvitationPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/InvitationView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          }
+        },
+        "required": [
+          "items",
+          "next_offset"
+        ],
+        "title": "InvitationPage",
+        "type": "object"
+      },
+      "InvitationView": {
+        "properties": {
+          "accepted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted At"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "preferred_name": {
+            "title": "Preferred Name",
+            "type": "string"
+          },
+          "revoked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked At"
+          },
+          "role_code": {
+            "enum": [
+              "field_member",
+              "company_admin",
+              "equipment_manager",
+              "dispatcher",
+              "estimator"
+            ],
+            "title": "Role Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "preferred_name",
+          "role_code",
+          "expires_at",
+          "accepted_at",
+          "revoked_at"
+        ],
+        "title": "InvitationView",
+        "type": "object"
+      },
+      "JobInput": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "number": {
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Number",
+            "type": "string"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "status": {
+            "default": "active",
+            "enum": [
+              "planned",
+              "active",
+              "on_hold",
+              "completed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "number",
+          "name"
+        ],
+        "title": "JobInput",
+        "type": "object"
+      },
+      "JobPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/JobView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          }
+        },
+        "required": [
+          "items",
+          "next_offset"
+        ],
+        "title": "JobPage",
+        "type": "object"
+      },
+      "JobUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "archived": {
+            "default": false,
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "planned",
+              "active",
+              "on_hold",
+              "completed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "name",
+          "status"
+        ],
+        "title": "JobUpdate",
+        "type": "object"
+      },
+      "JobView": {
+        "properties": {
+          "archived_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "planned",
+              "active",
+              "on_hold",
+              "completed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "number",
+          "name",
+          "status",
+          "archived_at",
+          "revision"
+        ],
+        "title": "JobView",
+        "type": "object"
+      },
+      "LifecycleInput": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "lifecycle": {
+            "enum": [
+              "active",
+              "retired",
+              "disposed"
+            ],
+            "title": "Lifecycle",
+            "type": "string"
+          },
+          "note": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "note",
+          "lifecycle"
+        ],
+        "title": "LifecycleInput",
+        "type": "object"
+      },
+      "MemberPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MemberView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          }
+        },
+        "required": [
+          "items",
+          "next_offset"
+        ],
+        "title": "MemberPage",
+        "type": "object"
+      },
+      "MemberView": {
+        "properties": {
+          "access_state": {
+            "enum": [
+              "active",
+              "suspended",
+              "disabled"
+            ],
+            "title": "Access State",
+            "type": "string"
+          },
+          "capabilities": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Capabilities",
+            "type": "array"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "person_id": {
+            "format": "uuid",
+            "title": "Person Id",
+            "type": "string"
+          },
+          "preferred_name": {
+            "title": "Preferred Name",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "roles": {
+            "items": {
+              "enum": [
+                "field_member",
+                "company_admin",
+                "equipment_manager",
+                "dispatcher",
+                "estimator"
+              ],
+              "type": "string"
+            },
+            "title": "Roles",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "person_id",
+          "preferred_name",
+          "title",
+          "access_state",
+          "ended_at",
+          "revision",
+          "roles",
+          "capabilities"
+        ],
+        "title": "MemberView",
+        "type": "object"
+      },
+      "MembershipUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "access_state": {
+            "enum": [
+              "active",
+              "suspended",
+              "disabled"
+            ],
+            "title": "Access State",
+            "type": "string"
+          },
+          "end_membership": {
+            "default": false,
+            "title": "End Membership",
+            "type": "boolean"
+          },
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "roles": {
+            "items": {
+              "enum": [
+                "field_member",
+                "company_admin",
+                "equipment_manager",
+                "dispatcher",
+                "estimator"
+              ],
+              "type": "string"
+            },
+            "maxItems": 5,
+            "minItems": 1,
+            "title": "Roles",
+            "type": "array"
+          },
+          "title": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "access_state",
+          "roles",
+          "reason"
+        ],
+        "title": "MembershipUpdate",
+        "type": "object"
+      },
       "MembershipView": {
         "properties": {
           "company_id": {
@@ -633,6 +2419,191 @@
         "title": "MembershipView",
         "type": "object"
       },
+      "ModelInput": {
+        "additionalProperties": false,
+        "properties": {
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "manufacturer": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Manufacturer",
+            "type": "string"
+          },
+          "model_number": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Model Number",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category_id",
+          "name",
+          "manufacturer",
+          "model_number"
+        ],
+        "title": "ModelInput",
+        "type": "object"
+      },
+      "ModelPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ModelView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          }
+        },
+        "required": [
+          "items",
+          "next_offset"
+        ],
+        "title": "ModelPage",
+        "type": "object"
+      },
+      "ModelUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "archived": {
+            "default": false,
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "manufacturer": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Manufacturer",
+            "type": "string"
+          },
+          "model_number": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Model Number",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category_id",
+          "name",
+          "manufacturer",
+          "model_number",
+          "expected_revision"
+        ],
+        "title": "ModelUpdate",
+        "type": "object"
+      },
+      "ModelView": {
+        "properties": {
+          "archived_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived At"
+          },
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "manufacturer": {
+            "title": "Manufacturer",
+            "type": "string"
+          },
+          "model_number": {
+            "title": "Model Number",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "category_id",
+          "name",
+          "manufacturer",
+          "model_number",
+          "archived_at",
+          "revision"
+        ],
+        "title": "ModelView",
+        "type": "object"
+      },
+      "NoteInput": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "NoteInput",
+        "type": "object"
+      },
       "PageInput": {
         "properties": {
           "limit": {
@@ -650,6 +2621,250 @@
           }
         },
         "title": "PageInput",
+        "type": "object"
+      },
+      "ParticipationInput": {
+        "additionalProperties": false,
+        "properties": {
+          "assignment_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignment Id"
+          },
+          "intent": {
+            "enum": [
+              "join",
+              "leave"
+            ],
+            "title": "Intent",
+            "type": "string"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Reason",
+            "type": "string"
+          },
+          "request_key": {
+            "format": "uuid",
+            "title": "Request Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_key",
+          "intent"
+        ],
+        "title": "ParticipationInput",
+        "type": "object"
+      },
+      "ParticipationPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ParticipationView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          }
+        },
+        "required": [
+          "items",
+          "next_offset"
+        ],
+        "title": "ParticipationPage",
+        "type": "object"
+      },
+      "ParticipationPolicyInput": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "self_join_mode": {
+            "enum": [
+              "direct",
+              "approval_required",
+              "disabled"
+            ],
+            "title": "Self Join Mode",
+            "type": "string"
+          },
+          "self_leave_mode": {
+            "enum": [
+              "direct",
+              "approval_required",
+              "disabled"
+            ],
+            "title": "Self Leave Mode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "self_join_mode",
+          "self_leave_mode"
+        ],
+        "title": "ParticipationPolicyInput",
+        "type": "object"
+      },
+      "ParticipationPolicyView": {
+        "properties": {
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "self_join_mode": {
+            "enum": [
+              "direct",
+              "approval_required",
+              "disabled"
+            ],
+            "title": "Self Join Mode",
+            "type": "string"
+          },
+          "self_leave_mode": {
+            "enum": [
+              "direct",
+              "approval_required",
+              "disabled"
+            ],
+            "title": "Self Leave Mode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "self_join_mode",
+          "self_leave_mode",
+          "revision"
+        ],
+        "title": "ParticipationPolicyView",
+        "type": "object"
+      },
+      "ParticipationView": {
+        "properties": {
+          "decided_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "intent": {
+            "enum": [
+              "join",
+              "leave"
+            ],
+            "title": "Intent",
+            "type": "string"
+          },
+          "job_id": {
+            "format": "uuid",
+            "title": "Job Id",
+            "type": "string"
+          },
+          "membership_id": {
+            "format": "uuid",
+            "title": "Membership Id",
+            "type": "string"
+          },
+          "policy_revision": {
+            "title": "Policy Revision",
+            "type": "integer"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "requested_at": {
+            "format": "date-time",
+            "title": "Requested At",
+            "type": "string"
+          },
+          "resulting_assignment_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resulting Assignment Id"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "approved",
+              "rejected",
+              "withdrawn"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "target_assignment_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Assignment Id"
+          }
+        },
+        "required": [
+          "id",
+          "job_id",
+          "membership_id",
+          "intent",
+          "status",
+          "target_assignment_id",
+          "resulting_assignment_id",
+          "policy_revision",
+          "requested_at",
+          "decided_at",
+          "reason",
+          "revision"
+        ],
+        "title": "ParticipationView",
         "type": "object"
       },
       "PasswordLoginContract": {
@@ -746,6 +2961,163 @@
           "email"
         ],
         "title": "PasswordResetRequestContract",
+        "type": "object"
+      },
+      "ProjectInput": {
+        "additionalProperties": false,
+        "properties": {
+          "lifecycle": {
+            "default": "active",
+            "enum": [
+              "prospective",
+              "active",
+              "closed",
+              "cancelled"
+            ],
+            "title": "Lifecycle",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "number": {
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Number",
+            "type": "string"
+          }
+        },
+        "required": [
+          "number",
+          "name"
+        ],
+        "title": "ProjectInput",
+        "type": "object"
+      },
+      "ProjectPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          }
+        },
+        "required": [
+          "items",
+          "next_offset"
+        ],
+        "title": "ProjectPage",
+        "type": "object"
+      },
+      "ProjectUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "lifecycle": {
+            "enum": [
+              "prospective",
+              "active",
+              "closed",
+              "cancelled"
+            ],
+            "title": "Lifecycle",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "name",
+          "lifecycle"
+        ],
+        "title": "ProjectUpdate",
+        "type": "object"
+      },
+      "ProjectView": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "lifecycle": {
+            "enum": [
+              "prospective",
+              "active",
+              "closed",
+              "cancelled"
+            ],
+            "title": "Lifecycle",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "name",
+          "lifecycle",
+          "revision"
+        ],
+        "title": "ProjectView",
+        "type": "object"
+      },
+      "ReasonInput": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "note": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "note"
+        ],
+        "title": "ReasonInput",
         "type": "object"
       },
       "ReauthCancelContract": {
@@ -847,6 +3219,325 @@
         "title": "ReauthVerifyPasswordContract",
         "type": "object"
       },
+      "ReconciliationInput": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "custody_dispute",
+              "missing_asset",
+              "duplicate_asset"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "narrative": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Narrative",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "narrative"
+        ],
+        "title": "ReconciliationInput",
+        "type": "object"
+      },
+      "ReconciliationPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReconciliationView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          }
+        },
+        "required": [
+          "items",
+          "next_offset"
+        ],
+        "title": "ReconciliationPage",
+        "type": "object"
+      },
+      "ReconciliationResolution": {
+        "additionalProperties": false,
+        "properties": {
+          "destination_membership_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Membership Id"
+          },
+          "destination_warehouse_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Warehouse Id"
+          },
+          "expected_asset_revision": {
+            "minimum": 1,
+            "title": "Expected Asset Revision",
+            "type": "integer"
+          },
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "note": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Note",
+            "type": "string"
+          },
+          "photo_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Id"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "note",
+          "expected_asset_revision"
+        ],
+        "title": "ReconciliationResolution",
+        "type": "object"
+      },
+      "ReconciliationView": {
+        "properties": {
+          "asset_id": {
+            "format": "uuid",
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "corrected_custody_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corrected Custody Id"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "custody_dispute",
+              "missing_asset",
+              "duplicate_asset"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "narrative": {
+            "title": "Narrative",
+            "type": "string"
+          },
+          "opened_at": {
+            "format": "date-time",
+            "title": "Opened At",
+            "type": "string"
+          },
+          "opened_by_id": {
+            "format": "uuid",
+            "title": "Opened By Id",
+            "type": "string"
+          },
+          "photo_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Photo Ids",
+            "type": "array"
+          },
+          "resolution_note": {
+            "title": "Resolution Note",
+            "type": "string"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
+          },
+          "resolved_by_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved By Id"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "asset_id",
+          "kind",
+          "narrative",
+          "opened_at",
+          "opened_by_id",
+          "resolved_at",
+          "resolved_by_id",
+          "resolution_note",
+          "corrected_custody_id",
+          "revision",
+          "photo_ids"
+        ],
+        "title": "ReconciliationView",
+        "type": "object"
+      },
+      "RegistrationInput": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_tag": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Asset Tag",
+            "type": "string"
+          },
+          "photo_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Id"
+          },
+          "request_key": {
+            "format": "uuid",
+            "title": "Request Key",
+            "type": "string"
+          },
+          "serial_number": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Serial Number"
+          },
+          "tool_model_id": {
+            "format": "uuid",
+            "title": "Tool Model Id",
+            "type": "string"
+          },
+          "warehouse_id": {
+            "format": "uuid",
+            "title": "Warehouse Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_key",
+          "tool_model_id",
+          "warehouse_id",
+          "asset_tag"
+        ],
+        "title": "RegistrationInput",
+        "type": "object"
+      },
+      "RegistrationPolicyInput": {
+        "additionalProperties": false,
+        "properties": {
+          "employee_tool_creation_enabled": {
+            "title": "Employee Tool Creation Enabled",
+            "type": "boolean"
+          },
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "employee_tool_creation_enabled"
+        ],
+        "title": "RegistrationPolicyInput",
+        "type": "object"
+      },
+      "RegistrationPolicyView": {
+        "properties": {
+          "employee_tool_creation_enabled": {
+            "title": "Employee Tool Creation Enabled",
+            "type": "boolean"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "employee_tool_creation_enabled",
+          "revision"
+        ],
+        "title": "RegistrationPolicyView",
+        "type": "object"
+      },
       "RequestInput": {
         "additionalProperties": false,
         "properties": {
@@ -868,11 +3559,55 @@
         "title": "RequestInput",
         "type": "object"
       },
+      "RequestPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RequestView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          }
+        },
+        "required": [
+          "items",
+          "next_offset"
+        ],
+        "title": "RequestPage",
+        "type": "object"
+      },
       "RequestView": {
         "properties": {
           "asset_id": {
             "format": "uuid",
             "title": "Asset Id",
+            "type": "string"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "decision_note": {
+            "title": "Decision Note",
             "type": "string"
           },
           "id": {
@@ -894,12 +3629,23 @@
             "title": "Requester Id",
             "type": "string"
           },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
           "source_custody_id": {
             "format": "uuid",
             "title": "Source Custody Id",
             "type": "string"
           },
           "status": {
+            "enum": [
+              "pending",
+              "approved",
+              "rejected",
+              "withdrawn",
+              "fulfilled"
+            ],
             "title": "Status",
             "type": "string"
           }
@@ -911,9 +3657,140 @@
           "source_custody_id",
           "status",
           "note",
-          "requested_at"
+          "requested_at",
+          "revision",
+          "decided_at",
+          "decision_note"
         ],
         "title": "RequestView",
+        "type": "object"
+      },
+      "ServiceInput": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "note": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Note",
+            "type": "string"
+          },
+          "photo_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Id"
+          },
+          "serviceability": {
+            "enum": [
+              "serviceable",
+              "damaged",
+              "out_of_service"
+            ],
+            "title": "Serviceability",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "note",
+          "serviceability"
+        ],
+        "title": "ServiceInput",
+        "type": "object"
+      },
+      "ServicePage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ServiceView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          }
+        },
+        "required": [
+          "items",
+          "next_offset"
+        ],
+        "title": "ServicePage",
+        "type": "object"
+      },
+      "ServiceView": {
+        "properties": {
+          "asset_id": {
+            "format": "uuid",
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "performed_by_id": {
+            "format": "uuid",
+            "title": "Performed By Id",
+            "type": "string"
+          },
+          "photo_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Photo Ids",
+            "type": "array"
+          },
+          "resulting_serviceability": {
+            "enum": [
+              "serviceable",
+              "damaged",
+              "out_of_service"
+            ],
+            "title": "Resulting Serviceability",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "asset_id",
+          "performed_by_id",
+          "occurred_at",
+          "resulting_serviceability",
+          "note",
+          "photo_ids"
+        ],
+        "title": "ServiceView",
         "type": "object"
       },
       "SessionView": {
@@ -936,6 +3813,197 @@
           "memberships"
         ],
         "title": "SessionView",
+        "type": "object"
+      },
+      "StewardshipInput": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "note": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Note",
+            "type": "string"
+          },
+          "warehouse_id": {
+            "format": "uuid",
+            "title": "Warehouse Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "warehouse_id",
+          "note"
+        ],
+        "title": "StewardshipInput",
+        "type": "object"
+      },
+      "WarehouseGrantInput": {
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "membership_id": {
+            "format": "uuid",
+            "title": "Membership Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "membership_id",
+          "enabled"
+        ],
+        "title": "WarehouseGrantInput",
+        "type": "object"
+      },
+      "WarehouseInput": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Address",
+            "type": "string"
+          },
+          "code": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ],
+        "title": "WarehouseInput",
+        "type": "object"
+      },
+      "WarehousePage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/WarehouseView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          }
+        },
+        "required": [
+          "items",
+          "next_offset"
+        ],
+        "title": "WarehousePage",
+        "type": "object"
+      },
+      "WarehouseUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Address",
+            "type": "string"
+          },
+          "archived": {
+            "default": false,
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "name"
+        ],
+        "title": "WarehouseUpdate",
+        "type": "object"
+      },
+      "WarehouseView": {
+        "properties": {
+          "address": {
+            "title": "Address",
+            "type": "string"
+          },
+          "archived_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived At"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "address",
+          "archived_at",
+          "revision"
+        ],
+        "title": "WarehouseView",
         "type": "object"
       }
     }
@@ -1307,6 +4375,2349 @@
         ]
       }
     },
+    "/api/companies": {
+      "post": {
+        "operationId": "companies_api_company_create",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Company Create",
+        "tags": [
+          "company and people"
+        ]
+      }
+    },
+    "/api/companies/{company_id}": {
+      "get": {
+        "operationId": "companies_api_company_read",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Company Read",
+        "tags": [
+          "company and people"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/activity": {
+      "get": {
+        "operationId": "config_read_api_activity",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Activity",
+        "tags": [
+          "reporting"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/assignments": {
+      "get": {
+        "operationId": "work_api_assignments_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "job_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Job Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "membership_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Membership Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "current",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "Current",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Assignments List",
+        "tags": [
+          "work"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/assignments/{assignment_id}/end": {
+      "post": {
+        "operationId": "work_api_assignment_end",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "assignment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Assignment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Assignment End",
+        "tags": [
+          "work"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/directory": {
+      "get": {
+        "operationId": "config_read_api_directory",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "job_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Job Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "unassigned",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Unassigned",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Search",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectoryPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Directory",
+        "tags": [
+          "reporting"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/files": {
+      "post": {
+        "operationId": "evidence_api_upload",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "file": {
+                    "format": "binary",
+                    "title": "File",
+                    "type": "string"
+                  },
+                  "purpose": {
+                    "enum": [
+                      "registration",
+                      "incident",
+                      "handoff",
+                      "reconciliation",
+                      "service"
+                    ],
+                    "title": "Purpose",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file",
+                  "purpose"
+                ],
+                "title": "MultiPartBodyParams",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Upload",
+        "tags": [
+          "evidence"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/files/{file_id}": {
+      "get": {
+        "operationId": "evidence_api_download",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "file_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "File Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Download",
+        "tags": [
+          "evidence"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/handoffs": {
+      "get": {
+        "operationId": "equipment_operations_api_handoffs_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pending",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "Pending",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "warehouse_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Warehouse Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandoffPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Handoffs List",
+        "tags": [
+          "equipment operations"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/handoffs/{handoff_id}/{action}": {
+      "post": {
+        "operationId": "equipment_operations_api_handoff_resolve",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "handoff_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Handoff Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "action",
+            "required": true,
+            "schema": {
+              "enum": [
+                "accept",
+                "decline",
+                "cancel"
+              ],
+              "title": "Action",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandoffView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Handoff Resolve",
+        "tags": [
+          "equipment operations"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/incidents": {
+      "get": {
+        "operationId": "equipment_operations_api_incidents_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "open_only",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "Open Only",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "asset_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Asset Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Incidents List",
+        "tags": [
+          "equipment operations"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/incidents/{incident_id}/found": {
+      "post": {
+        "operationId": "equipment_operations_api_missing_resolve",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "incident_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Incident Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Missing Resolve",
+        "tags": [
+          "equipment operations"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/invitations": {
+      "get": {
+        "operationId": "companies_api_invitations_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Invitations List",
+        "tags": [
+          "company and people"
+        ]
+      },
+      "post": {
+        "operationId": "companies_api_invitation_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationCreated"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Invitation Create",
+        "tags": [
+          "company and people"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/invitations/{invitation_id}/revoke": {
+      "post": {
+        "operationId": "companies_api_invitation_revoke",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "invitation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Invitation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Invitation Revoke",
+        "tags": [
+          "company and people"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/job-participation-policy": {
+      "get": {
+        "operationId": "work_api_policy_read",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParticipationPolicyView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Policy Read",
+        "tags": [
+          "work"
+        ]
+      },
+      "post": {
+        "operationId": "work_api_policy_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParticipationPolicyInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParticipationPolicyView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Policy Update",
+        "tags": [
+          "work"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/job-participation-requests": {
+      "get": {
+        "operationId": "work_api_participation_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pending",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "Pending",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParticipationPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Participation List",
+        "tags": [
+          "work"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/job-participation-requests/{request_id}/{action}": {
+      "post": {
+        "operationId": "work_api_participation_decide",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "action",
+            "required": true,
+            "schema": {
+              "enum": [
+                "approve",
+                "reject",
+                "withdraw"
+              ],
+              "title": "Action",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParticipationView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Participation Decide",
+        "tags": [
+          "work"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/jobs": {
+      "get": {
+        "operationId": "work_api_jobs_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "archived",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Archived",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Jobs List",
+        "tags": [
+          "work"
+        ]
+      },
+      "post": {
+        "operationId": "work_api_job_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Job Create",
+        "tags": [
+          "work"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/jobs/{job_id}/assignments": {
+      "post": {
+        "operationId": "work_api_assignment_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Assignment Create",
+        "tags": [
+          "work"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/jobs/{job_id}/participation": {
+      "post": {
+        "operationId": "work_api_participation_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParticipationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParticipationView"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParticipationView"
+                }
+              }
+            },
+            "description": "Created"
+          }
+        },
+        "summary": "Participation Create",
+        "tags": [
+          "work"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/jobs/{job_id}/update": {
+      "post": {
+        "operationId": "work_api_job_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Job Update",
+        "tags": [
+          "work"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/people": {
+      "get": {
+        "operationId": "companies_api_people_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Search",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_inactive",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Inactive",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "People List",
+        "tags": [
+          "company and people"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/people/{membership_id}/update": {
+      "post": {
+        "operationId": "companies_api_member_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "membership_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Membership Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MembershipUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Member Update",
+        "tags": [
+          "company and people"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/permissions": {
+      "get": {
+        "operationId": "companies_api_permission_matrix",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CapabilityView"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Permission Matrix",
+        "tags": [
+          "company and people"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/projects": {
+      "get": {
+        "operationId": "work_api_projects_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Projects List",
+        "tags": [
+          "work"
+        ]
+      },
+      "post": {
+        "operationId": "work_api_project_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Project Create",
+        "tags": [
+          "work"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/projects/{project_id}/update": {
+      "post": {
+        "operationId": "work_api_project_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Project Update",
+        "tags": [
+          "work"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/reconciliations": {
+      "get": {
+        "operationId": "equipment_operations_api_cases_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "open_only",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "Open Only",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReconciliationPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Cases List",
+        "tags": [
+          "equipment operations"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/reconciliations/{case_id}/resolve": {
+      "post": {
+        "operationId": "equipment_operations_api_case_resolve",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReconciliationResolution"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReconciliationView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Case Resolve",
+        "tags": [
+          "equipment operations"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/summary": {
+      "get": {
+        "operationId": "config_read_api_summary",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanySummary"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Summary",
+        "tags": [
+          "reporting"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/tool-categories": {
+      "get": {
+        "operationId": "equipment_catalog_api_categories_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "archived",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Archived",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Categories List",
+        "tags": [
+          "equipment catalog"
+        ]
+      },
+      "post": {
+        "operationId": "equipment_catalog_api_category_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Category Create",
+        "tags": [
+          "equipment catalog"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/tool-categories/{category_id}/update": {
+      "post": {
+        "operationId": "equipment_catalog_api_category_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Category Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Category Update",
+        "tags": [
+          "equipment catalog"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/tool-models": {
+      "get": {
+        "operationId": "equipment_catalog_api_models_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "archived",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Archived",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Models List",
+        "tags": [
+          "equipment catalog"
+        ]
+      },
+      "post": {
+        "operationId": "equipment_catalog_api_model_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Model Create",
+        "tags": [
+          "equipment catalog"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/tool-models/{model_id}/update": {
+      "post": {
+        "operationId": "equipment_catalog_api_model_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "model_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Model Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Model Update",
+        "tags": [
+          "equipment catalog"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/tool-registration-policy": {
+      "get": {
+        "operationId": "equipment_catalog_api_registration_policy_read",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationPolicyView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Registration Policy Read",
+        "tags": [
+          "equipment catalog"
+        ]
+      },
+      "post": {
+        "operationId": "equipment_catalog_api_registration_policy_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationPolicyInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationPolicyView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Registration Policy Update",
+        "tags": [
+          "equipment catalog"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/tool-requests": {
+      "get": {
+        "operationId": "equipment_operations_api_requests_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pending",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "Pending",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "warehouse_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Warehouse Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Requests List",
+        "tags": [
+          "equipment operations"
+        ]
+      }
+    },
     "/api/companies/{company_id}/tool-requests/{request_id}": {
       "get": {
         "operationId": "equipment_api_get_request",
@@ -1350,6 +6761,73 @@
         ]
       }
     },
+    "/api/companies/{company_id}/tool-requests/{request_id}/{action}": {
+      "post": {
+        "operationId": "equipment_operations_api_request_decide",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "action",
+            "required": true,
+            "schema": {
+              "enum": [
+                "approve",
+                "reject",
+                "withdraw"
+              ],
+              "title": "Action",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Request Decide",
+        "tags": [
+          "equipment operations"
+        ]
+      }
+    },
     "/api/companies/{company_id}/tools": {
       "get": {
         "operationId": "equipment_api_browse_tools",
@@ -1386,6 +6864,50 @@
               "title": "Offset",
               "type": "integer"
             }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Search",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "warehouse_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Warehouse Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "holder_membership_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Holder Membership Id"
+            }
           }
         ],
         "responses": {
@@ -1403,6 +6925,388 @@
         "summary": "Browse Tools",
         "tags": [
           "tools"
+        ]
+      },
+      "post": {
+        "operationId": "equipment_catalog_api_asset_register",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetView"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetView"
+                }
+              }
+            },
+            "description": "Created"
+          }
+        },
+        "summary": "Asset Register",
+        "tags": [
+          "equipment catalog"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/tools/{asset_id}": {
+      "get": {
+        "operationId": "equipment_operations_api_asset_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Asset Detail",
+        "tags": [
+          "equipment operations"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/tools/{asset_id}/custody": {
+      "get": {
+        "operationId": "equipment_operations_api_custody_history",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Asset Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustodyPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Custody History",
+        "tags": [
+          "equipment operations"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/tools/{asset_id}/handoffs": {
+      "post": {
+        "operationId": "equipment_operations_api_handoff_propose",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HandoffInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandoffView"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandoffView"
+                }
+              }
+            },
+            "description": "Created"
+          }
+        },
+        "summary": "Handoff Propose",
+        "tags": [
+          "equipment operations"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/tools/{asset_id}/incidents": {
+      "post": {
+        "operationId": "equipment_operations_api_incident_report",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IncidentInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Incident Report",
+        "tags": [
+          "equipment operations"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/tools/{asset_id}/lifecycle": {
+      "post": {
+        "operationId": "equipment_operations_api_lifecycle_change",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LifecycleInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Lifecycle Change",
+        "tags": [
+          "equipment operations"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/tools/{asset_id}/reconciliations": {
+      "post": {
+        "operationId": "equipment_operations_api_case_open",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReconciliationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReconciliationView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Case Open",
+        "tags": [
+          "equipment operations"
         ]
       }
     },
@@ -1466,6 +7370,474 @@
         "summary": "Create Request",
         "tags": [
           "tools"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/tools/{asset_id}/service": {
+      "get": {
+        "operationId": "equipment_operations_api_services_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Asset Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServicePage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Services List",
+        "tags": [
+          "equipment operations"
+        ]
+      },
+      "post": {
+        "operationId": "equipment_operations_api_service_record",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Service Record",
+        "tags": [
+          "equipment operations"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/tools/{asset_id}/stewardship": {
+      "post": {
+        "operationId": "equipment_catalog_api_stewardship_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StewardshipInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Stewardship Update",
+        "tags": [
+          "equipment catalog"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/tools/{asset_id}/update": {
+      "post": {
+        "operationId": "equipment_catalog_api_asset_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Asset Update",
+        "tags": [
+          "equipment catalog"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/warehouses": {
+      "get": {
+        "operationId": "equipment_catalog_api_warehouses_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "archived",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Archived",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WarehousePage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Warehouses List",
+        "tags": [
+          "equipment catalog"
+        ]
+      },
+      "post": {
+        "operationId": "equipment_catalog_api_warehouse_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WarehouseInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WarehouseView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Warehouse Create",
+        "tags": [
+          "equipment catalog"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/warehouses/{warehouse_id}/authority": {
+      "post": {
+        "operationId": "equipment_catalog_api_warehouse_grant",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "warehouse_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Warehouse Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WarehouseGrantInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WarehouseView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Warehouse Grant",
+        "tags": [
+          "equipment catalog"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/warehouses/{warehouse_id}/update": {
+      "post": {
+        "operationId": "equipment_catalog_api_warehouse_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "warehouse_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Warehouse Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WarehouseUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WarehouseView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Warehouse Update",
+        "tags": [
+          "equipment catalog"
+        ]
+      }
+    },
+    "/api/invitations/accept": {
+      "post": {
+        "operationId": "companies_api_invitation_accept",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitationAcceptance"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Invitation Accept",
+        "tags": [
+          "company and people"
         ]
       }
     },

@@ -1,5 +1,5 @@
 from backend_platform.api import not_found
-from django.db.models import Exists, OuterRef, Subquery
+from django.db.models import Exists, OuterRef, Q, Subquery
 from django.utils import timezone
 
 from companies.access import require_member
@@ -20,6 +20,7 @@ def assets_with_availability(company_id):
         .annotate(
             current_custody_id=Subquery(custody.values("id")[:1]),
             warehouse_id=Subquery(custody.values("holder_warehouse_id")[:1]),
+            holder_membership_id=Subquery(custody.values("holder_membership_id")[:1]),
             warehouse_archived_at=Subquery(custody.values("holder_warehouse__archived_at")[:1]),
             is_missing=Exists(missing),
         )
@@ -40,13 +41,25 @@ def unavailable_reason(asset):
     return None
 
 
-def list_assets(identity, company_id, *, limit, offset):
+def list_assets(
+    identity, company_id, *, limit, offset, search="", warehouse_id=None, holder_membership_id=None
+):
     require_member(identity, company_id, "tools.read")
-    rows = list(
-        assets_with_availability(company_id).order_by("asset_tag", "id")[
-            offset : offset + limit + 1
-        ]
-    )
+    query = assets_with_availability(company_id)
+    if search:
+        text = search[:200]
+        query = query.filter(
+            Q(asset_tag__icontains=text)
+            | Q(serial_number__icontains=text)
+            | Q(tool_model__name__icontains=text)
+            | Q(tool_model__manufacturer__icontains=text)
+            | Q(tool_model__model_number__icontains=text)
+        )
+    if warehouse_id:
+        query = query.filter(warehouse_id=warehouse_id)
+    if holder_membership_id:
+        query = query.filter(holder_membership_id=holder_membership_id)
+    rows = list(query.order_by("asset_tag", "id")[offset : offset + limit + 1])
     return {
         "items": [asset_view(asset) for asset in rows[:limit]],
         "next_offset": offset + limit if len(rows) > limit else None,
@@ -70,6 +83,9 @@ def asset_view(asset):
         "requestable": reason is None,
         "unavailable_reason": reason,
         "revision": asset.revision,
+        "holder_membership_id": asset.holder_membership_id,
+        "responsible_warehouse_id": asset.responsible_warehouse_id,
+        "registration_photo_id": asset.registration_photo_id,
     }
 
 
