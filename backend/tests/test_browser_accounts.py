@@ -62,10 +62,9 @@ def test_verified_signup_session_company_and_logout():
     session = assert_response(client.get("/api/me"), "/api/me", method="get")
     assert session["memberships"][0]["company_id"] == company["id"]
     assert "people.manage" in session["memberships"][0]["capabilities"]
-    assert (
-        post(client, "/api/auth/verify-signup", {"token": token, "password": PASSWORD}).status_code
-        == 400
-    )
+    replay = post(client, "/api/auth/verify-signup", {"token": token, "password": PASSWORD})
+    assert replay.status_code == 400
+    assert replay.json()["code"] == "invalid_verification_link"
     assert_response(post(client, "/api/auth/sign-out", {}), "/api/auth/sign-out")
     assert client.get("/api/me").status_code == 401
 

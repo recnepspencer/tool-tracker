@@ -6,6 +6,7 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    public code?: string,
   ) {
     super(message);
   }
@@ -24,6 +25,12 @@ function messageFrom(body: unknown): string {
     return value.detail.map((v: { msg?: string }) => v.msg ?? 'Invalid input').join('. ');
   if (value.error) return messageFrom(value.error);
   return 'The server could not complete this request.';
+}
+
+function codeFrom(body: unknown): string | undefined {
+  if (typeof body !== 'object' || body === null) return undefined;
+  const value = body as Record<string, unknown>;
+  return typeof value.code === 'string' ? value.code : codeFrom(value.error);
 }
 
 export const api = createClient<paths>({
@@ -56,7 +63,10 @@ api.use({
       }
       throw new ApiError(
         response.status,
-        response.status === 409 ? `${messageFrom(body)} Refresh the record before trying again.` : messageFrom(body),
+        response.status === 409 && !new URL(request.url).pathname.startsWith('/api/auth/')
+          ? `${messageFrom(body)} Refresh the record before trying again.`
+          : messageFrom(body),
+        codeFrom(body),
       );
     }
   },

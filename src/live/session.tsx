@@ -1,9 +1,12 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, type Query } from '@tanstack/react-query';
 import { api, ApiError, result, type Model } from './client';
 
 type Membership = Model<'MembershipView'>;
 type Session = Model<'SessionView'>;
+// Invitation previews are public token-scoped reads and remain mounted while
+// someone switches accounts. Clear company data without detaching those observers.
+const privateQuery = (query: Query) => !['session', 'invitation'].includes(String(query.queryKey[0]));
 const Context = createContext<{
   session: Session | null | undefined;
   member: Membership | undefined;
@@ -25,9 +28,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   });
   const query = useQuery({
     queryKey: ['session'],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       try {
-        return result(await api.GET('/api/me'));
+        return result(await api.GET('/api/me', { signal }));
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) return null;
         throw error;
@@ -41,8 +44,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const { refetch } = query;
   useEffect(() => {
     const expire = () => {
-      void cache.cancelQueries({ predicate: (q) => q.queryKey[0] !== 'session' });
-      cache.removeQueries({ predicate: (q) => q.queryKey[0] !== 'session' });
+      void cache.cancelQueries({ predicate: privateQuery });
+      cache.removeQueries({ predicate: privateQuery });
       cache.setQueryData(['session'], null);
     };
     const channel = new BroadcastChannel('nelson-session');
@@ -57,8 +60,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     };
   }, [cache, refetch]);
   const refresh = async () => {
-    await cache.cancelQueries({ predicate: (q) => q.queryKey[0] !== 'session' });
-    cache.removeQueries({ predicate: (q) => q.queryKey[0] !== 'session' });
+    await cache.cancelQueries({ predicate: privateQuery });
+    cache.removeQueries({ predicate: privateQuery });
     const next = await query.refetch();
     if (next.error) throw next.error;
     const channel = new BroadcastChannel('nelson-session');
@@ -69,15 +72,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     await api.POST('/api/auth/sign-out');
     await cache.cancelQueries();
-    cache.clear();
     cache.setQueryData(['session'], null);
+    cache.removeQueries({ predicate: privateQuery });
     const channel = new BroadcastChannel('nelson-session');
     channel.postMessage('changed');
     channel.close();
   };
   const chooseCompany = (id: string) => {
-    void cache.cancelQueries({ predicate: (q) => q.queryKey[0] !== 'session' });
-    cache.removeQueries({ predicate: (q) => q.queryKey[0] !== 'session' });
+    void cache.cancelQueries({ predicate: privateQuery });
+    cache.removeQueries({ predicate: privateQuery });
     setCompanyId(id);
     try {
       sessionStorage.setItem('nelson.company', id);

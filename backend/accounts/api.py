@@ -120,7 +120,10 @@ def verify_signup(request: HttpRequest, data: VerifySignupInput):
         .first()
     )
     if challenge is None or challenge.consumed_at or challenge.expires_at <= timezone.now():
-        raise bad_request("This verification link is invalid, expired, or already used.")
+        raise bad_request(
+            "This verification link is invalid, expired, or already used.",
+            code="invalid_verification_link",
+        )
     user = PlatformUser(email=challenge.email, full_name=challenge.name)
     try:
         validate_password(data.password, user)

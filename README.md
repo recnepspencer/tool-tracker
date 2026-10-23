@@ -15,6 +15,8 @@ Open http://127.0.0.1:5173. Vite proxies `/api` to Django on port 8001. Use real
 
 Account creation verifies the email address before choosing a password and creating an identity. An existing user signs in directly. Invitations preserve their destination through login and registration. New accounts without memberships may create a company or use an invitation. A password reset invalidates previously issued browser sessions. No passwords or session tokens are stored in localStorage.
 
+Account screens share a compact, neutral layout, with email delivery confirmations, a resend cooldown, editable email drafts, password visibility controls, focused errors, and recovery actions for unusable links. Accepting an invitation confirms access before opening the newly joined workspace. Switching accounts preserves the invitation while clearing private company data.
+
 Development email is written to `artifacts/mail/`. Open the newest message for its verification, invitation, or reset URL. This is a local inbox, not an email simulator returning tokens from public API responses. SMTP production configuration is deliberately deferred at the user's request; set `NELSON_APP_URL`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`, and `DEFAULT_FROM_EMAIL` when deploying. Run `cleanup_account_tokens` daily.
 
 ## Working screens

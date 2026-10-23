@@ -38,6 +38,26 @@ it('does not queue or send a mutation while offline', async () => {
   expect(fetch).not.toHaveBeenCalled();
 });
 
+it('preserves account error codes and account-specific recovery instructions', async () => {
+  const fetch = vi
+    .fn()
+    .mockResolvedValueOnce(response({ csrf_token: 'csrf' }))
+    .mockResolvedValueOnce(response({ message: 'Sign in or reset your password.', code: 'conflict' }, 409))
+    .mockResolvedValueOnce(response({ csrf_token: 'fresh' }))
+    .mockResolvedValueOnce(response({ message: 'This link was used.', code: 'invalid_verification_link' }, 400));
+  const { api } = await client(fetch);
+  const body = { token: 'verification-token', password: 'a-test-password' };
+  await expect(api.POST('/api/auth/verify-signup', { body })).rejects.toMatchObject({
+    status: 409,
+    code: 'conflict',
+    message: 'Sign in or reset your password.',
+  });
+  await expect(api.POST('/api/auth/verify-signup', { body })).rejects.toMatchObject({
+    status: 400,
+    code: 'invalid_verification_link',
+  });
+});
+
 it('preserves a useful stale revision conflict and never retries the write', async () => {
   const fetch = vi
     .fn()

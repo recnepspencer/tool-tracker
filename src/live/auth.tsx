@@ -1,56 +1,32 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { api, result, requestKey, errorMessage } from './client';
+import { api, ApiError, result, requestKey, errorMessage } from './client';
 import { useSession } from './session';
-import { Field, Form, Notice, Loading, text, human } from './ui';
+import { Field, Notice, Loading, text, human } from './ui';
+import { AuthLayout, AccountForm, AccountFooter, EmailDelivery, PasswordInput, PasswordFields } from './auth-ui';
 
 export function safeNext(value: string | null): string {
   return value && /^\/(invite\/[\w-]+|app(?:\/[\w-]+)*|company-setup)$/.test(value) ? value : '/app';
-}
-export function AuthLayout({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: ReactNode;
-}) {
-  return (
-    <main className="auth-layout">
-      <header className="auth-header">
-        <Link to="/login" className="auth-brand">
-          <span className="auth-monogram" aria-hidden="true">
-            N
-          </span>
-          Nelson Electric
-        </Link>
-      </header>
-      <section className="auth-card">
-        <div className="auth-inner">
-          <div className="auth-heading">
-            <h1>{title}</h1>
-            <p>{description}</p>
-          </div>
-          {children}
-        </div>
-      </section>
-    </main>
-  );
 }
 export function Login() {
   const [search] = useSearchParams();
   const navigate = useNavigate();
   const { session, loading, refresh, error } = useSession();
   const next = safeNext(search.get('next'));
-  if (loading) return <Loading />;
+  if (loading)
+    return (
+      <AuthLayout title="Signing in" description="Checking your session.">
+        <Loading />
+      </AuthLayout>
+    );
   if (session) return <Navigate to={next} replace />;
   return (
     <AuthLayout title="Sign in" description="Use your work email to continue.">
       {error && <Notice error>Unable to check your session. Check your connection and try again.</Notice>}
-      <Form
+      <AccountForm
         label="Sign in"
+        pendingLabel="Signing in…"
         submit={async (f) => {
           await api.POST('/api/auth/sign-in', {
             body: { email: text(f, 'email'), password: String(f.get('password')) },
@@ -60,68 +36,67 @@ export function Login() {
         }}
       >
         <Field label="Email address" name="email" type="email" autoComplete="username" required />
-        <Field label="Password" name="password" type="password" autoComplete="current-password" required />
-      </Form>
-      <Link className="text-link auth-recovery" to="/forgot-password">
+        <PasswordInput label="Password" name="password" />
+      </AccountForm>
+      <Link className="text-link auth-recovery" to={`/forgot-password?next=${encodeURIComponent(next)}`}>
         Forgot password?
       </Link>
-      <p className="auth-footer">
+      <AccountFooter>
         Don’t have an account? <Link to={`/signup?next=${encodeURIComponent(next)}`}>Create an account</Link>
-      </p>
+      </AccountFooter>
     </AuthLayout>
   );
 }
 export function Signup() {
   const [search] = useSearchParams();
   const [sent, setSent] = useState(false);
+  const [draft, setDraft] = useState({ name: '', email: '' });
+  const { session, loading } = useSession();
   const next = safeNext(search.get('next'));
+  async function send(values: typeof draft) {
+    await api.POST('/api/auth/signup', {
+      body: { ...values, invitation_token: next.startsWith('/invite/') ? next.slice(8) : '' },
+    });
+  }
+  if (!loading && session) return <Navigate to={next} replace />;
   return (
-    <AuthLayout title="Create your account" description="Verify your work email, then choose a password.">
+    <AuthLayout
+      title={sent ? 'Check your email' : 'Create your account'}
+      description={sent ? 'One more step to get started.' : 'Start with your name and work email.'}
+    >
       {sent ? (
-        <Notice>
-          Check your inbox for a verification link. It expires in one hour. If you already have an account, sign in or
-          reset your password.
-        </Notice>
+        <EmailDelivery email={draft.email} resend={() => send(draft)} changeEmail={() => setSent(false)} />
       ) : (
-        <Form
+        <AccountForm
           label="Send verification link"
+          pendingLabel="Sending verification…"
           submit={async (f) => {
-            await api.POST('/api/auth/signup', {
-              body: {
-                name: text(f, 'name'),
-                email: text(f, 'email'),
-                invitation_token: next.startsWith('/invite/') ? next.slice(8) : '',
-              },
-            });
+            const values = { name: text(f, 'name'), email: text(f, 'email') };
+            await send(values);
+            setDraft(values);
             setSent(true);
           }}
         >
-          <Field label="Your name" name="name" autoComplete="name" required maxLength={120} />
-          <Field label="Work email" name="email" type="email" autoComplete="email" required />
-        </Form>
+          <Field label="Your name" name="name" autoComplete="name" required maxLength={120} defaultValue={draft.name} />
+          <Field
+            label="Work email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            defaultValue={draft.email}
+          />
+        </AccountForm>
       )}
-      <p className="muted">
-        Already registered? <Link to={`/login?next=${encodeURIComponent(next)}`}>Sign in</Link>
-      </p>
-      <Link to="/forgot-password">Reset your password</Link>
+      <AccountFooter>
+        Already have an account? <Link to={`/login?next=${encodeURIComponent(next)}`}>Sign in</Link>
+        {sent && (
+          <Link className="auth-footer-row" to={`/forgot-password?next=${encodeURIComponent(next)}`}>
+            Reset your password
+          </Link>
+        )}
+      </AccountFooter>
     </AuthLayout>
-  );
-}
-function PasswordFields() {
-  return (
-    <>
-      <Field
-        label="New password"
-        name="password"
-        type="password"
-        autoComplete="new-password"
-        minLength={12}
-        maxLength={200}
-        required
-      />
-      <small className="muted">Use at least 12 characters.</small>
-      <Field label="Confirm password" name="confirm" type="password" autoComplete="new-password" required />
-    </>
   );
 }
 function password(f: FormData) {
@@ -133,47 +108,90 @@ export function VerifyEmail() {
   const [search] = useSearchParams();
   const { refresh } = useSession();
   const navigate = useNavigate();
+  const [invalid, setInvalid] = useState(!search.get('token'));
+  const invite = search.get('invitation');
+  const next = safeNext(invite ? `/invite/${invite}` : '/app');
+  const signupUrl = `/signup?next=${encodeURIComponent(next)}`;
   return (
-    <AuthLayout title="Choose your password" description="Finish setting up your verified account.">
-      <Form
-        label="Create account"
-        submit={async (f) => {
-          await api.POST('/api/auth/verify-signup', {
-            body: { token: search.get('token') ?? '', password: password(f) },
-          });
-          await refresh();
-          const invite = search.get('invitation');
-          navigate(invite ? safeNext(`/invite/${invite}`) : '/company-setup', { replace: true });
-        }}
-      >
-        <PasswordFields />
-      </Form>
-      <Link className="text-link" to="/signup">
-        Request a new verification link
-      </Link>
+    <AuthLayout
+      title={invalid ? 'Verification link unavailable' : 'Choose your password'}
+      description={
+        invalid ? 'This link is missing, expired, or already used.' : 'Finish creating your Nelson Electric account.'
+      }
+    >
+      {invalid ? (
+        <Link className="button primary" to={signupUrl}>
+          Request a new verification link
+        </Link>
+      ) : (
+        <AccountForm
+          label="Create account"
+          pendingLabel="Creating account…"
+          submit={async (f) => {
+            try {
+              await api.POST('/api/auth/verify-signup', {
+                body: { token: search.get('token') ?? '', password: password(f) },
+              });
+            } catch (error) {
+              if (error instanceof ApiError && error.code === 'invalid_verification_link') {
+                setInvalid(true);
+                return;
+              }
+              throw error;
+            }
+            await refresh();
+            navigate(invite ? next : '/company-setup', { replace: true });
+          }}
+        >
+          <PasswordFields />
+        </AccountForm>
+      )}
+      <AccountFooter>
+        {invalid ? (
+          <>
+            Already verified? <Link to={`/login?next=${encodeURIComponent(next)}`}>Sign in</Link>
+          </>
+        ) : (
+          <Link to={signupUrl}>Request a new verification link</Link>
+        )}
+      </AccountFooter>
     </AuthLayout>
   );
 }
 export function Recovery() {
+  const [search] = useSearchParams();
   const [sent, setSent] = useState(false);
+  const [email, setEmail] = useState(search.get('email') ?? '');
+  const next = safeNext(search.get('next'));
+  async function send(address: string) {
+    await api.POST('/api/auth/recover', { body: { email: address } });
+  }
   return (
-    <AuthLayout title="Forgot your password?" description="We’ll send you a link to regain access.">
+    <AuthLayout
+      title={sent ? 'Check your email' : 'Reset your password'}
+      description={
+        sent ? 'Follow the link to get back to your account.' : 'Enter your work email to receive a reset link.'
+      }
+    >
       {sent ? (
-        <Notice>If an account exists for that address, a reset link has been sent. Check your inbox.</Notice>
+        <EmailDelivery email={email} recovery resend={() => send(email)} changeEmail={() => setSent(false)} />
       ) : (
-        <Form
+        <AccountForm
           label="Send reset link"
+          pendingLabel="Sending reset link…"
           submit={async (f) => {
-            await api.POST('/api/auth/recover', { body: { email: text(f, 'email') } });
+            const address = text(f, 'email');
+            await send(address);
+            setEmail(address);
             setSent(true);
           }}
         >
-          <Field label="Email address" name="email" type="email" autoComplete="email" required />
-        </Form>
+          <Field label="Email address" name="email" type="email" autoComplete="email" required defaultValue={email} />
+        </AccountForm>
       )}
-      <Link className="text-link" to="/login">
-        Back to sign in
-      </Link>
+      <AccountFooter>
+        <Link to={`/login?next=${encodeURIComponent(next)}`}>Back to sign in</Link>
+      </AccountFooter>
     </AuthLayout>
   );
 }
@@ -181,31 +199,67 @@ export function ResetPassword() {
   const [search] = useSearchParams();
   const [done, setDone] = useState(false);
   const { refresh } = useSession();
-  if (!search.get('token') || !search.get('email')) return <Navigate to="/forgot-password" replace />;
+  const email = search.get('email') ?? '';
+  const token = search.get('token') ?? '';
+  const missing = !token || !email;
+  const recoveryUrl = `/forgot-password?email=${encodeURIComponent(email)}`;
   return (
-    <AuthLayout title="Set a new password" description="Your other sessions will be signed out.">
+    <AuthLayout
+      title={done ? 'Password updated' : missing ? 'Reset link unavailable' : 'Set a new password'}
+      description={
+        done
+          ? 'Your account is ready to use.'
+          : missing
+            ? 'Open the complete link from your email, or request another.'
+            : 'Choose a password you haven’t used before.'
+      }
+    >
       {done ? (
-        <Notice>Your password has been updated. Sign in with your new password.</Notice>
+        <>
+          <p className="auth-message" role="status">
+            Your password has been updated. Your other sessions have been signed out.
+          </p>
+          <Link className="button primary" to="/login">
+            Sign in
+          </Link>
+        </>
+      ) : missing ? (
+        <Link className="button primary" to={recoveryUrl}>
+          Request a new reset link
+        </Link>
       ) : (
-        <Form
-          label="Update password"
-          submit={async (f) => {
-            await api.POST('/api/auth/reset', {
-              body: { email: search.get('email')!, token: search.get('token')!, password: password(f) },
-            });
-            await refresh();
-            setDone(true);
-          }}
-        >
-          <PasswordFields />
-        </Form>
+        <>
+          <p className="auth-account-email">{email}</p>
+          <AccountForm
+            label="Update password"
+            pendingLabel="Updating password…"
+            submit={async (f) => {
+              try {
+                await api.POST('/api/auth/reset', { body: { email, token, password: password(f) } });
+              } catch (error) {
+                if (error instanceof ApiError && error.code === 'password_reset_unavailable') {
+                  throw new Error(
+                    'Unable to reset your password. This link may have expired or already been used. Try again or request a new link below.',
+                    { cause: error },
+                  );
+                }
+                throw error;
+              }
+              // The password is already changed even if the following session refresh fails.
+              setDone(true);
+              await refresh().catch(() => undefined);
+            }}
+          >
+            <PasswordFields />
+          </AccountForm>
+          <p className="auth-help">Changing your password signs out your other sessions.</p>
+        </>
       )}
-      <Link className="text-link" to="/login">
-        Sign in
-      </Link>
-      <Link className="text-link" to="/forgot-password">
-        Request a new reset link
-      </Link>
+      {!done && (
+        <AccountFooter>
+          {missing ? <Link to="/login">Back to sign in</Link> : <Link to={recoveryUrl}>Request a new reset link</Link>}
+        </AccountFooter>
+      )}
     </AuthLayout>
   );
 }
@@ -213,15 +267,21 @@ export function CompanySetup() {
   const { session, loading, refresh, logout } = useSession();
   const [key] = useState(requestKey);
   const navigate = useNavigate();
-  if (loading) return <Loading />;
+  if (loading)
+    return (
+      <AuthLayout title="Your workspace" description="Checking your account.">
+        <Loading />
+      </AuthLayout>
+    );
   if (!session) return <Navigate to="/login?next=/company-setup" replace />;
   return (
     <AuthLayout
       title="Your company workspace"
       description="Have an invitation? Open the link in your email to join your team. Otherwise, create a company below."
     >
-      <Form
+      <AccountForm
         label="Create company"
+        pendingLabel="Creating workspace…"
         submit={async (f) => {
           await api.POST('/api/companies', {
             body: {
@@ -237,78 +297,146 @@ export function CompanySetup() {
       >
         <Field label="Company name" name="company" autoComplete="organization" maxLength={200} required />
         <Field label="Your name" name="name" autoComplete="name" maxLength={120} required />
-      </Form>
+      </AccountForm>
       {session.memberships.length > 0 && (
         <Link className="text-link" to="/app">
           Open existing company
         </Link>
       )}
-      <Form label="Sign out" submit={logout}>
-        <></>
-      </Form>
+      <AccountFooter>
+        <AccountForm secondary label="Sign out" pendingLabel="Signing out…" submit={logout}>
+          <></>
+        </AccountForm>
+      </AccountFooter>
     </AuthLayout>
   );
 }
 export function Invitation() {
   const { token = '' } = useParams();
-  const { session, loading, refresh, logout } = useSession();
+  const { session, loading, refresh, logout, chooseCompany } = useSession();
   const navigate = useNavigate();
+  const [accepted, setAccepted] = useState<{ name: string; membershipId: string }>();
   const invitation = useQuery({
     queryKey: ['invitation', token],
     queryFn: () => api.GET('/api/invitations/{token}/preview', { params: { path: { token } } }).then(result),
     retry: false,
   });
   const next = encodeURIComponent(`/invite/${token}`);
+  const unavailable = invitation.error instanceof ApiError && invitation.error.status === 404;
+  const data = invitation.data;
+  if (accepted)
+    return (
+      <AuthLayout title="Invitation accepted" description={`Your access to ${accepted.name} is ready.`}>
+        <AccountForm
+          label="Open workspace"
+          pendingLabel="Opening workspace…"
+          submit={async () => {
+            const updated = await refresh();
+            const membership = updated?.memberships.find((member) => member.membership_id === accepted.membershipId);
+            if (!membership) throw new Error('Your access could not be loaded. Please try again.');
+            chooseCompany(membership.company_id);
+            navigate('/app', { replace: true });
+          }}
+        />
+      </AuthLayout>
+    );
   return (
-    <AuthLayout title="Join your team" description="Accept your invitation to get access to your company.">
+    <AuthLayout
+      title={unavailable ? 'Invitation unavailable' : 'Join your team'}
+      description={
+        unavailable
+          ? 'This invitation has expired, been withdrawn, or already been accepted.'
+          : 'You’ve been invited to a company workspace.'
+      }
+    >
       {invitation.isPending || loading ? (
         <Loading />
       ) : invitation.error ? (
-        <Notice error>{errorMessage(invitation.error)}</Notice>
+        <>
+          {unavailable ? (
+            <p className="auth-message">
+              If you’ve already joined, sign in to open your workspace. Otherwise, ask your manager for a new
+              invitation.
+            </p>
+          ) : (
+            <>
+              <p className="auth-error" role="alert">
+                {errorMessage(invitation.error)}
+              </p>
+              <AccountForm
+                label="Try again"
+                pendingLabel="Loading invitation…"
+                submit={async () => {
+                  const response = await invitation.refetch();
+                  if (response.error) throw response.error;
+                }}
+              />
+            </>
+          )}
+        </>
       ) : (
-        invitation.data && (
+        data && (
           <>
-            <div className="invitation">
-              <strong>{invitation.data.company_name}</strong>
-              <span>{invitation.data.email}</span>
-              <span>{human(invitation.data.role)}</span>
+            <div className="auth-invitation">
+              <span className="auth-caption">WORKSPACE</span>
+              <strong>{data.company_name}</strong>
+              <dl>
+                <div>
+                  <dt>Invited email</dt>
+                  <dd>{data.email}</dd>
+                </div>
+                <div>
+                  <dt>Role</dt>
+                  <dd>{human(data.role)}</dd>
+                </div>
+              </dl>
             </div>
             {!session ? (
               <>
-                <Link className="button primary" to={`/login?next=${next}`}>
-                  Sign in to accept
-                </Link>
-                <Link className="text-link" to={`/signup?next=${next}`}>
+                <Link className="button primary" to={`/signup?next=${next}`}>
                   Create an account
                 </Link>
+                <AccountFooter>
+                  Already registered? <Link to={`/login?next=${next}`}>Sign in to accept</Link>
+                </AccountFooter>
               </>
-            ) : session.email.toLowerCase() !== invitation.data.email.toLowerCase() ? (
+            ) : session.email.toLowerCase() !== data.email.toLowerCase() ? (
               <>
-                <Notice error>
-                  You are signed in as {session.email}. Use {invitation.data.email} to accept this invitation.
-                </Notice>
-                <Form label="Sign out and switch account" submit={logout}>
-                  <></>
-                </Form>
+                <p className="auth-message" role="status">
+                  You’re signed in as <strong>{session.email}</strong>. Switch to <strong>{data.email}</strong> to
+                  accept this invitation.
+                </p>
+                <AccountForm
+                  label="Switch account"
+                  pendingLabel="Signing out…"
+                  submit={async () => {
+                    await logout();
+                    navigate(`/login?next=${next}`, { replace: true });
+                  }}
+                />
               </>
             ) : (
-              <Form
-                label="Accept invitation"
-                submit={async () => {
-                  await api.POST('/api/invitations/accept', { body: { token } });
-                  await refresh();
-                  navigate('/app', { replace: true });
-                }}
-              >
-                <></>
-              </Form>
+              <>
+                <AccountForm
+                  label="Accept invitation"
+                  pendingLabel="Joining workspace…"
+                  submit={async () => {
+                    const member = result(await api.POST('/api/invitations/accept', { body: { token } }));
+
+                    setAccepted({ name: data.company_name, membershipId: member.id });
+                  }}
+                />
+                <p className="auth-help">Joining as {session.email}</p>
+              </>
             )}
           </>
         )
       )}
-      <Link className="text-link" to="/login">
-        Back to sign in
-      </Link>
+      {(invitation.error || session) && (
+        <AccountFooter>
+          <Link to={session ? '/app' : '/login'}>{session ? 'Back to your workspace' : 'Back to sign in'}</Link>
+        </AccountFooter>
+      )}
     </AuthLayout>
   );
 }
