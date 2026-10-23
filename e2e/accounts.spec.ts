@@ -152,7 +152,7 @@ test('verified signup, company, delivered invitation, real login and password re
   await expect(worker.getByRole('heading', { name: 'Tools', exact: true })).toBeVisible();
   await worker.getByRole('button', { name: 'Open navigation' }).click();
   await worker.getByRole('button', { name: 'Sign out', exact: true }).click();
-  await expect(worker.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
+  await expect(worker.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible();
   await worker.goto('/app/tools');
   await expect(worker).toHaveURL(/login/);
   await workerContext.close();
@@ -161,7 +161,7 @@ test('verified signup, company, delivered invitation, real login and password re
 test('mobile login is accessible and the installed shell never caches API responses', async ({ page, context }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/login');
-  await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible();
   await expect(page.getByLabel('Password', { exact: true })).toHaveAttribute('autocomplete', 'current-password');
   await page.screenshot({ path: 'artifacts/real-login-mobile.png', fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

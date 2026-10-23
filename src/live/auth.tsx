@@ -1,7 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Zap } from 'lucide-react';
 import { api, result, requestKey, errorMessage } from './client';
 import { useSession } from './session';
 import { Field, Form, Notice, Loading, text, human } from './ui';
@@ -20,28 +19,20 @@ export function AuthLayout({
 }) {
   return (
     <main className="auth-layout">
-      <section className="auth-story">
-        <Link to="/login" className="brand">
-          <Zap aria-hidden="true" /> Nelson Electric
+      <header className="auth-header">
+        <Link to="/login" className="auth-brand">
+          <span className="auth-monogram" aria-hidden="true">
+            N
+          </span>
+          Nelson Electric
         </Link>
-        <div>
-          <span className="eyebrow">TOOLS. PEOPLE. ACCOUNTABILITY.</span>
-          <h1>
-            Ready for <br />
-            the next job.
-          </h1>
-          <p>
-            Your tools, your team, and every handoff.
-            <br />
-            One place to keep work moving.
-          </p>
-        </div>
-        <small>Tool custody · Nelson Electric</small>
-      </section>
+      </header>
       <section className="auth-card">
         <div className="auth-inner">
-          <h2>{title}</h2>
-          <p className="muted">{description}</p>
+          <div className="auth-heading">
+            <h1>{title}</h1>
+            <p>{description}</p>
+          </div>
           {children}
         </div>
       </section>
@@ -56,7 +47,7 @@ export function Login() {
   if (loading) return <Loading />;
   if (session) return <Navigate to={next} replace />;
   return (
-    <AuthLayout title="Welcome back" description="Sign in with your work email to continue.">
+    <AuthLayout title="Sign in" description="Use your work email to continue.">
       {error && <Notice error>Unable to check your session. Check your connection and try again.</Notice>}
       <Form
         label="Sign in"
@@ -71,11 +62,11 @@ export function Login() {
         <Field label="Email address" name="email" type="email" autoComplete="username" required />
         <Field label="Password" name="password" type="password" autoComplete="current-password" required />
       </Form>
-      <Link className="text-link" to="/forgot-password">
+      <Link className="text-link auth-recovery" to="/forgot-password">
         Forgot password?
       </Link>
-      <p className="muted">
-        New here? <Link to={`/signup?next=${encodeURIComponent(next)}`}>Create an account</Link>
+      <p className="auth-footer">
+        Don’t have an account? <Link to={`/signup?next=${encodeURIComponent(next)}`}>Create an account</Link>
       </p>
     </AuthLayout>
   );
