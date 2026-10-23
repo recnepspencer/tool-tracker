@@ -115,6 +115,7 @@ def directory(
     search: str = "",
 ):
     require_member(current_identity(request), company_id, "jobs.read")
+    require_member(current_identity(request), company_id, "tools.read")
     query = CompanyMembership.objects.filter(
         company_id=company_id, access_state="active", ended_at__isnull=True
     ).select_related("person")

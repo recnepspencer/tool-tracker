@@ -24,6 +24,15 @@ def copy_client(source):
     return client
 
 
+def test_combined_directory_requires_both_work_and_equipment_access(world, password_hash):
+    estimator = member_in(world.company, password_hash, "estimator")
+    client = login_client(estimator.user)
+    base = f"/api/companies/{world.company.pk}"
+    assert client.get(f"{base}/jobs").status_code == 200
+    assert client.get(f"{base}/directory").status_code == 403
+    assert client.get(f"{base}/directory?search=NE-001").status_code == 403
+
+
 @pytest.mark.django_db(transaction=True)
 def test_registration_waiting_on_policy_observes_disable(world, api_client):
     policy = ToolRegistrationPolicy.objects.create(

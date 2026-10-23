@@ -23,6 +23,6 @@ CI uses a dedicated read-only CleanForce deploy key. It does not use a developer
 
 ## Implemented evidence
 
-The completion scope above is implemented in the backend. The complete local gate passes 73 tests, including fresh migration installation, populated upgrades, generated-contract validation, registration-disable serialization, competing receipt decisions, audit enqueue rollback, and preservation of advanced seed scenarios. PostgreSQL verification compares 56 declared scoped foreign keys with the actual database. CI also executes the seeder twice and publishes the generated OpenAPI artifact.
+The completion scope above is implemented in the backend. The regression suite includes 74 tests covering fresh migration installation, populated upgrades, generated-contract validation, registration-disable serialization, competing receipt decisions, audit enqueue rollback, directory capability boundaries, and preservation of advanced seed scenarios. PostgreSQL verification compares 56 declared scoped foreign keys with the actual database. CI also executes the seeder twice and publishes the generated OpenAPI artifact.
 
 Operational boundaries: invitations return a token for administrator delivery and require an existing authenticated CleanForce account; external account provisioning and mail delivery remain deployment integration. The frontend still uses its mock adapter. Automatic duplicate identity merging, future bidding, optional site/allocation models, and production API hosting are outside this buildout.
