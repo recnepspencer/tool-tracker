@@ -1,6 +1,6 @@
 # Nelson Electric
 
-An API-backed tool custody application with a responsive, installable web frontend. The active entry point is `src/main.tsx`; the frontend lives in `src/live`. The former browser demo is archived under `legacy/prototype` and is excluded from production.
+An API-backed tool custody application with a responsive, installable web frontend. The active entry point is `src/main.tsx`; the frontend lives in `src/live`. The former demo, mock adapters, prototype tests, phase ledgers, and stock images have been removed; their history remains in Git.
 
 ## Run locally
 
@@ -35,11 +35,11 @@ npm run check
 npm run test:browser   # API on 8001, production build already generated
 ```
 
-`openapi-typescript` generates `src/live/schema.d.ts` from the checked backend contract. `openapi-fetch` uses these path, query, body, and response types directly. CI checks generated-client drift, missing migrations, a fresh PostgreSQL database, populated migration upgrades, backend regressions, TypeScript/lint/formatting, client boundary tests, the production bundle, and actual browser account/custody/job/PWA journeys. Browser tests create their own isolated company through public UI and use delivered email links; business responses are not mocked.
+`openapi-typescript` generates `src/live/schema.d.ts` from the checked backend contract. `openapi-fetch` uses these path, query, body, and response types directly. CI checks generated-client drift, missing migrations, a fresh PostgreSQL database, populated migration upgrades, backend regressions, TypeScript/lint/formatting, client boundary tests, the production bundle, and actual browser account/custody/job/PWA journeys, physical-asset identity, condition/service, photo downloads, company switching, policy persistence, and stale-edit recovery. Browser tests create their own isolated company through public UI and use delivered email links; business responses are not mocked.
 
 ## PWA and hosting
 
-The manifest includes standalone display, app icons, and an installation entry point. Pages use safe-area insets, touch targets, mobile navigation, and password-manager autocomplete. Feature pages load in separate chunks. The service worker precaches only the static shell and fonts; API responses, private photos, account links, and mutations are never cached. Offline users get an explicit connection message. Updates prompt before reloading so forms are not unexpectedly discarded. On iOS, use Share → Add to Home Screen.
+The manifest includes standalone display, app icons, and an installation entry point. Pages use safe-area insets, touch targets, mobile navigation, and password-manager autocomplete. Feature pages load in separate chunks. Page entry files compose controller hooks and views; an ESLint rule prevents direct state and effect imports in those files. List filters live in the URL. Effects synchronize browser APIs, session events, focus, or timers rather than copying derived state. The service worker precaches only the static shell and fonts; API responses, private photos, account links, and mutations are never cached. Offline users get an explicit connection message. Updates prompt before reloading so forms are not unexpectedly discarded. On iOS, use Share → Add to Home Screen.
 
 Serve `dist/` and proxy `/api/` on the same HTTPS origin, with SPA fallback for navigation. See [deploy/nginx.conf](deploy/nginx.conf). Run the Django API, PostgreSQL, persistent private photo storage, and `python manage.py run_platform_worker`. Configure SMTP later to enable real inbox delivery. Do not place `backend/media` or `artifacts/mail` in a public web root.
 

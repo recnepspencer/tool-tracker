@@ -1,5 +1,5 @@
 import createClient from 'openapi-fetch';
-import type { paths, components } from './schema';
+import type { components, paths } from './schema';
 
 export type Model<K extends keyof components['schemas']> = components['schemas'][K];
 export class ApiError extends Error {

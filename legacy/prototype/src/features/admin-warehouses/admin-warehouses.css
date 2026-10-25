@@ -1,9 +1,0 @@
-.warehouses-table__mobile-meta {
-  display: none !important;
-}
-@media (max-width: 840px) {
-  .warehouses-table__mobile-meta {
-    display: block !important;
-    line-height: var(--leading-normal);
-  }
-}

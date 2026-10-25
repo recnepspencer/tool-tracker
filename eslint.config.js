@@ -10,6 +10,24 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    files: ['src/live/{app,shell,auth,tools,jobs,people,catalog,operations,settings,overview}.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'react',
+              importNames: ['useState', 'useEffect'],
+              message:
+                'Keep page composition declarative. Put state and external synchronization in the feature controller.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['src/**/*.{ts,tsx}'],
     plugins: {
       'react-hooks': reactHooks,

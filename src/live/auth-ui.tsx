@@ -1,6 +1,6 @@
+import { Eye, EyeOff } from 'lucide-react';
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
 import { errorMessage } from './client';
 
 export function AuthLayout({

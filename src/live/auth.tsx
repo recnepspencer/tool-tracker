@@ -1,19 +1,22 @@
-import { useState } from 'react';
-import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { api, ApiError, result, requestKey, errorMessage } from './client';
-import { useSession } from './session';
-import { Field, Notice, Loading, text, human } from './ui';
-import { AuthLayout, AccountForm, AccountFooter, EmailDelivery, PasswordInput, PasswordFields } from './auth-ui';
+import {
+  useCompanySetupState,
+  useInvitationState,
+  useLoginState,
+  useRecoveryState,
+  useResetPasswordState,
+  useSignupState,
+  useVerifyEmailState,
+} from './auth-state';
 
-export function safeNext(value: string | null): string {
-  return value && /^\/(invite\/[\w-]+|app(?:\/[\w-]+)*|company-setup)$/.test(value) ? value : '/app';
-}
+import { Link, Navigate } from 'react-router-dom';
+
+import { api, ApiError, errorMessage, result } from './client';
+
+import { AccountFooter, AccountForm, AuthLayout, EmailDelivery, PasswordFields, PasswordInput } from './auth-ui';
+import { Field, human, Loading, Notice, text } from './ui';
+
 export function Login() {
-  const [search] = useSearchParams();
-  const navigate = useNavigate();
-  const { session, loading, refresh, error } = useSession();
-  const next = safeNext(search.get('next'));
+  const { navigate, session, loading, refresh, error, next } = useLoginState();
   if (loading)
     return (
       <AuthLayout title="Signing in" description="Checking your session.">
@@ -48,16 +51,7 @@ export function Login() {
   );
 }
 export function Signup() {
-  const [search] = useSearchParams();
-  const [sent, setSent] = useState(false);
-  const [draft, setDraft] = useState({ name: '', email: '' });
-  const { session, loading } = useSession();
-  const next = safeNext(search.get('next'));
-  async function send(values: typeof draft) {
-    await api.POST('/api/auth/signup', {
-      body: { ...values, invitation_token: next.startsWith('/invite/') ? next.slice(8) : '' },
-    });
-  }
+  const { sent, setSent, draft, setDraft, session, loading, next, send } = useSignupState();
   if (!loading && session) return <Navigate to={next} replace />;
   return (
     <AuthLayout
@@ -105,13 +99,7 @@ function password(f: FormData) {
   return value;
 }
 export function VerifyEmail() {
-  const [search] = useSearchParams();
-  const { refresh } = useSession();
-  const navigate = useNavigate();
-  const [invalid, setInvalid] = useState(!search.get('token'));
-  const invite = search.get('invitation');
-  const next = safeNext(invite ? `/invite/${invite}` : '/app');
-  const signupUrl = `/signup?next=${encodeURIComponent(next)}`;
+  const { search, refresh, navigate, invalid, setInvalid, invite, next, signupUrl } = useVerifyEmailState();
   return (
     <AuthLayout
       title={invalid ? 'Verification link unavailable' : 'Choose your password'}
@@ -159,13 +147,7 @@ export function VerifyEmail() {
   );
 }
 export function Recovery() {
-  const [search] = useSearchParams();
-  const [sent, setSent] = useState(false);
-  const [email, setEmail] = useState(search.get('email') ?? '');
-  const next = safeNext(search.get('next'));
-  async function send(address: string) {
-    await api.POST('/api/auth/recover', { body: { email: address } });
-  }
+  const { sent, setSent, email, setEmail, next, send } = useRecoveryState();
   return (
     <AuthLayout
       title={sent ? 'Check your email' : 'Reset your password'}
@@ -196,13 +178,7 @@ export function Recovery() {
   );
 }
 export function ResetPassword() {
-  const [search] = useSearchParams();
-  const [done, setDone] = useState(false);
-  const { refresh } = useSession();
-  const email = search.get('email') ?? '';
-  const token = search.get('token') ?? '';
-  const missing = !token || !email;
-  const recoveryUrl = `/forgot-password?email=${encodeURIComponent(email)}`;
+  const { done, setDone, refresh, email, token, missing, recoveryUrl } = useResetPasswordState();
   return (
     <AuthLayout
       title={done ? 'Password updated' : missing ? 'Reset link unavailable' : 'Set a new password'}
@@ -264,9 +240,7 @@ export function ResetPassword() {
   );
 }
 export function CompanySetup() {
-  const { session, loading, refresh, logout } = useSession();
-  const [key] = useState(requestKey);
-  const navigate = useNavigate();
+  const { session, loading, refresh, logout, key, navigate } = useCompanySetupState();
   if (loading)
     return (
       <AuthLayout title="Your workspace" description="Checking your account.">
@@ -312,18 +286,21 @@ export function CompanySetup() {
   );
 }
 export function Invitation() {
-  const { token = '' } = useParams();
-  const { session, loading, refresh, logout, chooseCompany } = useSession();
-  const navigate = useNavigate();
-  const [accepted, setAccepted] = useState<{ name: string; membershipId: string }>();
-  const invitation = useQuery({
-    queryKey: ['invitation', token],
-    queryFn: () => api.GET('/api/invitations/{token}/preview', { params: { path: { token } } }).then(result),
-    retry: false,
-  });
-  const next = encodeURIComponent(`/invite/${token}`);
-  const unavailable = invitation.error instanceof ApiError && invitation.error.status === 404;
-  const data = invitation.data;
+  const {
+    token,
+    session,
+    loading,
+    refresh,
+    logout,
+    chooseCompany,
+    navigate,
+    accepted,
+    setAccepted,
+    invitation,
+    next,
+    unavailable,
+    data,
+  } = useInvitationState();
   if (accepted)
     return (
       <AuthLayout title="Invitation accepted" description={`Your access to ${accepted.name} is ready.`}>

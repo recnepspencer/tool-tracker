@@ -1,29 +1,14 @@
-import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { api, result, requestKey, errorMessage } from './client';
-import { useCompany } from './session';
-import { useReferences, collect } from './data';
-import { Field, Select, Form, Notice, Loading, Empty, Section, Badge, text, human, date } from './ui';
+import { PhotoField, uploadPhoto } from './photos';
+import { useRegisterToolState, useToolDetailState, useToolsPageState } from './tools-state';
+
+import { Link } from 'react-router-dom';
+
+import { api, errorMessage, result } from './client';
+
+import { Badge, date, Empty, Field, Form, human, Loading, Notice, Section, Select, text } from './ui';
 
 export function ToolsPage() {
-  const c = useCompany();
-  const refs = useReferences();
-  const [search, setSearch] = useState('');
-  const [mine, setMine] = useState(false);
-  const [offset, setOffset] = useState(0);
-  const tools = useQuery({
-    queryKey: [c.company_id, 'tools', search, mine, offset],
-    queryFn: () =>
-      api
-        .GET('/api/companies/{company_id}/tools', {
-          params: {
-            path: c.path,
-            query: { search, offset, limit: 24, ...(mine ? { holder_membership_id: c.membership_id } : {}) },
-          },
-        })
-        .then(result),
-  });
+  const { c, refs, search, setSearch, mine, setMine, offset, setOffset, tools } = useToolsPageState();
   return (
     <>
       <header className="page-heading">
@@ -46,7 +31,6 @@ export function ToolsPage() {
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
-            setOffset(0);
           }}
         />
         <label className="check">
@@ -55,7 +39,6 @@ export function ToolsPage() {
             checked={mine}
             onChange={(e) => {
               setMine(e.target.checked);
-              setOffset(0);
             }}
           />{' '}
           In my custody
@@ -73,7 +56,13 @@ export function ToolsPage() {
                 <div className="tool-card-top">
                   <span className="asset-tag">{tool.asset_tag}</span>
                   <Badge>
-                    {tool.missing ? 'Missing' : tool.requestable ? 'Available' : human(tool.serviceability)}
+                    {tool.lifecycle !== 'active'
+                      ? human(tool.lifecycle)
+                      : tool.missing
+                        ? 'Missing'
+                        : tool.requestable
+                          ? 'Available'
+                          : human(tool.serviceability)}
                   </Badge>
                 </div>
                 <h2>{tool.name}</h2>
@@ -104,48 +93,8 @@ export function ToolsPage() {
     </>
   );
 }
-export async function uploadPhoto(
-  company_id: string,
-  f: FormData,
-  purpose: 'registration' | 'incident' | 'handoff' | 'service' | 'reconciliation',
-) {
-  const file = f.get('photo');
-  if (!(file instanceof File) || !file.size) return null;
-  if (file.size > 8 * 1024 * 1024) throw new Error('Choose a photo under 8 MB.');
-  return result(
-    await api.POST('/api/companies/{company_id}/files', {
-      params: { path: { company_id } },
-      body: { file: '', purpose },
-      bodySerializer: () => {
-        const body = new FormData();
-        body.set('file', file);
-        body.set('purpose', purpose);
-        return body;
-      },
-    }),
-  ).id;
-}
-export function PhotoField() {
-  return (
-    <Field
-      label="Photo (optional, up to 8 MB)"
-      name="photo"
-      type="file"
-      accept="image/jpeg,image/png,image/webp"
-      capture="environment"
-    />
-  );
-}
 export function RegisterTool() {
-  const c = useCompany();
-  const refs = useReferences();
-  const [key] = useState(requestKey);
-  const [created, setCreated] = useState('');
-  const policy = useQuery({
-    queryKey: [c.company_id, 'registration-policy'],
-    queryFn: () =>
-      api.GET('/api/companies/{company_id}/tool-registration-policy', { params: { path: c.path } }).then(result),
-  });
+  const { c, refs, key, created, setCreated, policy } = useRegisterToolState();
   if (policy.isPending) return <Loading />;
   if (policy.error) return <Notice error>{errorMessage(policy.error)}</Notice>;
   if (!c.can('tools.manage') && !policy.data.employee_tool_creation_enabled)
@@ -212,46 +161,7 @@ export function RegisterTool() {
   );
 }
 export function ToolDetail() {
-  const c = useCompany();
-  const refs = useReferences();
-  const { assetId = '' } = useParams();
-  const path = { ...c.path, asset_id: assetId };
-  const [key] = useState(requestKey);
-  const tool = useQuery({
-    queryKey: [c.company_id, 'tool', assetId],
-    queryFn: () => api.GET('/api/companies/{company_id}/tools/{asset_id}', { params: { path } }).then(result),
-  });
-  const history = useQuery({
-    queryKey: [c.company_id, 'custody', assetId],
-    queryFn: () =>
-      collect((offset) =>
-        api
-          .GET('/api/companies/{company_id}/tools/{asset_id}/custody', {
-            params: { path, query: { offset, limit: 100 } },
-          })
-          .then(result),
-      ),
-  });
-  const incidents = useQuery({
-    queryKey: [c.company_id, 'incidents', assetId],
-    queryFn: () =>
-      collect((offset) =>
-        api
-          .GET('/api/companies/{company_id}/incidents', {
-            params: { path: c.path, query: { asset_id: assetId, offset } },
-          })
-          .then(result),
-      ),
-  });
-  const service = useQuery({
-    queryKey: [c.company_id, 'service', assetId],
-    queryFn: () =>
-      collect((offset) =>
-        api
-          .GET('/api/companies/{company_id}/tools/{asset_id}/service', { params: { path, query: { offset } } })
-          .then(result),
-      ),
-  });
+  const { c, refs, path, key, renewKey, tool, history, incidents, service } = useToolDetailState();
   if (tool.isPending) return <Loading />;
   if (tool.error) return <Notice error>{errorMessage(tool.error)}</Notice>;
   const t = tool.data;
@@ -294,6 +204,7 @@ export function ToolDetail() {
           <Section title="Request this tool">
             <Form
               label="Request tool"
+              onDone={renewKey}
               submit={(f) =>
                 api.POST('/api/companies/{company_id}/tools/{asset_id}/requests', {
                   params: { path },
@@ -312,6 +223,7 @@ export function ToolDetail() {
           <Section title="Transfer or return">
             <Form
               label="Propose handoff"
+              onDone={renewKey}
               submit={async (f) => {
                 const dest = text(f, 'destination').split(':');
                 await api.POST('/api/companies/{company_id}/tools/{asset_id}/handoffs', {

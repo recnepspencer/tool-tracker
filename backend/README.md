@@ -1,6 +1,6 @@
 # Nelson Electric API
 
-The tool-tracker backend uses CleanForce authentication and governed HTTP declarations, Django, and PostgreSQL. Business models follow the company/equipment/work domains in [the proposal](../docs/DATABASE_PROPOSAL.md). Future bidding can share company, people, and project identities. The React app uses these APIs through a generated OpenAPI client; the retired demo is archived under `legacy/prototype`. Production hosting remains to be configured.
+The tool-tracker backend uses CleanForce authentication and governed HTTP declarations, Django, and PostgreSQL. Business models follow the company/equipment/work domains in [the proposal](../docs/DATABASE_PROPOSAL.md). Future bidding can share company, people, and project identities. The React app uses these APIs through a generated OpenAPI client; the retired demo has been removed. Production hosting remains to be configured.
 
 ## Run and review
 

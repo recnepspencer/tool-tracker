@@ -1,41 +1,11 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { api, result, requestKey, errorMessage, type Model } from './client';
-import { useCompany } from './session';
-import { collect, useReferences } from './data';
-import { Field, Select, Form, Notice, Loading, Empty, Section, Badge, text, human, date } from './ui';
+import { useJobCardState, useJobsPageState } from './jobs-state';
+
+import { api, errorMessage, requestKey, type Model } from './client';
+
+import { Badge, date, Empty, Field, Form, human, Loading, Notice, Section, Select, text } from './ui';
 
 export function JobsPage() {
-  const c = useCompany();
-  const refs = useReferences();
-  const [archived, setArchived] = useState(false);
-  const jobs = useQuery({
-    queryKey: [c.company_id, 'jobs', archived],
-    queryFn: () =>
-      collect((offset) =>
-        api
-          .GET('/api/companies/{company_id}/jobs', { params: { path: c.path, query: { offset, archived } } })
-          .then(result),
-      ),
-  });
-  const projects = useQuery({
-    queryKey: [c.company_id, 'projects'],
-    queryFn: () =>
-      collect((offset) =>
-        api.GET('/api/companies/{company_id}/projects', { params: { path: c.path, query: { offset } } }).then(result),
-      ),
-  });
-  const requests = useQuery({
-    queryKey: [c.company_id, 'participation'],
-    queryFn: () =>
-      collect((offset) =>
-        api
-          .GET('/api/companies/{company_id}/job-participation-requests', {
-            params: { path: c.path, query: { offset } },
-          })
-          .then(result),
-      ),
-  });
+  const { c, refs, archived, setArchived, jobs, projects, requests } = useJobsPageState();
   return (
     <>
       <header className="page-heading">
@@ -151,7 +121,7 @@ export function JobsPage() {
         <details className="panel">
           <summary>Manage projects</summary>
           {projects.data?.map((p) => (
-            <Section title={`${p.number} · ${p.name}`} key={`${p.id}:${p.revision}`}>
+            <Section title={`${p.number} · ${p.name}`} key={p.id}>
               <Form
                 label="Save project"
                 submit={(f) =>
@@ -180,28 +150,7 @@ export function JobsPage() {
   );
 }
 function JobCard({ job: j }: { job: Model<'JobView'> }) {
-  const c = useCompany();
-  const refs = useReferences();
-  const [history, setHistory] = useState(false);
-  const [key, setKey] = useState(requestKey);
-  const policy = useQuery({
-    queryKey: [c.company_id, 'participation-policy'],
-    queryFn: () =>
-      api.GET('/api/companies/{company_id}/job-participation-policy', { params: { path: c.path } }).then(result),
-  });
-  const assignments = useQuery({
-    queryKey: [c.company_id, 'assignments', j.id, history],
-    queryFn: () =>
-      collect((offset) =>
-        api
-          .GET('/api/companies/{company_id}/assignments', {
-            params: { path: c.path, query: { offset, job_id: j.id, current: !history } },
-          })
-          .then(result),
-      ),
-  });
-  const own = assignments.data?.find((a) => a.membership_id === c.membership_id && !a.ends_at);
-  const mode = own ? policy.data?.self_leave_mode : policy.data?.self_join_mode;
+  const { c, refs, history, setHistory, key, setKey, policy, assignments, own, mode } = useJobCardState({ job: j });
   return (
     <article className="panel">
       <div className="row">
@@ -300,7 +249,6 @@ function JobCard({ job: j }: { job: Model<'JobView'> }) {
         <details>
           <summary>Edit job</summary>
           <Form
-            key={j.revision}
             label="Save job"
             submit={(f) =>
               api.POST('/api/companies/{company_id}/jobs/{job_id}/update', {

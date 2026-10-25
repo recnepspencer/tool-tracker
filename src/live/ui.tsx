@@ -1,6 +1,5 @@
-import { useId, useState, type FormEvent, type ReactNode, type InputHTMLAttributes } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { errorMessage } from './client';
+import { useId, type InputHTMLAttributes, type ReactNode } from 'react';
+import { useCommandForm } from './command-state';
 
 export function Field({ label, ...props }: InputHTMLAttributes<HTMLInputElement> & { label: string }) {
   const id = useId();
@@ -52,31 +51,16 @@ export function Form({
   label?: string;
   onDone?: () => void;
 }) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
-  const cache = useQueryClient();
-  const run = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (busy) return;
-    setBusy(true);
-    setError('');
-    setSuccess(false);
-    try {
-      await submit(new FormData(event.currentTarget));
-      setSuccess(true);
-      await cache.invalidateQueries({ predicate: (q) => q.queryKey[0] !== 'session' });
-      onDone?.();
-    } catch (cause) {
-      setError(errorMessage(cause));
-    } finally {
-      setBusy(false);
-    }
-  };
+  const { busy, error, success, conflict, beginDraft, run, reload } = useCommandForm(submit, onDone);
   return (
-    <form className="form" onSubmit={(e) => void run(e)} aria-busy={busy}>
+    <form className="form" onChangeCapture={beginDraft} onSubmit={(e) => void run(e)} aria-busy={busy}>
       <fieldset disabled={busy}>{children}</fieldset>
       {error && <Notice error>{error}</Notice>}
+      {conflict && (
+        <button type="button" onClick={(event) => void reload(event.currentTarget.form!)}>
+          Load latest values
+        </button>
+      )}
       {success && <Notice>Saved successfully.</Notice>}
       <button className="primary" disabled={busy} type="submit">
         {busy ? 'Please wait…' : label}

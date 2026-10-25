@@ -1,41 +1,11 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { api, result, errorMessage } from './client';
-import { useCompany } from './session';
-import { collect, useReferences } from './data';
-import { Field, Select, Form, Notice, Section, text } from './ui';
+import { useCatalogPageState } from './catalog-state';
+
+import { api, errorMessage } from './client';
+
+import { Field, Form, Notice, Section, Select, text } from './ui';
 
 export function CatalogPage() {
-  const c = useCompany();
-  const refs = useReferences();
-  const [archived, setArchived] = useState(false);
-  const warehouses = useQuery({
-    queryKey: [c.company_id, 'warehouses', archived],
-    queryFn: () =>
-      collect((offset) =>
-        api
-          .GET('/api/companies/{company_id}/warehouses', { params: { path: c.path, query: { offset, archived } } })
-          .then(result),
-      ),
-  });
-  const categories = useQuery({
-    queryKey: [c.company_id, 'categories', archived],
-    queryFn: () =>
-      collect((offset) =>
-        api
-          .GET('/api/companies/{company_id}/tool-categories', { params: { path: c.path, query: { offset, archived } } })
-          .then(result),
-      ),
-  });
-  const models = useQuery({
-    queryKey: [c.company_id, 'models', archived],
-    queryFn: () =>
-      collect((offset) =>
-        api
-          .GET('/api/companies/{company_id}/tool-models', { params: { path: c.path, query: { offset, archived } } })
-          .then(result),
-      ),
-  });
+  const { c, refs, archived, setArchived, warehouses, categories, models } = useCatalogPageState();
   return (
     <>
       <h1>Catalog & warehouses</h1>
@@ -115,7 +85,7 @@ export function CatalogPage() {
       {models.error && <Notice error>{errorMessage(models.error)}</Notice>}
       <Section title="Warehouses">
         {warehouses.data?.map((w) => (
-          <details key={`${w.id}:${w.revision}`}>
+          <details key={w.id}>
             <summary>
               {w.code} · {w.name}
             </summary>
@@ -170,7 +140,7 @@ export function CatalogPage() {
       </Section>
       <Section title="Categories">
         {categories.data?.map((cat) => (
-          <details key={`${cat.id}:${cat.revision}`}>
+          <details key={cat.id}>
             <summary>{cat.name}</summary>
             <Form
               label="Save category"
@@ -191,7 +161,7 @@ export function CatalogPage() {
       </Section>
       <Section title="Models">
         {models.data?.map((m) => (
-          <details key={`${m.id}:${m.revision}`}>
+          <details key={m.id}>
             <summary>
               {m.manufacturer} · {m.name} · {m.model_number}
             </summary>

@@ -1,29 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
-import { readFile, readdir } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { password, emailLink } from './support';
 
-const password = 'Real-browser-test-password-2026';
-const mailDir = resolve('artifacts/mail');
-async function emailLink(email: string, path: string) {
-  let link = '';
-  await expect
-    .poll(async () => {
-      for (const file of (await readdir(mailDir)).reverse()) {
-        const body = await readFile(resolve(mailDir, file), 'utf8');
-        if (body.includes(`To: ${email}`) && body.includes(path)) {
-          const found = body.match(new RegExp(`https?://[^\\s]*${path}[^\\s]*`));
-          if (found) {
-            const url = new URL(found[0]);
-            link = url.pathname + url.search;
-            return true;
-          }
-        }
-      }
-      return false;
-    })
-    .toBe(true);
-  return link;
-}
 async function signup(page: Page, email: string, name: string) {
   await page.getByLabel('Your name', { exact: true }).fill(name);
   await page.getByLabel('Work email', { exact: true }).fill(email);

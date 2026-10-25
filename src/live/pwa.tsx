@@ -12,11 +12,7 @@ export function PwaStatus() {
   const {
     needRefresh: [update, setUpdate],
     updateServiceWorker,
-  } = useRegisterSW({
-    onRegisteredSW(_url, registration) {
-      if (registration) window.addEventListener('online', () => void registration.update());
-    },
-  });
+  } = useRegisterSW();
   useEffect(() => {
     const connection = () => setOnline(navigator.onLine);
     const prompt = (event: Event) => {

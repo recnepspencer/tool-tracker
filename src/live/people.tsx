@@ -1,36 +1,13 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { api, result, errorMessage, type Model } from './client';
+import { usePeoplePageState } from './people-state';
+
+import { api, errorMessage, result, type Model } from './client';
 import { useCompany } from './session';
-import { collect } from './data';
-import { Field, Select, Form, Notice, Loading, Empty, Section, Badge, text, human, date } from './ui';
+
+import { Badge, date, Empty, Field, Form, human, Loading, Notice, Section, Select, text } from './ui';
 
 const roles = ['field_member', 'equipment_manager', 'dispatcher', 'estimator', 'company_admin'] as const;
 export function PeoplePage() {
-  const c = useCompany();
-  const [link, setLink] = useState('');
-  const [inactive, setInactive] = useState(false);
-  const people = useQuery({
-    queryKey: [c.company_id, 'people', inactive],
-    queryFn: () =>
-      collect((offset) =>
-        api
-          .GET('/api/companies/{company_id}/people', {
-            params: { path: c.path, query: { offset, include_inactive: inactive } },
-          })
-          .then(result),
-      ),
-  });
-  const invites = useQuery({
-    queryKey: [c.company_id, 'invitations'],
-    enabled: c.can('people.manage'),
-    queryFn: () =>
-      collect((offset) =>
-        api
-          .GET('/api/companies/{company_id}/invitations', { params: { path: c.path, query: { offset } } })
-          .then(result),
-      ),
-  });
+  const { c, link, setLink, inactive, setInactive, people, invites } = usePeoplePageState();
   return (
     <>
       <h1>People</h1>
@@ -79,7 +56,7 @@ export function PeoplePage() {
       {people.isPending && <Loading />}
       {people.error && <Notice error>{errorMessage(people.error)}</Notice>}
       {people.data?.map((person) => (
-        <Person key={`${person.id}:${person.revision}`} person={person} />
+        <Person key={person.id} person={person} />
       ))}
       {c.can('people.manage') && (
         <Section title="Invitations">

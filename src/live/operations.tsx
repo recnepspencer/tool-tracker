@@ -1,51 +1,15 @@
-import { useState } from 'react';
+import { useOperationsPageState } from './operations-state';
+
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { useQueries, useQuery } from '@tanstack/react-query';
-import { api, result, errorMessage, type Model } from './client';
-import { useCompany } from './session';
+import { api, errorMessage, result, type Model } from './client';
 import { collect, useReferences } from './data';
-import { Field, Select, Form, Notice, Loading, Empty, Section, Badge, text, human, date } from './ui';
-import { PhotoField, uploadPhoto } from './tools';
+import { PhotoField, uploadPhoto } from './photos';
+import { useCompany } from './session';
+import { Badge, date, Empty, Field, Form, human, Loading, Notice, Section, Select, text } from './ui';
 
 export function OperationsPage() {
-  const c = useCompany();
-  const refs = useReferences();
-  const [history, setHistory] = useState(false);
-  const requests = useQuery({
-    queryKey: [c.company_id, 'requests', history],
-    queryFn: () =>
-      collect((offset) =>
-        api
-          .GET('/api/companies/{company_id}/tool-requests', {
-            params: { path: c.path, query: { offset, pending: !history } },
-          })
-          .then(result),
-      ),
-  });
-  const handoffs = useQuery({
-    queryKey: [c.company_id, 'handoffs', history],
-    queryFn: () =>
-      collect((offset) =>
-        api
-          .GET('/api/companies/{company_id}/handoffs', {
-            params: { path: c.path, query: { offset, pending: !history } },
-          })
-          .then(result),
-      ),
-  });
-  const ids = [...new Set([...(requests.data ?? []), ...(handoffs.data ?? [])].map((r) => r.asset_id))];
-  const assets = useQueries({
-    queries: ids.map((asset_id) => ({
-      queryKey: [c.company_id, 'tool', asset_id],
-      queryFn: () =>
-        api
-          .GET('/api/companies/{company_id}/tools/{asset_id}', { params: { path: { ...c.path, asset_id } } })
-          .then(result),
-    })),
-  });
-  const asset = (id: string) => assets.find((a) => a.data?.id === id)?.data;
-  const authority = (warehouse: string | null | undefined) =>
-    !!warehouse && (c.can('tools.manage') || c.managed_warehouse_ids.includes(warehouse));
+  const { c, refs, history, setHistory, requests, handoffs, asset, authority } = useOperationsPageState();
   return (
     <>
       <header className="page-heading">

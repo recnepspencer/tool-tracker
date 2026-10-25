@@ -23,6 +23,8 @@ CI uses a dedicated read-only CleanForce deploy key. It does not use a developer
 
 ## Implemented evidence
 
-The completion scope above is implemented in the backend. The regression suite includes 74 tests covering fresh migration installation, populated upgrades, generated-contract validation, registration-disable serialization, competing receipt decisions, audit enqueue rollback, directory capability boundaries, and preservation of advanced seed scenarios. PostgreSQL verification compares 56 declared scoped foreign keys with the actual database. CI also executes the seeder twice and publishes the generated OpenAPI artifact.
+The backend suite covers fresh migration installation, populated upgrades, generated-contract validation, concurrent receipt decisions, audit rollback, tenant isolation, account verification/recovery, and seed preservation. PostgreSQL verification compares 56 declared scoped foreign keys with the actual database. CI executes the seeder twice and publishes the generated OpenAPI artifact.
 
-Operational boundaries: invitations return a token for administrator delivery and require an existing authenticated CleanForce account; external account provisioning and mail delivery remain deployment integration. The frontend still uses its mock adapter. Automatic duplicate identity merging, future bidding, optional site/allocation models, and production API hosting are outside this buildout.
+The frontend uses the generated OpenAPI client. Browser integration tests exercise real sessions and delivered email links, specific-asset custody, assignments, company policies, condition/service, photo authorization, stale edits, workspace switching, and offline behavior. Public HTTP commands create isolated fixture companies; scenarios assert visible user outcomes and persisted API state. The removed prototype and its mock-only tests are recoverable through Git history.
+
+Production SMTP and hosting are still deployment configuration tasks. Development emails use a private file inbox. Bidding, consumable stock, reservations, automatic identity merging, and optional site/allocation models remain future domains.

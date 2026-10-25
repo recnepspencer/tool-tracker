@@ -2,7 +2,7 @@
 
 This proposal establishes shared company, people, project, and job records for Nelson Electric, with tool custody as the first business application. A later bidding application can use those same identities and project records. Start with one Django application deployment and PostgreSQL database, organized into company, work, equipment, and later estimating modules. Separate frontends need not imply separate databases or duplicated employees.
 
-This is a proposed domain model, not a transcription of the demo and not an applied migration. The Python example in [examples/job_join](examples/job_join) illustrates one feature using CleanForce's current public API. It is an illustrative consumer app, not an installed backend.
+This is a proposed domain model, not a transcription of the demo and not an applied migration. The installed implementation lives in `backend/`; its checked OpenAPI contract defines the current public API.
 
 ## Decisions behind the model
 
@@ -18,7 +18,7 @@ This is a proposed domain model, not a transcription of the demo and not an appl
 
 ## Sources and deliberate changes
 
-The current [job documentation](JOBS.md) establishes multiple simultaneous jobs per person, assignment history, archiving, and independence from tool custody. The [rebuild plan](../REACT_REBUILD_PLAN.md) and existing domain contracts establish individual tool units, warehouses, acceptance-based handoffs, damage/loss reports, evidence, audit, and reconciliation.
+The current [job documentation](JOBS.md) establishes multiple simultaneous jobs per person, assignment history, archiving, and independence from tool custody. The checked API contract and current backend establish individual tool units, warehouses, acceptance-based handoffs, damage/loss reports, evidence, audit, and reconciliation.
 
 Preserve those domain needs. Change these demo assumptions:
 

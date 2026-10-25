@@ -1,24 +1,11 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { api, result, errorMessage, type Model } from './client';
-import { useCompany } from './session';
-import { collect } from './data';
-import { Select, Form, Notice, Loading, Empty, Section, text, human, date } from './ui';
+import { useActivityPageState, useDirectoryPageState, useSettingsPageState } from './settings-state';
+
+import { api, errorMessage, type Model } from './client';
+
+import { date, Empty, Form, human, Loading, Notice, Section, Select, text } from './ui';
 
 export function SettingsPage() {
-  const c = useCompany();
-  const tools = useQuery({
-    queryKey: [c.company_id, 'registration-policy'],
-    enabled: c.can('tools.manage_registration_policy'),
-    queryFn: () =>
-      api.GET('/api/companies/{company_id}/tool-registration-policy', { params: { path: c.path } }).then(result),
-  });
-  const jobs = useQuery({
-    queryKey: [c.company_id, 'participation-policy'],
-    enabled: c.can('jobs.manage_policy'),
-    queryFn: () =>
-      api.GET('/api/companies/{company_id}/job-participation-policy', { params: { path: c.path } }).then(result),
-  });
+  const { c, tools, jobs } = useSettingsPageState();
   return (
     <>
       <h1>Company rules</h1>
@@ -29,7 +16,6 @@ export function SettingsPage() {
       {tools.data && (
         <Section title="Employee tool uploads">
           <Form
-            key={tools.data.revision}
             label="Save registration rule"
             submit={(f) =>
               api.POST('/api/companies/{company_id}/tool-registration-policy', {
@@ -56,7 +42,6 @@ export function SettingsPage() {
       {jobs.data && (
         <Section title="Job participation">
           <Form
-            key={jobs.data.revision}
             label="Save job rules"
             submit={(f) =>
               api.POST('/api/companies/{company_id}/job-participation-policy', {
@@ -88,15 +73,7 @@ export function SettingsPage() {
   );
 }
 export function ActivityPage() {
-  const c = useCompany();
-  const [offset, setOffset] = useState(0);
-  const activity = useQuery({
-    queryKey: [c.company_id, 'activity', offset],
-    queryFn: () =>
-      api
-        .GET('/api/companies/{company_id}/activity', { params: { path: c.path, query: { offset, limit: 30 } } })
-        .then(result),
-  });
+  const { c, offset, setOffset, activity } = useActivityPageState();
   return (
     <>
       <h1>Activity</h1>
@@ -128,17 +105,7 @@ export function ActivityPage() {
   );
 }
 export function DirectoryPage() {
-  const c = useCompany();
-  const [search, setSearch] = useState('');
-  const directory = useQuery({
-    queryKey: [c.company_id, 'directory', search],
-    queryFn: () =>
-      collect((offset) =>
-        api
-          .GET('/api/companies/{company_id}/directory', { params: { path: c.path, query: { offset, search } } })
-          .then(result),
-      ),
-  });
+  const { search, setSearch, directory } = useDirectoryPageState();
   return (
     <>
       <h1>Team directory</h1>
@@ -148,6 +115,7 @@ export function DirectoryPage() {
       </label>
       {directory.isPending && <Loading />}
       {directory.error && <Notice error>{errorMessage(directory.error)}</Notice>}
+      {directory.data?.length === 0 && <Empty>No people match your search.</Empty>}
       {directory.data?.map((p) => (
         <article className="panel" key={p.membership_id}>
           <h2>{p.name}</h2>
