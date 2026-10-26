@@ -1,9 +1,16 @@
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 
 // List controls belong to navigation: reload, browser Back, and shared links
 // all restore the same view without a second local state authority.
-export function useListLocation() {
-  const [params, setParams] = useSearchParams();
+export function useListLocation({ background = false } = {}) {
+  const [searchParams, setParams] = useSearchParams();
+  const location = useLocation();
+  const returnTo = location.state?.returnTo;
+  const backgroundList =
+    background && typeof returnTo === 'string' && /^\/app\/(tools|flagged|checkout)(\?|$)/.test(returnTo);
+  const params = backgroundList
+    ? new URLSearchParams(returnTo.includes('?') ? returnTo.slice(returnTo.indexOf('?')) : '')
+    : searchParams;
   function update(key: string, value: string, resetPage = true) {
     setParams(
       (current) => {
@@ -13,7 +20,7 @@ export function useListLocation() {
         if (resetPage) next.delete('offset');
         return next;
       },
-      { replace: true },
+      { replace: true, state: location.state },
     );
   }
   const raw = Number(params.get('offset') ?? 0);

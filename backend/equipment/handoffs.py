@@ -2,7 +2,7 @@ from backend_platform.api import conflict, forbidden, not_found
 from django.db import transaction
 from django.utils import timezone
 
-from companies.access import authorize_write
+from companies.access import authorize_write, capabilities
 from companies.audit import record_company_event
 from companies.models import CompanyMembership
 from companies.revisions import expect_revision
@@ -102,6 +102,11 @@ def propose_handoff(identity, company_id, asset_id, data):
         ).first()
         if not destination:
             raise not_found("Active destination member not found.")
+        if "tools.transfer" not in capabilities(destination):
+            raise conflict(
+                "This person does not have access to receive tools.",
+                code="destination_cannot_receive",
+            )
     else:
         active_warehouse(company_id, data.destination_warehouse_id, lock=True)
     if (source.holder_membership_id, source.holder_warehouse_id) == (
@@ -146,7 +151,17 @@ def resolve_handoff(identity, company_id, handoff_id, action, data):
         raise not_found("Handoff not found.")
     asset = lock_asset(company_id, reference.asset_id)
     handoff = CustodyHandoff.objects.select_for_update().get(pk=handoff_id)
-    if action == "cancel":
+    if action == "void":
+        require_warehouse_authority(
+            member, handoff.source_custody.holder_warehouse_id or asset.responsible_warehouse_id
+        )
+        if not data.note.strip():
+            raise conflict(
+                "Give a reason for administrative cancellation.",
+                code="cancellation_reason_required",
+            )
+        target = "cancelled"
+    elif action == "cancel":
         if handoff.proposed_by_id != member.pk:
             raise forbidden("Only the proposer may cancel this handoff.")
         target = "cancelled"
@@ -194,6 +209,6 @@ def resolve_handoff(identity, company_id, handoff_id, action, data):
         company_id,
         f"equipment.handoff.{target}",
         handoff,
-        metadata=asset_event_metadata(asset),
+        metadata=asset_event_metadata(asset, resolution_action=action),
     )
     return handoff

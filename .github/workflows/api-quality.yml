@@ -94,24 +94,14 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Exercise real accounts, email links, custody, and PWA behavior
         working-directory: .
-        run: |
-          mkdir -p artifacts/mail
-          (cd backend && uv run --no-sync python manage.py runserver 127.0.0.1:8001 --noreload) > artifacts/browser-api.log 2>&1 &
-          (cd backend && uv run --no-sync python manage.py run_platform_worker) > artifacts/browser-worker.log 2>&1 &
-          for attempt in $(seq 1 30); do
-            curl --fail --silent http://127.0.0.1:8001/api/auth/csrf >/dev/null && break
-            sleep 1
-          done
-          curl --fail --silent http://127.0.0.1:8001/api/auth/csrf >/dev/null
-          npm run test:browser
+        run: npm run test:browser
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: browser-diagnostics
           path: |
             artifacts/browser-results
-            artifacts/browser-api.log
-            artifacts/browser-worker.log
+            artifacts/browser-runs
       - uses: actions/upload-artifact@v4
         with:
           name: nelson-openapi

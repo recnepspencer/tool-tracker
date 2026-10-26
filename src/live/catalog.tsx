@@ -1,3 +1,4 @@
+import { WarehouseAuthority } from './warehouse-authority';
 import { useCatalogPageState } from './catalog-state';
 
 import { api, errorMessage } from './client';
@@ -5,7 +6,7 @@ import { api, errorMessage } from './client';
 import { Field, Form, Notice, Section, Select, text } from './ui';
 
 export function CatalogPage() {
-  const { c, refs, archived, setArchived, warehouses, categories, models } = useCatalogPageState();
+  const { c, archived, setArchived, warehouses, categories, categoryOptions, models } = useCatalogPageState();
   return (
     <>
       <h1>Catalog & warehouses</h1>
@@ -60,8 +61,8 @@ export function CatalogPage() {
               >
                 <Select label="Category" name="category">
                   <option value="">Choose a category</option>
-                  {categories.data
-                    ?.filter((x) => !x.archived_at)
+                  {categoryOptions
+                    .filter((x) => !x.archived_at)
                     .map((x) => (
                       <option key={x.id} value={x.id}>
                         {x.name}
@@ -109,34 +110,7 @@ export function CatalogPage() {
                 <input type="checkbox" name="archive" defaultChecked={!!w.archived_at} /> Archived
               </label>
             </Form>
-            {c.can('people.manage') && (
-              <Form
-                label="Update warehouse manager"
-                submit={(f) =>
-                  api.POST('/api/companies/{company_id}/warehouses/{warehouse_id}/authority', {
-                    params: { path: { ...c.path, warehouse_id: w.id } },
-                    body: {
-                      expected_revision: w.revision,
-                      membership_id: text(f, 'member'),
-                      enabled: text(f, 'enabled') === 'true',
-                    },
-                  })
-                }
-              >
-                <Select label="Person" name="member">
-                  <option value="">Choose a person</option>
-                  {refs.people.data?.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.preferred_name}
-                    </option>
-                  ))}
-                </Select>
-                <Select label="Warehouse authority" name="enabled">
-                  <option value="true">Grant management authority</option>
-                  <option value="false">Revoke management authority</option>
-                </Select>
-              </Form>
-            )}
+            <WarehouseAuthority warehouse={w} />
           </details>
         ))}
       </Section>
@@ -184,9 +158,10 @@ export function CatalogPage() {
               }
             >
               <Select label="Category" name="category" defaultValue={m.category_id}>
-                {categories.data?.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
+                {categoryOptions.map((cat) => (
+                  <option key={cat.id} value={cat.id} disabled={!!cat.archived_at && cat.id !== m.category_id}>
                     {cat.name}
+                    {cat.archived_at ? ' (archived)' : ''}
                   </option>
                 ))}
               </Select>

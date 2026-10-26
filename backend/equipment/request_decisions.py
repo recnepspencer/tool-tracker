@@ -5,7 +5,7 @@ from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
 
-from companies.access import authorize_write
+from companies.access import authorize_write, capabilities
 from companies.audit import record_company_event
 from companies.models import CompanyMembership
 from companies.revisions import expect_revision
@@ -46,10 +46,13 @@ def decide_request(identity, company_id, request_id, action, data):
         if source.pk != result.source_custody_id:
             raise conflict("The tool's source custody changed.", code="stale_custody")
         active_warehouse(company_id, source.holder_warehouse_id, lock=True)
-        if not CompanyMembership.objects.filter(
+        requester = CompanyMembership.objects.filter(
             pk=result.requester_id, access_state="active", ended_at__isnull=True
-        ).exists():
-            raise conflict("Requester is no longer active.", code="requester_inactive")
+        ).first()
+        if requester is None or "tools.transfer" not in capabilities(requester):
+            raise conflict(
+                "Requester no longer has access to receive tools.", code="requester_inactive"
+            )
         if CustodyHandoff.objects.filter(asset=asset, status="pending").exists():
             raise conflict("Tool already has a pending handoff.", code="handoff_pending")
         CustodyHandoff.objects.create(

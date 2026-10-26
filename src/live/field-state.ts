@@ -35,7 +35,7 @@ export function useFieldTools() {
       collect((offset) =>
         api
           .GET('/api/companies/{company_id}/handoffs', {
-            params: { path: c.path, query: { offset, pending: true } },
+            params: { path: c.path, query: { offset, pending: true, mine: true } },
           })
           .then(result),
       ),
@@ -58,7 +58,7 @@ export function useFieldTools() {
 
 export function useInventoryView(flagged = false) {
   const collection = useAssetCollection();
-  const { params, update } = useListLocation();
+  const { params, update } = useListLocation({ background: true });
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const search = params.get('search') ?? '';
   const warehouse = params.get('warehouse') ?? '';
@@ -102,7 +102,7 @@ export function useInventoryView(flagged = false) {
 
 export function useCheckout() {
   const collection = useInventoryView();
-  const { params, update } = useListLocation();
+  const { params, update } = useListLocation({ background: true });
   const mode = params.get('view') === 'list' ? 'list' : 'grid';
   return { ...collection, mode, setMode: (value: string) => update('view', value) };
 }
@@ -114,10 +114,17 @@ export function useSheetNavigation() {
     ? '/app/mine'
     : location.pathname.startsWith('/app/checkout')
       ? '/app/checkout'
-      : '/app/tools';
+      : location.pathname.startsWith('/app/flagged')
+        ? '/app/flagged'
+        : '/app/tools';
+  const params = new URLSearchParams(location.search);
+  params.delete('action');
   const returnTo =
     typeof location.state?.returnTo === 'string' && location.state.returnTo.startsWith('/app/')
       ? location.state.returnTo
-      : root + location.search;
-  return { root, close: () => navigate(returnTo, { replace: true }) };
+      : root + (params.size ? `?${params}` : '');
+  return {
+    root,
+    close: () => navigate(returnTo, { replace: true }),
+  };
 }

@@ -20,13 +20,21 @@ export function useCatalogPageState() {
       ),
   });
   const categories = useQuery({
-    queryKey: [c.company_id, 'categories', archived],
-    queryFn: () =>
-      collect((offset) =>
-        api
-          .GET('/api/companies/{company_id}/tool-categories', { params: { path: c.path, query: { offset, archived } } })
-          .then(result),
-      ),
+    queryKey: [c.company_id, 'category-options'],
+    queryFn: async () =>
+      (
+        await Promise.all(
+          [false, true].map((archived) =>
+            collect((offset) =>
+              api
+                .GET('/api/companies/{company_id}/tool-categories', {
+                  params: { path: c.path, query: { offset, archived } },
+                })
+                .then(result),
+            ),
+          ),
+        )
+      ).flat(),
   });
   const models = useQuery({
     queryKey: [c.company_id, 'models', archived],
@@ -38,5 +46,14 @@ export function useCatalogPageState() {
       ),
   });
 
-  return { c, refs, archived, setArchived, warehouses, categories, models };
+  return {
+    c,
+    refs,
+    archived,
+    setArchived,
+    warehouses,
+    categoryOptions: categories.data ?? [],
+    categories: { ...categories, data: categories.data?.filter((item) => Boolean(item.archived_at) === archived) },
+    models,
+  };
 }

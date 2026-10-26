@@ -61,6 +61,25 @@ class HandoffView(Schema):
     resolution_note: str
     revision: int
     photo_ids: list[UUID]
+    source_warehouse_id: UUID | None
+    destination_name: str
+    proposed_by_name: str
+
+    @staticmethod
+    def resolve_source_warehouse_id(obj):
+        return obj.source_custody.holder_warehouse_id
+
+    @staticmethod
+    def resolve_destination_name(obj):
+        return (
+            obj.destination_membership.person.preferred_name
+            if obj.destination_membership_id
+            else obj.destination_warehouse.name
+        )
+
+    @staticmethod
+    def resolve_proposed_by_name(obj):
+        return obj.proposed_by.person.preferred_name
 
     @staticmethod
     def resolve_photo_ids(obj):
@@ -84,6 +103,15 @@ class CustodyView(Schema):
     holder_warehouse_id: UUID | None
     starts_at: datetime
     ends_at: datetime | None
+    holder_name: str
+
+    @staticmethod
+    def resolve_holder_name(obj):
+        return (
+            obj.holder_membership.person.preferred_name
+            if obj.holder_membership_id
+            else obj.holder_warehouse.name
+        )
 
 
 class CustodyPage(Schema):
@@ -198,9 +226,13 @@ def requests_list(
     page: Query[PageInput],
     pending: bool = True,
     warehouse_id: UUID | None = None,
+    asset_id: UUID | None = None,
+    mine: bool = False,
 ):
     member = require_member(current_identity(request), company_id, "tools.read")
-    query = ToolRequest.objects.filter(company_id=company_id)
+    query = ToolRequest.objects.filter(company_id=company_id).select_related(
+        "source_custody", "requester__person"
+    )
     if "tools.manage" not in capabilities(member):
         grants = WarehouseRoleGrant.objects.filter(
             membership=member, revoked_at__isnull=True
@@ -210,6 +242,10 @@ def requests_list(
         )
     if pending:
         query = query.filter(status__in=["pending", "approved"])
+    if asset_id:
+        query = query.filter(asset_id=asset_id)
+    if mine:
+        query = query.filter(requester=member)
     if warehouse_id:
         query = query.filter(source_custody__holder_warehouse_id=warehouse_id)
     return paginate(query.order_by("requested_at", "id"), page.limit, page.offset)
@@ -241,7 +277,7 @@ def handoff_resolve(
     request: HttpRequest,
     company_id: UUID,
     handoff_id: UUID,
-    action: Literal["accept", "decline", "cancel"],
+    action: Literal["accept", "decline", "cancel", "void"],
     data: NoteInput,
 ):
     return handoffs.resolve_handoff(current_identity(request), company_id, handoff_id, action, data)
@@ -253,9 +289,15 @@ def handoffs_list(
     page: Query[PageInput],
     pending: bool = True,
     warehouse_id: UUID | None = None,
+    mine: bool = False,
 ):
     member = require_member(current_identity(request), company_id, "tools.read")
-    query = CustodyHandoff.objects.filter(company_id=company_id)
+    query = CustodyHandoff.objects.filter(company_id=company_id).select_related(
+        "source_custody",
+        "destination_membership__person",
+        "destination_warehouse",
+        "proposed_by__person",
+    )
     if "tools.manage" not in capabilities(member):
         grants = WarehouseRoleGrant.objects.filter(
             membership=member, revoked_at__isnull=True
@@ -265,13 +307,23 @@ def handoffs_list(
             | Q(destination_membership=member)
             | Q(destination_warehouse_id__in=grants)
             | Q(source_custody__holder_warehouse_id__in=grants)
+            | (
+                Q(source_custody__holder_membership_id__isnull=False)
+                & Q(asset__responsible_warehouse_id__in=grants)
+            )
         )
+    if mine:
+        query = query.filter(Q(proposed_by=member) | Q(destination_membership=member))
     if pending:
         query = query.filter(status="pending")
     if warehouse_id:
         query = query.filter(
             Q(destination_warehouse_id=warehouse_id)
             | Q(source_custody__holder_warehouse_id=warehouse_id)
+            | (
+                Q(source_custody__holder_membership_id__isnull=False)
+                & Q(asset__responsible_warehouse_id=warehouse_id)
+            )
         )
     return paginate(query.order_by("proposed_at", "id"), page.limit, page.offset)
 
@@ -281,9 +333,9 @@ def custody_history(request: HttpRequest, company_id: UUID, asset_id: UUID, page
     if not assets_with_availability(company_id).filter(pk=asset_id).exists():
         raise not_found("Tool not found.")
     return paginate(
-        CustodyPeriod.objects.filter(company_id=company_id, asset_id=asset_id).order_by(
-            "-starts_at", "id"
-        ),
+        CustodyPeriod.objects.filter(company_id=company_id, asset_id=asset_id)
+        .select_related("holder_membership__person", "holder_warehouse")
+        .order_by("-starts_at", "id"),
         page.limit,
         page.offset,
     )

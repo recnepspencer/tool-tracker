@@ -226,6 +226,34 @@
             ],
             "title": "Custody Started At"
           },
+          "holder_access_state": {
+            "anyOf": [
+              {
+                "enum": [
+                  "active",
+                  "suspended",
+                  "disabled"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Access State"
+          },
+          "holder_ended_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Ended At"
+          },
           "holder_membership_id": {
             "anyOf": [
               {
@@ -237,6 +265,17 @@
               }
             ],
             "title": "Holder Membership Id"
+          },
+          "holder_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Name"
           },
           "id": {
             "format": "uuid",
@@ -268,6 +307,27 @@
             "title": "Name",
             "type": "string"
           },
+          "origin_warehouse_id": {
+            "format": "uuid",
+            "title": "Origin Warehouse Id",
+            "type": "string"
+          },
+          "origin_warehouse_name": {
+            "title": "Origin Warehouse Name",
+            "type": "string"
+          },
+          "pending_handoff_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pending Handoff Id"
+          },
           "registration_photo_id": {
             "anyOf": [
               {
@@ -287,6 +347,10 @@
           "responsible_warehouse_id": {
             "format": "uuid",
             "title": "Responsible Warehouse Id",
+            "type": "string"
+          },
+          "responsible_warehouse_name": {
+            "title": "Responsible Warehouse Name",
             "type": "string"
           },
           "revision": {
@@ -340,6 +404,17 @@
               }
             ],
             "title": "Warehouse Id"
+          },
+          "warehouse_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warehouse Name"
           }
         },
         "required": [
@@ -361,7 +436,15 @@
           "unavailable_reason",
           "revision",
           "holder_membership_id",
+          "holder_name",
+          "holder_access_state",
+          "holder_ended_at",
+          "warehouse_name",
+          "origin_warehouse_id",
+          "origin_warehouse_name",
           "responsible_warehouse_id",
+          "responsible_warehouse_name",
+          "pending_handoff_id",
           "registration_photo_id"
         ],
         "title": "AssetView",
@@ -1265,6 +1348,10 @@
             ],
             "title": "Holder Membership Id"
           },
+          "holder_name": {
+            "title": "Holder Name",
+            "type": "string"
+          },
           "holder_warehouse_id": {
             "anyOf": [
               {
@@ -1294,7 +1381,8 @@
           "holder_membership_id",
           "holder_warehouse_id",
           "starts_at",
-          "ends_at"
+          "ends_at",
+          "holder_name"
         ],
         "title": "CustodyView",
         "type": "object"
@@ -1644,6 +1732,10 @@
             ],
             "title": "Destination Membership Id"
           },
+          "destination_name": {
+            "title": "Destination Name",
+            "type": "string"
+          },
           "destination_warehouse_id": {
             "anyOf": [
               {
@@ -1683,6 +1775,10 @@
             "title": "Proposed By Id",
             "type": "string"
           },
+          "proposed_by_name": {
+            "title": "Proposed By Name",
+            "type": "string"
+          },
           "resolution_note": {
             "title": "Resolution Note",
             "type": "string"
@@ -1719,6 +1815,18 @@
             "format": "uuid",
             "title": "Source Custody Id",
             "type": "string"
+          },
+          "source_warehouse_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Warehouse Id"
           },
           "status": {
             "enum": [
@@ -1758,7 +1866,10 @@
           "note",
           "resolution_note",
           "revision",
-          "photo_ids"
+          "photo_ids",
+          "source_warehouse_id",
+          "destination_name",
+          "proposed_by_name"
         ],
         "title": "HandoffView",
         "type": "object"
@@ -2740,6 +2851,10 @@
             "title": "Name",
             "type": "string"
           },
+          "registrable": {
+            "title": "Registrable",
+            "type": "boolean"
+          },
           "revision": {
             "title": "Revision",
             "type": "integer"
@@ -2752,7 +2867,8 @@
           "manufacturer",
           "model_number",
           "archived_at",
-          "revision"
+          "revision",
+          "registrable"
         ],
         "title": "ModelView",
         "type": "object"
@@ -3798,9 +3914,17 @@
             "title": "Requested At",
             "type": "string"
           },
+          "requester_eligible": {
+            "title": "Requester Eligible",
+            "type": "boolean"
+          },
           "requester_id": {
             "format": "uuid",
             "title": "Requester Id",
+            "type": "string"
+          },
+          "requester_name": {
+            "title": "Requester Name",
             "type": "string"
           },
           "revision": {
@@ -3811,6 +3935,18 @@
             "format": "uuid",
             "title": "Source Custody Id",
             "type": "string"
+          },
+          "source_warehouse_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Warehouse Id"
           },
           "status": {
             "enum": [
@@ -3834,7 +3970,10 @@
           "requested_at",
           "revision",
           "decided_at",
-          "decision_note"
+          "decision_note",
+          "source_warehouse_id",
+          "requester_name",
+          "requester_eligible"
         ],
         "title": "RequestView",
         "type": "object"
@@ -4128,6 +4267,30 @@
         "title": "WarehouseInput",
         "type": "object"
       },
+      "WarehouseManagerView": {
+        "properties": {
+          "eligible": {
+            "title": "Eligible",
+            "type": "boolean"
+          },
+          "membership_id": {
+            "format": "uuid",
+            "title": "Membership Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "membership_id",
+          "name",
+          "eligible"
+        ],
+        "title": "WarehouseManagerView",
+        "type": "object"
+      },
       "WarehousePage": {
         "properties": {
           "items": {
@@ -4216,6 +4379,13 @@
             "title": "Id",
             "type": "string"
           },
+          "managers": {
+            "items": {
+              "$ref": "#/components/schemas/WarehouseManagerView"
+            },
+            "title": "Managers",
+            "type": "array"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -4231,7 +4401,8 @@
           "name",
           "address",
           "archived_at",
-          "revision"
+          "revision",
+          "managers"
         ],
         "title": "WarehouseView",
         "type": "object"
@@ -5393,6 +5564,16 @@
               ],
               "title": "Warehouse Id"
             }
+          },
+          {
+            "in": "query",
+            "name": "mine",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Mine",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -5445,7 +5626,8 @@
               "enum": [
                 "accept",
                 "decline",
-                "cancel"
+                "cancel",
+                "void"
               ],
               "title": "Action",
               "type": "string"
@@ -7163,6 +7345,33 @@
                 }
               ],
               "title": "Warehouse Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "asset_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Asset Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "mine",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Mine",
+              "type": "boolean"
             }
           }
         ],

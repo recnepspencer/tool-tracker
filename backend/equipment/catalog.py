@@ -2,7 +2,7 @@ from backend_platform.api import conflict, not_found
 from django.db import transaction
 from django.utils import timezone
 
-from companies.access import authorize_write
+from companies.access import authorize_write, capabilities
 from companies.audit import record_company_event
 from companies.models import Company, CompanyMembership
 from companies.revisions import expect_revision
@@ -76,14 +76,26 @@ def set_warehouse_grant(identity, company_id, warehouse_id, data):
     actor = authorize_write(
         identity, company_id, "people.manage", related_members=[data.membership_id]
     )
-    warehouse = active_warehouse(company_id, warehouse_id, lock=True)
+    warehouse = (
+        Warehouse.objects.select_for_update().filter(company_id=company_id, pk=warehouse_id).first()
+    )
+    if warehouse is None:
+        raise not_found("Warehouse not found.")
     expect_revision(warehouse, data.expected_revision)
-    subject = CompanyMembership.objects.filter(
-        company_id=company_id, pk=data.membership_id, access_state="active", ended_at__isnull=True
-    ).first()
+    subject = CompanyMembership.objects.filter(company_id=company_id, pk=data.membership_id).first()
     if subject is None:
-        raise not_found("Active membership not found.")
+        raise not_found("Membership not found.")
     if data.enabled:
+        if (
+            warehouse.archived_at
+            or subject.access_state != "active"
+            or subject.ended_at
+            or "tools.transfer" not in capabilities(subject)
+        ):
+            raise conflict(
+                "Choose an active equipment member and warehouse.",
+                code="warehouse_manager_ineligible",
+            )
         WarehouseRoleGrant.objects.get_or_create(
             company_id=company_id,
             warehouse=warehouse,
@@ -174,7 +186,7 @@ def update_model(identity, company_id, model_id, data):
     authorize_write(identity, company_id, "catalog.manage")
     category = (
         ToolCategory.objects.select_for_update()
-        .filter(company_id=company_id, pk=data.category_id, archived_at__isnull=True)
+        .filter(company_id=company_id, pk=data.category_id)
         .first()
     )
     if category is None:
@@ -185,6 +197,8 @@ def update_model(identity, company_id, model_id, data):
     if result is None:
         raise not_found("Tool model not found.")
     expect_revision(result, data.expected_revision)
+    if category.archived_at and result.category_id != category.pk:
+        raise conflict("Choose an active category when moving a model.", code="category_archived")
     result.category = category
     result.name, result.manufacturer, result.model_number = (
         data.name,

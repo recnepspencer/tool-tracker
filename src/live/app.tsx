@@ -8,9 +8,7 @@ import { PwaStatus } from './pwa';
 import { useCompany, useSession } from './session';
 import { Form, Loading, Notice } from './ui';
 
-const InventoryPage = lazy(() => import('./field').then((m) => ({ default: m.InventoryPage })));
-const MyToolsPage = lazy(() => import('./field').then((m) => ({ default: m.MyToolsPage })));
-const CheckoutPage = lazy(() => import('./field').then((m) => ({ default: m.CheckoutPage })));
+const ToolSurface = lazy(() => import('./field').then((m) => ({ default: m.ToolSurface })));
 const ToolSheet = lazy(() => import('./field').then((m) => ({ default: m.ToolSheet })));
 const WarehousesPage = lazy(() => import('./workspace-pages').then((m) => ({ default: m.WarehousesPage })));
 const AccessPage = lazy(() => import('./workspace-pages').then((m) => ({ default: m.AccessPage })));
@@ -85,14 +83,19 @@ export function App() {
           <Route path="/app" element={<Shell />}>
             <Route index element={<Home />} />
             <Route element={<Permit capabilities={['tools.read']} />}>
-              <Route path="tools" element={<InventoryPage />} />
-              <Route path="flagged" element={<InventoryPage flagged />} />
-              <Route path="mine" element={<MyToolsPage />} />
-              <Route path="mine/:assetId" element={<ToolSheet field="mine" />} />
-              <Route path="checkout" element={<CheckoutPage />} />
-              <Route path="checkout/:assetId" element={<ToolSheet field="checkout" />} />
-              <Route path="tools/new" element={<RegisterTool />} />
-              <Route path="tools/:assetId" element={<ToolSheet />} />
+              <Route path="tools" element={<ToolSurface />}>
+                <Route path="new" element={<RegisterTool />} />
+                <Route path=":assetId" element={<ToolSheet />} />
+              </Route>
+              <Route path="flagged" element={<ToolSurface field="flagged" />}>
+                <Route path=":assetId" element={<ToolSheet />} />
+              </Route>
+              <Route path="mine" element={<ToolSurface field="mine" />}>
+                <Route path=":assetId" element={<ToolSheet />} />
+              </Route>
+              <Route path="checkout" element={<ToolSurface field="checkout" />}>
+                <Route path=":assetId" element={<ToolSheet />} />
+              </Route>
               <Route path="operations" element={<OperationsPage />} />
             </Route>
             <Route element={<Permit capabilities={['jobs.read']} />}>

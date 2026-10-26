@@ -63,6 +63,15 @@ export async function workspace(page: Page) {
   return { company, base, warehouse, asset, second, job };
 }
 export const password = 'Real-browser-test-password-2026';
+export async function chooseDestination(page: Page, kind: 'Person' | 'Warehouse', name: string) {
+  await page
+    .getByRole('group', { name: 'Destination type', exact: true })
+    .getByRole('button', { name: kind, exact: true })
+    .click();
+  await page.getByLabel('Search destinations').fill(name);
+  await page.getByRole('radio', { name, exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Change destination', exact: true })).toBeVisible();
+}
 export async function invitedMember(owner: Page, memberPage: Page, base: string, role: string, name = 'Alex Rivera') {
   const email = `role-${crypto.randomUUID().slice(0, 12)}@example.com`;
   const invitation = await command(owner.request, `${base}/invitations`, { email, preferred_name: name, role });
@@ -74,7 +83,7 @@ export async function invitedMember(owner: Page, memberPage: Page, base: string,
   });
   return command(memberPage.request, '/api/invitations/accept', { token: invitation.token });
 }
-const mailDir = resolve('artifacts/mail');
+const mailDir = process.env.NELSON_MAIL_ROOT ?? resolve('artifacts/mail');
 export async function emailLink(email: string, path: string) {
   let link = '';
   await expect

@@ -1,7 +1,7 @@
 import { ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { errorMessage } from './client';
-import { AssetPhoto } from './field';
+import { AssetPhoto } from './asset-photo';
 import { useDirectoryPageState } from './settings-state';
 import { Badge, Empty, Field, Loading, Notice } from './ui';
 

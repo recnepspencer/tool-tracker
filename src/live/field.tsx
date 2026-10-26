@@ -1,5 +1,6 @@
-import { Link, useLocation } from 'react-router-dom';
-import { ChevronDown, Grid2X2, List, Wrench } from 'lucide-react';
+import { AssetPhoto } from './asset-photo';
+import { Link, Outlet, useLocation } from 'react-router-dom';
+import { ChevronDown, Grid2X2, List } from 'lucide-react';
 import type { Model } from './client';
 import { errorMessage } from './client';
 import { useCheckout, useFieldTools, useInventoryView, useSheetNavigation } from './field-state';
@@ -8,30 +9,6 @@ import { ToolDetail } from './tools';
 import { Badge, date, Empty, Field, human, Loading, Notice } from './ui';
 
 type Asset = Model<'AssetView'>;
-export function AssetPhoto({
-  asset,
-  companyId,
-  large = false,
-}: {
-  asset: Pick<Asset, 'registration_photo_id'>;
-  companyId: string;
-  large?: boolean;
-}) {
-  return asset.registration_photo_id ? (
-    <span className={large ? 'catalog-photo-frame' : 'tool-photo'}>
-      <img
-        className={large ? 'catalog-photo' : ''}
-        src={`/api/companies/${companyId}/files/${asset.registration_photo_id}`}
-        alt=""
-        loading="lazy"
-      />
-    </span>
-  ) : (
-    <span className={large ? 'catalog-placeholder' : 'tool-photo'}>
-      <Wrench size={large ? 42 : 22} aria-hidden="true" />
-    </span>
-  );
-}
 export function assetStatus(tool: Asset) {
   return tool.lifecycle !== 'active'
     ? human(tool.lifecycle)
@@ -45,7 +22,7 @@ export function assetStatus(tool: Asset) {
 }
 
 export function MyToolsPage() {
-  const { c, refs, tools, handoffs, pendingAsset } = useFieldTools();
+  const { c, tools, handoffs, pendingAsset } = useFieldTools();
   return (
     <div className="worker-screen">
       <header className="worker-screen-heading">
@@ -64,12 +41,7 @@ export function MyToolsPage() {
                 ? 'Awaiting acceptance'
                 : 'Waiting on someone else'}
             </span>
-            <p>
-              Transfer to{' '}
-              {handoff.destination_membership_id
-                ? refs.person(handoff.destination_membership_id)
-                : refs.warehouse(handoff.destination_warehouse_id)}
-            </p>
+            <p>Transfer to {handoff.destination_name}</p>
             <p className="muted">{pendingAsset(handoff.asset_id)?.name ?? 'Loading tool…'}</p>
             <Link className="button" to={`/app/operations?review=handoff:${handoff.id}`}>
               Review
@@ -119,6 +91,7 @@ export function MyToolsPage() {
 }
 
 export function InventoryPage({ flagged = false }: { flagged?: boolean }) {
+  const location = useLocation();
   const { c, refs, tools, groups, expanded, toggle, search, setSearch, warehouse, setWarehouse } =
     useInventoryView(flagged);
   const rows = [...groups.values()].flat();
@@ -132,7 +105,11 @@ export function InventoryPage({ flagged = false }: { flagged?: boolean }) {
           </p>
         </div>
         {c.can('tools.register') && (
-          <Link className="button primary" to="/app/tools/new">
+          <Link
+            className="button primary"
+            to="/app/tools/new"
+            state={{ returnTo: location.pathname + location.search }}
+          >
             Add tool
           </Link>
         )}
@@ -178,12 +155,8 @@ export function InventoryPage({ flagged = false }: { flagged?: boolean }) {
                     key={units[0].id}
                     asset={units[0]}
                     companyId={c.company_id}
-                    holder={
-                      units[0].holder_membership_id
-                        ? refs.person(units[0].holder_membership_id)
-                        : refs.warehouse(units[0].warehouse_id)
-                    }
-                    warehouse={refs.warehouse(units[0].responsible_warehouse_id)}
+                    holder={units[0].holder_name ?? units[0].warehouse_name ?? 'No current custodian'}
+                    warehouse={units[0].responsible_warehouse_name}
                   />
                 ) : (
                   <InventoryGroup
@@ -261,8 +234,12 @@ function InventoryGroup({
             key={unit.id}
             asset={unit}
             companyId={companyId}
-            holder={unit.holder_membership_id ? holder(unit.holder_membership_id) : warehouse(unit.warehouse_id)}
-            warehouse={warehouse(unit.responsible_warehouse_id)}
+            holder={
+              unit.holder_membership_id
+                ? (unit.holder_name ?? holder(unit.holder_membership_id))
+                : (unit.warehouse_name ?? warehouse(unit.warehouse_id))
+            }
+            warehouse={unit.responsible_warehouse_name}
           />
         ))}
     </>
@@ -287,7 +264,7 @@ function InventoryRow({
       <td>
         <Link
           className="inventory-tool"
-          to={`/app/tools/${asset.id}`}
+          to={`${location.pathname.startsWith('/app/flagged') ? '/app/flagged' : '/app/tools'}/${asset.id}`}
           state={{ returnTo: location.pathname + location.search }}
           aria-label={`${asset.asset_tag} ${asset.name}`}
         >
@@ -415,14 +392,25 @@ export function CheckoutPage() {
     </div>
   );
 }
-export function ToolSheet({ field = 'inventory' }: { field?: 'mine' | 'checkout' | 'inventory' }) {
-  const { close } = useSheetNavigation();
+export function ToolSurface({ field = 'inventory' }: { field?: 'mine' | 'checkout' | 'inventory' | 'flagged' }) {
   return (
     <>
-      {field === 'mine' ? <MyToolsPage /> : field === 'checkout' ? <CheckoutPage /> : <InventoryPage />}
-      <RecordSheet title="Tool details" onClose={close}>
-        <ToolDetail />
-      </RecordSheet>
+      {field === 'mine' ? (
+        <MyToolsPage />
+      ) : field === 'checkout' ? (
+        <CheckoutPage />
+      ) : (
+        <InventoryPage flagged={field === 'flagged'} />
+      )}
+      <Outlet />
     </>
+  );
+}
+export function ToolSheet() {
+  const { close } = useSheetNavigation();
+  return (
+    <RecordSheet title="Tool details" onClose={close}>
+      <ToolDetail />
+    </RecordSheet>
   );
 }

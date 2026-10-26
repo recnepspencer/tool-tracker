@@ -6,6 +6,26 @@ import { collect, useReferences } from './data';
 import { useCompany } from './session';
 import { uploadPhoto } from './photos';
 import { text } from './ui';
+import { useListLocation } from './list-location';
+
+export function useTransferPicker() {
+  const [mode, setMode] = useState<'person' | 'warehouse'>('person');
+  const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState('');
+  return {
+    mode,
+    search,
+    setSearch,
+    selected,
+    select: setSelected,
+    change: () => setSelected(''),
+    setMode: (value: 'person' | 'warehouse') => {
+      setMode(value);
+      setSearch('');
+      setSelected('');
+    },
+  };
+}
 
 export function useRegisterToolState() {
   const c = useCompany();
@@ -80,6 +100,11 @@ export function useToolDetailState() {
   const { assetId = '' } = useParams();
   const path = { ...c.path, asset_id: assetId };
   const [key, setKey] = useState(requestKey);
+  const location = useListLocation();
+  const rawAction = location.params.get('action') ?? '';
+  const action = ['request', 'transfer', 'damage', 'missing', 'manage', 'reconcile'].includes(rawAction)
+    ? rawAction
+    : '';
   const tool = useQuery({
     queryKey: [c.company_id, 'tool', assetId],
     queryFn: () => api.GET('/api/companies/{company_id}/tools/{asset_id}', { params: { path } }).then(result),
@@ -91,6 +116,17 @@ export function useToolDetailState() {
         api
           .GET('/api/companies/{company_id}/tools/{asset_id}/custody', {
             params: { path, query: { offset, limit: 100 } },
+          })
+          .then(result),
+      ),
+  });
+  const requests = useQuery({
+    queryKey: [c.company_id, 'own-tool-requests', assetId, c.membership_id],
+    queryFn: () =>
+      collect((offset) =>
+        api
+          .GET('/api/companies/{company_id}/tool-requests', {
+            params: { path: c.path, query: { offset, asset_id: assetId, mine: true } },
           })
           .then(result),
       ),
@@ -116,5 +152,18 @@ export function useToolDetailState() {
       ),
   });
 
-  return { c, refs, path, key, renewKey: () => setKey(requestKey()), tool, history, incidents, service };
+  return {
+    c,
+    refs,
+    path,
+    key,
+    renewKey: () => setKey(requestKey()),
+    tool,
+    history,
+    incidents,
+    service,
+    requests,
+    action,
+    setAction: (value: string) => location.update('action', value),
+  };
 }

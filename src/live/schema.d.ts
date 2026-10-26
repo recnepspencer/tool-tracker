@@ -1297,8 +1297,14 @@ export interface components {
       category_name: string;
       /** Custody Started At */
       custody_started_at: string | null;
+      /** Holder Access State */
+      holder_access_state: ('active' | 'suspended' | 'disabled') | null;
+      /** Holder Ended At */
+      holder_ended_at: string | null;
       /** Holder Membership Id */
       holder_membership_id: string | null;
+      /** Holder Name */
+      holder_name: string | null;
       /**
        * Id
        * Format: uuid
@@ -1317,6 +1323,15 @@ export interface components {
       model_number: string;
       /** Name */
       name: string;
+      /**
+       * Origin Warehouse Id
+       * Format: uuid
+       */
+      origin_warehouse_id: string;
+      /** Origin Warehouse Name */
+      origin_warehouse_name: string;
+      /** Pending Handoff Id */
+      pending_handoff_id: string | null;
       /** Registration Photo Id */
       registration_photo_id: string | null;
       /** Requestable */
@@ -1326,6 +1341,8 @@ export interface components {
        * Format: uuid
        */
       responsible_warehouse_id: string;
+      /** Responsible Warehouse Name */
+      responsible_warehouse_name: string;
       /** Revision */
       revision: number;
       /** Serial Number */
@@ -1344,6 +1361,8 @@ export interface components {
       unavailable_reason: string | null;
       /** Warehouse Id */
       warehouse_id: string | null;
+      /** Warehouse Name */
+      warehouse_name: string | null;
     };
     /** AssignmentInput */
     AssignmentInput: {
@@ -1664,6 +1683,8 @@ export interface components {
       ends_at: string | null;
       /** Holder Membership Id */
       holder_membership_id: string | null;
+      /** Holder Name */
+      holder_name: string;
       /** Holder Warehouse Id */
       holder_warehouse_id: string | null;
       /**
@@ -1806,6 +1827,8 @@ export interface components {
       asset_id: string;
       /** Destination Membership Id */
       destination_membership_id: string | null;
+      /** Destination Name */
+      destination_name: string;
       /** Destination Warehouse Id */
       destination_warehouse_id: string | null;
       /**
@@ -1827,6 +1850,8 @@ export interface components {
        * Format: uuid
        */
       proposed_by_id: string;
+      /** Proposed By Name */
+      proposed_by_name: string;
       /** Resolution Note */
       resolution_note: string;
       /** Resolved At */
@@ -1840,6 +1865,8 @@ export interface components {
        * Format: uuid
        */
       source_custody_id: string;
+      /** Source Warehouse Id */
+      source_warehouse_id: string | null;
       /**
        * Status
        * @enum {string}
@@ -2216,6 +2243,8 @@ export interface components {
       model_number: string;
       /** Name */
       name: string;
+      /** Registrable */
+      registrable: boolean;
       /** Revision */
       revision: number;
     };
@@ -2635,11 +2664,15 @@ export interface components {
        * Format: date-time
        */
       requested_at: string;
+      /** Requester Eligible */
+      requester_eligible: boolean;
       /**
        * Requester Id
        * Format: uuid
        */
       requester_id: string;
+      /** Requester Name */
+      requester_name: string;
       /** Revision */
       revision: number;
       /**
@@ -2647,6 +2680,8 @@ export interface components {
        * Format: uuid
        */
       source_custody_id: string;
+      /** Source Warehouse Id */
+      source_warehouse_id: string | null;
       /**
        * Status
        * @enum {string}
@@ -2776,6 +2811,18 @@ export interface components {
       /** Name */
       name: string;
     };
+    /** WarehouseManagerView */
+    WarehouseManagerView: {
+      /** Eligible */
+      eligible: boolean;
+      /**
+       * Membership Id
+       * Format: uuid
+       */
+      membership_id: string;
+      /** Name */
+      name: string;
+    };
     /** WarehousePage */
     WarehousePage: {
       /** Items */
@@ -2813,6 +2860,8 @@ export interface components {
        * Format: uuid
        */
       id: string;
+      /** Managers */
+      managers: components['schemas']['WarehouseManagerView'][];
       /** Name */
       name: string;
       /** Revision */
@@ -3457,6 +3506,7 @@ export interface operations {
         offset?: number;
         pending?: boolean;
         warehouse_id?: string | null;
+        mine?: boolean;
       };
       header?: never;
       path: {
@@ -3484,7 +3534,7 @@ export interface operations {
       path: {
         company_id: string;
         handoff_id: string;
-        action: 'accept' | 'decline' | 'cancel';
+        action: 'accept' | 'decline' | 'cancel' | 'void';
       };
       cookie?: never;
     };
@@ -4319,6 +4369,8 @@ export interface operations {
         offset?: number;
         pending?: boolean;
         warehouse_id?: string | null;
+        asset_id?: string | null;
+        mine?: boolean;
       };
       header?: never;
       path: {

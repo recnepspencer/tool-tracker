@@ -73,6 +73,29 @@ it('preserves a useful stale revision conflict and never retries the write', asy
   expect(fetch).toHaveBeenCalledTimes(2);
 });
 
+it('keeps evidence validation separate from stale-record recovery', async () => {
+  const fetch = vi
+    .fn()
+    .mockResolvedValueOnce(response({ csrf_token: 'csrf' }))
+    .mockResolvedValueOnce(
+      response({ message: 'Photo evidence is required.', code: 'correction_evidence_required' }, 409),
+    );
+  const { api, isStaleRecord } = await client(fetch);
+  const error = await api
+    .POST('/api/companies/{company_id}/reconciliations/{case_id}/resolve', {
+      params: { path: { company_id: 'company', case_id: 'case' } },
+      body: { expected_revision: 1, expected_asset_revision: 1, note: 'Verified return' },
+    })
+    .catch((error: unknown) => error);
+  expect(error).toMatchObject({
+    status: 409,
+    code: 'correction_evidence_required',
+    message: 'Photo evidence is required.',
+  });
+  expect(isStaleRecord(error)).toBe(false);
+  expect(fetch).toHaveBeenCalledTimes(2);
+});
+
 it('notifies the session boundary on expired reads, without treating bad passwords as logout', async () => {
   const expired = vi.fn();
   window.addEventListener('session-expired', expired);

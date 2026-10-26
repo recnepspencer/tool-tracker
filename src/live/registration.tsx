@@ -67,11 +67,21 @@ export function RegisterTool() {
               <Select label="Tool model" name="model">
                 <option value="">Choose a model</option>
                 {refs.models.data?.map((m) => (
-                  <option key={m.id} value={m.id}>
+                  <option key={m.id} value={m.id} disabled={!m.registrable}>
                     {m.manufacturer} {m.name} · {m.model_number}
+                    {!m.registrable && ' (category archived)'}
                   </option>
                 ))}
               </Select>
+              {refs.models.data?.length === 0 && (
+                <Notice>Your equipment manager needs to add a tool model before you can register a tool.</Notice>
+              )}
+              {!!refs.models.data?.length && refs.models.data.every((model) => !model.registrable) && (
+                <Notice>
+                  No models are currently eligible for registration. Ask your equipment manager to restore a category or
+                  model.
+                </Notice>
+              )}
               <Select label="Starting warehouse" name="warehouse">
                 <option value="">Choose a warehouse</option>
                 {refs.warehouses.data?.map((w) => (

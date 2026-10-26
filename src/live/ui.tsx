@@ -1,4 +1,4 @@
-import { useId, type InputHTMLAttributes, type ReactNode } from 'react';
+import { useId, type InputHTMLAttributes, type SelectHTMLAttributes, type ReactNode } from 'react';
 import { useCommandForm } from './command-state';
 
 export function Field({ label, ...props }: InputHTMLAttributes<HTMLInputElement> & { label: string }) {
@@ -16,18 +16,22 @@ export function Select({
   children,
   defaultValue,
   required = true,
+  value,
+  onChange,
 }: {
   label: string;
   name: string;
   children: ReactNode;
   defaultValue?: string;
   required?: boolean;
+  value?: string;
+  onChange?: SelectHTMLAttributes<HTMLSelectElement>['onChange'];
 }) {
   const id = useId();
   return (
     <div className="field">
       <label htmlFor={id}>{label}</label>
-      <select id={id} name={name} defaultValue={defaultValue} required={required}>
+      <select id={id} name={name} defaultValue={defaultValue} value={value} onChange={onChange} required={required}>
         {children}
       </select>
     </div>
@@ -45,11 +49,13 @@ export function Form({
   submit,
   label = 'Save',
   onDone,
+  disabled = false,
 }: {
   children: ReactNode;
   submit: (data: FormData) => Promise<unknown>;
   label?: string;
   onDone?: () => void;
+  disabled?: boolean;
 }) {
   const { busy, error, success, conflict, beginDraft, run, reload } = useCommandForm(submit, onDone);
   return (
@@ -62,7 +68,7 @@ export function Form({
         </button>
       )}
       {success && <Notice>Saved successfully.</Notice>}
-      <button className="primary" disabled={busy} type="submit">
+      <button className="primary" disabled={busy || disabled} type="submit">
         {busy ? 'Please wait…' : label}
       </button>
     </form>

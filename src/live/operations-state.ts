@@ -4,6 +4,12 @@ import { useQueries, useQuery } from '@tanstack/react-query';
 import { api, result } from './client';
 import { collect, useReferences } from './data';
 import { useCompany } from './session';
+import { useState } from 'react';
+
+export function useHandoffDecision(receiving: boolean, cancelling: boolean) {
+  const [decision, setDecision] = useState(receiving ? 'accept' : cancelling ? 'cancel' : 'void');
+  return { decision, setDecision };
+}
 
 export function useOperationsPageState() {
   const c = useCompany();
@@ -17,23 +23,29 @@ export function useOperationsPageState() {
   const history = historyLocation.params.get('history') === 'true';
   const setHistory = (value: boolean) => historyLocation.update('history', value ? 'true' : '');
   const requests = useQuery({
-    queryKey: [c.company_id, 'requests', history],
+    queryKey: [c.company_id, 'requests', history, warehouse],
     queryFn: () =>
       collect((offset) =>
         api
           .GET('/api/companies/{company_id}/tool-requests', {
-            params: { path: c.path, query: { offset, pending: !history } },
+            params: {
+              path: c.path,
+              query: { offset, pending: !history, ...(warehouse ? { warehouse_id: warehouse } : {}) },
+            },
           })
           .then(result),
       ),
   });
   const handoffs = useQuery({
-    queryKey: [c.company_id, 'handoffs', history],
+    queryKey: [c.company_id, 'handoffs', history, warehouse],
     queryFn: () =>
       collect((offset) =>
         api
           .GET('/api/companies/{company_id}/handoffs', {
-            params: { path: c.path, query: { offset, pending: !history } },
+            params: {
+              path: c.path,
+              query: { offset, pending: !history, ...(warehouse ? { warehouse_id: warehouse } : {}) },
+            },
           })
           .then(result),
       ),
@@ -62,8 +74,7 @@ export function useOperationsPageState() {
       data: requests.data?.filter(
         (item) =>
           kind !== 'return' &&
-          (!warehouse || asset(item.asset_id)?.warehouse_id === warehouse) &&
-          `${asset(item.asset_id)?.name ?? ''} ${asset(item.asset_id)?.asset_tag ?? ''} ${refs.person(item.requester_id)}`
+          `${asset(item.asset_id)?.name ?? ''} ${asset(item.asset_id)?.asset_tag ?? ''} ${item.requester_name}`
             .toLowerCase()
             .includes(search.toLowerCase()),
       ),
@@ -74,9 +85,6 @@ export function useOperationsPageState() {
         (item) =>
           kind !== 'request' &&
           (kind !== 'return' || item.destination_warehouse_id !== null) &&
-          (!warehouse ||
-            item.destination_warehouse_id === warehouse ||
-            asset(item.asset_id)?.warehouse_id === warehouse) &&
           `${asset(item.asset_id)?.name ?? ''} ${asset(item.asset_id)?.asset_tag ?? ''}`
             .toLowerCase()
             .includes(search.toLowerCase()),

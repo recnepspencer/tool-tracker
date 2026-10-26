@@ -12,6 +12,9 @@ export class ApiError extends Error {
   }
 }
 
+export const isStaleRecord = (error: unknown): error is ApiError =>
+  error instanceof ApiError && error.status === 409 && ['stale_revision', 'stale_custody'].includes(error.code ?? '');
+
 export function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Something went wrong. Please try again.';
 }
@@ -61,13 +64,9 @@ api.use({
       if (response.status === 401 && !new URL(request.url).pathname.startsWith('/api/auth/')) {
         window.dispatchEvent(new Event('session-expired'));
       }
-      throw new ApiError(
-        response.status,
-        response.status === 409 && !new URL(request.url).pathname.startsWith('/api/auth/')
-          ? `${messageFrom(body)} Refresh the record before trying again.`
-          : messageFrom(body),
-        codeFrom(body),
-      );
+      const error = new ApiError(response.status, messageFrom(body), codeFrom(body));
+      if (isStaleRecord(error)) error.message += ' Refresh the record before trying again.';
+      throw error;
     }
   },
 });

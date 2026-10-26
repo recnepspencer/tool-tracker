@@ -93,8 +93,9 @@ test('verified signup, company, delivered invitation, real login and password re
   await expect(page.getByText('Tool registered.', { exact: false })).toBeVisible();
   await worker.goto('/app/tools');
   await worker.getByRole('link', { name: /TEST-001/ }).click();
+  await worker.getByRole('button', { name: 'Request this tool', exact: true }).click();
   await worker.getByRole('button', { name: 'Request tool', exact: true }).click();
-  await expect(worker.getByRole('status')).toContainText('Saved successfully');
+  await expect(worker.getByText('Your request is waiting for review.')).toBeVisible();
   await page.goto('/app/operations');
   await page.getByRole('button', { name: 'Review request', exact: true }).click();
   await page.getByRole('button', { name: 'Apply decision' }).click();

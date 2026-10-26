@@ -16,6 +16,12 @@ test('physical assets remain distinct and list navigation survives refresh', asy
   await page.goBack();
   await expect(page.getByLabel('Search inventory', { exact: true })).toHaveValue('UNIT-002');
   await expect(page.getByRole('heading', { name: 'Inventory', exact: true })).toBeVisible();
+  await page.getByRole('link', { name: 'Add tool', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Add a tool', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Add tool', exact: true })).toBeFocused();
+  await expect(page.getByLabel('Search inventory', { exact: true })).toHaveValue('UNIT-002');
   await page.screenshot({ path: 'artifacts/workspace-overview-desktop.png', fullPage: true });
 });
 
@@ -23,6 +29,7 @@ test('condition incidents and service do not change custody or the other physica
   const fixture = await workspace(page);
   await page.getByRole('button', { name: 'Expand Hammer drill, 2 tools' }).click();
   await page.getByRole('link', { name: /UNIT-001/ }).click();
+  await page.getByRole('button', { name: 'Report lost', exact: true }).click();
   const report = page.getByRole('region', { name: 'Report a problem', exact: true });
   await report.getByLabel('Problem').selectOption('missing');
   await report.getByLabel('What happened?').fill('Could not locate during stock check');
@@ -52,6 +59,14 @@ test('condition incidents and service do not change custody or the other physica
   await expect
     .poll(async () => (await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}`)).json()).lifecycle)
     .toBe('active');
+  await page.goto('/app/flagged?search=UNIT-001');
+  await page.getByRole('link', { name: 'UNIT-001 Hammer drill', exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/app/flagged/${fixture.asset.id}$`));
+  await page.getByRole('button', { name: 'Manage this tool', exact: true }).click();
+  await page.keyboard.press('Escape');
+  await expect(page).toHaveURL(/\/app\/flagged\?search=UNIT-001$/);
+  await expect(page.getByRole('heading', { name: 'Damaged & lost', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'UNIT-001 Hammer drill', exact: true })).toBeFocused();
 });
 
 test('editing a stale record preserves the draft until the user loads latest values', async ({ page }) => {

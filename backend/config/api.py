@@ -59,7 +59,9 @@ def session_info(request: HttpRequest):
                     WarehouseRoleGrant.objects.filter(
                         membership=member, revoked_at__isnull=True
                     ).values_list("warehouse_id", flat=True)
-                ),
+                )
+                if "tools.transfer" in capabilities(member)
+                else [],
             }
             for member in memberships
         ],

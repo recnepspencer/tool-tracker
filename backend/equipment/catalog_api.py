@@ -3,17 +3,18 @@ from uuid import UUID
 
 from backend_platform.api import define_http_endpoint
 from cleanforce_identity.users.facade import current_identity
+from django.db.models import Prefetch
 from django.http import HttpRequest
 from django.views.decorators.csrf import csrf_protect
 from ninja import Query, Router, Schema, Status
 from pydantic import Field
 
-from companies.access import require_member
+from companies.access import capabilities, require_member
 from config.contracts import CommandInput, PageInput, RevisionInput, paginate
 
 from . import catalog, registration
 from .api import AssetView
-from .models import ToolCategory, ToolModel, Warehouse
+from .models import ToolCategory, ToolModel, Warehouse, WarehouseRoleGrant
 from .queries import asset_view, assets_with_availability
 
 router = Router(tags=["equipment catalog"])
@@ -31,6 +32,12 @@ class WarehouseUpdate(RevisionInput):
     archived: bool = False
 
 
+class WarehouseManagerView(Schema):
+    membership_id: UUID
+    name: str
+    eligible: bool
+
+
 class WarehouseView(Schema):
     id: UUID
     code: str
@@ -38,6 +45,25 @@ class WarehouseView(Schema):
     address: str
     archived_at: datetime | None
     revision: int
+    managers: list[WarehouseManagerView]
+
+    @staticmethod
+    def resolve_managers(obj):
+        grants = getattr(obj, "live_managers", None)
+        if grants is None:
+            grants = obj.warehouserolegrant_set.filter(revoked_at__isnull=True).select_related(
+                "membership__person"
+            )
+        return [
+            {
+                "membership_id": grant.membership_id,
+                "name": grant.membership.person.preferred_name,
+                "eligible": grant.membership.access_state == "active"
+                and grant.membership.ended_at is None
+                and "tools.transfer" in capabilities(grant.membership),
+            }
+            for grant in grants
+        ]
 
 
 class WarehousePage(Schema):
@@ -91,6 +117,11 @@ class ModelView(Schema):
     model_number: str
     archived_at: datetime | None
     revision: int
+    registrable: bool
+
+    @staticmethod
+    def resolve_registrable(obj):
+        return obj.archived_at is None and obj.category.archived_at is None
 
 
 class ModelPage(Schema):
@@ -130,9 +161,17 @@ def warehouses_list(
 ):
     require_member(current_identity(request), company_id, "company.read")
     return paginate(
-        Warehouse.objects.filter(company_id=company_id, archived_at__isnull=not archived).order_by(
-            "code", "id"
-        ),
+        Warehouse.objects.filter(company_id=company_id, archived_at__isnull=not archived)
+        .prefetch_related(
+            Prefetch(
+                "warehouserolegrant_set",
+                queryset=WarehouseRoleGrant.objects.filter(revoked_at__isnull=True).select_related(
+                    "membership__person"
+                ),
+                to_attr="live_managers",
+            )
+        )
+        .order_by("code", "id"),
         page.limit,
         page.offset,
     )
@@ -187,9 +226,9 @@ def models_list(
 ):
     require_member(current_identity(request), company_id, "tools.read")
     return paginate(
-        ToolModel.objects.filter(company_id=company_id, archived_at__isnull=not archived).order_by(
-            "name", "id"
-        ),
+        ToolModel.objects.filter(company_id=company_id, archived_at__isnull=not archived)
+        .select_related("category")
+        .order_by("name", "id"),
         page.limit,
         page.offset,
     )

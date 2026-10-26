@@ -98,11 +98,18 @@ test('field layout follows the demo with real photographed custody and review sh
     await expect(worker.getByRole('region', { name: 'Transfer or return' })).toBeVisible();
     await worker.keyboard.press('Escape');
     await expect(worker.getByRole('dialog')).toHaveCount(0);
+    await expect(worker.getByRole('link', { name: 'Transfer', exact: true })).toBeFocused();
     await worker.getByRole('link', { name: 'Need something else? Browse checkout' }).click();
     await expect(worker.getByRole('heading', { name: 'Checkout', exact: true })).toBeVisible();
     await worker.getByRole('button', { name: 'List', exact: true }).click();
     await expect(worker.getByRole('button', { name: 'List', exact: true })).toHaveAttribute('aria-pressed', 'true');
     await worker.screenshot({ path: 'artifacts/parity-checkout-mobile.png', fullPage: true });
+    await worker.getByRole('link', { name: 'UNIT-001 · Request', exact: true }).click();
+    await expect(worker.getByRole('dialog', { name: 'Tool details', exact: true })).toBeVisible();
+    await expect(worker.locator('.checkout-grid--list')).toHaveCount(1);
+    await worker.keyboard.press('Escape');
+    await expect(worker).toHaveURL(/\/checkout\?view=list$/);
+    await expect(worker.getByRole('link', { name: 'UNIT-001 · Request', exact: true })).toBeFocused();
     await page.goto('/app/tools');
     for (const name of [
       'Queue',
@@ -120,6 +127,24 @@ test('field layout follows the demo with real photographed custody and review sh
     }
     await page.getByRole('button', { name: 'Expand Hammer drill, 2 tools' }).click();
     await page.screenshot({ path: 'artifacts/parity-inventory-desktop.png', fullPage: true });
+    await page.getByLabel('Search inventory').fill('TL-101');
+    await page.getByLabel('Warehouse', { exact: true }).selectOption(fixture.warehouse.id);
+    const filteredInventory = page.url();
+    await page.getByRole('link', { name: 'TL-101 Hammer drill', exact: true }).click();
+    const details = page.getByRole('dialog', { name: 'Tool details', exact: true });
+    await expect(details.locator('.detail-hero img')).toBeVisible();
+    await expect(page.getByLabel('Search inventory')).toHaveValue('TL-101');
+    await expect(page.getByLabel('Warehouse', { exact: true })).toHaveValue(fixture.warehouse.id);
+    await page.screenshot({ path: 'artifacts/parity-tool-details-desktop.png', fullPage: true });
+    await details.getByRole('button', { name: 'Manage this tool', exact: true }).click();
+    await expect(details.getByRole('region', { name: 'Asset information', exact: true })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(details).toHaveCount(0);
+    await expect(page).toHaveURL(filteredInventory);
+    await expect(page.getByRole('link', { name: 'TL-101 Hammer drill', exact: true })).toBeFocused();
+    await expect(page.getByLabel('Search inventory')).toHaveValue('TL-101');
+    await page.reload();
+    await expect(page.getByLabel('Warehouse', { exact: true })).toHaveValue(fixture.warehouse.id);
     await page.goto('/app/operations');
     await page.getByRole('button', { name: 'Requests', exact: true }).click();
     await expect(page.getByText('No handoffs to review.')).toBeVisible();

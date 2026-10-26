@@ -1,3 +1,4 @@
+import { HandoffReview } from './handoff-review';
 import { RecordSheet } from './experience/RecordSheet';
 import { useOperationsPageState } from './operations-state';
 
@@ -5,7 +6,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { api, errorMessage, result, type Model } from './client';
 import { collect, useReferences } from './data';
-import { PhotoField, uploadPhoto } from './photos';
+import { PhotoField } from './photos';
+import { useStagedPhoto } from './photo-state';
 import { useCompany } from './session';
 import { Badge, date, Empty, Field, Form, human, Loading, Notice, Section, Select, text } from './ui';
 
@@ -79,22 +81,29 @@ export function OperationsPage() {
                     {asset(r.asset_id)?.asset_tag ?? 'Tool'} · {asset(r.asset_id)?.name ?? 'View tool'}
                   </strong>
                 </Link>
-                <p>Requested by {refs.person(r.requester_id)}</p>
+                <p>Requested by {r.requester_name}</p>
                 <small>{date(r.requested_at)}</small>
               </div>
               <Badge>{human(r.status)}</Badge>
             </div>
             {r.note && <p>{r.note}</p>}
+            {r.decision_note && <p>{r.decision_note}</p>}
+            {!r.requester_eligible && ['pending', 'approved'].includes(r.status) && (
+              <p className="muted">
+                Requester no longer has equipment access. An authorized manager can reject the request.
+              </p>
+            )}
             {['pending', 'approved'].includes(r.status) &&
-              (r.requester_id === c.membership_id || authority(asset(r.asset_id)?.warehouse_id)) && (
+              (r.requester_id === c.membership_id || authority(r.source_warehouse_id)) && (
                 <>
                   <button onClick={() => openReview(`request:${r.id}`)}>Review request</button>
                   {review === `request:${r.id}` && (
                     <RecordSheet title="Review request" onClose={() => openReview('')}>
                       <h2>{asset(r.asset_id)?.name}</h2>
-                      <p>Requested by {refs.person(r.requester_id)}</p>
+                      <p>Requested by {r.requester_name}</p>
                       <Form
                         label="Apply decision"
+                        onDone={() => openReview('')}
                         submit={(f) =>
                           api.POST('/api/companies/{company_id}/tool-requests/{request_id}/{action}', {
                             params: {
@@ -109,10 +118,10 @@ export function OperationsPage() {
                         }
                       >
                         <Select name="action" label="Decision">
-                          {authority(asset(r.asset_id)?.warehouse_id) && r.status === 'pending' && (
+                          {authority(r.source_warehouse_id) && r.requester_eligible && r.status === 'pending' && (
                             <option value="approve">Approve and prepare handoff</option>
                           )}
-                          {authority(asset(r.asset_id)?.warehouse_id) && <option value="reject">Reject</option>}
+                          {authority(r.source_warehouse_id) && <option value="reject">Reject</option>}
                           {r.requester_id === c.membership_id && <option value="withdraw">Withdraw my request</option>}
                         </Select>
                         <Field label="Decision note" name="note" maxLength={2000} />
@@ -131,6 +140,7 @@ export function OperationsPage() {
         {handoffs.data?.map((h) => {
           const receiving = h.destination_membership_id === c.membership_id || authority(h.destination_warehouse_id);
           const cancelling = h.proposed_by_id === c.membership_id;
+          const voidAllowed = authority(h.source_warehouse_id ?? asset(h.asset_id)?.responsible_warehouse_id);
           return (
             <article className="queue-card" key={h.id}>
               <div className="row">
@@ -140,51 +150,28 @@ export function OperationsPage() {
                       {asset(h.asset_id)?.asset_tag ?? 'Tool'} · {asset(h.asset_id)?.name ?? 'View tool'}
                     </strong>
                   </Link>
-                  <p>
-                    To{' '}
-                    {h.destination_membership_id
-                      ? refs.person(h.destination_membership_id)
-                      : refs.warehouse(h.destination_warehouse_id)}
-                  </p>
+                  <p>To {h.destination_name}</p>
                   <small>
-                    Proposed by {refs.person(h.proposed_by_id)} · {date(h.proposed_at)}
+                    Proposed by {h.proposed_by_name} · {date(h.proposed_at)}
                   </small>
                 </div>
                 <Badge>{human(h.status)}</Badge>
               </div>
               {h.note && <p>{h.note}</p>}
-              {h.status === 'pending' && (receiving || cancelling) && (
+              {h.resolution_note && <p>{h.resolution_note}</p>}
+              {h.status === 'pending' && (receiving || cancelling || voidAllowed) && (
                 <>
                   <button onClick={() => openReview(`handoff:${h.id}`)}>Review handoff</button>
                   {review === `handoff:${h.id}` && (
                     <RecordSheet title="Review handoff" onClose={() => openReview('')}>
                       <h2>{asset(h.asset_id)?.name}</h2>
-                      <Form
-                        label="Confirm handoff decision"
-                        submit={(f) =>
-                          api.POST('/api/companies/{company_id}/handoffs/{handoff_id}/{action}', {
-                            params: {
-                              path: {
-                                ...c.path,
-                                handoff_id: h.id,
-                                action: text(f, 'action') as 'accept' | 'decline' | 'cancel',
-                              },
-                            },
-                            body: { expected_revision: h.revision, note: text(f, 'note') },
-                          })
-                        }
-                      >
-                        <Select label="Decision" name="action">
-                          {receiving && (
-                            <>
-                              <option value="accept">Accept — I have received this tool</option>
-                              <option value="decline">Decline receipt</option>
-                            </>
-                          )}
-                          {cancelling && <option value="cancel">Cancel my handoff</option>}
-                        </Select>
-                        <Field label="Note" name="note" maxLength={2000} />
-                      </Form>
+                      <HandoffReview
+                        handoff={h}
+                        receiving={receiving}
+                        cancelling={cancelling}
+                        voidAllowed={voidAllowed}
+                        onDone={() => openReview('')}
+                      />
                     </RecordSheet>
                   )}
                 </>
@@ -199,6 +186,7 @@ export function OperationsPage() {
 
 function ResolveCase({ item }: { item: Model<'ReconciliationView'> }) {
   const c = useCompany();
+  const photo = useStagedPhoto(c.company_id, 'reconciliation', item.revision);
   const refs = useReferences();
   const asset = useQuery({
     queryKey: [c.company_id, 'tool', item.asset_id],
@@ -222,6 +210,7 @@ function ResolveCase({ item }: { item: Model<'ReconciliationView'> }) {
       {asset.data && (
         <Form
           label="Resolve case"
+          onDone={photo.clear}
           submit={async (f) => {
             const destination = text(f, 'destination').split(':');
             await api.POST('/api/companies/{company_id}/reconciliations/{case_id}/resolve', {
@@ -232,7 +221,7 @@ function ResolveCase({ item }: { item: Model<'ReconciliationView'> }) {
                 note: text(f, 'note'),
                 destination_membership_id: destination[0] === 'person' ? destination[1] : null,
                 destination_warehouse_id: destination[0] === 'warehouse' ? destination[1] : null,
-                photo_id: await uploadPhoto(c.company_id, f, 'reconciliation'),
+                photo_id: await photo.upload(f),
               },
             });
           }}

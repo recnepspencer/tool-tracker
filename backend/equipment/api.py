@@ -34,7 +34,15 @@ class AssetView(Schema):
     unavailable_reason: str | None
     revision: int
     holder_membership_id: UUID | None
+    holder_name: str | None
+    holder_access_state: Literal["active", "suspended", "disabled"] | None
+    holder_ended_at: datetime | None
+    warehouse_name: str | None
+    origin_warehouse_id: UUID
+    origin_warehouse_name: str
     responsible_warehouse_id: UUID
+    responsible_warehouse_name: str
+    pending_handoff_id: UUID | None
     registration_photo_id: UUID | None
 
 
@@ -65,6 +73,27 @@ class RequestView(Schema):
     revision: int
     decided_at: datetime | None
     decision_note: str
+    source_warehouse_id: UUID | None
+    requester_name: str
+    requester_eligible: bool
+
+    @staticmethod
+    def resolve_source_warehouse_id(obj):
+        return obj.source_custody.holder_warehouse_id
+
+    @staticmethod
+    def resolve_requester_name(obj):
+        return obj.requester.person.preferred_name
+
+    @staticmethod
+    def resolve_requester_eligible(obj):
+        from companies.access import capabilities
+
+        return (
+            obj.requester.access_state == "active"
+            and obj.requester.ended_at is None
+            and "tools.transfer" in capabilities(obj.requester)
+        )
 
 
 def browse_tools(

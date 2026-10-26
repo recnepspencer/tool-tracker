@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useRef, useState, type FormEvent } from 'react';
-import { ApiError, errorMessage } from './client';
+import { errorMessage, isStaleRecord } from './client';
 
 export function useCommandForm(submit: (data: FormData) => Promise<unknown>, onDone?: () => void) {
   const [state, setState] = useState<{ busy: boolean; error: string; success: boolean; conflict: boolean }>({
@@ -35,7 +35,7 @@ export function useCommandForm(submit: (data: FormData) => Promise<unknown>, onD
         busy: false,
         error: errorMessage(error),
         success: false,
-        conflict: error instanceof ApiError && error.status === 409,
+        conflict: isStaleRecord(error),
       });
     } finally {
       running.current = false;

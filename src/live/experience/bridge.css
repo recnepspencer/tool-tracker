@@ -491,3 +491,86 @@
 .experience .foreman-tool-copy .badge {
   justify-self: start;
 }
+.experience .tool-detail-content {
+  display: grid;
+  gap: 24px;
+}
+.experience .detail-hero {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.experience .detail-hero .catalog-photo-frame,
+.experience .detail-hero .catalog-placeholder {
+  width: 120px;
+  height: 120px;
+  flex: 0 0 120px;
+  border-radius: 18px;
+}
+.experience .detail-statuses,
+.experience .detail-actions,
+.experience .detail-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.experience .detail-actions > .primary {
+  flex: 1 1 100%;
+}
+.experience .detail-facts {
+  margin: 20px 0;
+}
+@media (max-width: 480px) {
+  .experience .detail-hero {
+    gap: 16px;
+  }
+  .experience .detail-hero .catalog-photo-frame,
+  .experience .detail-hero .catalog-placeholder {
+    width: 84px;
+    height: 84px;
+    flex-basis: 84px;
+  }
+}
+.experience .transfer-picker {
+  display: grid;
+  gap: 16px;
+}
+.experience .transfer-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.experience .transfer-modes button {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 20px;
+}
+.experience .transfer-modes button[aria-pressed='true'] {
+  border-color: var(--blue);
+  background: var(--blue-bg);
+}
+.experience .transfer-options {
+  display: grid;
+  gap: 8px;
+  max-height: 270px;
+  overflow-y: auto;
+}
+.experience .transfer-option,
+.experience .transfer-selected {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  padding: 16px;
+  border-radius: 14px;
+}
+.experience .transfer-option small {
+  display: block;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.experience .transfer-selected {
+  justify-content: space-between;
+}

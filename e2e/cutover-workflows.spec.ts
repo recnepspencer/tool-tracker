@@ -103,6 +103,7 @@ test('foremen directory filters actual assignments and preserves held tool ident
     await expect(page.getByRole('region', { name: 'Current custody', exact: true })).toContainText('Assigned Foreman');
     await expect(page.getByRole('region', { name: 'Transfer or return' })).toHaveCount(0);
     await worker.goto(`/app/mine/${fixture.asset.id}`);
+    await worker.getByRole('button', { name: 'Transfer tool', exact: true }).click();
     await expect(worker.getByRole('region', { name: 'Transfer or return' })).toBeVisible();
     expect(
       (await (await worker.request.get(`${fixture.base}/tools/${fixture.asset.id}`)).json()).holder_membership_id,

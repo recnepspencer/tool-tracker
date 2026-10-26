@@ -34,10 +34,10 @@ Navigation uses current server capabilities, not assumed worker/admin profiles. 
 ```sh
 npm run api:generate   # after regenerating backend/contracts/openapi.json
 npm run check
-npm run test:browser   # API on 8001, production build already generated
+npm run test:browser   # PostgreSQL and backend dependencies available; production build already generated
 ```
 
-`openapi-typescript` generates `src/live/schema.d.ts` from the checked backend contract. `openapi-fetch` uses these path, query, body, and response types directly. CI checks generated-client drift, missing migrations, a fresh PostgreSQL database, populated migration upgrades, backend regressions, TypeScript/lint/formatting, client boundary tests, the production bundle, and actual browser account/custody/job/PWA journeys, physical-asset identity, condition/service, photo downloads, company switching, policy persistence, and stale-edit recovery. Browser tests create their own isolated company through public UI and use delivered email links; business responses are not mocked.
+`openapi-typescript` generates `src/live/schema.d.ts` from the checked backend contract. `openapi-fetch` uses these path, query, body, and response types directly. CI checks generated-client drift, missing migrations, a fresh PostgreSQL database, populated migration upgrades, backend regressions, TypeScript/lint/formatting, client boundary tests, the production bundle, and actual browser account/custody/job/PWA journeys, physical-asset identity, condition/service, photo downloads, company switching, policy persistence, and stale-edit recovery. Browser tests create isolated companies through public HTTP endpoints and use delivered email links; the account journey also creates a company through the UI. Business responses are not mocked.
 
 ## PWA and hosting
 

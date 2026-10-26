@@ -1,11 +1,12 @@
+import { WarehouseAuthority } from './warehouse-authority';
 import { Link } from 'react-router-dom';
 import { api, errorMessage } from './client';
 import { RecordSheet } from './experience/RecordSheet';
 import { useAccessDirectory, useWarehouseDirectory } from './workspace-pages-state';
-import { Badge, Empty, Field, Form, human, Loading, Notice, Section, Select, text } from './ui';
+import { Badge, Empty, Field, Form, human, Loading, Notice, Section, text } from './ui';
 
 export function WarehousesPage() {
-  const { c, refs, warehouses, selected, select, creating, archived, setArchived } = useWarehouseDirectory();
+  const { c, warehouses, selected, select, creating, archived, setArchived } = useWarehouseDirectory();
   return (
     <>
       <header className="page-heading">
@@ -100,36 +101,7 @@ export function WarehousesPage() {
               </label>
             </Form>
           </Section>
-          {c.can('people.manage') && (
-            <Section title="Management authority">
-              <Form
-                label="Update warehouse manager"
-                submit={(f) =>
-                  api.POST('/api/companies/{company_id}/warehouses/{warehouse_id}/authority', {
-                    params: { path: { ...c.path, warehouse_id: selected.id } },
-                    body: {
-                      expected_revision: selected.revision,
-                      membership_id: text(f, 'person'),
-                      enabled: text(f, 'enabled') === 'true',
-                    },
-                  })
-                }
-              >
-                <Select label="Person" name="person">
-                  <option value="">Choose a person</option>
-                  {refs.people.data?.map((person) => (
-                    <option value={person.id} key={person.id}>
-                      {person.preferred_name}
-                    </option>
-                  ))}
-                </Select>
-                <Select label="Warehouse authority" name="enabled">
-                  <option value="true">Grant management authority</option>
-                  <option value="false">Revoke management authority</option>
-                </Select>
-              </Form>
-            </Section>
-          )}
+          <WarehouseAuthority warehouse={selected} />
           <Link to={`/app/tools?warehouse=${selected.id}`}>View inventory</Link>
         </RecordSheet>
       )}

@@ -84,7 +84,9 @@ EMAIL_BACKEND = os.getenv(
     if DEBUG
     else "django.core.mail.backends.smtp.EmailBackend",
 )
-EMAIL_FILE_PATH = str(Path(__file__).resolve().parents[2] / "artifacts" / "mail")
+EMAIL_FILE_PATH = os.getenv(
+    "NELSON_MAIL_ROOT", str(Path(__file__).resolve().parents[2] / "artifacts" / "mail")
+)
 EMAIL_HOST = os.getenv("EMAIL_HOST", "localhost")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")

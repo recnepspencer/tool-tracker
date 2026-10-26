@@ -1,14 +1,14 @@
-import { PhotoField, uploadPhoto } from './photos';
-import { useToolDetailState } from './tools-state';
-
 import { Link } from 'react-router-dom';
-
 import { api, errorMessage } from './client';
-
-import { Badge, date, Empty, Field, Form, human, Loading, Notice, Section, Select, text } from './ui';
+import { AssetPhoto } from './asset-photo';
+import { useToolDetailState } from './tools-state';
+import { ToolReport, ToolRequest, ToolTransfer } from './tool-actions';
+import { ToolManagement, ToolReconciliation } from './tool-management';
+import { Badge, date, Empty, Field, Form, human, Loading, Notice, Section, text } from './ui';
 
 export function ToolDetail() {
-  const { c, refs, path, key, renewKey, tool, history, incidents, service } = useToolDetailState();
+  const state = useToolDetailState();
+  const { c, tool, history, incidents, service, requests, action, setAction } = state;
   if (tool.isPending) return <Loading />;
   if (tool.error) return <Notice error>{errorMessage(tool.error)}</Notice>;
   const t = tool.data;
@@ -16,144 +16,138 @@ export function ToolDetail() {
   const canHandoff =
     t.warehouse_id !== null && (c.can('tools.manage') || c.managed_warehouse_ids.includes(t.warehouse_id));
   const holds = t.holder_membership_id === c.membership_id;
+  const transfer = (holds || canHandoff) && t.lifecycle === 'active' && !t.missing;
+  const report = (holds || manages) && t.lifecycle === 'active';
   return (
-    <>
-      <Link to="/app/tools">← Tools</Link>
-      <header className="page-heading">
+    <div className="tool-detail-content">
+      <header className="detail-hero">
+        <AssetPhoto asset={t} companyId={c.company_id} large />
         <div>
           <span className="eyebrow">{t.asset_tag}</span>
           <h1>{t.name}</h1>
           <p>
-            {t.manufacturer} · {t.model_number} · Serial {t.serial_number || 'not recorded'}
+            {t.manufacturer} · {t.model_number}
           </p>
+          <div className="detail-statuses">
+            <Badge>{human(t.lifecycle)}</Badge>
+            <Badge>{human(t.serviceability)}</Badge>
+            {t.missing && <Badge>Missing</Badge>}
+          </div>
         </div>
-        <Badge>{t.missing ? 'Missing' : human(t.lifecycle)}</Badge>
       </header>
-      <div className="detail-grid">
-        <Section title="Current custody">
-          <p className="large-value">
-            {t.holder_membership_id
-              ? refs.person(t.holder_membership_id)
-              : t.warehouse_id
-                ? refs.warehouse(t.warehouse_id)
-                : 'No current custodian'}
-          </p>
-          <p>
-            {human(t.serviceability)}
-            {t.missing && ' · Missing'}
-          </p>
-          <p className="muted">Responsible warehouse: {refs.warehouse(t.responsible_warehouse_id)}</p>
-          {t.registration_photo_id && (
-            <a href={`/api/companies/${c.company_id}/files/${t.registration_photo_id}`}>Download registration photo</a>
+      {action ? (
+        <button className="text-button" onClick={() => setAction('')}>
+          ← Back to tool
+        </button>
+      ) : (
+        <section className="detail-actions" aria-label="Tool actions">
+          {c.can('tools.request') && (t.requestable || !!requests.data?.length) && (
+            <button className="primary" onClick={() => setAction('request')}>
+              {requests.data?.length ? 'Your request' : 'Request this tool'}
+            </button>
           )}
-        </Section>
-        {t.requestable && c.can('tools.request') && (
-          <Section title="Request this tool">
-            <Form
-              label="Request tool"
-              onDone={renewKey}
-              submit={(f) =>
-                api.POST('/api/companies/{company_id}/tools/{asset_id}/requests', {
-                  params: { path },
-                  body: { request_key: key, note: text(f, 'note') },
-                })
-              }
-            >
-              <Field label="Note (optional)" name="note" maxLength={2000} />
-            </Form>
-            <p className="muted">
-              Your request identifies {t.asset_tag}. Custody changes when the handoff is accepted.
-            </p>
-          </Section>
+          {transfer && !t.pending_handoff_id && (
+            <button className="primary" onClick={() => setAction('transfer')}>
+              Transfer tool
+            </button>
+          )}
+          {report && (
+            <div className="detail-action-row">
+              <button onClick={() => setAction('damage')}>Report damaged</button>
+              <button onClick={() => setAction('missing')}>Report lost</button>
+            </div>
+          )}
+          {manages && <button onClick={() => setAction('manage')}>Manage this tool</button>}
+          {c.can('reconciliation.manage') && (
+            <button onClick={() => setAction('reconcile')}>Open a reconciliation case</button>
+          )}
+        </section>
+      )}
+      {t.pending_handoff_id && (
+        <Notice>
+          A handoff is pending. Custody stays with the current holder until receipt is accepted.{' '}
+          <Link to="/app/operations">Open queue</Link>
+        </Notice>
+      )}
+      {action === 'request' && <ToolRequest state={state} asset={t} />}
+      {action === 'transfer' &&
+        (transfer ? (
+          <ToolTransfer state={state} asset={t} />
+        ) : (
+          <Notice>You must be the holder or managing the source warehouse to propose this handoff.</Notice>
+        ))}
+      {(action === 'damage' || action === 'missing') &&
+        (report ? (
+          <ToolReport state={state} asset={t} />
+        ) : (
+          <Notice>Only the holder or responsible manager may report this tool.</Notice>
+        ))}
+      {action === 'manage' &&
+        (manages ? <ToolManagement state={state} asset={t} /> : <Notice>You do not manage this tool.</Notice>)}
+      {action === 'reconcile' && c.can('reconciliation.manage') && <ToolReconciliation state={state} asset={t} />}
+      <Section title="Current custody">
+        <p className="large-value">{t.holder_name ?? t.warehouse_name ?? 'No current custodian'}</p>
+        {t.holder_ended_at ? (
+          <p className="muted">Former employee · accountability retained until receipt or an evidenced correction.</p>
+        ) : (
+          t.holder_access_state &&
+          t.holder_access_state !== 'active' && (
+            <p className="muted">Access {t.holder_access_state} · custody retained.</p>
+          )
         )}
-        {(holds || canHandoff) && t.lifecycle === 'active' && !t.missing && (
-          <Section title="Transfer or return">
-            <Form
-              label="Propose handoff"
-              onDone={renewKey}
-              submit={async (f) => {
-                const dest = text(f, 'destination').split(':');
-                await api.POST('/api/companies/{company_id}/tools/{asset_id}/handoffs', {
-                  params: { path },
-                  body: {
-                    request_key: key,
-                    expected_revision: t.revision,
-                    destination_membership_id: dest[0] === 'person' ? dest[1] : null,
-                    destination_warehouse_id: dest[0] === 'warehouse' ? dest[1] : null,
-                    note: text(f, 'note'),
-                    photo_id: await uploadPhoto(c.company_id, f, 'handoff'),
-                  },
-                });
-              }}
-            >
-              <Select label="Send to" name="destination">
-                <option value="">Choose a person or warehouse</option>
-                <optgroup label="People">
-                  {refs.people.data
-                    ?.filter((p) => t.serviceability === 'serviceable' && p.id !== t.holder_membership_id)
-                    .map((p) => (
-                      <option value={`person:${p.id}`} key={p.id}>
-                        {p.preferred_name}
-                      </option>
-                    ))}
-                </optgroup>
-                <optgroup label="Warehouses">
-                  {refs.warehouses.data
-                    ?.filter((w) => w.id !== t.warehouse_id)
-                    .map((w) => (
-                      <option value={`warehouse:${w.id}`} key={w.id}>
-                        {w.name}
-                      </option>
-                    ))}
-                </optgroup>
-              </Select>
-              <Field name="note" label="Handoff note" maxLength={2000} />
-              <PhotoField />
-            </Form>
-          </Section>
+        <dl className="detail-facts">
+          <div>
+            <dt>Unit</dt>
+            <dd>{t.asset_tag}</dd>
+          </div>
+          <div>
+            <dt>Category</dt>
+            <dd>{t.category_name}</dd>
+          </div>
+          <div>
+            <dt>Origin warehouse</dt>
+            <dd>{t.origin_warehouse_name}</dd>
+          </div>
+          <div>
+            <dt>Responsible warehouse</dt>
+            <dd>{t.responsible_warehouse_name}</dd>
+          </div>
+          <div>
+            <dt>Serial</dt>
+            <dd>{t.serial_number || 'Not recorded'}</dd>
+          </div>
+          <div>
+            <dt>Condition</dt>
+            <dd>
+              {human(t.serviceability)}
+              {t.missing && ' · Missing'}
+            </dd>
+          </div>
+          <div>
+            <dt>Last moved</dt>
+            <dd>{date(t.custody_started_at)}</dd>
+          </div>
+        </dl>
+        {t.registration_photo_id && (
+          <a href={`/api/companies/${c.company_id}/files/${t.registration_photo_id}`}>Download registration photo</a>
         )}
-        {(holds || manages) && t.lifecycle === 'active' && (
-          <Section title="Report a problem">
-            <Form
-              label="Submit report"
-              submit={async (f) =>
-                api.POST('/api/companies/{company_id}/tools/{asset_id}/incidents', {
-                  params: { path },
-                  body: {
-                    expected_revision: t.revision,
-                    kind: text(f, 'kind') as 'damage' | 'missing',
-                    description: text(f, 'description'),
-                    photo_id: await uploadPhoto(c.company_id, f, 'incident'),
-                  },
-                })
-              }
-            >
-              <Select label="Problem" name="kind">
-                <option value="damage">Damaged</option>
-                <option value="missing">Missing</option>
-              </Select>
-              <Field name="description" label="What happened?" required maxLength={2000} />
-              <PhotoField />
-            </Form>
-          </Section>
-        )}
-      </div>
+      </Section>
       <Section title="Open reports">
         {incidents.error && <Notice error>{errorMessage(incidents.error)}</Notice>}
-        {incidents.data?.map((i) => (
-          <article className="row" key={i.id}>
+        {incidents.data?.map((incident) => (
+          <article className="row" key={incident.id}>
             <div>
-              <strong>{human(i.kind)}</strong>
-              <p>{i.description}</p>
-              <small>{date(i.reported_at)}</small>
+              <strong>{human(incident.kind)}</strong>
+              <p>{incident.description}</p>
+              <small>{date(incident.reported_at)}</small>
             </div>
-            {manages && i.kind === 'missing' && (
+            {manages && incident.kind === 'missing' && (
               <Form
                 label="Mark found"
                 submit={(f) =>
                   api.POST('/api/companies/{company_id}/incidents/{incident_id}/found', {
-                    params: { path: { ...c.path, incident_id: i.id } },
-                    body: { expected_revision: i.revision, note: text(f, 'note') },
+                    params: { path: { ...c.path, incident_id: incident.id } },
+                    body: { expected_revision: incident.revision, note: text(f, 'note') },
                   })
                 }
               >
@@ -164,163 +158,30 @@ export function ToolDetail() {
         ))}
         {incidents.data?.length === 0 && <Empty>No open reports.</Empty>}
       </Section>
-      {manages && (
-        <details className="panel">
-          <summary>Manage this tool</summary>
-          <div className="detail-grid">
-            <Section title="Record service">
-              {t.lifecycle === 'disposed' ? (
-                <Notice>This tool is permanently disposed.</Notice>
-              ) : (
-                <Form
-                  label="Save service record"
-                  submit={async (f) =>
-                    api.POST('/api/companies/{company_id}/tools/{asset_id}/service', {
-                      params: { path },
-                      body: {
-                        expected_revision: t.revision,
-                        serviceability: text(f, 'condition') as 'serviceable' | 'damaged' | 'out_of_service',
-                        note: text(f, 'note'),
-                        photo_id: await uploadPhoto(c.company_id, f, 'service'),
-                      },
-                    })
-                  }
-                >
-                  <Select name="condition" label="Condition">
-                    <option value="serviceable">Serviceable</option>
-                    <option value="damaged">Damaged</option>
-                    <option value="out_of_service">Out of service</option>
-                  </Select>
-                  <Field label="Work performed" name="note" required maxLength={2000} />
-                  <PhotoField />
-                </Form>
-              )}
-            </Section>
-            <Section title="Retire or restore">
-              {t.lifecycle === 'disposed' ? (
-                <Notice>Disposal is permanent. This tool cannot be restored.</Notice>
-              ) : t.missing ? (
-                <Notice>Resolve the missing-tool report before changing its lifecycle.</Notice>
-              ) : !t.warehouse_id ? (
-                <Notice>Receive this tool at a warehouse before changing its lifecycle.</Notice>
-              ) : (
-                <Form
-                  label="Update lifecycle"
-                  submit={(f) =>
-                    api.POST('/api/companies/{company_id}/tools/{asset_id}/lifecycle', {
-                      params: { path },
-                      body: {
-                        expected_revision: t.revision,
-                        lifecycle: text(f, 'lifecycle') as 'active' | 'retired' | 'disposed',
-                        note: text(f, 'note'),
-                      },
-                    })
-                  }
-                >
-                  <Select name="lifecycle" label="Lifecycle" defaultValue={t.lifecycle}>
-                    <option value="active">Active</option>
-                    <option value="retired">Retired</option>
-                    <option value="disposed">Disposed (permanent)</option>
-                  </Select>
-                  <Field label="Reason" name="note" required maxLength={2000} />
-                </Form>
-              )}
-            </Section>
-            {c.can('tools.manage') && (
-              <>
-                <Section title="Asset information">
-                  <Form
-                    label="Update serial number"
-                    submit={(f) =>
-                      api.POST('/api/companies/{company_id}/tools/{asset_id}/update', {
-                        params: { path },
-                        body: { expected_revision: t.revision, serial_number: text(f, 'serial') || null },
-                      })
-                    }
-                  >
-                    <Field name="serial" label="Serial number" defaultValue={t.serial_number ?? ''} maxLength={120} />
-                  </Form>
-                </Section>
-                <Section title="Warehouse responsibility">
-                  <Form
-                    label="Change responsible warehouse"
-                    submit={(f) =>
-                      api.POST('/api/companies/{company_id}/tools/{asset_id}/stewardship', {
-                        params: { path },
-                        body: {
-                          expected_revision: t.revision,
-                          warehouse_id: text(f, 'warehouse'),
-                          note: text(f, 'note'),
-                        },
-                      })
-                    }
-                  >
-                    <Select name="warehouse" label="Responsible warehouse" defaultValue={t.responsible_warehouse_id}>
-                      {refs.warehouses.data?.map((w) => (
-                        <option key={w.id} value={w.id}>
-                          {w.name}
-                        </option>
-                      ))}
-                    </Select>
-                    <Field name="note" label="Reason" required maxLength={2000} />
-                  </Form>
-                </Section>
-              </>
-            )}
-          </div>
-        </details>
-      )}
-      {c.can('reconciliation.manage') && (
-        <details className="panel">
-          <summary>Open a reconciliation case</summary>
-          <Form
-            label="Open case"
-            submit={(f) =>
-              api.POST('/api/companies/{company_id}/tools/{asset_id}/reconciliations', {
-                params: { path },
-                body: {
-                  kind: text(f, 'kind') as 'custody_dispute' | 'missing_asset' | 'duplicate_asset',
-                  narrative: text(f, 'narrative'),
-                },
-              })
-            }
-          >
-            <Select name="kind" label="Case type">
-              <option value="custody_dispute">Custody dispute</option>
-              <option value="missing_asset">Missing asset</option>
-              <option value="duplicate_asset">Duplicate asset</option>
-            </Select>
-            <Field name="narrative" label="Describe the discrepancy" required maxLength={4000} />
-          </Form>
-          <Link to="/app/reconciliations">View open cases</Link>
-        </details>
-      )}
       <Section title="Custody history">
         {history.error && <Notice error>{errorMessage(history.error)}</Notice>}
-        {history.data?.map((h) => (
-          <div className="row" key={h.id}>
-            <strong>
-              {h.holder_membership_id ? refs.person(h.holder_membership_id) : refs.warehouse(h.holder_warehouse_id)}
-            </strong>
+        {history.data?.map((period) => (
+          <div className="row" key={period.id}>
+            <strong>{period.holder_name}</strong>
             <span>
-              {date(h.starts_at)} → {date(h.ends_at)}
+              {date(period.starts_at)} → {date(period.ends_at)}
             </span>
           </div>
         ))}
       </Section>
       <Section title="Service history">
         {service.error && <Notice error>{errorMessage(service.error)}</Notice>}
-        {service.data?.map((s) => (
-          <div className="row" key={s.id}>
+        {service.data?.map((event) => (
+          <div className="row" key={event.id}>
             <div>
-              <strong>{human(s.resulting_serviceability)}</strong>
-              <p>{s.note}</p>
+              <strong>{human(event.resulting_serviceability)}</strong>
+              <p>{event.note}</p>
             </div>
-            <span>{date(s.occurred_at)}</span>
+            <span>{date(event.occurred_at)}</span>
           </div>
         ))}
         {service.data?.length === 0 && <Empty>No service records.</Empty>}
       </Section>
-    </>
+    </div>
   );
 }

@@ -4,7 +4,7 @@ from django.utils import timezone
 
 from companies.access import require_member
 
-from .models import AssetIncident, CustodyPeriod, ToolAsset, ToolRequest
+from .models import AssetIncident, CustodyHandoff, CustodyPeriod, ToolAsset, ToolRequest
 
 
 def assets_with_availability(company_id):
@@ -16,12 +16,21 @@ def assets_with_availability(company_id):
     )
     return (
         ToolAsset.objects.filter(company_id=company_id)
-        .select_related("tool_model__category")
+        .select_related("tool_model__category", "responsible_warehouse", "origin_warehouse")
         .annotate(
             current_custody_id=Subquery(custody.values("id")[:1]),
             current_custody_started_at=Subquery(custody.values("starts_at")[:1]),
             warehouse_id=Subquery(custody.values("holder_warehouse_id")[:1]),
             holder_membership_id=Subquery(custody.values("holder_membership_id")[:1]),
+            holder_name=Subquery(custody.values("holder_membership__person__preferred_name")[:1]),
+            holder_access_state=Subquery(custody.values("holder_membership__access_state")[:1]),
+            holder_ended_at=Subquery(custody.values("holder_membership__ended_at")[:1]),
+            warehouse_name=Subquery(custody.values("holder_warehouse__name")[:1]),
+            pending_handoff_id=Subquery(
+                CustodyHandoff.objects.filter(asset_id=OuterRef("pk"), status="pending").values(
+                    "id"
+                )[:1]
+            ),
             warehouse_archived_at=Subquery(custody.values("holder_warehouse__archived_at")[:1]),
             is_missing=Exists(missing),
         )
@@ -88,16 +97,26 @@ def asset_view(asset):
         "unavailable_reason": reason,
         "revision": asset.revision,
         "holder_membership_id": asset.holder_membership_id,
+        "holder_name": asset.holder_name,
+        "holder_access_state": asset.holder_access_state,
+        "holder_ended_at": asset.holder_ended_at,
+        "warehouse_name": asset.warehouse_name,
+        "origin_warehouse_id": asset.origin_warehouse_id,
+        "origin_warehouse_name": asset.origin_warehouse.name,
         "responsible_warehouse_id": asset.responsible_warehouse_id,
+        "responsible_warehouse_name": asset.responsible_warehouse.name,
+        "pending_handoff_id": asset.pending_handoff_id,
         "registration_photo_id": asset.registration_photo_id,
     }
 
 
 def read_request(identity, company_id, request_id):
     member = require_member(identity, company_id, "tools.request")
-    result = ToolRequest.objects.filter(
-        pk=request_id, company_id=company_id, requester=member
-    ).first()
+    result = (
+        ToolRequest.objects.select_related("source_custody", "requester__person")
+        .filter(pk=request_id, company_id=company_id, requester=member)
+        .first()
+    )
     if result is None:
         raise not_found("Tool request not found.")
     return result
