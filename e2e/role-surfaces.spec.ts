@@ -100,10 +100,12 @@ for (const item of cases)
             );
             await actor.keyboard.press('Escape');
           }
-          if (url === '/app/settings')
-            await expect(actor.getByRole('region', { name: 'Company profile', exact: true })).toHaveCount(
+          if (url === '/app/settings') {
+            await expect(actor.getByRole('region', { name: 'Company profile', exact: true })).toHaveCount(1);
+            await expect(actor.getByRole('button', { name: 'Save company', exact: true })).toHaveCount(
               item.people ? 1 : 0,
             );
+          }
         } else
           await expect(actor.getByText('Your company permissions do not allow access to this page.')).toBeVisible();
       }

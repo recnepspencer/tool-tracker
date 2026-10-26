@@ -4,6 +4,7 @@ import { collect } from './data';
 import { useListLocation } from './list-location';
 import { useCompany } from './session';
 import { useRegistrationPolicy } from './registration-policy';
+import { useCategoryOptions } from './catalog-state';
 
 export function useSettingsPageState() {
   const c = useCompany();
@@ -14,15 +15,28 @@ export function useSettingsPageState() {
     queryFn: () => api.GET('/api/companies/{company_id}', { params: { path: c.path } }).then(result),
   });
   const { policy: tools } = useRegistrationPolicy();
+  const categories = useCategoryOptions({ enabled: c.can('catalog.manage') });
+  const location = useListLocation();
+  const categoryArchived = location.params.get('categories') === 'archived';
   const jobs = useQuery({
     queryKey: [c.company_id, 'participation-policy'],
-    enabled: c.can('jobs.manage_policy'),
     queryFn: () =>
       api.GET('/api/companies/{company_id}/job-participation-policy', { params: { path: c.path } }).then(result),
   });
 
-  return { c, tools, jobs, company, refresh };
+  return {
+    c,
+    tools,
+    jobs,
+    company,
+    refresh,
+    categories,
+    categoryArchived,
+    visibleCategories: categories.data?.filter((category) => Boolean(category.archived_at) === categoryArchived),
+    setCategoryArchived: (value: boolean) => location.update('categories', value ? 'archived' : ''),
+  };
 }
+export type SettingsState = ReturnType<typeof useSettingsPageState>;
 export function useActivityPageState() {
   const c = useCompany();
   const { params, update, offset, setOffset } = useListLocation();

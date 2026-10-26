@@ -55,7 +55,7 @@ export function Form({
   children: ReactNode;
   submit: (data: FormData) => Promise<unknown>;
   label?: string;
-  onDone?: () => void;
+  onDone?: (form: HTMLFormElement) => void;
   disabled?: boolean;
   successMessage?: string;
 }) {

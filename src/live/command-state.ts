@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRef, useState, type FormEvent } from 'react';
 import { errorMessage, isStaleRecord } from './client';
 
-export function useCommandForm(submit: (data: FormData) => Promise<unknown>, onDone?: () => void) {
+export function useCommandForm(submit: (data: FormData) => Promise<unknown>, onDone?: (form: HTMLFormElement) => void) {
   const [state, setState] = useState<{ busy: boolean; error: string; success: boolean; conflict: boolean }>({
     busy: false,
     error: '',
@@ -28,7 +28,7 @@ export function useCommandForm(submit: (data: FormData) => Promise<unknown>, onD
       draftCommand.current = null;
       // Complete this save before background reads can remove the edited row.
       // A delayed close must never overwrite the user's next navigation.
-      if (form.isConnected) onDone?.();
+      if (form.isConnected) onDone?.(form);
       await cache.invalidateQueries({
         predicate: (query) => !['session', 'invitation'].includes(String(query.queryKey[0])),
       });

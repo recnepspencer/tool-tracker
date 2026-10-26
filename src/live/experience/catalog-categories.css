@@ -1,0 +1,10 @@
+.experience .catalog-category-list {
+  margin-block: 16px;
+}
+.experience .catalog-category-list > details {
+  border-top: 1px solid var(--border);
+  padding-block: 12px;
+}
+.experience .catalog-category-list summary {
+  cursor: pointer;
+}

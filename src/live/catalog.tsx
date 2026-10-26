@@ -1,3 +1,4 @@
+import { CategoryCreate, CategoryList } from './catalog-categories';
 import { WarehouseAuthority } from './warehouse-authority';
 import { useCatalogPageState } from './catalog-state';
 
@@ -32,17 +33,7 @@ export function CatalogPage() {
         {c.can('catalog.manage') && (
           <>
             <Section title="Add category">
-              <Form
-                label="Create category"
-                submit={(f) =>
-                  api.POST('/api/companies/{company_id}/tool-categories', {
-                    params: { path: c.path },
-                    body: { name: text(f, 'name') },
-                  })
-                }
-              >
-                <Field label="Category name" name="name" required maxLength={120} />
-              </Form>
+              <CategoryCreate />
             </Section>
             <Section title="Add model">
               <Form
@@ -115,25 +106,7 @@ export function CatalogPage() {
         ))}
       </Section>
       <Section title="Categories">
-        {categories.data?.map((cat) => (
-          <details key={cat.id}>
-            <summary>{cat.name}</summary>
-            <Form
-              label="Save category"
-              submit={(f) =>
-                api.POST('/api/companies/{company_id}/tool-categories/{category_id}/update', {
-                  params: { path: { ...c.path, category_id: cat.id } },
-                  body: { expected_revision: cat.revision, name: text(f, 'name'), archived: f.get('archive') === 'on' },
-                })
-              }
-            >
-              <Field label="Category name" name="name" defaultValue={cat.name} required maxLength={120} />
-              <label className="check">
-                <input type="checkbox" name="archive" defaultChecked={!!cat.archived_at} /> Archived
-              </label>
-            </Form>
-          </details>
-        ))}
+        <CategoryList categories={categories.data} />
       </Section>
       <Section title="Models">
         {models.data?.map((m) => (

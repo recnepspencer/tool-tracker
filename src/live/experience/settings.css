@@ -1,0 +1,37 @@
+.experience .settings-page {
+  max-width: 760px;
+}
+.experience .settings-grid {
+  display: grid;
+  gap: 14px;
+  max-width: 720px;
+}
+.experience .settings-grid > .panel {
+  margin: 0;
+  padding: 20px;
+}
+.experience .settings-grid h2 {
+  margin-top: 0;
+  font-size: 18px;
+}
+.experience .settings-grid .job-selection {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.experience .settings-grid .page-heading {
+  align-items: center;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.experience .settings-grid .jobs-workspace {
+  gap: 16px;
+}
+.experience .settings-grid .toolbar {
+  margin: 0;
+}
+@media (max-width: 700px) {
+  .experience .settings-grid > .panel {
+    padding: 16px;
+  }
+}

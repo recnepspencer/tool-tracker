@@ -5,24 +5,28 @@ import { JobParticipation } from './job-participation';
 import { JobRoster } from './job-roster';
 import { errorMessage, type Model } from './client';
 import { Badge, Empty, Field, human, Loading, Notice } from './ui';
+import { Link } from 'react-router-dom';
 
-export function JobsPage() {
+export function JobsPage({ embedded = false }: { embedded?: boolean }) {
   const state = useJobsPageState();
   const { c, jobs, visible, assignments, policy, search, setSearch, archived, setArchived, open, selected, select } =
     state;
   const manages = c.can('jobs.manage');
+  const Heading = embedded ? 'h2' : 'h1';
+  const description = manages
+    ? 'Manage jobs, people and their responsibilities.'
+    : c.can('jobs.participate')
+      ? 'Choose all the jobs you’re working on. Your tools stay with you when jobs change.'
+      : 'View jobs and assigned people.';
   return (
-    <div className="jobs-workspace">
+    <section
+      className={embedded ? 'jobs-workspace panel' : 'jobs-workspace'}
+      aria-label={embedded ? 'Jobs' : undefined}
+    >
       <header className="page-heading">
         <div>
-          <h1>{manages || !c.can('jobs.participate') ? 'Jobs' : 'My jobs'}</h1>
-          <p>
-            {manages
-              ? 'Manage jobs, people and their responsibilities.'
-              : c.can('jobs.participate')
-                ? 'Choose all the jobs you’re working on. Your tools stay with you when jobs change.'
-                : 'View jobs and assigned people.'}
-          </p>
+          <Heading>{manages || !c.can('jobs.participate') ? 'Jobs' : 'My jobs'}</Heading>
+          {!embedded && <p>{description}</p>}
         </div>
         {manages && (
           <div className="job-row-actions">
@@ -33,6 +37,7 @@ export function JobsPage() {
           </div>
         )}
       </header>
+      {embedded && <p className="muted">{description}</p>}
       <div className="toolbar">
         <Field
           label="Search jobs"
@@ -54,7 +59,7 @@ export function JobsPage() {
       ))}
       <div className="job-selection">
         {visible?.map((job) => (
-          <JobRow key={job.id} job={job} state={state} />
+          <JobRow key={job.id} job={job} state={state} managementOnly={embedded} />
         ))}
         {visible?.length === 0 && (
           <Empty>
@@ -62,14 +67,22 @@ export function JobsPage() {
           </Empty>
         )}
       </div>
-      <JobRequests state={state} />
-      {manages && <ProjectList state={state} />}
+      {embedded ? <Link to="/app/jobs">All jobs, projects & requests</Link> : <JobRequests state={state} />}
+      {!embedded && manages && <ProjectList state={state} />}
       {selected && <JobRoster state={state} job={selected} onClose={() => select('')} />}
       <JobDialogs state={state} />
-    </div>
+    </section>
   );
 }
-function JobRow({ job, state }: { job: Model<'JobView'>; state: JobsState }) {
+function JobRow({
+  job,
+  state,
+  managementOnly = false,
+}: {
+  job: Model<'JobView'>;
+  state: JobsState;
+  managementOnly?: boolean;
+}) {
   const { c, currentFor, requests, select, open, policy, assignments } = state;
   const current = currentFor(job.id);
   const own = current.find((assignment) => assignment.membership_id === c.membership_id);
@@ -104,13 +117,14 @@ function JobRow({ job, state }: { job: Model<'JobView'>; state: JobsState }) {
         <button className="text-button" onClick={() => select(job.id)} aria-label={`View people on ${job.name}`}>
           {current.length} {current.length === 1 ? 'person' : 'people'}
         </button>
-        {pending ? (
-          <p className="muted" role="status">
-            {pending.intent === 'join' ? 'Join' : 'Leave'} awaiting approval
-          </p>
-        ) : (
-          <JobParticipation state={state} job={job} own={own} />
-        )}
+        {!managementOnly &&
+          (pending ? (
+            <p className="muted" role="status">
+              {pending.intent === 'join' ? 'Join' : 'Leave'} awaiting approval
+            </p>
+          ) : (
+            <JobParticipation state={state} job={job} own={own} />
+          ))}
         {c.can('jobs.manage') && (
           <>
             <button onClick={() => open(`edit-job:${job.id}`)} aria-label={`Edit ${job.name}`}>
