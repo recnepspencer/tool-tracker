@@ -41,6 +41,19 @@ def participate(ctx, **kwargs):
     )
 
 
+def directory_person(ctx):
+    response = assert_response(
+        ctx.client.get(f"{ctx.base}/directory"),
+        "/api/companies/{company_id}/directory",
+        method="get",
+    )
+    return next(
+        person
+        for person in response["items"]
+        if person["membership_id"] == str(ctx.worker.member.pk)
+    )
+
+
 @pytest.mark.parametrize(
     "mode,status,assigned",
     [("direct", 201, True), ("approval_required", 201, False), ("disabled", 403, False)],
@@ -60,6 +73,9 @@ def test_join_policy_modes(crew, mode, status, assigned):
 
 def test_leave_approval_names_exact_assignment_and_does_not_end_replacement(crew):
     joined = participate(crew, intent="join").json()
+    assert directory_person(crew)["jobs"] == [
+        {"job_id": str(crew.job.pk), "number": "J1", "name": "Rough-in", "responsibility": "crew"}
+    ]
     leave = participate(
         crew, intent="leave", assignment_id=joined["resulting_assignment_id"]
     ).json()
@@ -83,6 +99,14 @@ def test_leave_approval_names_exact_assignment_and_does_not_end_replacement(crew
     )
     assert decision.status_code == 409
     assert JobAssignment.objects.get(pk=replacement.json()["id"]).ends_at is None
+    assert directory_person(crew)["jobs"] == [
+        {
+            "job_id": str(crew.job.pk),
+            "number": "J1",
+            "name": "Rough-in",
+            "responsibility": "foreman",
+        }
+    ]
 
 
 def test_admin_assignment_bypasses_disabled_self_service_and_archive_preserves_history(crew):
@@ -112,6 +136,12 @@ def test_admin_assignment_bypasses_disabled_self_service_and_archive_preserves_h
     )
     assert_response(archived, "/api/companies/{company_id}/jobs/{job_id}/update")
     assert JobAssignment.objects.get(pk=assigned.json()["id"]).ends_at is not None
+    assert directory_person(crew)["jobs"] == []
+    assert crew.client.get(f"{crew.base}/directory?job_id={crew.job.pk}").json()["items"] == []
+    assert str(crew.worker.member.pk) in {
+        person["membership_id"]
+        for person in crew.client.get(f"{crew.base}/directory?unassigned=true").json()["items"]
+    }
     restored = crew.manager.post(
         f"{crew.base}/jobs/{crew.job.pk}/update",
         {
@@ -124,6 +154,7 @@ def test_admin_assignment_bypasses_disabled_self_service_and_archive_preserves_h
     )
     assert restored.status_code == 200
     assert not JobAssignment.objects.filter(job=crew.job, ends_at__isnull=True).exists()
+    assert directory_person(crew)["jobs"] == []
 
 
 def test_worker_cannot_self_promote_or_change_policy(crew):
@@ -290,6 +321,14 @@ def test_pending_participation_exposes_the_same_stale_assignment_denial_as_appro
     )
     assert rejected.status_code == 409 and rejected.json()["code"] == "stale_assignment"
     assert JobAssignment.objects.get(pk=replacement["id"]).ends_at is None
+    assert directory_person(crew)["jobs"] == [
+        {
+            "job_id": str(crew.job.pk),
+            "number": "J1",
+            "name": "Rough-in",
+            "responsibility": "supervisor",
+        }
+    ]
 
 
 def test_offboarding_rejects_pending_join_with_a_durable_reason(crew):

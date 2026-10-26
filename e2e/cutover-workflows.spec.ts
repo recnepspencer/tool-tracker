@@ -1,6 +1,49 @@
 import { test, expect } from '@playwright/test';
 import { command, workspace, invitedMember } from './support';
 
+test('activity paging preserves filters and reloads the selected page', async ({ page }) => {
+  const fixture = await workspace(page);
+  for (let index = 0; index < 30; index++)
+    await command(page.request, `${fixture.base}/tool-categories`, { name: `Paging category ${index}` });
+  await expect
+    .poll(
+      async () =>
+        (
+          await (
+            await page.request.get(
+              `${fixture.base}/activity?search=equipment.category.created&kind=admin&mine=true&limit=100`,
+            )
+          ).json()
+        ).items.length,
+      { timeout: 20_000 },
+    )
+    .toBe(31);
+  await page.goto('/app/activity');
+  await page.getByRole('button', { name: 'Admin', exact: true }).click();
+  await page.getByLabel('Search activity').fill('equipment.category.created');
+  await page.getByLabel('Only my activity').click();
+  await expect(page.getByLabel('Only my activity')).toBeChecked();
+  await expect(page.getByRole('article')).toHaveCount(30);
+  await expect(page.getByRole('button', { name: 'Previous', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: 'Next', exact: true }).click();
+  await expect(page.getByRole('article')).toHaveCount(1);
+  expect(new URL(page.url()).searchParams.get('offset')).toBe('30');
+  await page.reload();
+  await expect(page.getByLabel('Search activity')).toHaveValue('equipment.category.created');
+  await expect(page.getByLabel('Only my activity')).toBeChecked();
+  await expect(page.getByRole('button', { name: 'Admin', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('article')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Next', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: 'Previous', exact: true }).click();
+  await expect(page.getByRole('article')).toHaveCount(30);
+  await page.getByRole('button', { name: 'Next', exact: true }).click();
+  await expect(page.getByRole('article')).toHaveCount(1);
+  await page.getByLabel('Search activity').fill('no-such-event');
+  await expect(page.getByText('No activity matches these filters.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Previous', exact: true })).toBeDisabled();
+  expect(new URL(page.url()).searchParams.has('offset')).toBe(false);
+});
+
 test('company profile and warehouse dialogs persist changes and recover stale drafts', async ({ page }) => {
   const fixture = await workspace(page);
   await page.goto('/app/settings');

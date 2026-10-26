@@ -1,45 +1,26 @@
-# Demo parity, not a replacement design
+# Tool tracker design and workflow parity
 
-The checked-in demo at commit `80202f5` and the original local HTML designs are the visual and interaction references. The API-backed app must preserve their field and control-room experiences. Approved simplified account screens remain in place.
+The original demo at commit `80202f5` and the local HTML designs are the references for the field and control-room experiences. The approved compact account screens are retained. Physical units, shared models, confirmed custody and configurable company rules follow the agreed API model.
 
-Prior completion claims were too broad: backend and selected browser journeys passed, but the replacement UI did not mirror the demo. Workflow evidence and visual parity are separate obligations.
-
-| Surface | Required reference behavior | Verification still required |
+| Surface | Preserved behavior | Evidence |
 | --- | --- | --- |
-| Field shell | Narrow centered workspace, wordmark top bar, navigation drawer, account sheet, light/dark appearance | Desktop and mobile screenshots; keyboard navigation |
-| My tools | Held units, pending movements, review, transfer, browse checkout | Incoming/outgoing and empty states with actual custody |
-| Checkout | Search, filters, grid/list, photographed catalog, selection of a specific physical unit | Filter combinations, duplicate models, request sheet |
-| Tool details | Sheet, metadata, timeline, transfer/return, condition evidence | Every action and denial; focus restoration |
-| Add tool | Registration flow with actual photo and individual identification | Manager and employee policy states |
-| Control room | Header/account controls, sidebar, warehouse-scoped navigation | Admin and warehouse manager scopes |
-| Queue | Warehouse filters, review dialog, receipt/decision flow | Request, transfer, return, resolved history |
-| Inventory | Photo table, holder/status/warehouse, grouped identical models, detail drawer | Expand units; edits preserve custody and shared definitions |
-| Damaged/lost | Dedicated filtered inventory and resolution actions | Independent loss/damage state and service history |
-| People | Directory table, person drawer, invite, access actions | Suspension, roles, employment end, accountability |
-| Foremen/jobs | People/job directory, assignments, independent participation rules | Direct/approval/disabled joining and leaving |
-| Warehouses | Table, warehouse management, authority and stock | Scoped permissions and archive/history |
-| Access | Dedicated capability/role view | Server capabilities; no fake role switcher |
-| Activity | Filtered readable feed | Own versus company access; worker materialization |
-| Settings/account | Company rules, categories/models, appearance, password recovery | Actual persisted configuration and authorized changes |
+| Field shell | Centered narrow workspace, wordmark, navigation drawer, account sheet, light/dark appearance | `demo-parity`, `role-surfaces`, `workspace-access` browser journeys; loaded mobile/desktop captures |
+| My tools | Held units, pending incoming/outgoing movements, review, transfer and checkout | `custody-decisions`, `custody-recovery`, `accounts` |
+| Checkout | Search and warehouse filters, list/grid modes, photographs, request of a specific physical unit | `demo-parity`, `workspace`, `custody-decisions` |
+| Tool sheet | Metadata, custody and condition history, transfer/return, evidence, retirement/disposal | `condition-lifecycle`, `asset-details`, `custody-recovery`, `workspace` |
+| Registration | Photo-first flow, retained details, model/unit identification, optional serial/price/notes | `cutover-workflows`, `asset-details`, `access-lifecycle` |
+| Control room | Header, sidebar, account controls and warehouse scope | Eight role/grant combinations in `role-surfaces` |
+| Queue | Warehouse filters, review sheet, request/transfer/return decisions and resolved history | `custody-decisions`, `custody-recovery`, `demo-parity` |
+| Inventory | Photo table, grouped identical models, individual unit expansion, holder/status/warehouse | `demo-parity`, `workspace`, `catalog-lifecycle` |
+| Damaged/lost | Filtered inventory, reports, finding/repair actions and durable evidence/history | `condition-lifecycle`, `workspace` |
+| People | Directory table, person sheet, invitations, role/access changes, offboarding/reinstatement | `invitations`, `access-lifecycle`, `accounts` |
+| Jobs/directory | Job list, roster, responsibility history, independent join/leave rules and held-tool directory | `jobs-management`, `cutover-workflows`, public-HTTP job/directory tests |
+| Warehouses | Table, create/edit/archive/restore dialogs, scoped managers and stock | `cutover-workflows`, `catalog-lifecycle`, `custody-recovery` |
+| Access/activity | Server-projected capabilities and readable, filtered activity | `role-surfaces`, `access-lifecycle`, `cutover-workflows` |
+| Settings | Narrow company/jobs/categories cards, shared editors, actual company rules and readonly values | Five role journeys in `settings`; independent filters and saved-value checks after reload |
 
-This matrix is an acceptance checklist, not a declaration that every row is finished. Record visual evidence and workflow evidence separately before claiming parity.
+Business responses come from the real API. The replacement dashboard, mock adapters, role switcher, demo reset and stock catalog images are absent from the runtime. Drafts and filtered parent lists remain in place under sheets; dismissal restores navigation and keyboard focus.
 
-## Current correction
+Loaded captures include `artifacts/parity-inventory-desktop.png`, `artifacts/parity-checkout-mobile.png`, `artifacts/parity-tool-details-desktop.png`, `artifacts/parity-return-destination-mobile.png`, `artifacts/tool-disposal-history-mobile.png`, `artifacts/asset-purchase-details-mobile.png`, `artifacts/settings-jobs-desktop.png`, `artifacts/settings-categories-desktop.png` and `artifacts/settings-field_member.png`. The browser journeys generate these from persisted records, not mock screens. Settings captures wait for actual values and finish finite animations before capture.
 
-The field shell, My tools, checkout, grouped inventory, tool sheets, queue review sheets, people table/invite/person sheets, warehouse directory, and role-capability screen now use the original visual structure and scoped design tokens. They continue to read and mutate the real API. The replacement dashboard has been removed.
-
-`e2e/demo-parity.spec.ts` uses real photographed assets and accepted/pending handoffs. It checks the dark field palette, 520-pixel desktop field column, 62-pixel tool photos, mobile overflow, visible control-room navigation, sheet dismissal, catalog mode changes, and queue filters. Captures are written under `artifacts/parity-*.png`. Those checks cover specific reference characteristics; they do not certify every screen or interaction.
-
-The next correction adds a real photo-first registration sheet with retained drafts and payload-bound retries, job/no-job directory filters, readable activity with server-side filters, an audited company profile command, and warehouse creation/archive/restore dialogs. Activity records capture warehouse context at command time; they do not derive historical warehouse labels from an asset's current location. Older events without that context are not backfilled with invented history.
-
-Still open: the comprehensive role-by-workflow mutation audit in [CUTOVER_AUDIT.md](CUTOVER_AUDIT.md), remaining detailed administrative-dialog comparisons, and review of the demo's optional asset details. The current company settings page exposes real profile/policy controls and links to catalog/jobs; the full original settings composition still needs comparison. Existing API-backed forms are not proof of complete visual or workflow parity.
-
-The catalog/custody correction restores the photo-and-metadata tool sheet with separate request, transfer, report and management actions. Transfer uses a searchable Person/Warehouse picker backed by eligible API identities. Catalog archive/restore, grant revocation, every ordinary request decision, transfer/return, and evidenced former-holder recovery now have browser coverage. Lists remain mounted under nested sheets so filters, view mode, expansion and keyboard focus survive. Screenshots include `artifacts/parity-tool-details-desktop.png` and `artifacts/parity-return-destination-mobile.png`. Remaining administrative/settings comparisons and optional asset fields are still open.
-
-The job management correction replaces the old inline form stack with search, project/job dialogs, explicit archive/restore and a roster sheet. Durable history and participation decisions are connected to the generated API. Direct field membership now uses the reference switch presentation; approval mode retains request actions, and disabled self-service explains how to get a manager's help. Add tool navigation follows the employee-registration policy, while equipment managers can still register tools. Full settings composition and optional asset metadata remain open.
-
-The tool sheet now retains resolved reports, recorded actors, report/repair photo links and retirement/disposal history. Disposed units show one clear permanent-state message and retain their history; dead service and retirement forms are removed. The condition journeys verify damaged-tool returns and the separate effects of finding, repairing, retiring and disposing. A loaded mobile history capture is `artifacts/tool-disposal-history-mobile.png`.
-
-Registration now restores the reference's optional serial/price/notes disclosure, with an additional optional purchase date. These details are stored on each physical asset; shared models and custody remain independent. Managers edit the same fields through the tool sheet, and saved notes retain line breaks. The remaining composition review is settings; install/update behavior still needs its final browser audit.
-
-Settings restores the original narrow stack of company, job and category management cards, followed by the actual employee-registration and job-participation rules. Job dialogs/rosters and category editors are shared with the dedicated workspaces. Category and job filters remain independent after reload; readonly company/rule values replace unusable save controls for ordinary members. Appearance and account controls remain in the shared shell. The demo-only reset control is absent.
+PWA evidence is tracked in [CUTOVER_AUDIT.md](CUTOVER_AUDIT.md). Native device installation and production hosting/email configuration are separate from these browser layout and interaction checks.

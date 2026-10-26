@@ -5,6 +5,8 @@ import { env } from 'node:process';
 
 export default defineConfig({
   publicDir: 'public/app',
+  // Browser suites serve an owned copy of the exact production build.
+  build: { outDir: env.NELSON_BROWSER_DIST ?? 'dist' },
   plugins: [
     react(),
     VitePWA({

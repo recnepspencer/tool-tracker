@@ -116,8 +116,20 @@ for (const item of cases)
       await expect(nav).toBeVisible();
       await expect(nav.getByRole('link', { name: 'People', exact: true })).toHaveCount(item.people ? 1 : 0);
       await expect(nav.getByRole('link', { name: 'Warehouses', exact: true })).toHaveCount(item.catalog ? 1 : 0);
+      await nav.getByRole('button', { name: 'Light appearance', exact: true }).click();
+      await expect(actor.locator('.experience')).toHaveAttribute('data-theme', 'light');
       await actor.keyboard.press('Escape');
       await expect(nav).toHaveCount(0);
+      await actor.reload();
+      await expect(actor.locator('.experience')).toHaveAttribute('data-theme', 'light');
+      await expect(actor.locator('.experience')).toHaveCSS('background-color', 'rgb(244, 247, 251)');
+      await actor.getByRole('button', { name: 'Open navigation', exact: true }).click();
+      await nav.getByRole('button', { name: 'Dark appearance', exact: true }).click();
+      await actor.keyboard.press('Escape');
+      await expect(nav).toHaveCount(0);
+      await actor.reload();
+      await expect(actor.locator('.experience')).toHaveAttribute('data-theme', 'dark');
+      await expect(actor.locator('.experience')).toHaveCSS('background-color', 'rgb(6, 8, 12)');
       expect(await actor.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       expect(failures).toEqual([]);
     } finally {

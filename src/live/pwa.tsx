@@ -1,33 +1,8 @@
-/// <reference types="vite-plugin-pwa/react" />
-import { useEffect, useState } from 'react';
-import { useRegisterSW } from 'virtual:pwa-register/react';
+import { usePwaState } from './pwa-state';
 
-interface InstallPrompt extends Event {
-  prompt(): Promise<void>;
-  userChoice: Promise<{ outcome: string }>;
-}
 export function PwaStatus() {
-  const [online, setOnline] = useState(navigator.onLine);
-  const [install, setInstall] = useState<InstallPrompt | null>(null);
-  const {
-    needRefresh: [update, setUpdate],
-    updateServiceWorker,
-  } = useRegisterSW();
-  useEffect(() => {
-    const connection = () => setOnline(navigator.onLine);
-    const prompt = (event: Event) => {
-      event.preventDefault();
-      setInstall(event as InstallPrompt);
-    };
-    window.addEventListener('online', connection);
-    window.addEventListener('offline', connection);
-    window.addEventListener('beforeinstallprompt', prompt);
-    return () => {
-      window.removeEventListener('online', connection);
-      window.removeEventListener('offline', connection);
-      window.removeEventListener('beforeinstallprompt', prompt);
-    };
-  }, []);
+  const { online, update, install, installError, installApp, updateApp, later, dismissInstall, dismissInstallError } =
+    usePwaState();
   return (
     <>
       {!online && (
@@ -38,22 +13,22 @@ export function PwaStatus() {
       {update && (
         <div className="status-bar">
           An update is ready. Finish any unsaved changes first.{' '}
-          <button onClick={() => void updateServiceWorker(true)}>Update app</button>
-          <button onClick={() => setUpdate(false)}>Later</button>
+          <button onClick={() => void updateApp()}>Update app</button>
+          <button onClick={later}>Later</button>
         </div>
       )}
       {install && (
         <div className="install-bar">
-          <button
-            onClick={async () => {
-              await install.prompt();
-              await install.userChoice;
-              setInstall(null);
-            }}
-          >
-            Install Nelson Electric
+          <button onClick={() => void installApp()}>Install Nelson Electric</button>
+          <button aria-label="Dismiss install offer" onClick={dismissInstall}>
+            ×
           </button>
-          <button aria-label="Dismiss install offer" onClick={() => setInstall(null)}>
+        </div>
+      )}
+      {installError && (
+        <div className="install-bar" role="alert">
+          <span>{installError}</span>
+          <button aria-label="Dismiss installation message" onClick={dismissInstallError}>
             ×
           </button>
         </div>

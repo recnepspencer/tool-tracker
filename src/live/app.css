@@ -693,6 +693,8 @@ summary {
   bottom: calc(16px + env(safe-area-inset-bottom));
   right: 16px;
   display: flex;
+  align-items: center;
+  max-width: calc(100vw - 32px);
   gap: 6px;
   z-index: 30;
   padding: 8px;

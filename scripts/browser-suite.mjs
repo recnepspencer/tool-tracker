@@ -1,7 +1,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { createWriteStream, existsSync } from 'node:fs';
-import { mkdir, readdir } from 'node:fs/promises';
+import { cp, mkdir, readdir } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -99,6 +99,7 @@ for (const file of files) {
     NELSON_API_TARGET: 'http://127.0.0.1:8002',
     NELSON_BROWSER_ISOLATED: '1',
     NELSON_BROWSER_RESULTS: resolve(artifactDir, 'results'),
+    NELSON_BROWSER_DIST: resolve(artifactDir, 'web'),
     NELSON_MAIL_ROOT: resolve(artifactDir, 'mail'),
     NELSON_MEDIA_ROOT: resolve(artifactDir, 'media'),
   };
@@ -109,6 +110,7 @@ for (const file of files) {
     created = false;
   try {
     console.log(`\nBrowser file: ${file}\nDiagnostics: ${artifactDir}`);
+    await cp(resolve(root, 'dist'), env.NELSON_BROWSER_DIST, { recursive: true });
     await requireFreePort(8002);
     await requireFreePort(4173);
     await run(python, ['backend/scripts/browser_database.py', 'create', name], env);

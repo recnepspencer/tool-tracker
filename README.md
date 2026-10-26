@@ -2,7 +2,7 @@
 
 An API-backed tool custody application with a responsive, installable web frontend. The active entry point is `src/main.tsx`; the frontend lives in `src/live`. The former demo, mock adapters, prototype tests, phase ledgers, and stock images have been removed; their history remains in Git.
 
-The interface is being brought back to the original demo's field and control-room layouts. [Demo parity](docs/DEMO_PARITY.md) records the screen-by-screen acceptance scope and remaining gaps. Passing workflow tests does not establish whole-app visual or interaction parity. The simplified account screens are retained.
+The interface follows the original demo's field and control-room layouts, with the approved compact account screens retained. [Design and workflow parity](docs/DEMO_PARITY.md) maps the reference behavior to browser journeys and loaded visual captures.
 
 ## Run locally
 
@@ -27,7 +27,7 @@ Development email is written to `artifacts/mail/`. Open the newest message for i
 - Projects/jobs, self-service participation according to company policy, approvals, assignments, responsibilities, history, archive/restore.
 - Invitations and membership access, shared tool models/categories, warehouses and scoped managers, registration and job policies, directory, reconciliation, activity.
 
-Navigation uses current server capabilities, not assumed worker/admin profiles. The API checks authorization again for each operation. Revision conflicts are surfaced to the user; writes are never retried or queued automatically. Lists use the API's bounded pages; reference selectors collect those pages so records beyond the first page remain selectable. Inventory and activity have explicit page controls.
+Navigation uses current server capabilities, not assumed worker/admin profiles. The API checks authorization again for each operation. Revision conflicts are surfaced to the user; writes are never retried or queued automatically. Lists use the API's bounded pages; reference selectors collect those pages so records beyond the first page remain selectable. Inventory and reference views collect the bounded pages so complete groups and pickers remain available; Activity has explicit Previous/Next controls.
 
 ## Contracts and tests
 
