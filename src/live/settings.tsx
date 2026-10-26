@@ -1,6 +1,7 @@
 import { useActivityPageState, useDirectoryPageState, useSettingsPageState } from './settings-state';
 
 import { api, errorMessage, type Model } from './client';
+import { Link } from 'react-router-dom';
 
 import { date, Empty, Form, human, Loading, Notice, Section, Select, text } from './ui';
 
@@ -9,6 +10,18 @@ export function SettingsPage() {
   return (
     <>
       <h1>Company rules</h1>
+      <div className="view-controls">
+        {c.can('jobs.manage') && (
+          <Link className="button" to="/app/jobs">
+            Manage jobs
+          </Link>
+        )}
+        {c.can('catalog.manage') && (
+          <Link className="button" to="/app/catalog">
+            Tool catalog & categories
+          </Link>
+        )}
+      </div>
       <p className="muted">
         These rules apply to everyone in {c.company_name}. Managers retain their explicit permissions.
       </p>

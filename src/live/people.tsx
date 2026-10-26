@@ -1,3 +1,4 @@
+import { RecordSheet } from './experience/RecordSheet';
 import { usePeoplePageState } from './people-state';
 
 import { api, errorMessage, result, type Model } from './client';
@@ -7,45 +8,56 @@ import { Badge, date, Empty, Field, Form, human, Loading, Notice, Section, Selec
 
 const roles = ['field_member', 'equipment_manager', 'dispatcher', 'estimator', 'company_admin'] as const;
 export function PeoplePage() {
-  const { c, link, setLink, inactive, setInactive, people, invites } = usePeoplePageState();
+  const { c, link, setLink, inactive, setInactive, people, invites, selectedId, inviting, select, invite } =
+    usePeoplePageState();
   return (
     <>
-      <h1>People</h1>
+      <header className="page-heading">
+        <div>
+          <h1>People</h1>
+          <p>Team access and invitations</p>
+        </div>
+        <button className="primary" onClick={() => invite(true)}>
+          Invite person
+        </button>
+      </header>
       <p className="muted">Manage team access and invitations.</p>
-      {c.can('people.manage') && (
-        <Section title="Invite a teammate">
-          <Form
-            label="Send invitation"
-            submit={async (f) => {
-              const created = result(
-                await api.POST('/api/companies/{company_id}/invitations', {
-                  params: { path: c.path },
-                  body: {
-                    email: text(f, 'email'),
-                    preferred_name: text(f, 'name'),
-                    role: text(f, 'role') as (typeof roles)[number],
-                  },
-                }),
-              );
-              setLink(`${window.location.origin}/invite/${created.token}`);
-            }}
-          >
-            <Field label="Name" name="name" required maxLength={120} />
-            <Field label="Email address" name="email" type="email" required />
-            <Select label="Role" name="role">
-              {roles.map((r) => (
-                <option key={r} value={r}>
-                  {human(r)}
-                </option>
-              ))}
-            </Select>
-          </Form>
-          {link && (
-            <Notice>
-              Invitation sent. You can also share this link: <a href={link}>{link}</a>
-            </Notice>
-          )}
-        </Section>
+      {c.can('people.manage') && inviting && (
+        <RecordSheet title="Invite a teammate" onClose={() => invite(false)}>
+          <Section title="Invite a teammate">
+            <Form
+              label="Send invitation"
+              submit={async (f) => {
+                const created = result(
+                  await api.POST('/api/companies/{company_id}/invitations', {
+                    params: { path: c.path },
+                    body: {
+                      email: text(f, 'email'),
+                      preferred_name: text(f, 'name'),
+                      role: text(f, 'role') as (typeof roles)[number],
+                    },
+                  }),
+                );
+                setLink(`${window.location.origin}/invite/${created.token}`);
+              }}
+            >
+              <Field label="Name" name="name" required maxLength={120} />
+              <Field label="Email address" name="email" type="email" required />
+              <Select label="Role" name="role">
+                {roles.map((r) => (
+                  <option key={r} value={r}>
+                    {human(r)}
+                  </option>
+                ))}
+              </Select>
+            </Form>
+            {link && (
+              <Notice>
+                Invitation sent. You can also share this link: <a href={link}>{link}</a>
+              </Notice>
+            )}
+          </Section>
+        </RecordSheet>
       )}
       {c.can('people.manage') && (
         <label className="check">
@@ -55,9 +67,43 @@ export function PeoplePage() {
       )}
       {people.isPending && <Loading />}
       {people.error && <Notice error>{errorMessage(people.error)}</Notice>}
-      {people.data?.map((person) => (
-        <Person key={person.id} person={person} />
-      ))}
+      <div className="inventory-card">
+        <table className="inventory-table">
+          <thead>
+            <tr>
+              <th>Person</th>
+              <th>Role</th>
+              <th>Access</th>
+              <th>Title</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {people.data?.map((person) => (
+              <tr key={person.id}>
+                <td>
+                  <button className="person-record-button" onClick={() => select(person.id)}>
+                    {person.preferred_name}
+                  </button>
+                </td>
+                <td>{person.roles.map(human).join(', ')}</td>
+                <td>
+                  <Badge>{person.ended_at ? 'Former employee' : human(person.access_state)}</Badge>
+                </td>
+                <td>{person.title || '—'}</td>
+                <td>
+                  <button onClick={() => select(person.id)}>Open</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {people.data?.find((person) => person.id === selectedId) && (
+        <RecordSheet title="Person details" onClose={() => select('')}>
+          <Person person={people.data.find((person) => person.id === selectedId)!} />
+        </RecordSheet>
+      )}
       {c.can('people.manage') && (
         <Section title="Invitations">
           {invites.error && <Notice error>{errorMessage(invites.error)}</Notice>}

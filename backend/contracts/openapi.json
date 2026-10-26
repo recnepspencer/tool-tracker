@@ -193,6 +193,27 @@
             "title": "Asset Tag",
             "type": "string"
           },
+          "category_id": {
+            "format": "uuid",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "category_name": {
+            "title": "Category Name",
+            "type": "string"
+          },
+          "custody_started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custody Started At"
+          },
           "holder_membership_id": {
             "anyOf": [
               {
@@ -314,6 +335,9 @@
           "asset_tag",
           "serial_number",
           "tool_model_id",
+          "category_id",
+          "category_name",
+          "custody_started_at",
           "name",
           "manufacturer",
           "model_number",

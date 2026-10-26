@@ -1,0 +1,33 @@
+# Demo parity, not a replacement design
+
+The checked-in demo at commit `80202f5` and the original local HTML designs are the visual and interaction references. The API-backed app must preserve their field and control-room experiences. Approved simplified account screens remain in place.
+
+Prior completion claims were too broad: backend and selected browser journeys passed, but the replacement UI did not mirror the demo. Workflow evidence and visual parity are separate obligations.
+
+| Surface | Required reference behavior | Verification still required |
+| --- | --- | --- |
+| Field shell | Narrow centered workspace, wordmark top bar, navigation drawer, account sheet, light/dark appearance | Desktop and mobile screenshots; keyboard navigation |
+| My tools | Held units, pending movements, review, transfer, browse checkout | Incoming/outgoing and empty states with actual custody |
+| Checkout | Search, filters, grid/list, photographed catalog, selection of a specific physical unit | Filter combinations, duplicate models, request sheet |
+| Tool details | Sheet, metadata, timeline, transfer/return, condition evidence | Every action and denial; focus restoration |
+| Add tool | Registration flow with actual photo and individual identification | Manager and employee policy states |
+| Control room | Header/account controls, sidebar, warehouse-scoped navigation | Admin and warehouse manager scopes |
+| Queue | Warehouse filters, review dialog, receipt/decision flow | Request, transfer, return, resolved history |
+| Inventory | Photo table, holder/status/warehouse, grouped identical models, detail drawer | Expand units; edits preserve custody and shared definitions |
+| Damaged/lost | Dedicated filtered inventory and resolution actions | Independent loss/damage state and service history |
+| People | Directory table, person drawer, invite, access actions | Suspension, roles, employment end, accountability |
+| Foremen/jobs | People/job directory, assignments, independent participation rules | Direct/approval/disabled joining and leaving |
+| Warehouses | Table, warehouse management, authority and stock | Scoped permissions and archive/history |
+| Access | Dedicated capability/role view | Server capabilities; no fake role switcher |
+| Activity | Filtered readable feed | Own versus company access; worker materialization |
+| Settings/account | Company rules, categories/models, appearance, password recovery | Actual persisted configuration and authorized changes |
+
+This matrix is an acceptance checklist, not a declaration that every row is finished. Record visual evidence and workflow evidence separately before claiming parity.
+
+## Current correction
+
+The field shell, My tools, checkout, grouped inventory, tool sheets, queue review sheets, people table/invite/person sheets, warehouse directory, and role-capability screen now use the original visual structure and scoped design tokens. They continue to read and mutate the real API. The replacement dashboard has been removed.
+
+`e2e/demo-parity.spec.ts` uses real photographed assets and accepted/pending handoffs. It checks the dark field palette, 520-pixel desktop field column, 62-pixel tool photos, mobile overflow, visible control-room navigation, sheet dismissal, catalog mode changes, and queue filters. Captures are written under `artifacts/parity-*.png`. Those checks cover specific reference characteristics; they do not certify every screen or interaction.
+
+Still open: the photo-first add-tool wizard, foremen/job-filter interaction, full settings/company-profile parity, activity filters, and detailed visual/interaction checks for all administrative dialogs and warehouse-manager scope. The API-backed forms for several of these workflows already exist, but their existence is not proof of demo parity.

@@ -7,3 +7,5 @@ Browser scenarios create isolated companies through public HTTP endpoints and us
 The backend gate is `python scripts/check_api.py` from `backend/` using the configured environment. It checks declarations, migrations, PostgreSQL constraints, OpenAPI drift, populated upgrades, behavior, lint, and formatting. Fixtures remain domain-owned. The seeder is separately tested for repeatability and preservation of user changes.
 
 The removed demo tests exercised a retired mock implementation. They remain in Git history, and are not counted as evidence for the API-backed application. CI runs the same real PostgreSQL and production-browser gates before packaging the web application.
+
+`e2e/demo-parity.spec.ts` adds real photographed inventory, accepted and pending handoffs, mobile sheet navigation, queue filters, and selected visual measurements from the original demo. Its screenshots are `artifacts/parity-*.png`. These checks establish specific behavior and layout evidence; they do not establish whole-app visual parity. See [the parity checklist](DEMO_PARITY.md) for remaining acceptance work.

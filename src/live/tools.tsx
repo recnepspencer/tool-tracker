@@ -1,5 +1,5 @@
 import { PhotoField, uploadPhoto } from './photos';
-import { useRegisterToolState, useToolDetailState, useToolsPageState } from './tools-state';
+import { useRegisterToolState, useToolDetailState } from './tools-state';
 
 import { Link } from 'react-router-dom';
 
@@ -7,92 +7,6 @@ import { api, errorMessage, result } from './client';
 
 import { Badge, date, Empty, Field, Form, human, Loading, Notice, Section, Select, text } from './ui';
 
-export function ToolsPage() {
-  const { c, refs, search, setSearch, mine, setMine, offset, setOffset, tools } = useToolsPageState();
-  return (
-    <>
-      <header className="page-heading">
-        <div>
-          <span className="eyebrow">EQUIPMENT</span>
-          <h1>Tools</h1>
-          <p>Every physical tool has its own tag and custody record.</p>
-        </div>
-        {c.can('tools.register') && (
-          <Link className="button primary" to="/app/tools/new">
-            Register tool
-          </Link>
-        )}
-      </header>
-      <div className="toolbar">
-        <Field
-          label="Search tools"
-          type="search"
-          placeholder="Tag, serial, model, or manufacturer"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-          }}
-        />
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={mine}
-            onChange={(e) => {
-              setMine(e.target.checked);
-            }}
-          />{' '}
-          In my custody
-        </label>
-      </div>
-      {tools.isPending ? (
-        <Loading />
-      ) : tools.error ? (
-        <Notice error>{errorMessage(tools.error)}</Notice>
-      ) : (
-        <>
-          <div className="tool-grid">
-            {tools.data.items.map((tool) => (
-              <Link className="tool-card" key={tool.id} to={`/app/tools/${tool.id}`}>
-                <div className="tool-card-top">
-                  <span className="asset-tag">{tool.asset_tag}</span>
-                  <Badge>
-                    {tool.lifecycle !== 'active'
-                      ? human(tool.lifecycle)
-                      : tool.missing
-                        ? 'Missing'
-                        : tool.requestable
-                          ? 'Available'
-                          : human(tool.serviceability)}
-                  </Badge>
-                </div>
-                <h2>{tool.name}</h2>
-                <p>
-                  {tool.manufacturer} · {tool.model_number}
-                </p>
-                <span className="muted">
-                  {tool.holder_membership_id
-                    ? refs.person(tool.holder_membership_id)
-                    : refs.warehouse(tool.warehouse_id)}
-                </span>
-                <span className="card-link">View tool →</span>
-              </Link>
-            ))}
-          </div>
-          {!tools.data.items.length && <Empty>No tools match your search.</Empty>}
-          <div className="pagination">
-            <button disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 24))}>
-              Previous
-            </button>
-            <span>Page {offset / 24 + 1}</span>
-            <button disabled={tools.data.next_offset === null} onClick={() => setOffset(tools.data.next_offset!)}>
-              Next
-            </button>
-          </div>
-        </>
-      )}
-    </>
-  );
-}
 export function RegisterTool() {
   const { c, refs, key, created, setCreated, policy } = useRegisterToolState();
   if (policy.isPending) return <Loading />;

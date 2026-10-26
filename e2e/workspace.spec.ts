@@ -3,24 +3,25 @@ import { command, workspace, emailLink, password } from './support';
 
 test('physical assets remain distinct and list navigation survives refresh', async ({ page }) => {
   await workspace(page);
+  await page.getByRole('button', { name: 'Expand Hammer drill, 2 tools' }).click();
   await expect(page.getByRole('link', { name: /UNIT-001/ })).toBeVisible();
   await expect(page.getByRole('link', { name: /UNIT-002/ })).toBeVisible();
-  await page.getByLabel('Search tools', { exact: true }).fill('UNIT-002');
+  await page.getByLabel('Search inventory', { exact: true }).fill('UNIT-002');
   await expect(page.getByRole('link', { name: /UNIT-001/ })).toHaveCount(0);
   await expect(page).toHaveURL(/search=UNIT-002/);
   await page.reload();
-  await expect(page.getByLabel('Search tools', { exact: true })).toHaveValue('UNIT-002');
+  await expect(page.getByLabel('Search inventory', { exact: true })).toHaveValue('UNIT-002');
   await page.getByRole('link', { name: /UNIT-002/ }).click();
   await expect(page.getByRole('heading', { name: 'Hammer drill' })).toBeVisible();
   await page.goBack();
-  await expect(page.getByLabel('Search tools', { exact: true })).toHaveValue('UNIT-002');
-  await page.getByRole('link', { name: 'Overview', exact: true }).click();
-  await expect(page.getByRole('link', { name: 'Active tools 2' })).toBeVisible();
+  await expect(page.getByLabel('Search inventory', { exact: true })).toHaveValue('UNIT-002');
+  await expect(page.getByRole('heading', { name: 'Inventory', exact: true })).toBeVisible();
   await page.screenshot({ path: 'artifacts/workspace-overview-desktop.png', fullPage: true });
 });
 
 test('condition incidents and service do not change custody or the other physical unit', async ({ page }) => {
   const fixture = await workspace(page);
+  await page.getByRole('button', { name: 'Expand Hammer drill, 2 tools' }).click();
   await page.getByRole('link', { name: /UNIT-001/ }).click();
   const report = page.getByRole('region', { name: 'Report a problem', exact: true });
   await report.getByLabel('Problem').selectOption('missing');
@@ -55,6 +56,7 @@ test('condition incidents and service do not change custody or the other physica
 
 test('editing a stale record preserves the draft until the user loads latest values', async ({ page }) => {
   const fixture = await workspace(page);
+  await page.getByRole('button', { name: 'Expand Hammer drill, 2 tools' }).click();
   await page.getByRole('link', { name: /UNIT-001/ }).click();
   await page.getByText('Manage this tool', { exact: true }).click();
   const section = page.getByRole('region', { name: 'Asset information' });
@@ -100,10 +102,13 @@ test('company switching isolates inventory and policy changes survive reload', a
     preferred_name: 'Workspace Owner',
   });
   await page.reload();
+  await page.getByRole('button', { name: 'Open account', exact: true }).click();
   await page.getByLabel('Workspace', { exact: true }).selectOption(second.id);
-  await page.getByRole('link', { name: 'Tools', exact: true }).click();
-  await expect(page.getByText('No tools match your search.')).toBeVisible();
+  await page.getByRole('link', { name: 'Inventory', exact: true }).click();
+  await expect(page.getByText('No tools match this inventory view.')).toBeVisible();
+  await page.getByRole('button', { name: 'Open account', exact: true }).click();
   await page.getByLabel('Workspace', { exact: true }).selectOption(fixture.company.id);
+  await page.getByRole('button', { name: 'Expand Hammer drill, 2 tools' }).click();
   await expect(page.getByRole('link', { name: /UNIT-001/ })).toBeVisible();
 });
 
@@ -150,9 +155,8 @@ test('worker participation needs approval and suspended access is revoked', asyn
     await worker.getByRole('button', { name: 'Leave job', exact: true }).click();
     await expect(worker.getByRole('button', { name: 'Request to Join job', exact: true })).toBeVisible();
     await page.goto('/app/people');
-    const person = page
-      .locator('article')
-      .filter({ has: page.getByRole('heading', { name: 'Crew Member', exact: true }) });
+    await page.getByRole('button', { name: 'Crew Member', exact: true }).click();
+    const person = page.getByRole('dialog', { name: 'Person details' });
     await person.getByText('Manage access', { exact: true }).click();
     await person.getByLabel('Access', { exact: true }).selectOption('suspended');
     await person.getByLabel('Reason for change').fill('Temporary access suspension');
@@ -168,7 +172,7 @@ test('worker participation needs approval and suspended access is revoked', asyn
 
 test('registration attaches a real photo served through authorized download', async ({ page, browser }) => {
   const fixture = await workspace(page);
-  await page.getByRole('link', { name: 'Register tool', exact: true }).click();
+  await page.getByRole('link', { name: 'Add tool', exact: true }).click();
   await page.getByLabel('Tool model').selectOption({ label: 'Makita Hammer drill · XPH14' });
   await page.getByLabel('Starting warehouse').selectOption({ label: 'Main warehouse' });
   await page.getByLabel('Unique asset tag').fill('PHOTO-003');

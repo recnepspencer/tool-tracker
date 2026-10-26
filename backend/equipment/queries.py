@@ -16,9 +16,10 @@ def assets_with_availability(company_id):
     )
     return (
         ToolAsset.objects.filter(company_id=company_id)
-        .select_related("tool_model")
+        .select_related("tool_model__category")
         .annotate(
             current_custody_id=Subquery(custody.values("id")[:1]),
+            current_custody_started_at=Subquery(custody.values("starts_at")[:1]),
             warehouse_id=Subquery(custody.values("holder_warehouse_id")[:1]),
             holder_membership_id=Subquery(custody.values("holder_membership_id")[:1]),
             warehouse_archived_at=Subquery(custody.values("holder_warehouse__archived_at")[:1]),
@@ -73,6 +74,9 @@ def asset_view(asset):
         "asset_tag": asset.asset_tag,
         "serial_number": asset.serial_number,
         "tool_model_id": asset.tool_model_id,
+        "category_id": asset.tool_model.category_id,
+        "category_name": asset.tool_model.category.name,
+        "custody_started_at": asset.current_custody_started_at,
         "name": asset.tool_model.name,
         "manufacturer": asset.tool_model.manufacturer,
         "model_number": asset.tool_model.model_number,

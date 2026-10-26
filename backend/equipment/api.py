@@ -20,6 +20,9 @@ class AssetView(Schema):
     asset_tag: str
     serial_number: str | None
     tool_model_id: UUID
+    category_id: UUID
+    category_name: str
+    custody_started_at: datetime | None
     name: str
     manufacturer: str
     model_number: str

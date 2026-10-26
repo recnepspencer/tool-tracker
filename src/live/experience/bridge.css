@@ -1,0 +1,449 @@
+.experience {
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  --accent: var(--blue);
+  --line: var(--border);
+}
+.experience a {
+  color: var(--blue-soft);
+}
+.experience button,
+.experience .button {
+  color: var(--ink);
+  background: var(--card-2);
+  border-color: var(--border-strong);
+  font-family: var(--font-sans);
+  font-weight: 400;
+}
+.experience .primary {
+  background: linear-gradient(var(--primary-from), var(--primary-to));
+  color: var(--on-accent);
+  border-color: transparent;
+}
+.experience input,
+.experience select,
+.experience textarea {
+  color: var(--ink);
+  background: var(--field);
+  border-color: var(--border-strong);
+}
+.experience h1,
+.experience h2 {
+  font-weight: 500;
+}
+.experience .eyebrow,
+.experience .asset-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+}
+.experience .panel,
+.experience .queue-card {
+  background: var(--card);
+  border-color: var(--border);
+  border-radius: 16px;
+}
+.experience .badge {
+  color: var(--blue-soft);
+  background: var(--blue-bg);
+  border: 1px solid var(--blue-border-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+.experience .empty {
+  border-color: var(--border-strong);
+  color: var(--dim);
+  border-radius: 18px;
+}
+.experience .notice {
+  background: var(--blue-bg);
+  color: var(--blue-soft);
+  border-color: var(--blue-border);
+}
+.experience .notice.error {
+  background: var(--red-bg);
+  color: var(--red);
+  border-color: var(--red-border);
+}
+.experience .control-app-shell {
+  min-height: 100dvh;
+  background: var(--bg);
+}
+.experience .shell-main {
+  overflow: auto;
+  padding: 36px 40px 80px;
+  min-width: 0;
+}
+.experience .control-brand-mark {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(var(--primary-from), var(--primary-to));
+  color: var(--on-accent);
+  font: 600 18px var(--font-mono);
+}
+.experience .control-account-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.experience .session-avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--blue-bg);
+  border: 1px solid var(--blue-border-muted);
+  color: var(--blue-soft);
+  font-family: var(--font-mono);
+}
+.experience .appearance-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 12px 0;
+  font-size: 12px;
+}
+.experience .experience-account {
+  display: grid;
+  gap: 12px;
+  padding: 18px 10px 0;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+}
+.experience .experience-account small {
+  overflow-wrap: anywhere;
+}
+.experience .experience-account .form {
+  margin: 0;
+}
+.experience .experience-account .field {
+  font-size: 10px;
+  color: var(--muted);
+}
+.experience .experience-account select {
+  font-size: 12px;
+  min-height: 40px;
+}
+.experience .side-nav {
+  overflow: auto;
+}
+.experience .side-nav-theme {
+  margin-top: auto;
+}
+.experience .control-menu-button {
+  display: none;
+}
+.experience .worker-menu-button {
+  padding: 0;
+  min-height: 38px;
+  width: 38px;
+  border-radius: 50%;
+}
+.experience .worker-close-button {
+  padding: 0;
+  min-height: 34px;
+}
+.experience .worker-main > :not(.worker-screen) {
+  margin: 24px 24px 0;
+}
+.experience .worker-wordmark {
+  color: var(--dim);
+  white-space: nowrap;
+}
+.experience .worker-topbar .header-leading {
+  width: auto;
+}
+.experience .worker-main > .record-sheet-backdrop {
+  margin: 0;
+}
+.experience .control-account-label {
+  border: 0;
+  background: transparent;
+}
+.experience .capability-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.experience .worker-tool-row a {
+  text-decoration: none;
+  color: inherit;
+}
+.experience .worker-tool-row .worker-tool-copy {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 5px;
+}
+.experience .worker-tool-row strong {
+  font-size: 15px;
+  font-weight: 400;
+}
+.experience .worker-tool-row small {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.experience .worker-tool-row .tool-photo {
+  flex: 0 0 62px;
+  width: 62px;
+  height: 62px;
+  border-radius: 13px;
+  overflow: hidden;
+  background: var(--photo-matte);
+  display: grid;
+  place-items: center;
+  color: var(--dim-deep);
+}
+.experience .tool-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.experience .worker-transfer-button {
+  border-radius: 999px;
+  min-height: 34px;
+  padding: 6px 15px;
+  font-size: 12px;
+}
+.experience .worker-checkout-pill {
+  margin: 24px 0;
+}
+.experience .pending-movement {
+  padding: 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 18px;
+  background: repeating-linear-gradient(135deg, var(--white-hatch) 0 2px, transparent 2px 9px), var(--card-2);
+}
+.experience .pending-movement p {
+  margin: 8px 0 12px;
+  font-size: 13px;
+}
+.experience .pending-movement .button {
+  width: 100%;
+  border-radius: 999px;
+  background: transparent;
+}
+.experience .inventory-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.experience .inventory-table th {
+  text-align: left;
+  font: 400 10px var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 16px;
+  color: var(--dim);
+}
+.experience .inventory-table td {
+  padding: 16px;
+  border-top: 1px solid var(--border);
+}
+.experience .inventory-table tr[tabindex] {
+  cursor: pointer;
+}
+.experience .inventory-table tr[tabindex]:hover {
+  background: var(--hover);
+}
+.experience .inventory-tool {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.experience .inventory-tool .tool-photo {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--card-2);
+}
+.experience .inventory-tool strong,
+.experience .inventory-tool span {
+  display: block;
+}
+.experience .inventory-tool span {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.experience .inventory-table td:last-child {
+  color: var(--dim);
+}
+.experience .inventory-group-row td:first-child {
+  font-weight: 500;
+}
+.experience .inventory-row--nested td:first-child {
+  padding-left: 44px;
+}
+.experience .catalog-photo {
+  width: 100%;
+  height: 160px;
+  object-fit: contain;
+  background: var(--photo-matte);
+  border-radius: 14px;
+}
+.experience .catalog-placeholder {
+  display: grid;
+  place-items: center;
+  height: 160px;
+  background: var(--card-2);
+  border-radius: 14px;
+  color: var(--dim);
+}
+.experience .checkout-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.experience .checkout-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 12px;
+  border-radius: 18px;
+  text-decoration: none;
+  color: var(--ink);
+}
+.experience .checkout-card h2 {
+  font-size: 15px;
+  margin: 14px 0 6px;
+}
+.experience .checkout-card p {
+  font-size: 12px;
+  margin: 0 0 10px;
+  color: var(--muted);
+}
+.experience .checkout-grid--list {
+  grid-template-columns: 1fr;
+}
+.experience .checkout-grid--list .checkout-card {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 12px;
+}
+.experience .checkout-grid--list :is(.catalog-photo, .catalog-placeholder) {
+  height: 80px;
+}
+.experience .view-controls {
+  display: flex;
+  gap: 6px;
+}
+.experience .view-controls button {
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: 11px;
+}
+.experience .view-controls button[aria-pressed='true'] {
+  border-color: var(--blue-border);
+  color: var(--blue-soft);
+  background: var(--blue-bg);
+}
+.experience .record-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: flex-end;
+  background: var(--scrim-strong);
+}
+.experience .record-sheet {
+  position: relative;
+  overflow: auto;
+  width: min(600px, 100%);
+  max-height: 100dvh;
+  background: var(--card);
+  color: var(--ink);
+  padding: 36px 24px 60px;
+  border-left: 1px solid var(--border-strong);
+  box-shadow: -30px 0 100px #0004;
+}
+.experience .record-sheet-close {
+  position: sticky;
+  top: 0;
+  float: right;
+  z-index: 2;
+  min-height: 34px;
+  width: 34px;
+  padding: 0;
+  border-radius: 50%;
+}
+.experience .record-sheet .detail-grid {
+  grid-template-columns: 1fr;
+}
+.experience .record-sheet .page-heading {
+  margin-top: 24px;
+}
+.experience .record-sheet h1 {
+  font-size: 28px;
+}
+.experience .record-sheet > .panel {
+  padding: 18px;
+}
+@media (min-width: 768px) {
+  .experience .worker-topbar {
+    width: 520px;
+    margin: 40px 0 0 max(32px, 5vw);
+    height: 46px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 32px;
+  }
+  .experience .worker-main {
+    width: min(520px, 100%);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    margin-top: 18px;
+  }
+}
+@media (max-width: 767px) {
+  .experience .control-menu-button {
+    display: inline-flex;
+  }
+  .experience .shell-body {
+    display: block;
+    height: auto;
+  }
+  .experience .shell-body > .side-nav {
+    display: none;
+  }
+  .experience .shell-main {
+    padding: 24px 16px 60px;
+  }
+  .experience .control-account-label {
+    font-size: 0;
+  }
+  .experience .inventory-table th:nth-child(n + 4),
+  .experience .inventory-table td:nth-child(n + 4) {
+    display: none;
+  }
+  .experience .inventory-table td {
+    padding: 12px 8px;
+  }
+  .experience .inventory-tool .tool-photo {
+    width: 36px;
+    height: 36px;
+  }
+  .experience .record-sheet-backdrop {
+    align-items: flex-end;
+  }
+  .experience .record-sheet {
+    width: 100%;
+    max-height: 94dvh;
+    border-radius: 24px 24px 0 0;
+    padding-bottom: max(32px, env(safe-area-inset-bottom));
+  }
+}

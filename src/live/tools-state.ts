@@ -3,34 +3,8 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api, requestKey, result } from './client';
 import { collect, useReferences } from './data';
-import { useListLocation } from './list-location';
 import { useCompany } from './session';
 
-export function useToolsPageState() {
-  const c = useCompany();
-  const refs = useReferences();
-  const searchLocation = useListLocation();
-  const search = searchLocation.params.get('search') ?? '';
-  const setSearch = (value: string) => searchLocation.update('search', value);
-  const mineLocation = useListLocation();
-  const mine = mineLocation.params.get('mine') === 'true';
-  const setMine = (value: boolean) => mineLocation.update('mine', value ? 'true' : '');
-  const { offset, setOffset } = useListLocation();
-  const tools = useQuery({
-    queryKey: [c.company_id, 'tools', search, mine, offset],
-    queryFn: () =>
-      api
-        .GET('/api/companies/{company_id}/tools', {
-          params: {
-            path: c.path,
-            query: { search, offset, limit: 24, ...(mine ? { holder_membership_id: c.membership_id } : {}) },
-          },
-        })
-        .then(result),
-  });
-
-  return { c, refs, search, setSearch, mine, setMine, offset, setOffset, tools };
-}
 export function useRegisterToolState() {
   const c = useCompany();
   const refs = useReferences();

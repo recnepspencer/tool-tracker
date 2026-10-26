@@ -23,17 +23,19 @@ test('verified signup, company, delivered invitation, real login and password re
   await page.getByLabel('Company name', { exact: true }).fill(`Browser Company ${unique}`);
   await page.getByLabel('Your name', { exact: true }).fill('Company Owner');
   await page.getByRole('button', { name: 'Create company', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Tools', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Queue', exact: true })).toBeVisible();
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Tools', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Queue', exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'People', exact: true }).click();
   // Sections are selected by their visible heading, rather than internal component names.
+  await page.getByRole('button', { name: 'Invite person', exact: true }).click();
   const form = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Invite a teammate' }) });
   await form.getByLabel('Name', { exact: true }).fill('Field Employee');
   await form.getByLabel('Email address', { exact: true }).fill(employee);
   await form.getByRole('button', { name: 'Send invitation' }).click();
   await expect(page.getByText('Invitation sent.', { exact: false })).toBeVisible();
   const invitation = await emailLink(employee, '/invite/');
+  await page.getByRole('button', { name: 'Close invite a teammate' }).click();
   // A different signed-in user must explicitly switch accounts, preserving the invite.
   const wrongAccountContext = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
   const wrongAccount = await wrongAccountContext.newPage();
@@ -63,7 +65,7 @@ test('verified signup, company, delivered invitation, real login and password re
   await expect(worker.getByRole('heading', { name: 'Invitation accepted' })).toBeVisible();
   await worker.screenshot({ path: 'artifacts/auth-invitation-accepted-mobile.png', fullPage: true });
   await worker.getByRole('button', { name: 'Open workspace', exact: true }).click();
-  await expect(worker.getByRole('heading', { name: 'Tools', exact: true })).toBeVisible();
+  await expect(worker.getByRole('heading', { name: 'My tools', exact: true })).toBeVisible();
   await expect(worker.getByText('Choose your profile')).toHaveCount(0);
   // Build an inventory through the same public screens a new company uses.
   await page.goto('/app/catalog');
@@ -93,18 +95,17 @@ test('verified signup, company, delivered invitation, real login and password re
   await worker.getByRole('button', { name: 'Request tool', exact: true }).click();
   await expect(worker.getByRole('status')).toContainText('Saved successfully');
   await page.goto('/app/operations');
+  await page.getByRole('button', { name: 'Review request', exact: true }).click();
   await page.getByRole('button', { name: 'Apply decision' }).click();
   await expect(page.getByText('approved', { exact: true })).toBeVisible();
   await worker.goto('/app/operations');
+  await worker.getByRole('button', { name: 'Review handoff', exact: true }).click();
   await worker.getByRole('button', { name: 'Confirm handoff decision' }).click();
   await expect(worker.getByText('No handoffs to review.')).toBeVisible();
   await worker.goto('/app/tools');
   await worker.getByRole('link', { name: /TEST-001/ }).click();
   await expect(
-    worker
-      .locator('section')
-      .filter({ has: worker.getByRole('heading', { name: 'Current custody' }) })
-      .getByText('Field Employee', { exact: true }),
+    worker.getByRole('region', { name: 'Current custody', exact: true }).getByText('Field Employee', { exact: true }),
   ).toBeVisible();
   await page.goto('/app/jobs');
   await page.getByText('Create a project or job', { exact: true }).click();
@@ -147,7 +148,7 @@ test('verified signup, company, delivered invitation, real login and password re
   await expect(worker.getByRole('alert')).toBeVisible();
   await worker.getByLabel('Password', { exact: true }).fill(password + '-updated');
   await worker.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(worker.getByRole('heading', { name: 'Tools', exact: true })).toBeVisible();
+  await expect(worker.getByRole('heading', { name: 'My tools', exact: true })).toBeVisible();
   await worker.getByRole('button', { name: 'Open navigation' }).click();
   await worker.getByRole('button', { name: 'Sign out', exact: true }).click();
   await expect(worker.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible();

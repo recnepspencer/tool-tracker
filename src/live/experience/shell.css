@@ -1,0 +1,244 @@
+.experience .app-shell {
+  background: var(--bg);
+  height: var(--size-viewport);
+  overflow: hidden;
+}
+.experience .app-header {
+  align-items: center;
+  backdrop-filter: blur(var(--blur-header));
+  background: var(--header-bg);
+  border-bottom: var(--border-width) solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  min-height: var(--header-height-sm);
+  padding: 0 var(--pad-header-x);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+}
+.experience .wordmark {
+  align-items: center;
+  display: inline-flex;
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  gap: var(--space-10);
+  letter-spacing: var(--tracking-brand);
+  text-decoration: none;
+}
+.experience .header-leading {
+  align-items: center;
+  display: flex;
+  gap: var(--space-10);
+}
+.experience .mobile-nav-trigger {
+  display: none;
+}
+.experience .mobile-wordmark-copy {
+  display: none;
+}
+.experience .wordmark em {
+  color: var(--muted);
+  font-style: normal;
+  font-weight: var(--weight-regular);
+}
+.experience .shell-body {
+  display: grid;
+  grid-template-columns: var(--space-236) minmax(0, 1fr);
+  height: calc(var(--size-viewport) - var(--header-height-sm));
+  min-height: 0;
+}
+.experience .side-nav {
+  background: var(--side);
+  border-right: var(--border-width) solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-22) var(--space-14);
+  min-height: 0;
+  overflow: hidden;
+}
+.experience .side-nav-heading {
+  color: var(--dim);
+  font: var(--font-eyebrow);
+  letter-spacing: var(--tracking-nav);
+  margin: 0 var(--space-12) var(--space-10);
+  text-transform: uppercase;
+}
+.experience .side-nav-links {
+  display: grid;
+  align-content: start;
+  flex: 0 1 auto;
+  gap: var(--space-5);
+  min-height: 0;
+  overflow-y: auto;
+}
+.experience .side-nav-link {
+  align-items: center;
+  border-radius: var(--space-12);
+  color: var(--muted);
+  display: flex;
+  font-size: var(--text-nav);
+  gap: var(--space-11);
+  padding: var(--space-12);
+  text-decoration: none;
+}
+.experience .side-nav-link--active {
+  background: var(--blue-bg);
+  color: var(--blue-soft);
+}
+.experience .side-nav-link--soon {
+  cursor: default;
+  opacity: var(--opacity-soon);
+}
+.experience .side-nav-link:not(.side-nav-link--soon):hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+.experience .side-nav-link small {
+  color: var(--dim);
+  font: var(--font-mono-xs);
+  margin-left: auto;
+  text-transform: uppercase;
+}
+.experience .nav-dot {
+  background: var(--dim-deep);
+  border-radius: var(--radius-full);
+  height: var(--space-7);
+  width: var(--space-7);
+}
+.experience .side-nav-link--active .nav-dot {
+  background: var(--blue);
+  box-shadow: var(--elevation-glow) var(--blue);
+}
+.experience .side-nav-footer {
+  border-top: var(--border-width) solid var(--border);
+  color: var(--dim);
+  display: grid;
+  font: var(--font-mono-prose);
+  gap: var(--space-8);
+  margin-top: var(--space-18);
+  padding: var(--space-18) var(--space-12) 0;
+}
+.experience .side-nav-theme {
+  margin-top: var(--space-16);
+}
+.experience .side-nav-icon {
+  width: var(--space-18);
+  height: var(--space-18);
+  flex-shrink: 0;
+}
+.experience .shell-main {
+  height: 100%;
+  min-width: 0;
+  overflow-y: auto;
+}
+.experience .page-content {
+  margin: 0 auto;
+  max-width: var(--space-1320);
+  padding: var(--space-28) var(--pad-page-x) var(--pad-page-bottom);
+}
+.experience .page-heading {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--space-22);
+  justify-content: space-between;
+  margin-bottom: var(--space-22);
+}
+.experience .page-heading h1 {
+  font-size: var(--text-8xl);
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-snug);
+  margin: var(--space-7) 0 var(--space-8);
+}
+.experience .page-heading--without-eyebrow h1 {
+  margin-top: 0;
+}
+.experience .page-heading p {
+  color: var(--muted);
+  line-height: var(--leading-prose);
+  margin: 0;
+  max-width: var(--space-620);
+}
+.experience .page-heading-status {
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-pill);
+  color: var(--dim);
+  display: inline-block;
+  font: var(--font-mono-sm);
+  padding: var(--space-8) var(--space-11);
+  white-space: nowrap;
+}
+.experience .page-heading-action {
+  align-self: center;
+  flex: 0 0 auto;
+}
+@media (max-width: 920px) {
+  .experience .app-header {
+    box-sizing: border-box;
+    height: calc(var(--worker-header-height) + env(safe-area-inset-top));
+    min-height: 0;
+    padding: env(safe-area-inset-top) var(--worker-pad-x) var(--space-4);
+  }
+  .experience .header-leading {
+    justify-content: space-between;
+    width: 100%;
+  }
+  .experience .desktop-header-account,
+  .experience .desktop-wordmark-mark,
+  .experience .desktop-wordmark-copy {
+    display: none;
+  }
+  .experience .mobile-wordmark-copy {
+    display: inline;
+  }
+  .experience .wordmark {
+    color: var(--dim);
+    font: var(--weight-medium) var(--text-xs) / var(--leading-none) var(--font-mono);
+    letter-spacing: var(--tracking-nav);
+  }
+  .experience .shell-body {
+    grid-template-columns: 1fr;
+    height: calc(100dvh - var(--worker-header-height) - env(safe-area-inset-top));
+  }
+  .experience .side-nav {
+    display: none;
+  }
+  .experience .mobile-nav-trigger {
+    display: inline-flex;
+  }
+}
+@media (max-width: 620px) {
+  .experience .app-header {
+    min-height: var(--header-height-sm);
+    padding: 0 var(--space-16);
+  }
+  .experience .page-content {
+    padding: var(--space-24) var(--space-16) var(--space-60);
+  }
+  .experience .page-heading {
+    display: block;
+  }
+  .experience .page-heading .page-heading-status {
+    margin-top: var(--space-20);
+  }
+  .experience .page-heading--with-action {
+    align-items: center;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .experience .page-heading--with-action > div:first-child {
+    display: contents;
+  }
+  .experience .page-heading--with-action .eyebrow,
+  .experience .page-heading--with-action p {
+    grid-column: 1 / -1;
+  }
+  .experience .page-heading--with-action h1 {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .experience .page-heading--with-action .page-heading-action {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}

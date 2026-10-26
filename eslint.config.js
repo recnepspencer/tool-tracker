@@ -10,7 +10,7 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ['src/live/{app,shell,auth,tools,jobs,people,catalog,operations,settings,overview}.tsx'],
+    files: ['src/live/{app,shell,auth,tools,jobs,people,catalog,operations,settings,field,workspace-pages}.tsx'],
     rules: {
       'no-restricted-imports': [
         'error',

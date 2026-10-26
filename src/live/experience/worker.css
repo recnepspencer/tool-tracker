@@ -1,0 +1,327 @@
+.experience .worker-section-heading {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 var(--space-6) var(--space-12);
+}
+.experience .worker-section-count {
+  color: var(--dim);
+  font: 400 var(--space-10)/1 var(--font-mono);
+}
+
+.experience .worker-screen {
+  padding-inline: var(--worker-pad-x);
+}
+
+.experience .worker-screen-heading {
+  align-items: flex-end;
+  display: flex;
+  gap: var(--space-16);
+  justify-content: space-between;
+  padding: var(--worker-page-pad-top) var(--space-6) var(--space-18);
+}
+
+.experience .worker-screen-heading h1 {
+  font: var(--weight-medium) var(--text-6xl) / var(--leading-none) var(--font-sans);
+  letter-spacing: var(--tracking-heading);
+  margin: 0;
+}
+
+.experience .worker-screen-heading p {
+  color: var(--muted);
+  font-size: var(--text-md);
+  margin: var(--space-8) 0 0;
+}
+
+.experience .worker-eyebrow,
+.experience .worker-form-label {
+  color: var(--dim);
+  font: var(--font-eyebrow);
+  letter-spacing: var(--tracking-nav);
+  text-transform: uppercase;
+}
+
+.experience .worker-screen-heading > div:first-child {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.experience .worker-pending-section {
+  display: grid;
+  gap: var(--space-18);
+  margin-bottom: var(--space-22);
+}
+.experience .worker-pending-group {
+  display: grid;
+  gap: var(--space-9);
+}
+.experience .worker-pending-group > h2 {
+  color: var(--muted);
+  font: var(--font-eyebrow);
+  letter-spacing: var(--tracking-eyebrow);
+  margin: 0 var(--space-6);
+  text-transform: uppercase;
+}
+.experience .worker-pending-grid {
+  display: grid;
+  gap: var(--space-8);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--space-260)), 1fr));
+}
+.experience .worker-possession-section {
+  margin-top: 0;
+}
+.experience .worker-tool-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-9);
+}
+.experience .worker-empty-copy {
+  color: var(--muted);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  margin-block: var(--space-16);
+}
+.experience .worker-tool-row {
+  align-items: center;
+  background: var(--card);
+  border: var(--space-1) solid var(--border);
+  border-radius: var(--space-18);
+  box-shadow: 0 0 0 0 transparent;
+  display: flex;
+  gap: var(--space-10);
+  min-width: 0;
+  padding: var(--space-12);
+  transition:
+    border-color var(--duration-500) var(--ease-out),
+    box-shadow var(--duration-500) var(--ease-out),
+    transform var(--duration-500) var(--ease-out);
+}
+.experience .worker-tool-row:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 0 var(--space-24) var(--blue-glow-faint);
+  transform: translateY(-var(--space-1));
+}
+.experience .worker-tool-row--damaged,
+.experience .worker-tool-row--lost {
+  background: var(--amber-wash);
+  border-color: var(--amber-border-soft);
+  box-shadow: 0 0 var(--space-26) var(--amber-wash);
+}
+.experience .worker-tool-row--damaged:hover,
+.experience .worker-tool-row--lost:hover {
+  border-color: var(--amber-border);
+}
+.experience .worker-tool-row--transfer-pending {
+  border-color: var(--border-strong);
+}
+.experience .worker-tool-main {
+  align-items: center;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  flex: 1;
+  gap: var(--space-13);
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+}
+.experience .worker-tool-main:focus-visible,
+.experience .worker-transfer-button:focus-visible,
+.experience .worker-checkout-pill:focus-visible {
+  outline: var(--space-2) solid var(--blue);
+  outline-offset: var(--space-3);
+}
+.experience .worker-tool-main .tool-photo {
+  background: var(--card-2);
+  border: var(--space-1) solid var(--border);
+  border-radius: var(--space-13);
+  flex: 0 0 var(--space-62);
+  height: var(--space-62);
+  overflow: hidden;
+  position: relative;
+}
+.experience .worker-tool-main .tool-photo::before,
+.experience .worker-catalog-card-photo::before,
+.experience .worker-activity-photo::before {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--white-hatch) 0 var(--space-2),
+    transparent var(--space-2) var(--space-9)
+  );
+  content: '';
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+.experience .worker-tool-main .tool-photo img {
+  position: relative;
+  z-index: var(--z-1);
+}
+.experience .worker-tool-copy {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.experience .worker-tool-copy strong {
+  font-size: var(--space-16);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.experience .worker-tool-subtitle {
+  color: var(--dim);
+  font-size: var(--space-12);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.experience .worker-tool-meta {
+  align-items: center;
+  color: var(--dim);
+  display: flex;
+  gap: var(--space-7);
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.experience .worker-tool-meta > span:not(.worker-tool-status):not(.worker-tool-meta-dot):not(.worker-tool-unit) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.experience .worker-tool-status,
+.experience .worker-tool-meta,
+.experience .worker-tool-unit {
+  font: 400 var(--space-9)/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.experience .worker-tool-status--checked-out {
+  color: var(--blue-soft);
+}
+.experience .worker-tool-status--in-stock {
+  color: var(--green);
+}
+.experience .worker-tool-status--damaged,
+.experience .worker-tool-status--lost {
+  color: var(--amber);
+}
+.experience .worker-tool-meta-dot {
+  background: var(--dim-deep);
+  border-radius: 50%;
+  flex: 0 0 var(--space-2);
+  height: var(--space-2);
+  width: var(--space-2);
+}
+.experience .worker-tool-unit {
+  color: var(--dim-deep);
+  margin-left: auto;
+}
+.experience .worker-transfer-control {
+  align-items: stretch;
+  display: grid;
+  flex: 0 0 auto;
+  gap: var(--space-5);
+  justify-items: stretch;
+}
+.experience .worker-transfer-label {
+  color: var(--dim);
+  font: 400 var(--space-9)/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.experience .worker-transfer-button,
+.experience .worker-transfer-state {
+  align-items: center;
+  appearance: none;
+  background: var(--card-2);
+  border: var(--space-1) solid var(--border-strong);
+  border-radius: var(--space-999);
+  color: var(--ink);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: var(--space-13);
+  height: var(--space-34);
+  justify-content: center;
+  padding: 0 var(--space-15);
+  white-space: nowrap;
+}
+.experience .worker-transfer-button {
+  cursor: pointer;
+  transition:
+    background var(--duration-180) ease,
+    transform var(--duration-120) ease;
+}
+.experience .worker-transfer-state {
+  color: var(--muted);
+}
+.experience .worker-transfer-state--pending {
+  background: var(--hover);
+  color: var(--ink);
+}
+.experience .worker-transfer-state--checking,
+.experience .worker-transfer-state--unavailable {
+  border-color: var(--border);
+  color: var(--dim);
+}
+.experience .worker-transfer-button:hover {
+  background: var(--hover);
+}
+.experience .worker-transfer-button:active {
+  transform: scale(0.985);
+}
+.experience .worker-checkout-pill {
+  align-items: center;
+  border: var(--space-1) dashed var(--border-strong);
+  border-radius: var(--space-999);
+  color: var(--dim);
+  display: flex;
+  font-size: var(--space-13);
+  height: var(--space-48);
+  justify-content: center;
+  margin-top: var(--space-18);
+  text-decoration: none;
+  transition:
+    border-color var(--duration-180) ease,
+    color var(--duration-180) ease,
+    transform var(--duration-120) ease;
+}
+.experience .worker-checkout-pill:hover {
+  border-color: var(--blue-border);
+  color: var(--blue-soft);
+}
+.experience .worker-checkout-pill:active {
+  transform: scale(0.985);
+}
+.experience .worker-screen-hidden-action {
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: var(--space-1);
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: var(--space-1);
+}
+@media (max-width: 360px) {
+  .experience .worker-tool-row {
+    padding: var(--space-10);
+  }
+  .experience .worker-tool-main {
+    gap: var(--space-9);
+  }
+  .experience .worker-tool-main .tool-photo {
+    flex-basis: var(--space-54);
+    height: var(--space-54);
+  }
+  .experience .worker-transfer-button,
+  .experience .worker-transfer-state {
+    padding: 0 var(--space-11);
+  }
+}

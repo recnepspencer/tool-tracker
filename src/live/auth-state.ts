@@ -61,11 +61,12 @@ export function useResetPasswordState() {
   return { done, setDone, refresh, email, token, missing, recoveryUrl };
 }
 export function useCompanySetupState() {
+  const [createdCompanyId, setCreatedCompanyId] = useState('');
   const { session, loading, refresh, logout } = useSession();
   const [key] = useState(requestKey);
   const navigate = useNavigate();
 
-  return { session, loading, refresh, logout, key, navigate };
+  return { session, loading, refresh, logout, key, navigate, createdCompanyId, setCreatedCompanyId };
 }
 export function useInvitationState() {
   const { token = '' } = useParams();

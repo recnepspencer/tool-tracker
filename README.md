@@ -2,6 +2,8 @@
 
 An API-backed tool custody application with a responsive, installable web frontend. The active entry point is `src/main.tsx`; the frontend lives in `src/live`. The former demo, mock adapters, prototype tests, phase ledgers, and stock images have been removed; their history remains in Git.
 
+The interface is being brought back to the original demo's field and control-room layouts. [Demo parity](docs/DEMO_PARITY.md) records the screen-by-screen acceptance scope and remaining gaps. Passing workflow tests does not establish whole-app visual or interaction parity. The simplified account screens are retained.
+
 ## Run locally
 
 Start the PostgreSQL database and Django API using [backend/README.md](backend/README.md), then run:

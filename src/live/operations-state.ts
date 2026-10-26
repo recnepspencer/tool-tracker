@@ -7,6 +7,11 @@ import { useCompany } from './session';
 
 export function useOperationsPageState() {
   const c = useCompany();
+  const reviewLocation = useListLocation();
+  const review = reviewLocation.params.get('review');
+  const kind = reviewLocation.params.get('kind') ?? '';
+  const search = reviewLocation.params.get('search') ?? '';
+  const warehouse = reviewLocation.params.get('warehouse') ?? '';
   const refs = useReferences();
   const historyLocation = useListLocation();
   const history = historyLocation.params.get('history') === 'true';
@@ -47,5 +52,45 @@ export function useOperationsPageState() {
   const authority = (warehouse: string | null | undefined) =>
     !!warehouse && (c.can('tools.manage') || c.managed_warehouse_ids.includes(warehouse));
 
-  return { c, refs, history, setHistory, requests, handoffs, asset, authority };
+  return {
+    c,
+    refs,
+    history,
+    setHistory,
+    requests: {
+      ...requests,
+      data: requests.data?.filter(
+        (item) =>
+          kind !== 'return' &&
+          (!warehouse || asset(item.asset_id)?.warehouse_id === warehouse) &&
+          `${asset(item.asset_id)?.name ?? ''} ${asset(item.asset_id)?.asset_tag ?? ''} ${refs.person(item.requester_id)}`
+            .toLowerCase()
+            .includes(search.toLowerCase()),
+      ),
+    },
+    handoffs: {
+      ...handoffs,
+      data: handoffs.data?.filter(
+        (item) =>
+          kind !== 'request' &&
+          (kind !== 'return' || item.destination_warehouse_id !== null) &&
+          (!warehouse ||
+            item.destination_warehouse_id === warehouse ||
+            asset(item.asset_id)?.warehouse_id === warehouse) &&
+          `${asset(item.asset_id)?.name ?? ''} ${asset(item.asset_id)?.asset_tag ?? ''}`
+            .toLowerCase()
+            .includes(search.toLowerCase()),
+      ),
+    },
+    asset,
+    authority,
+    review,
+    openReview: (id: string) => reviewLocation.update('review', id),
+    kind,
+    search,
+    warehouse,
+    setKind: (value: string) => reviewLocation.update('kind', value),
+    setSearch: (value: string) => reviewLocation.update('search', value),
+    setWarehouse: (value: string) => reviewLocation.update('warehouse', value),
+  };
 }

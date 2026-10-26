@@ -240,7 +240,7 @@ export function ResetPassword() {
   );
 }
 export function CompanySetup() {
-  const { session, loading, refresh, logout, key, navigate } = useCompanySetupState();
+  const { session, loading, refresh, logout, key, createdCompanyId, setCreatedCompanyId } = useCompanySetupState();
   if (loading)
     return (
       <AuthLayout title="Your workspace" description="Checking your account.">
@@ -248,6 +248,8 @@ export function CompanySetup() {
       </AuthLayout>
     );
   if (!session) return <Navigate to="/login?next=/company-setup" replace />;
+  if (createdCompanyId && session.memberships.some((membership) => membership.company_id === createdCompanyId))
+    return <Navigate to="/app" replace />;
   return (
     <AuthLayout
       title="Your company workspace"
@@ -257,16 +259,18 @@ export function CompanySetup() {
         label="Create company"
         pendingLabel="Creating workspace…"
         submit={async (f) => {
-          await api.POST('/api/companies', {
-            body: {
-              request_key: key,
-              name: text(f, 'company'),
-              preferred_name: text(f, 'name'),
-              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            },
-          });
+          const company = result(
+            await api.POST('/api/companies', {
+              body: {
+                request_key: key,
+                name: text(f, 'company'),
+                preferred_name: text(f, 'name'),
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+              },
+            }),
+          );
           await refresh();
-          navigate('/app', { replace: true });
+          setCreatedCompanyId(company.id);
         }}
       >
         <Field label="Company name" name="company" autoComplete="organization" maxLength={200} required />

@@ -48,7 +48,7 @@ export async function workspace(page: Page) {
     name: 'Library wiring',
   });
   await page.goto('/app/tools');
-  await expect(page.getByRole('heading', { name: 'Tools', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Inventory', exact: true })).toBeVisible();
   return { company, base, warehouse, asset, second, job };
 }
 export const password = 'Real-browser-test-password-2026';

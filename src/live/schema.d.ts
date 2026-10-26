@@ -1269,6 +1269,15 @@ export interface components {
     AssetView: {
       /** Asset Tag */
       asset_tag: string;
+      /**
+       * Category Id
+       * Format: uuid
+       */
+      category_id: string;
+      /** Category Name */
+      category_name: string;
+      /** Custody Started At */
+      custody_started_at: string | null;
       /** Holder Membership Id */
       holder_membership_id: string | null;
       /**

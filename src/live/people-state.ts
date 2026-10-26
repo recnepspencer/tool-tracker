@@ -7,6 +7,9 @@ import { useCompany } from './session';
 
 export function usePeoplePageState() {
   const c = useCompany();
+  const location = useListLocation();
+  const selectedId = location.params.get('person');
+  const inviting = location.params.get('invite') === 'true';
   const [link, setLink] = useState('');
   const inactiveLocation = useListLocation();
   const inactive = inactiveLocation.params.get('inactive') === 'true';
@@ -33,5 +36,17 @@ export function usePeoplePageState() {
       ),
   });
 
-  return { c, link, setLink, inactive, setInactive, people, invites };
+  return {
+    c,
+    link,
+    setLink,
+    inactive,
+    setInactive,
+    people,
+    invites,
+    selectedId,
+    inviting,
+    select: (id: string) => location.update('person', id),
+    invite: (open: boolean) => location.update('invite', open ? 'true' : ''),
+  };
 }
