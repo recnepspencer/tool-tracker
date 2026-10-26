@@ -2070,6 +2070,10 @@
             "title": "Reported By Id",
             "type": "string"
           },
+          "reported_by_name": {
+            "title": "Reported By Name",
+            "type": "string"
+          },
           "resolution_note": {
             "title": "Resolution Note",
             "type": "string"
@@ -2098,6 +2102,17 @@
             ],
             "title": "Resolved By Id"
           },
+          "resolved_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved By Name"
+          },
           "revision": {
             "title": "Revision",
             "type": "integer"
@@ -2114,7 +2129,9 @@
           "resolved_by_id",
           "resolution_note",
           "revision",
-          "photo_ids"
+          "photo_ids",
+          "reported_by_name",
+          "resolved_by_name"
         ],
         "title": "IncidentView",
         "type": "object"
@@ -2518,6 +2535,96 @@
           "lifecycle"
         ],
         "title": "LifecycleInput",
+        "type": "object"
+      },
+      "LifecyclePage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/LifecycleView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          }
+        },
+        "required": [
+          "items",
+          "next_offset"
+        ],
+        "title": "LifecyclePage",
+        "type": "object"
+      },
+      "LifecycleView": {
+        "properties": {
+          "actor_id": {
+            "format": "uuid",
+            "title": "Actor Id",
+            "type": "string"
+          },
+          "actor_name": {
+            "title": "Actor Name",
+            "type": "string"
+          },
+          "asset_id": {
+            "format": "uuid",
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "from_lifecycle": {
+            "enum": [
+              "active",
+              "retired",
+              "disposed"
+            ],
+            "title": "From Lifecycle",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "to_lifecycle": {
+            "enum": [
+              "active",
+              "retired",
+              "disposed"
+            ],
+            "title": "To Lifecycle",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "asset_id",
+          "actor_id",
+          "actor_name",
+          "occurred_at",
+          "from_lifecycle",
+          "to_lifecycle",
+          "reason"
+        ],
+        "title": "LifecycleView",
         "type": "object"
       },
       "MemberPage": {
@@ -4165,6 +4272,10 @@
             "title": "Performed By Id",
             "type": "string"
           },
+          "performed_by_name": {
+            "title": "Performed By Name",
+            "type": "string"
+          },
           "photo_ids": {
             "items": {
               "format": "uuid",
@@ -4190,7 +4301,8 @@
           "occurred_at",
           "resulting_serviceability",
           "note",
-          "photo_ids"
+          "photo_ids",
+          "performed_by_name"
         ],
         "title": "ServiceView",
         "type": "object"
@@ -7969,6 +8081,70 @@
       }
     },
     "/api/companies/{company_id}/tools/{asset_id}/lifecycle": {
+      "get": {
+        "operationId": "equipment_operations_api_lifecycle_history",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Asset Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LifecyclePage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Lifecycle History",
+        "tags": [
+          "equipment operations"
+        ]
+      },
       "post": {
         "operationId": "equipment_operations_api_lifecycle_change",
         "parameters": [

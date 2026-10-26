@@ -11,70 +11,70 @@ export function ToolManagement({ state, asset: t }: Props) {
   return (
     <>
       <div className="detail-grid">
-        <Section title="Record service">
-          {t.lifecycle === 'disposed' ? (
-            <Notice>This tool is permanently disposed.</Notice>
-          ) : (
-            <Form
-              label="Save service record"
-              onDone={photo.clear}
-              submit={async (f) =>
-                api.POST('/api/companies/{company_id}/tools/{asset_id}/service', {
-                  params: { path },
-                  body: {
-                    expected_revision: t.revision,
-                    serviceability: text(f, 'condition') as 'serviceable' | 'damaged' | 'out_of_service',
-                    note: text(f, 'note'),
-                    photo_id: await photo.upload(f),
-                  },
-                })
-              }
-            >
-              <Select name="condition" label="Condition">
-                <option value="serviceable">Serviceable</option>
-                <option value="damaged">Damaged</option>
-                <option value="out_of_service">Out of service</option>
-              </Select>
-              <Field label="Work performed" name="note" required maxLength={2000} />
-              <PhotoField />
-            </Form>
-          )}
-        </Section>
-        <Section title="Retire or restore">
-          {t.lifecycle === 'disposed' ? (
-            <Notice>Disposal is permanent. This tool cannot be restored.</Notice>
-          ) : t.missing ? (
-            <Notice>Resolve the missing-tool report before changing its lifecycle.</Notice>
-          ) : !t.warehouse_id ? (
-            <Notice>Receive this tool at a warehouse before changing its lifecycle.</Notice>
-          ) : (
-            <Form
-              label="Update lifecycle"
-              submit={(f) =>
-                api.POST('/api/companies/{company_id}/tools/{asset_id}/lifecycle', {
-                  params: { path },
-                  body: {
-                    expected_revision: t.revision,
-                    lifecycle: text(f, 'lifecycle') as 'active' | 'retired' | 'disposed',
-                    note: text(f, 'note'),
-                  },
-                })
-              }
-            >
-              <Select name="lifecycle" label="Lifecycle" defaultValue="">
-                <option value="">Choose a new lifecycle</option>
-                <option value="active" disabled={t.lifecycle === 'active'}>
-                  Active
-                </option>
-                <option value="retired" disabled={t.lifecycle === 'retired'}>
-                  Retired
-                </option>
-                <option value="disposed">Disposed (permanent)</option>
-              </Select>
-              <Field label="Reason" name="note" required maxLength={2000} />
-            </Form>
-          )}
-        </Section>
+        {t.lifecycle !== 'disposed' && (
+          <>
+            <Section title="Record service">
+              <Form
+                label="Save service record"
+                onDone={photo.clear}
+                submit={async (f) =>
+                  api.POST('/api/companies/{company_id}/tools/{asset_id}/service', {
+                    params: { path },
+                    body: {
+                      expected_revision: t.revision,
+                      serviceability: text(f, 'condition') as 'serviceable' | 'damaged' | 'out_of_service',
+                      note: text(f, 'note'),
+                      photo_id: await photo.upload(f),
+                    },
+                  })
+                }
+              >
+                <Select name="condition" label="Condition">
+                  <option value="serviceable">Serviceable</option>
+                  <option value="damaged">Damaged</option>
+                  <option value="out_of_service">Out of service</option>
+                </Select>
+                <Field label="Work performed" name="note" required maxLength={2000} />
+                <PhotoField />
+              </Form>
+            </Section>
+            <Section title="Retirement & disposal">
+              {t.missing ? (
+                <Notice>Resolve the missing-tool report before retiring or disposing of it.</Notice>
+              ) : !t.warehouse_id ? (
+                <Notice>Receive this tool at a warehouse before retiring or disposing of it.</Notice>
+              ) : t.pending_handoff_id ? (
+                <Notice>Resolve the pending handoff in the queue before retiring or disposing of this tool.</Notice>
+              ) : (
+                <Form
+                  label="Update status"
+                  submit={(f) =>
+                    api.POST('/api/companies/{company_id}/tools/{asset_id}/lifecycle', {
+                      params: { path },
+                      body: {
+                        expected_revision: t.revision,
+                        lifecycle: text(f, 'lifecycle') as 'active' | 'retired' | 'disposed',
+                        note: text(f, 'note'),
+                      },
+                    })
+                  }
+                >
+                  <Select name="lifecycle" label="Inventory status" defaultValue="">
+                    <option value="">Choose a new lifecycle</option>
+                    <option value="active" disabled={t.lifecycle === 'active'}>
+                      Active
+                    </option>
+                    <option value="retired" disabled={t.lifecycle === 'retired'}>
+                      Retired
+                    </option>
+                    <option value="disposed">Disposed (permanent)</option>
+                  </Select>
+                  <Field label="Reason" name="note" required maxLength={2000} />
+                </Form>
+              )}
+            </Section>
+          </>
+        )}
         {c.can('tools.manage') && (
           <>
             <Section title="Asset information">

@@ -11,7 +11,7 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   {
     files: [
-      'src/live/{app,shell,auth,tools,jobs,people,catalog,operations,settings,field,workspace-pages,registration,directory,activity,tool-actions,tool-management,handoff-review,warehouse-authority,job-dialogs,job-roster,job-requests,job-participation}.tsx',
+      'src/live/{app,shell,auth,tools,jobs,people,catalog,operations,settings,field,workspace-pages,registration,directory,activity,tool-actions,tool-management,handoff-review,warehouse-authority,job-dialogs,job-roster,job-requests,job-participation,tool-history}.tsx',
     ],
     rules: {
       'no-restricted-imports': [

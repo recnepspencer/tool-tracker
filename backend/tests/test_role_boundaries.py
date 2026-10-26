@@ -46,6 +46,7 @@ def test_public_read_surfaces_and_write_boundaries(world, password_hash, role):
         f"/tools/{world.assets[0].pk}": equipment,
         f"/tools/{world.assets[0].pk}/custody": equipment,
         f"/tools/{world.assets[0].pk}/service": equipment,
+        f"/tools/{world.assets[0].pk}/lifecycle": equipment,
         "/tool-requests": equipment,
         "/handoffs": equipment,
         "/incidents": equipment,

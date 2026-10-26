@@ -48,14 +48,14 @@ test('condition incidents and service do not change custody or the other physica
   const other = await (await page.request.get(`${fixture.base}/tools/${fixture.second.id}`)).json();
   expect(current).toMatchObject({ missing: false, serviceability: 'damaged', warehouse_id: fixture.warehouse.id });
   expect(other).toMatchObject({ missing: false, serviceability: 'serviceable', warehouse_id: fixture.warehouse.id });
-  const lifecycle = page.getByRole('region', { name: 'Retire or restore', exact: true });
-  await lifecycle.getByLabel('Lifecycle').selectOption('retired');
+  const lifecycle = page.getByRole('region', { name: 'Retirement & disposal', exact: true });
+  await lifecycle.getByLabel('Inventory status').selectOption('retired');
   await lifecycle.getByLabel('Reason').fill('Awaiting repair');
-  await lifecycle.getByRole('button', { name: 'Update lifecycle' }).click();
+  await lifecycle.getByRole('button', { name: 'Update status' }).click();
   await expect(lifecycle.getByRole('status')).toBeVisible();
-  await lifecycle.getByLabel('Lifecycle').selectOption('active');
+  await lifecycle.getByLabel('Inventory status').selectOption('active');
   await lifecycle.getByLabel('Reason').fill('Returned to inventory');
-  await lifecycle.getByRole('button', { name: 'Update lifecycle' }).click();
+  await lifecycle.getByRole('button', { name: 'Update status' }).click();
   await expect
     .poll(async () => (await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}`)).json()).lifecycle)
     .toBe('active');

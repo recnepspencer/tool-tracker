@@ -241,10 +241,15 @@ test('activity filters read actual audit events with own versus company visibili
     await page.getByRole('button', { name: 'Requests', exact: true }).click();
     await page.getByLabel('Search activity').fill('UNIT-001');
     await page.getByLabel('Warehouse', { exact: true }).selectOption(fixture.warehouse.id);
+    await expect(page.getByRole('button', { name: 'Requests', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByLabel('Search activity')).toHaveValue('UNIT-001');
+    await expect(page.getByLabel('Warehouse', { exact: true })).toHaveValue(fixture.warehouse.id);
     await expect(page.getByText('Tool requested', { exact: true })).toBeVisible();
     await page.screenshot({ path: 'artifacts/parity-activity-filtered.png', fullPage: true });
     await page.reload();
     await expect(page.getByLabel('Search activity')).toHaveValue('UNIT-001');
+    await expect(page.getByRole('button', { name: 'Requests', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByLabel('Warehouse', { exact: true })).toHaveValue(fixture.warehouse.id);
     await page.getByLabel('Only my activity').click();
     await expect(page.getByLabel('Only my activity')).toBeChecked();
     await expect(page).toHaveURL(/mine=true/);

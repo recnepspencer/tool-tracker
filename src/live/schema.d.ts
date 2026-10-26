@@ -1007,7 +1007,8 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    /** Lifecycle History */
+    get: operations['equipment_operations_api_lifecycle_history'];
     put?: never;
     /** Lifecycle Change */
     post: operations['equipment_operations_api_lifecycle_change'];
@@ -1945,12 +1946,16 @@ export interface components {
        * Format: uuid
        */
       reported_by_id: string;
+      /** Reported By Name */
+      reported_by_name: string;
       /** Resolution Note */
       resolution_note: string;
       /** Resolved At */
       resolved_at: string | null;
       /** Resolved By Id */
       resolved_by_id: string | null;
+      /** Resolved By Name */
+      resolved_by_name: string | null;
       /** Revision */
       revision: number;
     };
@@ -2108,6 +2113,50 @@ export interface components {
       lifecycle: 'active' | 'retired' | 'disposed';
       /** Note */
       note: string;
+    };
+    /** LifecyclePage */
+    LifecyclePage: {
+      /** Items */
+      items: components['schemas']['LifecycleView'][];
+      /** Next Offset */
+      next_offset: number | null;
+    };
+    /** LifecycleView */
+    LifecycleView: {
+      /**
+       * Actor Id
+       * Format: uuid
+       */
+      actor_id: string;
+      /** Actor Name */
+      actor_name: string;
+      /**
+       * Asset Id
+       * Format: uuid
+       */
+      asset_id: string;
+      /**
+       * From Lifecycle
+       * @enum {string}
+       */
+      from_lifecycle: 'active' | 'retired' | 'disposed';
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Occurred At
+       * Format: date-time
+       */
+      occurred_at: string;
+      /** Reason */
+      reason: string;
+      /**
+       * To Lifecycle
+       * @enum {string}
+       */
+      to_lifecycle: 'active' | 'retired' | 'disposed';
     };
     /** MemberPage */
     MemberPage: {
@@ -2757,6 +2806,8 @@ export interface components {
        * Format: uuid
        */
       performed_by_id: string;
+      /** Performed By Name */
+      performed_by_name: string;
       /** Photo Ids */
       photo_ids: string[];
       /**
@@ -4637,6 +4688,32 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['IncidentView'];
+        };
+      };
+    };
+  };
+  equipment_operations_api_lifecycle_history: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path: {
+        company_id: string;
+        asset_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LifecyclePage'];
         };
       };
     };

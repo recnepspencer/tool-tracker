@@ -141,12 +141,12 @@ export function useToolDetailState() {
       ),
   });
   const incidents = useQuery({
-    queryKey: [c.company_id, 'incidents', assetId],
+    queryKey: [c.company_id, 'incidents', assetId, 'all'],
     queryFn: () =>
       collect((offset) =>
         api
           .GET('/api/companies/{company_id}/incidents', {
-            params: { path: c.path, query: { asset_id: assetId, offset } },
+            params: { path: c.path, query: { asset_id: assetId, offset, open_only: false } },
           })
           .then(result),
       ),
@@ -157,6 +157,17 @@ export function useToolDetailState() {
       collect((offset) =>
         api
           .GET('/api/companies/{company_id}/tools/{asset_id}/service', { params: { path, query: { offset } } })
+          .then(result),
+      ),
+  });
+  const lifecycle = useQuery({
+    queryKey: [c.company_id, 'lifecycle', assetId],
+    queryFn: () =>
+      collect((offset) =>
+        api
+          .GET('/api/companies/{company_id}/tools/{asset_id}/lifecycle', {
+            params: { path, query: { offset } },
+          })
           .then(result),
       ),
   });
@@ -171,6 +182,7 @@ export function useToolDetailState() {
     history,
     incidents,
     service,
+    lifecycle,
     requests,
     action,
     setAction: (value: string) => location.update('action', value),

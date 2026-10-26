@@ -17,6 +17,7 @@ from . import condition, handoffs, reconciliation, request_decisions
 from .api import AssetView, RequestView
 from .models import (
     AssetIncident,
+    AssetLifecycleEvent,
     AssetServiceEvent,
     CustodyHandoff,
     CustodyPeriod,
@@ -137,6 +138,16 @@ class IncidentView(Schema):
     resolution_note: str
     revision: int
     photo_ids: list[UUID]
+    reported_by_name: str
+    resolved_by_name: str | None
+
+    @staticmethod
+    def resolve_reported_by_name(obj):
+        return obj.reported_by.person.preferred_name
+
+    @staticmethod
+    def resolve_resolved_by_name(obj):
+        return obj.resolved_by.person.preferred_name if obj.resolved_by_id else None
 
     @staticmethod
     def resolve_photo_ids(obj):
@@ -161,6 +172,11 @@ class ServiceView(Schema):
     resulting_serviceability: Literal["serviceable", "damaged", "out_of_service"]
     note: str
     photo_ids: list[UUID]
+    performed_by_name: str
+
+    @staticmethod
+    def resolve_performed_by_name(obj):
+        return obj.performed_by.person.preferred_name
 
     @staticmethod
     def resolve_photo_ids(obj):
@@ -174,6 +190,26 @@ class ServicePage(Schema):
 
 class LifecycleInput(ReasonInput):
     lifecycle: Literal["active", "retired", "disposed"]
+
+
+class LifecycleView(Schema):
+    id: UUID
+    asset_id: UUID
+    actor_id: UUID
+    actor_name: str
+    occurred_at: datetime
+    from_lifecycle: Literal["active", "retired", "disposed"]
+    to_lifecycle: Literal["active", "retired", "disposed"]
+    reason: str
+
+    @staticmethod
+    def resolve_actor_name(obj):
+        return obj.actor.person.preferred_name
+
+
+class LifecyclePage(Schema):
+    items: list[LifecycleView]
+    next_offset: int | None
 
 
 class ReconciliationInput(CommandInput):
@@ -354,7 +390,9 @@ def incidents_list(
     asset_id: UUID | None = None,
 ):
     require_member(current_identity(request), company_id, "tools.read")
-    query = AssetIncident.objects.filter(company_id=company_id)
+    query = AssetIncident.objects.filter(company_id=company_id).select_related(
+        "reported_by__person", "resolved_by__person"
+    )
     if open_only:
         query = query.filter(resolved_at__isnull=True)
     if asset_id:
@@ -375,9 +413,9 @@ def service_record(request: HttpRequest, company_id: UUID, asset_id: UUID, data:
 def services_list(request: HttpRequest, company_id: UUID, asset_id: UUID, page: Query[PageInput]):
     require_member(current_identity(request), company_id, "tools.read")
     return paginate(
-        AssetServiceEvent.objects.filter(company_id=company_id, asset_id=asset_id).order_by(
-            "-occurred_at", "id"
-        ),
+        AssetServiceEvent.objects.filter(company_id=company_id, asset_id=asset_id)
+        .select_related("performed_by__person")
+        .order_by("-occurred_at", "id"),
         page.limit,
         page.offset,
     )
@@ -387,6 +425,19 @@ def services_list(request: HttpRequest, company_id: UUID, asset_id: UUID, page: 
 def lifecycle_change(request: HttpRequest, company_id: UUID, asset_id: UUID, data: LifecycleInput):
     asset = condition.change_lifecycle(current_identity(request), company_id, asset_id, data)
     return asset_view(assets_with_availability(company_id).get(pk=asset.pk))
+
+
+def lifecycle_history(
+    request: HttpRequest, company_id: UUID, asset_id: UUID, page: Query[PageInput]
+):
+    require_member(current_identity(request), company_id, "tools.read")
+    return paginate(
+        AssetLifecycleEvent.objects.filter(company_id=company_id, asset_id=asset_id)
+        .select_related("actor__person")
+        .order_by("-occurred_at", "id"),
+        page.limit,
+        page.offset,
+    )
 
 
 @csrf_protect
@@ -501,6 +552,13 @@ define_http_endpoint(
     path="/companies/{company_id}/tools/{asset_id}/lifecycle",
     endpoint=lifecycle_change,
     response=AssetView,
+)
+define_http_endpoint(
+    router,
+    method="get",
+    path="/companies/{company_id}/tools/{asset_id}/lifecycle",
+    endpoint=lifecycle_history,
+    response=LifecyclePage,
 )
 define_http_endpoint(
     router,

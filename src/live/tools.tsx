@@ -1,14 +1,15 @@
 import { Link } from 'react-router-dom';
-import { api, errorMessage } from './client';
+import { errorMessage } from './client';
+import { ToolHistory, ToolReports } from './tool-history';
 import { AssetPhoto } from './asset-photo';
 import { useToolDetailState } from './tools-state';
 import { ToolReport, ToolRequest, ToolTransfer } from './tool-actions';
 import { ToolManagement, ToolReconciliation } from './tool-management';
-import { Badge, date, Empty, Field, Form, human, Loading, Notice, Section, text } from './ui';
+import { Badge, date, human, Loading, Notice, Section } from './ui';
 
 export function ToolDetail() {
   const state = useToolDetailState();
-  const { c, tool, history, incidents, service, requests, action, setAction } = state;
+  const { c, tool, incidents, requests, action, setAction } = state;
   if (tool.isPending) return <Loading />;
   if (tool.error) return <Notice error>{errorMessage(tool.error)}</Notice>;
   const t = tool.data;
@@ -18,6 +19,8 @@ export function ToolDetail() {
   const holds = t.holder_membership_id === c.membership_id;
   const transfer = (holds || canHandoff) && t.lifecycle === 'active' && !t.missing;
   const report = (holds || manages) && t.lifecycle === 'active';
+  const damageOpen = incidents.data?.some((incident) => incident.kind === 'damage' && !incident.resolved_at);
+  const missingOpen = incidents.data?.some((incident) => incident.kind === 'missing' && !incident.resolved_at);
   return (
     <div className="tool-detail-content">
       <header className="detail-hero">
@@ -35,6 +38,7 @@ export function ToolDetail() {
           </div>
         </div>
       </header>
+      {t.lifecycle === 'disposed' && <Notice>Disposal is permanent. This tool cannot be restored.</Notice>}
       {action ? (
         <button className="text-button" onClick={() => setAction('')}>
           ← Back to tool
@@ -42,22 +46,40 @@ export function ToolDetail() {
       ) : (
         <section className="detail-actions" aria-label="Tool actions">
           {c.can('tools.request') && (t.requestable || !!requests.data?.length) && (
-            <button className="primary" onClick={() => setAction('request')}>
+            <button className="primary" disabled={tool.isFetching} onClick={() => setAction('request')}>
               {requests.data?.length ? 'Your request' : 'Request this tool'}
             </button>
           )}
           {transfer && !t.pending_handoff_id && (
-            <button className="primary" onClick={() => setAction('transfer')}>
+            <button className="primary" disabled={tool.isFetching} onClick={() => setAction('transfer')}>
               Transfer tool
             </button>
           )}
           {report && (
             <div className="detail-action-row">
-              <button onClick={() => setAction('damage')}>Report damaged</button>
-              <button onClick={() => setAction('missing')}>Report lost</button>
+              {!damageOpen && (
+                <button
+                  disabled={tool.isFetching || incidents.isPending || incidents.isFetching}
+                  onClick={() => setAction('damage')}
+                >
+                  Report damaged
+                </button>
+              )}
+              {!missingOpen && (
+                <button
+                  disabled={tool.isFetching || incidents.isPending || incidents.isFetching}
+                  onClick={() => setAction('missing')}
+                >
+                  Report lost
+                </button>
+              )}
             </div>
           )}
-          {manages && <button onClick={() => setAction('manage')}>Manage this tool</button>}
+          {manages && (t.lifecycle !== 'disposed' || c.can('tools.manage')) && (
+            <button disabled={tool.isFetching} onClick={() => setAction('manage')}>
+              Manage this tool
+            </button>
+          )}
           {c.can('reconciliation.manage') && (
             <button onClick={() => setAction('reconcile')}>Open a reconciliation case</button>
           )}
@@ -77,13 +99,21 @@ export function ToolDetail() {
           <Notice>You must be the holder or managing the source warehouse to propose this handoff.</Notice>
         ))}
       {(action === 'damage' || action === 'missing') &&
-        (report ? (
+        (report && (action === 'damage' ? damageOpen : missingOpen) ? (
+          <Notice>This problem is already reported. View the open report below.</Notice>
+        ) : report && incidents.isPending ? (
+          <Loading />
+        ) : report ? (
           <ToolReport state={state} asset={t} />
         ) : (
           <Notice>Only the holder or responsible manager may report this tool.</Notice>
         ))}
       {action === 'manage' &&
-        (manages ? <ToolManagement state={state} asset={t} /> : <Notice>You do not manage this tool.</Notice>)}
+        (manages ? (
+          (t.lifecycle !== 'disposed' || c.can('tools.manage')) && <ToolManagement state={state} asset={t} />
+        ) : (
+          <Notice>You do not manage this tool.</Notice>
+        ))}
       {action === 'reconcile' && c.can('reconciliation.manage') && <ToolReconciliation state={state} asset={t} />}
       <Section title="Current custody">
         <p className="large-value">{t.holder_name ?? t.warehouse_name ?? 'No current custodian'}</p>
@@ -125,63 +155,15 @@ export function ToolDetail() {
           </div>
           <div>
             <dt>Last moved</dt>
-            <dd>{date(t.custody_started_at)}</dd>
+            <dd>{t.custody_started_at ? date(t.custody_started_at) : 'Not applicable'}</dd>
           </div>
         </dl>
         {t.registration_photo_id && (
           <a href={`/api/companies/${c.company_id}/files/${t.registration_photo_id}`}>Download registration photo</a>
         )}
       </Section>
-      <Section title="Open reports">
-        {incidents.error && <Notice error>{errorMessage(incidents.error)}</Notice>}
-        {incidents.data?.map((incident) => (
-          <article className="row" key={incident.id}>
-            <div>
-              <strong>{human(incident.kind)}</strong>
-              <p>{incident.description}</p>
-              <small>{date(incident.reported_at)}</small>
-            </div>
-            {manages && incident.kind === 'missing' && (
-              <Form
-                label="Mark found"
-                submit={(f) =>
-                  api.POST('/api/companies/{company_id}/incidents/{incident_id}/found', {
-                    params: { path: { ...c.path, incident_id: incident.id } },
-                    body: { expected_revision: incident.revision, note: text(f, 'note') },
-                  })
-                }
-              >
-                <Field label="Where was it found?" name="note" required maxLength={2000} />
-              </Form>
-            )}
-          </article>
-        ))}
-        {incidents.data?.length === 0 && <Empty>No open reports.</Empty>}
-      </Section>
-      <Section title="Custody history">
-        {history.error && <Notice error>{errorMessage(history.error)}</Notice>}
-        {history.data?.map((period) => (
-          <div className="row" key={period.id}>
-            <strong>{period.holder_name}</strong>
-            <span>
-              {date(period.starts_at)} → {date(period.ends_at)}
-            </span>
-          </div>
-        ))}
-      </Section>
-      <Section title="Service history">
-        {service.error && <Notice error>{errorMessage(service.error)}</Notice>}
-        {service.data?.map((event) => (
-          <div className="row" key={event.id}>
-            <div>
-              <strong>{human(event.resulting_serviceability)}</strong>
-              <p>{event.note}</p>
-            </div>
-            <span>{date(event.occurred_at)}</span>
-          </div>
-        ))}
-        {service.data?.length === 0 && <Empty>No service records.</Empty>}
-      </Section>
+      <ToolReports state={state} manages={manages} />
+      <ToolHistory state={state} />
     </div>
   );
 }

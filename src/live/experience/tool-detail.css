@@ -336,3 +336,20 @@
     transform: translateY(0);
   }
 }
+.experience .tool-history-entry {
+  display: grid;
+  gap: 8px;
+  padding-block: 16px;
+  border-top: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+.experience .tool-history-entry p {
+  margin: 0;
+}
+.experience .tool-history-entry small {
+  color: var(--muted);
+}
+.experience .resolved-reports summary {
+  cursor: pointer;
+  padding-block: 12px;
+}
