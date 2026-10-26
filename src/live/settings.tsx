@@ -1,15 +1,15 @@
-import { useActivityPageState, useDirectoryPageState, useSettingsPageState } from './settings-state';
+import { useSettingsPageState } from './settings-state';
 
 import { api, errorMessage, type Model } from './client';
 import { Link } from 'react-router-dom';
 
-import { date, Empty, Form, human, Loading, Notice, Section, Select, text } from './ui';
+import { Field, Form, Notice, Section, Select, text } from './ui';
 
 export function SettingsPage() {
-  const { c, tools, jobs } = useSettingsPageState();
+  const { c, tools, jobs, company, refresh } = useSettingsPageState();
   return (
     <>
-      <h1>Company rules</h1>
+      <h1>Settings</h1>
       <div className="view-controls">
         {c.can('jobs.manage') && (
           <Link className="button" to="/app/jobs">
@@ -25,6 +25,30 @@ export function SettingsPage() {
       <p className="muted">
         These rules apply to everyone in {c.company_name}. Managers retain their explicit permissions.
       </p>
+      {company.error && <Notice error>{errorMessage(company.error)}</Notice>}
+      {company.data && c.can('company.manage') && (
+        <Section title="Company profile">
+          <Form
+            label="Save company"
+            submit={async (f) => {
+              await api.POST('/api/companies/{company_id}/update', {
+                params: { path: c.path },
+                body: {
+                  expected_revision: company.data.revision,
+                  name: text(f, 'name'),
+                  address: text(f, 'address'),
+                  timezone: text(f, 'timezone'),
+                },
+              });
+              await refresh();
+            }}
+          >
+            <Field label="Company name" name="name" defaultValue={company.data.name} required maxLength={200} />
+            <Field label="Address" name="address" defaultValue={company.data.address} maxLength={2000} />
+            <Field label="Timezone" name="timezone" defaultValue={company.data.timezone} required maxLength={64} />
+          </Form>
+        </Section>
+      )}
       {tools.error && <Notice error>{errorMessage(tools.error)}</Notice>}
       {tools.data && (
         <Section title="Employee tool uploads">
@@ -82,65 +106,6 @@ export function SettingsPage() {
           </Form>
         </Section>
       )}
-    </>
-  );
-}
-export function ActivityPage() {
-  const { c, offset, setOffset, activity } = useActivityPageState();
-  return (
-    <>
-      <h1>Activity</h1>
-      <p className="muted">
-        {c.can('activity.read') ? 'Company activity' : 'Your activity'}. Recent changes to tools, custody, and team
-        assignments.
-      </p>
-      {activity.isPending && <Loading />}
-      {activity.error && <Notice error>{errorMessage(activity.error)}</Notice>}
-      {activity.data?.items.map((a) => (
-        <article className="panel" key={a.id}>
-          <strong>{human(a.event_key)}</strong>
-          <p>{date(a.occurred_at)}</p>
-          {typeof a.metadata.reason === 'string' && <p>{a.metadata.reason}</p>}
-        </article>
-      ))}
-      {activity.data?.items.length === 0 && <Empty>No activity yet.</Empty>}
-      {activity.data && (
-        <div className="pagination">
-          <button disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 30))}>
-            Previous
-          </button>
-          <button disabled={activity.data.next_offset === null} onClick={() => setOffset(activity.data.next_offset!)}>
-            Next
-          </button>
-        </div>
-      )}
-    </>
-  );
-}
-export function DirectoryPage() {
-  const { search, setSearch, directory } = useDirectoryPageState();
-  return (
-    <>
-      <h1>Team directory</h1>
-      <label className="field">
-        <span>Find a person, job, or held tool</span>
-        <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} />
-      </label>
-      {directory.isPending && <Loading />}
-      {directory.error && <Notice error>{errorMessage(directory.error)}</Notice>}
-      {directory.data?.length === 0 && <Empty>No people match your search.</Empty>}
-      {directory.data?.map((p) => (
-        <article className="panel" key={p.membership_id}>
-          <h2>{p.name}</h2>
-          <p>
-            {p.jobs.map((j) => `${j.number} ${j.name} (${human(j.responsibility)})`).join(' · ') || 'No current jobs'}
-          </p>
-          <p className="muted">
-            {p.tools.map((t) => `${t.asset_tag} ${t.name}${t.missing ? ' — Missing' : ''}`).join(' · ') ||
-              'No tools in custody'}
-          </p>
-        </article>
-      ))}
     </>
   );
 }

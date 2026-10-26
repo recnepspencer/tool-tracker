@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, result } from './client';
 import { collect } from './data';
@@ -7,6 +7,7 @@ import { useCompany } from './session';
 
 export function usePeoplePageState() {
   const c = useCompany();
+  const cache = useQueryClient();
   const location = useListLocation();
   const selectedId = location.params.get('person');
   const inviting = location.params.get('invite') === 'true';
@@ -47,6 +48,13 @@ export function usePeoplePageState() {
     selectedId,
     inviting,
     select: (id: string) => location.update('person', id),
-    invite: (open: boolean) => location.update('invite', open ? 'true' : ''),
+    invite: (open: boolean) => {
+      if (open) setLink('');
+      location.update('invite', open ? 'true' : '');
+    },
+    saved: () => {
+      location.update('person', '');
+      void cache.invalidateQueries({ queryKey: ['session'] });
+    },
   };
 }

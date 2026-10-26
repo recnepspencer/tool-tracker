@@ -4,6 +4,7 @@ from django.db import transaction
 
 from companies.access import require_member
 
+from .events import asset_event_metadata
 from .models import ToolAsset, ToolRequest, Warehouse
 from .queries import assets_with_availability, unavailable_reason
 
@@ -68,7 +69,7 @@ def request_tool(*, identity, company_id, asset_id, request_key, note):
             ),
             metadata={
                 "company_id": str(company_id),
-                "asset_id": str(asset.id),
+                **asset_event_metadata(asset),
                 "requester_id": str(member.id),
                 "source_custody_id": str(asset.current_custody_id),
             },

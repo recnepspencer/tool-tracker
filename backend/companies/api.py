@@ -11,7 +11,7 @@ from pydantic import EmailStr, Field
 
 from config.contracts import CommandInput, PageInput, RevisionInput, paginate
 
-from . import people
+from . import people, profile
 from .access import ROLE_CAPABILITIES, capabilities, require_member
 from .models import Company, CompanyMembership, MembershipInvitation
 
@@ -29,8 +29,15 @@ class CompanyInput(CommandInput):
 class CompanyView(Schema):
     id: UUID
     name: str
+    address: str
     timezone: str
     revision: int
+
+
+class CompanyUpdate(RevisionInput):
+    name: str = Field(min_length=1, max_length=200)
+    address: str = Field(default="", max_length=2000)
+    timezone: str = Field(min_length=1, max_length=64)
 
 
 class MemberView(Schema):
@@ -121,6 +128,11 @@ def company_read(request: HttpRequest, company_id: UUID):
     return Company.objects.get(pk=company_id)
 
 
+@csrf_protect
+def company_update(request: HttpRequest, company_id: UUID, data: CompanyUpdate):
+    return profile.update_profile(current_identity(request), company_id, data)
+
+
 def people_list(
     request: HttpRequest,
     company_id: UUID,
@@ -200,6 +212,13 @@ define_http_endpoint(
     method="get",
     path="/companies/{company_id}",
     endpoint=company_read,
+    response=CompanyView,
+)
+define_http_endpoint(
+    router,
+    method="post",
+    path="/companies/{company_id}/update",
+    endpoint=company_update,
     response=CompanyView,
 )
 define_http_endpoint(

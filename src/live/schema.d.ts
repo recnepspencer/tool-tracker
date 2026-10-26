@@ -1103,6 +1103,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/companies/{company_id}/update': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Company Update */
+    post: operations['companies_api_company_update'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/companies/{company_id}/warehouses': {
     parameters: {
       query?: never;
@@ -1226,6 +1243,8 @@ export interface components {
     ActivityView: {
       /** Actor User Id */
       actor_user_id: string | null;
+      /** Effective Name */
+      effective_name: string | null;
       /** Effective User Id */
       effective_user_id: string | null;
       /** Event Key */
@@ -1592,8 +1611,24 @@ export interface components {
       /** Pending Requests */
       pending_requests: number;
     };
+    /** CompanyUpdate */
+    CompanyUpdate: {
+      /**
+       * Address
+       * @default
+       */
+      address: string;
+      /** Expected Revision */
+      expected_revision: number;
+      /** Name */
+      name: string;
+      /** Timezone */
+      timezone: string;
+    };
     /** CompanyView */
     CompanyView: {
+      /** Address */
+      address: string;
       /**
        * Id
        * Format: uuid
@@ -1696,10 +1731,18 @@ export interface components {
       asset_id: string;
       /** Asset Tag */
       asset_tag: string;
+      /** Manufacturer */
+      manufacturer: string;
       /** Missing */
       missing: boolean;
+      /** Model Number */
+      model_number: string;
       /** Name */
       name: string;
+      /** Registration Photo Id */
+      registration_photo_id: string | null;
+      /** Serial Number */
+      serial_number: string | null;
       /** Serviceability */
       serviceability: string;
     };
@@ -3238,6 +3281,10 @@ export interface operations {
       query?: {
         limit?: number;
         offset?: number;
+        search?: string;
+        kind?: 'all' | 'custody' | 'request' | 'flag' | 'admin';
+        warehouse_id?: string | null;
+        mine?: boolean;
       };
       header?: never;
       path: {
@@ -4711,6 +4758,32 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['AssetView'];
+        };
+      };
+    };
+  };
+  companies_api_company_update: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        company_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CompanyUpdate'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyView'];
         };
       };
     };

@@ -8,6 +8,7 @@ from companies.models import Company, CompanyMembership
 from companies.revisions import expect_revision
 
 from .access import active_warehouse, lock_asset
+from .events import asset_event_metadata
 from .models import (
     CustodyHandoff,
     CustodyPeriod,
@@ -28,7 +29,13 @@ def create_warehouse(identity, company_id, data):
     result = Warehouse.objects.create(
         company_id=company_id, code=data.code, name=data.name, address=data.address
     )
-    record_company_event(identity, company_id, "equipment.warehouse.created", result)
+    record_company_event(
+        identity,
+        company_id,
+        "equipment.warehouse.created",
+        result,
+        metadata={"warehouse_id": str(result.pk)},
+    )
     return result
 
 
@@ -54,7 +61,13 @@ def update_warehouse(identity, company_id, warehouse_id, data):
     result.archived_at = (result.archived_at or timezone.now()) if data.archived else None
     result.revision += 1
     result.save()
-    record_company_event(identity, company_id, "equipment.warehouse.updated", result)
+    record_company_event(
+        identity,
+        company_id,
+        "equipment.warehouse.updated",
+        result,
+        metadata={"warehouse_id": str(result.pk)},
+    )
     return result
 
 
@@ -89,7 +102,11 @@ def set_warehouse_grant(identity, company_id, warehouse_id, data):
         company_id,
         "equipment.warehouse.authority_changed",
         warehouse,
-        metadata={"membership_id": str(subject.pk), "enabled": data.enabled},
+        metadata={
+            "warehouse_id": str(warehouse.pk),
+            "membership_id": str(subject.pk),
+            "enabled": data.enabled,
+        },
     )
     return warehouse
 
@@ -189,7 +206,9 @@ def update_asset(identity, company_id, asset_id, data):
     asset.serial_number = data.serial_number
     asset.revision += 1
     asset.save(update_fields=["serial_number", "revision"])
-    record_company_event(identity, company_id, "equipment.asset.updated", asset)
+    record_company_event(
+        identity, company_id, "equipment.asset.updated", asset, metadata=asset_event_metadata(asset)
+    )
     return asset
 
 
@@ -207,6 +226,6 @@ def set_stewardship(identity, company_id, asset_id, data):
         company_id,
         "equipment.asset.stewardship_changed",
         asset,
-        metadata={"warehouse_id": str(warehouse.pk), "reason": data.note},
+        metadata=asset_event_metadata(asset, reason=data.note),
     )
     return asset

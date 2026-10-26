@@ -85,6 +85,7 @@ test('verified signup, company, delivered invitation, real login and password re
   await section('Add model').getByRole('button', { name: 'Create model' }).click();
   await expect(section('Add model').getByRole('status')).toContainText('Saved successfully');
   await page.goto('/app/tools/new');
+  await page.getByRole('button', { name: 'Continue without a photo' }).click();
   await page.getByLabel('Tool model').selectOption({ label: 'Makita Hammer drill · XPH14' });
   await page.getByLabel('Starting warehouse').selectOption({ label: 'Main warehouse' });
   await page.getByLabel('Unique asset tag').fill('TEST-001');

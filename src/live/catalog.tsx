@@ -109,32 +109,34 @@ export function CatalogPage() {
                 <input type="checkbox" name="archive" defaultChecked={!!w.archived_at} /> Archived
               </label>
             </Form>
-            <Form
-              label="Update warehouse manager"
-              submit={(f) =>
-                api.POST('/api/companies/{company_id}/warehouses/{warehouse_id}/authority', {
-                  params: { path: { ...c.path, warehouse_id: w.id } },
-                  body: {
-                    expected_revision: w.revision,
-                    membership_id: text(f, 'member'),
-                    enabled: text(f, 'enabled') === 'true',
-                  },
-                })
-              }
-            >
-              <Select label="Person" name="member">
-                <option value="">Choose a person</option>
-                {refs.people.data?.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.preferred_name}
-                  </option>
-                ))}
-              </Select>
-              <Select label="Warehouse authority" name="enabled">
-                <option value="true">Grant management authority</option>
-                <option value="false">Revoke management authority</option>
-              </Select>
-            </Form>
+            {c.can('people.manage') && (
+              <Form
+                label="Update warehouse manager"
+                submit={(f) =>
+                  api.POST('/api/companies/{company_id}/warehouses/{warehouse_id}/authority', {
+                    params: { path: { ...c.path, warehouse_id: w.id } },
+                    body: {
+                      expected_revision: w.revision,
+                      membership_id: text(f, 'member'),
+                      enabled: text(f, 'enabled') === 'true',
+                    },
+                  })
+                }
+              >
+                <Select label="Person" name="member">
+                  <option value="">Choose a person</option>
+                  {refs.people.data?.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.preferred_name}
+                    </option>
+                  ))}
+                </Select>
+                <Select label="Warehouse authority" name="enabled">
+                  <option value="true">Grant management authority</option>
+                  <option value="false">Revoke management authority</option>
+                </Select>
+              </Form>
+            )}
           </details>
         ))}
       </Section>

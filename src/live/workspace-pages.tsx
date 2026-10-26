@@ -5,7 +5,7 @@ import { useAccessDirectory, useWarehouseDirectory } from './workspace-pages-sta
 import { Badge, Empty, Field, Form, human, Loading, Notice, Section, Select, text } from './ui';
 
 export function WarehousesPage() {
-  const { c, refs, warehouses, selected, select } = useWarehouseDirectory();
+  const { c, refs, warehouses, selected, select, creating, archived, setArchived } = useWarehouseDirectory();
   return (
     <>
       <header className="page-heading">
@@ -13,12 +13,35 @@ export function WarehousesPage() {
           <h1>Warehouses</h1>
           <p>Locations, stock, and warehouse authority.</p>
         </div>
-        <Link className="button primary" to="/app/catalog">
+        <button className="button primary" onClick={() => select('new')}>
           Add warehouse
-        </Link>
+        </button>
       </header>
       {warehouses.isPending && <Loading />}
       {warehouses.error && <Notice error>{errorMessage(warehouses.error)}</Notice>}
+      <label className="check">
+        <input type="checkbox" checked={archived} onChange={(event) => setArchived(event.target.checked)} />
+        Show archived warehouses
+      </label>
+      {creating && (
+        <RecordSheet title="Add warehouse" onClose={() => select('')}>
+          <h1>Add warehouse</h1>
+          <Form
+            label="Create warehouse"
+            onDone={() => select('')}
+            submit={(f) =>
+              api.POST('/api/companies/{company_id}/warehouses', {
+                params: { path: c.path },
+                body: { code: text(f, 'code'), name: text(f, 'name'), address: text(f, 'address') },
+              })
+            }
+          >
+            <Field label="Code" name="code" required maxLength={40} />
+            <Field label="Name" name="name" required maxLength={200} />
+            <Field label="Address" name="address" maxLength={2000} />
+          </Form>
+        </RecordSheet>
+      )}
       <div className="inventory-card">
         <table className="inventory-table">
           <thead>
@@ -56,6 +79,7 @@ export function WarehousesPage() {
           <Section title="Warehouse information">
             <Form
               label="Save warehouse"
+              onDone={() => select('')}
               submit={(f) =>
                 api.POST('/api/companies/{company_id}/warehouses/{warehouse_id}/update', {
                   params: { path: { ...c.path, warehouse_id: selected.id } },
@@ -76,34 +100,36 @@ export function WarehousesPage() {
               </label>
             </Form>
           </Section>
-          <Section title="Management authority">
-            <Form
-              label="Update warehouse manager"
-              submit={(f) =>
-                api.POST('/api/companies/{company_id}/warehouses/{warehouse_id}/authority', {
-                  params: { path: { ...c.path, warehouse_id: selected.id } },
-                  body: {
-                    expected_revision: selected.revision,
-                    membership_id: text(f, 'person'),
-                    enabled: text(f, 'enabled') === 'true',
-                  },
-                })
-              }
-            >
-              <Select label="Person" name="person">
-                <option value="">Choose a person</option>
-                {refs.people.data?.map((person) => (
-                  <option value={person.id} key={person.id}>
-                    {person.preferred_name}
-                  </option>
-                ))}
-              </Select>
-              <Select label="Warehouse authority" name="enabled">
-                <option value="true">Grant management authority</option>
-                <option value="false">Revoke management authority</option>
-              </Select>
-            </Form>
-          </Section>
+          {c.can('people.manage') && (
+            <Section title="Management authority">
+              <Form
+                label="Update warehouse manager"
+                submit={(f) =>
+                  api.POST('/api/companies/{company_id}/warehouses/{warehouse_id}/authority', {
+                    params: { path: { ...c.path, warehouse_id: selected.id } },
+                    body: {
+                      expected_revision: selected.revision,
+                      membership_id: text(f, 'person'),
+                      enabled: text(f, 'enabled') === 'true',
+                    },
+                  })
+                }
+              >
+                <Select label="Person" name="person">
+                  <option value="">Choose a person</option>
+                  {refs.people.data?.map((person) => (
+                    <option value={person.id} key={person.id}>
+                      {person.preferred_name}
+                    </option>
+                  ))}
+                </Select>
+                <Select label="Warehouse authority" name="enabled">
+                  <option value="true">Grant management authority</option>
+                  <option value="false">Revoke management authority</option>
+                </Select>
+              </Form>
+            </Section>
+          )}
           <Link to={`/app/tools?warehouse=${selected.id}`}>View inventory</Link>
         </RecordSheet>
       )}

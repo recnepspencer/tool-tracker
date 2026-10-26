@@ -31,7 +31,7 @@ Preserve those domain needs. Change these demo assumptions:
 | Job name is the unique business identifier | Company job number is unique. Names can repeat. Preserve old numbers after archive. |
 | Lost and damaged share a condition enum | Separate serviceability from missing-asset incidents. |
 | Warehouse responsibility may be inferred from holder | Record the responsible warehouse explicitly; accepted warehouse receipt updates it according to a defined rule. |
-| Approving a request immediately changes custody | Approval allocates/reserves; receipt establishes custody. A single issue command may record both consent and actual collection when both happened. |
+| Approving a request immediately changes custody | Approval creates a pending handoff; it does not reserve the tool or establish custody. Recipient acceptance records receipt. |
 | Editing a unit can change its shared definition | Edit the unit and catalog model through separate commands and separate revisions. |
 
 ## Common conventions

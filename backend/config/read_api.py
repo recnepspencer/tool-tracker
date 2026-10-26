@@ -1,6 +1,7 @@
 """Cross-domain read projections. These endpoints never own domain mutations."""
 
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from backend_platform.api import define_http_endpoint
@@ -26,6 +27,7 @@ class ActivityView(Schema):
     occurred_at: datetime
     actor_user_id: UUID | None
     effective_user_id: UUID | None
+    effective_name: str | None
     subject_domain: str
     subject_entity_type: str
     subject_entity_id: str
@@ -57,6 +59,10 @@ class DirectoryTool(Schema):
     asset_id: UUID
     asset_tag: str
     name: str
+    manufacturer: str
+    model_number: str
+    serial_number: str | None
+    registration_photo_id: UUID | None
     serviceability: str
     missing: bool
 
@@ -73,13 +79,54 @@ class DirectoryPage(Schema):
     next_offset: int | None
 
 
-def activity(request: HttpRequest, company_id: UUID, page: Query[PageInput]):
+def activity(
+    request: HttpRequest,
+    company_id: UUID,
+    page: Query[PageInput],
+    search: str = "",
+    kind: Literal["all", "custody", "request", "flag", "admin"] = "all",
+    warehouse_id: UUID | None = None,
+    mine: bool = False,
+):
     identity = current_identity(request)
     member = require_member(identity, company_id, "company.read")
     query = PlatformAuditEventRecord.objects.filter(metadata__company_id=str(company_id))
-    if "activity.read" not in capabilities(member):
+    if mine or "activity.read" not in capabilities(member):
         query = query.filter(effective_user_id=identity.user_id)
-    return paginate(query.order_by("-occurred_at", "id"), page.limit, page.offset)
+    groups = {
+        "custody": Q(event_key__startswith="equipment.handoff.")
+        | Q(event_key__startswith="equipment.reconciliation."),
+        "request": Q(event_key="equipment.tool.requested")
+        | Q(event_key__startswith="equipment.request."),
+        "flag": Q(event_key__startswith="equipment.incident.")
+        | Q(event_key="equipment.asset.serviced")
+        | Q(event_key__startswith="equipment.asset.lifecycle"),
+    }
+    if kind == "admin":
+        query = query.exclude(groups["custody"] | groups["request"] | groups["flag"])
+    elif kind != "all":
+        query = query.filter(groups[kind])
+    if warehouse_id:
+        query = query.filter(metadata__warehouse_id=str(warehouse_id))
+    if search:
+        text = search[:200]
+        query = query.filter(
+            Q(event_key__icontains=text)
+            | Q(subject_entity_id__icontains=text)
+            | Q(metadata__reason__icontains=text)
+            | Q(metadata__note__icontains=text)
+            | Q(metadata__asset_tag__icontains=text)
+        )
+    result = paginate(query.order_by("-occurred_at", "id"), page.limit, page.offset)
+    names = dict(
+        CompanyMembership.objects.filter(
+            company_id=company_id,
+            person__identity_user_id__in=[item.effective_user_id for item in result["items"]],
+        ).values_list("person__identity_user_id", "person__preferred_name")
+    )
+    for item in result["items"]:
+        item.effective_name = names.get(item.effective_user_id)
+    return result
 
 
 def summary(request: HttpRequest, company_id: UUID):
@@ -179,6 +226,10 @@ def directory(
                 "asset_id": custody.asset_id,
                 "asset_tag": custody.asset.asset_tag,
                 "name": custody.asset.tool_model.name,
+                "manufacturer": custody.asset.tool_model.manufacturer,
+                "model_number": custody.asset.tool_model.model_number,
+                "serial_number": custody.asset.serial_number,
+                "registration_photo_id": custody.asset.registration_photo_id,
                 "serviceability": custody.asset.serviceability,
                 "missing": custody.asset_id in missing,
             }

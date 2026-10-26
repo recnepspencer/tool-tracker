@@ -27,7 +27,7 @@ def bootstrap_company(identity, data):
         return prior
     try:
         ZoneInfo(data.timezone)
-    except ZoneInfoNotFoundError as exc:
+    except (ZoneInfoNotFoundError, ValueError) as exc:
         raise conflict("Unknown IANA timezone.", code="invalid_timezone") from exc
     company = Company.objects.create(
         name=data.name,

@@ -1,79 +1,12 @@
 import { PhotoField, uploadPhoto } from './photos';
-import { useRegisterToolState, useToolDetailState } from './tools-state';
+import { useToolDetailState } from './tools-state';
 
 import { Link } from 'react-router-dom';
 
-import { api, errorMessage, result } from './client';
+import { api, errorMessage } from './client';
 
 import { Badge, date, Empty, Field, Form, human, Loading, Notice, Section, Select, text } from './ui';
 
-export function RegisterTool() {
-  const { c, refs, key, created, setCreated, policy } = useRegisterToolState();
-  if (policy.isPending) return <Loading />;
-  if (policy.error) return <Notice error>{errorMessage(policy.error)}</Notice>;
-  if (!c.can('tools.manage') && !policy.data.employee_tool_creation_enabled)
-    return <Notice>Employee tool registration is disabled by your company. Contact your equipment manager.</Notice>;
-  return (
-    <>
-      <Link to="/app/tools">← Tools</Link>
-      <h1>Register a physical tool</h1>
-      <p className="muted">Choose the shared model, then identify this individual tool.</p>
-      {created ? (
-        <Notice>
-          Tool registered. <Link to={`/app/tools/${created}`}>Open its custody record</Link>
-        </Notice>
-      ) : (
-        <Section title="Tool details">
-          <Form
-            label="Register tool"
-            submit={async (f) => {
-              const photo_id = await uploadPhoto(c.company_id, f, 'registration');
-              const tool = result(
-                await api.POST('/api/companies/{company_id}/tools', {
-                  params: { path: c.path },
-                  body: {
-                    request_key: key,
-                    tool_model_id: text(f, 'model'),
-                    warehouse_id: text(f, 'warehouse'),
-                    asset_tag: text(f, 'tag'),
-                    serial_number: text(f, 'serial') || null,
-                    photo_id,
-                  },
-                }),
-              );
-              setCreated(tool.id);
-            }}
-          >
-            <Select label="Tool model" name="model">
-              <option value="">Choose a model</option>
-              {refs.models.data?.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.manufacturer} {m.name} · {m.model_number}
-                </option>
-              ))}
-            </Select>
-            <Select label="Starting warehouse" name="warehouse">
-              <option value="">Choose a warehouse</option>
-              {refs.warehouses.data?.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </Select>
-            <Field label="Unique asset tag" name="tag" required maxLength={64} />
-            <Field label="Serial number" name="serial" maxLength={120} />
-            <PhotoField />
-          </Form>
-          {c.can('catalog.manage') && (
-            <Link className="text-link" to="/app/catalog">
-              Manage models and warehouses
-            </Link>
-          )}
-        </Section>
-      )}
-    </>
-  );
-}
 export function ToolDetail() {
   const { c, refs, path, key, renewKey, tool, history, incidents, service } = useToolDetailState();
   if (tool.isPending) return <Loading />;
@@ -81,7 +14,7 @@ export function ToolDetail() {
   const t = tool.data;
   const manages = c.can('tools.manage') || c.managed_warehouse_ids.includes(t.responsible_warehouse_id);
   const canHandoff =
-    c.can('tools.manage') || (t.warehouse_id !== null && c.managed_warehouse_ids.includes(t.warehouse_id));
+    t.warehouse_id !== null && (c.can('tools.manage') || c.managed_warehouse_ids.includes(t.warehouse_id));
   const holds = t.holder_membership_id === c.membership_id;
   return (
     <>
@@ -133,7 +66,7 @@ export function ToolDetail() {
             </p>
           </Section>
         )}
-        {(holds || canHandoff) && t.lifecycle === 'active' && (
+        {(holds || canHandoff) && t.lifecycle === 'active' && !t.missing && (
           <Section title="Transfer or return">
             <Form
               label="Propose handoff"
@@ -157,7 +90,7 @@ export function ToolDetail() {
                 <option value="">Choose a person or warehouse</option>
                 <optgroup label="People">
                   {refs.people.data
-                    ?.filter((p) => p.id !== t.holder_membership_id)
+                    ?.filter((p) => t.serviceability === 'serviceable' && p.id !== t.holder_membership_id)
                     .map((p) => (
                       <option value={`person:${p.id}`} key={p.id}>
                         {p.preferred_name}
@@ -236,50 +169,62 @@ export function ToolDetail() {
           <summary>Manage this tool</summary>
           <div className="detail-grid">
             <Section title="Record service">
-              <Form
-                label="Save service record"
-                submit={async (f) =>
-                  api.POST('/api/companies/{company_id}/tools/{asset_id}/service', {
-                    params: { path },
-                    body: {
-                      expected_revision: t.revision,
-                      serviceability: text(f, 'condition') as 'serviceable' | 'damaged' | 'out_of_service',
-                      note: text(f, 'note'),
-                      photo_id: await uploadPhoto(c.company_id, f, 'service'),
-                    },
-                  })
-                }
-              >
-                <Select name="condition" label="Condition">
-                  <option value="serviceable">Serviceable</option>
-                  <option value="damaged">Damaged</option>
-                  <option value="out_of_service">Out of service</option>
-                </Select>
-                <Field label="Work performed" name="note" required maxLength={2000} />
-                <PhotoField />
-              </Form>
+              {t.lifecycle === 'disposed' ? (
+                <Notice>This tool is permanently disposed.</Notice>
+              ) : (
+                <Form
+                  label="Save service record"
+                  submit={async (f) =>
+                    api.POST('/api/companies/{company_id}/tools/{asset_id}/service', {
+                      params: { path },
+                      body: {
+                        expected_revision: t.revision,
+                        serviceability: text(f, 'condition') as 'serviceable' | 'damaged' | 'out_of_service',
+                        note: text(f, 'note'),
+                        photo_id: await uploadPhoto(c.company_id, f, 'service'),
+                      },
+                    })
+                  }
+                >
+                  <Select name="condition" label="Condition">
+                    <option value="serviceable">Serviceable</option>
+                    <option value="damaged">Damaged</option>
+                    <option value="out_of_service">Out of service</option>
+                  </Select>
+                  <Field label="Work performed" name="note" required maxLength={2000} />
+                  <PhotoField />
+                </Form>
+              )}
             </Section>
             <Section title="Retire or restore">
-              <Form
-                label="Update lifecycle"
-                submit={(f) =>
-                  api.POST('/api/companies/{company_id}/tools/{asset_id}/lifecycle', {
-                    params: { path },
-                    body: {
-                      expected_revision: t.revision,
-                      lifecycle: text(f, 'lifecycle') as 'active' | 'retired' | 'disposed',
-                      note: text(f, 'note'),
-                    },
-                  })
-                }
-              >
-                <Select name="lifecycle" label="Lifecycle" defaultValue={t.lifecycle}>
-                  <option value="active">Active</option>
-                  <option value="retired">Retired</option>
-                  <option value="disposed">Disposed (permanent)</option>
-                </Select>
-                <Field label="Reason" name="note" required maxLength={2000} />
-              </Form>
+              {t.lifecycle === 'disposed' ? (
+                <Notice>Disposal is permanent. This tool cannot be restored.</Notice>
+              ) : t.missing ? (
+                <Notice>Resolve the missing-tool report before changing its lifecycle.</Notice>
+              ) : !t.warehouse_id ? (
+                <Notice>Receive this tool at a warehouse before changing its lifecycle.</Notice>
+              ) : (
+                <Form
+                  label="Update lifecycle"
+                  submit={(f) =>
+                    api.POST('/api/companies/{company_id}/tools/{asset_id}/lifecycle', {
+                      params: { path },
+                      body: {
+                        expected_revision: t.revision,
+                        lifecycle: text(f, 'lifecycle') as 'active' | 'retired' | 'disposed',
+                        note: text(f, 'note'),
+                      },
+                    })
+                  }
+                >
+                  <Select name="lifecycle" label="Lifecycle" defaultValue={t.lifecycle}>
+                    <option value="active">Active</option>
+                    <option value="retired">Retired</option>
+                    <option value="disposed">Disposed (permanent)</option>
+                  </Select>
+                  <Field label="Reason" name="note" required maxLength={2000} />
+                </Form>
+              )}
             </Section>
             {c.can('tools.manage') && (
               <>

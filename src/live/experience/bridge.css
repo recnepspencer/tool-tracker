@@ -447,3 +447,47 @@
     padding-bottom: max(32px, env(safe-area-inset-bottom));
   }
 }
+.experience .registration-wizard--photo .form > button[type='submit'] {
+  display: none;
+}
+.experience .registration-wizard [hidden] {
+  display: none;
+}
+.experience .photo-capture-frame {
+  min-height: 310px;
+  border: 1px dashed var(--border);
+  border-radius: 20px;
+  padding: 32px 20px;
+  display: grid;
+  gap: 16px;
+  justify-items: center;
+  text-align: center;
+  background: var(--surface);
+}
+.experience .registration-capture {
+  display: grid;
+  gap: 20px;
+}
+.experience .registration-details {
+  display: grid;
+  gap: 18px;
+}
+.experience .worker-upload-tile {
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: 18px;
+  background: var(--surface);
+}
+.experience .worker-upload-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.experience .activity-feed {
+  display: grid;
+  gap: 8px;
+  margin-top: 24px;
+}
+.experience .foreman-tool-copy .badge {
+  justify-self: start;
+}

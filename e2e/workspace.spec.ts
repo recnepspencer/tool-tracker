@@ -172,18 +172,25 @@ test('worker participation needs approval and suspended access is revoked', asyn
 
 test('registration attaches a real photo served through authorized download', async ({ page, browser }) => {
   const fixture = await workspace(page);
+  const model = await command(page.request, `${fixture.base}/tool-models`, {
+    category_id: fixture.asset.category_id,
+    name: 'Hammer drill',
+    manufacturer: 'DeWalt',
+    model_number: 'DCD996',
+  });
+  await page.reload(); // Complete external fixture setup before testing the UI's catalog read.
   await page.getByRole('link', { name: 'Add tool', exact: true }).click();
-  await page.getByLabel('Tool model').selectOption({ label: 'Makita Hammer drill · XPH14' });
+  await page.getByLabel('Tool photo (up to 8 MB)').setInputFiles('e2e/fixtures/hammer-drill.jpg');
+  await page.getByLabel('Tool model').selectOption(model.id);
   await page.getByLabel('Starting warehouse').selectOption({ label: 'Main warehouse' });
   await page.getByLabel('Unique asset tag').fill('PHOTO-003');
-  await page.getByLabel('Photo (optional, up to 8 MB)').setInputFiles('public/app/icon-192.png');
   await page.getByRole('button', { name: 'Register tool', exact: true }).click();
   await page.getByRole('link', { name: 'Open its custody record' }).click();
   const photo = page.getByRole('link', { name: 'Download registration photo' });
   const href = await photo.getAttribute('href');
   const download = await page.request.get(href!);
   expect(download.status()).toBe(200);
-  expect(download.headers()['content-type']).toContain('image/png');
+  expect(download.headers()['content-type']).toContain('image/jpeg');
   const anonymous = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
   try {
     expect((await anonymous.request.get(href!)).status()).toBe(401);

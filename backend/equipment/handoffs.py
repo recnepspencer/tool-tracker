@@ -9,6 +9,7 @@ from companies.revisions import expect_revision
 from evidence.files import claim_file
 
 from .access import active_warehouse, lock_asset, require_warehouse_authority
+from .events import asset_event_metadata
 from .models import AssetIncident, CustodyHandoff, CustodyPeriod, HandoffAttachment, ToolRequest
 
 
@@ -132,7 +133,7 @@ def propose_handoff(identity, company_id, asset_id, data):
         company_id,
         "equipment.handoff.proposed",
         result,
-        metadata={"asset_id": str(asset.pk)},
+        metadata=asset_event_metadata(asset),
     )
     return result, True
 
@@ -193,6 +194,6 @@ def resolve_handoff(identity, company_id, handoff_id, action, data):
         company_id,
         f"equipment.handoff.{target}",
         handoff,
-        metadata={"asset_id": str(asset.pk)},
+        metadata=asset_event_metadata(asset),
     )
     return handoff

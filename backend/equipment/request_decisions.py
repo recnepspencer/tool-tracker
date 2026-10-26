@@ -11,6 +11,7 @@ from companies.models import CompanyMembership
 from companies.revisions import expect_revision
 
 from .access import active_warehouse, lock_asset, require_warehouse_authority
+from .events import asset_event_metadata
 from .handoffs import current_custody, ensure_transferable
 from .models import CustodyHandoff, ToolRequest
 
@@ -82,6 +83,6 @@ def decide_request(identity, company_id, request_id, action, data):
         company_id,
         f"equipment.request.{target}",
         result,
-        metadata={"asset_id": str(asset.pk)},
+        metadata=asset_event_metadata(asset),
     )
     return result

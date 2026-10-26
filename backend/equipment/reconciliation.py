@@ -9,6 +9,7 @@ from companies.revisions import expect_revision
 from evidence.files import claim_file
 
 from .access import active_warehouse, lock_asset
+from .events import asset_event_metadata
 from .handoffs import current_custody, move_custody
 from .models import CustodyHandoff, ReconciliationAttachment, ReconciliationCase
 
@@ -29,7 +30,7 @@ def open_case(identity, company_id, asset_id, data):
         company_id,
         "equipment.reconciliation.opened",
         result,
-        metadata={"asset_id": str(asset.pk)},
+        metadata=asset_event_metadata(asset),
     )
     return result
 
@@ -114,6 +115,6 @@ def resolve_case(identity, company_id, case_id, data):
         company_id,
         "equipment.reconciliation.resolved",
         case,
-        metadata={"asset_id": str(asset.pk)},
+        metadata=asset_event_metadata(asset),
     )
     return case

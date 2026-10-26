@@ -14,15 +14,15 @@ const CheckoutPage = lazy(() => import('./field').then((m) => ({ default: m.Chec
 const ToolSheet = lazy(() => import('./field').then((m) => ({ default: m.ToolSheet })));
 const WarehousesPage = lazy(() => import('./workspace-pages').then((m) => ({ default: m.WarehousesPage })));
 const AccessPage = lazy(() => import('./workspace-pages').then((m) => ({ default: m.AccessPage })));
-const RegisterTool = lazy(() => import('./tools').then((m) => ({ default: m.RegisterTool })));
+const RegisterTool = lazy(() => import('./registration').then((m) => ({ default: m.RegisterTool })));
 const OperationsPage = lazy(() => import('./operations').then((m) => ({ default: m.OperationsPage })));
 const ReconciliationsPage = lazy(() => import('./operations').then((m) => ({ default: m.ReconciliationsPage })));
 const PeoplePage = lazy(() => import('./people').then((m) => ({ default: m.PeoplePage })));
 const JobsPage = lazy(() => import('./jobs').then((m) => ({ default: m.JobsPage })));
 const CatalogPage = lazy(() => import('./catalog').then((m) => ({ default: m.CatalogPage })));
 const SettingsPage = lazy(() => import('./settings').then((m) => ({ default: m.SettingsPage })));
-const ActivityPage = lazy(() => import('./settings').then((m) => ({ default: m.ActivityPage })));
-const DirectoryPage = lazy(() => import('./settings').then((m) => ({ default: m.DirectoryPage })));
+const ActivityPage = lazy(() => import('./activity').then((m) => ({ default: m.ActivityPage })));
+const DirectoryPage = lazy(() => import('./directory').then((m) => ({ default: m.DirectoryPage })));
 
 function RequireAccount() {
   const { session, loading, error, refresh } = useSession();

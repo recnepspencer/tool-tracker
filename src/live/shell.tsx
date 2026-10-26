@@ -33,6 +33,7 @@ import './experience/admin-people.css';
 import './experience/admin-warehouses.css';
 import './experience/tool-detail.css';
 import './experience/bridge.css';
+import './experience/jobs.css';
 
 export function Shell() {
   const { session, chooseCompany, logout } = useSession();
@@ -55,7 +56,7 @@ export function Shell() {
           'Settings',
           '/app/settings',
           Settings,
-          c.can('tools.manage_registration_policy') || c.can('jobs.manage_policy'),
+          c.can('company.manage') || c.can('tools.manage_registration_policy') || c.can('jobs.manage_policy'),
         ],
       ] as const)
     : ([

@@ -8,7 +8,7 @@ import { Badge, date, Empty, Field, Form, human, Loading, Notice, Section, Selec
 
 const roles = ['field_member', 'equipment_manager', 'dispatcher', 'estimator', 'company_admin'] as const;
 export function PeoplePage() {
-  const { c, link, setLink, inactive, setInactive, people, invites, selectedId, inviting, select, invite } =
+  const { c, link, setLink, inactive, setInactive, people, invites, selectedId, inviting, select, invite, saved } =
     usePeoplePageState();
   return (
     <>
@@ -101,7 +101,7 @@ export function PeoplePage() {
       </div>
       {people.data?.find((person) => person.id === selectedId) && (
         <RecordSheet title="Person details" onClose={() => select('')}>
-          <Person person={people.data.find((person) => person.id === selectedId)!} />
+          <Person person={people.data.find((person) => person.id === selectedId)!} onSaved={saved} />
         </RecordSheet>
       )}
       {c.can('people.manage') && (
@@ -136,7 +136,7 @@ export function PeoplePage() {
     </>
   );
 }
-function Person({ person: p }: { person: Model<'MemberView'> }) {
+function Person({ person: p, onSaved }: { person: Model<'MemberView'>; onSaved: () => void }) {
   const c = useCompany();
   return (
     <article className="panel">
@@ -152,6 +152,7 @@ function Person({ person: p }: { person: Model<'MemberView'> }) {
           <summary>Manage access</summary>
           <Form
             label="Save member access"
+            onDone={onSaved}
             submit={(f) =>
               api.POST('/api/companies/{company_id}/people/{membership_id}/update', {
                 params: { path: { ...c.path, membership_id: p.id } },

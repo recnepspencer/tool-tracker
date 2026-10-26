@@ -97,6 +97,7 @@ jobs:
         run: |
           mkdir -p artifacts/mail
           (cd backend && uv run --no-sync python manage.py runserver 127.0.0.1:8001 --noreload) > artifacts/browser-api.log 2>&1 &
+          (cd backend && uv run --no-sync python manage.py run_platform_worker) > artifacts/browser-worker.log 2>&1 &
           for attempt in $(seq 1 30); do
             curl --fail --silent http://127.0.0.1:8001/api/auth/csrf >/dev/null && break
             sleep 1
@@ -110,6 +111,7 @@ jobs:
           path: |
             artifacts/browser-results
             artifacts/browser-api.log
+            artifacts/browser-worker.log
       - uses: actions/upload-artifact@v4
         with:
           name: nelson-openapi

@@ -56,6 +56,17 @@
             ],
             "title": "Actor User Id"
           },
+          "effective_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Name"
+          },
           "effective_user_id": {
             "anyOf": [
               {
@@ -124,6 +135,7 @@
           "occurred_at",
           "actor_user_id",
           "effective_user_id",
+          "effective_name",
           "subject_domain",
           "subject_entity_type",
           "subject_entity_id",
@@ -1112,8 +1124,47 @@
         "title": "CompanySummary",
         "type": "object"
       },
+      "CompanyUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Address",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "timezone": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Timezone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "name",
+          "timezone"
+        ],
+        "title": "CompanyUpdate",
+        "type": "object"
+      },
       "CompanyView": {
         "properties": {
+          "address": {
+            "title": "Address",
+            "type": "string"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -1135,6 +1186,7 @@
         "required": [
           "id",
           "name",
+          "address",
           "timezone",
           "revision"
         ],
@@ -1371,13 +1423,44 @@
             "title": "Asset Tag",
             "type": "string"
           },
+          "manufacturer": {
+            "title": "Manufacturer",
+            "type": "string"
+          },
           "missing": {
             "title": "Missing",
             "type": "boolean"
           },
+          "model_number": {
+            "title": "Model Number",
+            "type": "string"
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "registration_photo_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Photo Id"
+          },
+          "serial_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Serial Number"
           },
           "serviceability": {
             "title": "Serviceability",
@@ -1388,6 +1471,10 @@
           "asset_id",
           "asset_tag",
           "name",
+          "manufacturer",
+          "model_number",
+          "serial_number",
+          "registration_photo_id",
           "serviceability",
           "missing"
         ],
@@ -4801,6 +4888,60 @@
               "title": "Offset",
               "type": "integer"
             }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Search",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "default": "all",
+              "enum": [
+                "all",
+                "custody",
+                "request",
+                "flag",
+                "admin"
+              ],
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "warehouse_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Warehouse Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "mine",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Mine",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -7918,6 +8059,49 @@
         "summary": "Asset Update",
         "tags": [
           "equipment catalog"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/update": {
+      "post": {
+        "operationId": "companies_api_company_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Company Update",
+        "tags": [
+          "company and people"
         ]
       }
     },

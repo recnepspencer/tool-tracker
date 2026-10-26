@@ -11,6 +11,7 @@ from evidence.files import claim_file
 
 from .access import active_warehouse, require_warehouse_authority
 from .asset_creation import create_asset_at_warehouse
+from .events import asset_event_metadata
 from .models import ToolAsset, ToolCategory, ToolModel, ToolRegistrationPolicy
 
 
@@ -131,5 +132,11 @@ def register_asset(identity, company_id, data):
             "registration_fingerprint",
         ]
     )
-    record_company_event(identity, company_id, "equipment.asset.registered", asset)
+    record_company_event(
+        identity,
+        company_id,
+        "equipment.asset.registered",
+        asset,
+        metadata=asset_event_metadata(asset),
+    )
     return asset, True

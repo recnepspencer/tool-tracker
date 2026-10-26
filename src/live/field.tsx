@@ -8,7 +8,15 @@ import { ToolDetail } from './tools';
 import { Badge, date, Empty, Field, human, Loading, Notice } from './ui';
 
 type Asset = Model<'AssetView'>;
-export function AssetPhoto({ asset, companyId, large = false }: { asset: Asset; companyId: string; large?: boolean }) {
+export function AssetPhoto({
+  asset,
+  companyId,
+  large = false,
+}: {
+  asset: Pick<Asset, 'registration_photo_id'>;
+  companyId: string;
+  large?: boolean;
+}) {
   return asset.registration_photo_id ? (
     <span className={large ? 'catalog-photo-frame' : 'tool-photo'}>
       <img
@@ -96,7 +104,7 @@ export function MyToolsPage() {
                 </div>
               </Link>
               <Link className="button worker-transfer-button" to={`/app/mine/${tool.id}?action=transfer`}>
-                Transfer
+                {tool.lifecycle === 'active' && !tool.missing ? 'Transfer' : 'View details'}
               </Link>
             </article>
           ))}

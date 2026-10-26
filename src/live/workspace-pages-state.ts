@@ -10,6 +10,7 @@ export function useWarehouseDirectory() {
   return {
     ...catalog,
     selected: catalog.warehouses.data?.find((item) => item.id === params.get('warehouse')),
+    creating: params.get('warehouse') === 'new',
     select: (id: string) => update('warehouse', id),
   };
 }

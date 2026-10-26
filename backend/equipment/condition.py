@@ -8,6 +8,7 @@ from companies.revisions import expect_revision
 from evidence.files import claim_file
 
 from .access import lock_asset, manages_warehouse, require_warehouse_authority
+from .events import asset_event_metadata
 from .handoffs import current_custody
 from .models import (
     AssetIncident,
@@ -56,7 +57,7 @@ def report_incident(identity, company_id, asset_id, data):
         company_id,
         "equipment.incident.reported",
         incident,
-        metadata={"asset_id": str(asset.pk), "kind": data.kind},
+        metadata=asset_event_metadata(asset, kind=data.kind),
     )
     return incident
 
@@ -87,7 +88,7 @@ def resolve_missing(identity, company_id, incident_id, data):
         company_id,
         "equipment.incident.found",
         incident,
-        metadata={"asset_id": str(asset.pk)},
+        metadata=asset_event_metadata(asset),
     )
     return incident
 
@@ -128,7 +129,7 @@ def record_service(identity, company_id, asset_id, data):
         company_id,
         "equipment.asset.serviced",
         event,
-        metadata={"asset_id": str(asset.pk)},
+        metadata=asset_event_metadata(asset),
     )
     return event
 
@@ -184,6 +185,6 @@ def change_lifecycle(identity, company_id, asset_id, data):
         company_id,
         "equipment.asset.lifecycle_changed",
         event,
-        metadata={"asset_id": str(asset.pk), "lifecycle": data.lifecycle},
+        metadata=asset_event_metadata(asset, lifecycle=data.lifecycle),
     )
     return asset

@@ -19,6 +19,31 @@ from equipment.models import CustodyPeriod, ToolAsset, ToolRequest
 pytestmark = pytest.mark.django_db(transaction=True)
 
 
+def test_company_profile_upgrade_preserves_existing_company_identity():
+    executor = MigrationExecutor(connection)
+    latest = executor.loader.graph.leaf_nodes()
+    previous = [("companies", "0002_membershipinvitation_and_more")]
+    try:
+        executor.migrate(previous)
+        Company = executor.loader.project_state(previous).apps.get_model("companies", "Company")
+        company = Company.objects.create(
+            name="Historical Electric", timezone="America/Chicago", revision=7
+        )
+        identity = company.pk
+        MigrationExecutor(connection).migrate(latest)
+        from companies.models import Company as CurrentCompany
+
+        upgraded = CurrentCompany.objects.get(pk=identity)
+        assert (upgraded.name, upgraded.timezone, upgraded.revision, upgraded.address) == (
+            "Historical Electric",
+            "America/Chicago",
+            7,
+            "",
+        )
+    finally:
+        MigrationExecutor(connection).migrate(latest)
+
+
 def test_existing_database_upgrades_without_losing_assets_custody_or_requests(world):
     executor = MigrationExecutor(connection)
     latest = executor.loader.graph.leaf_nodes()
