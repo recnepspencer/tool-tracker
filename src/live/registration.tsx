@@ -1,4 +1,5 @@
 import { Camera } from 'lucide-react';
+import { AssetDetailsFields } from './asset-details';
 import { Link } from 'react-router-dom';
 import { errorMessage } from './client';
 import { RecordSheet } from './experience/RecordSheet';
@@ -105,7 +106,10 @@ export function RegisterTool() {
                 ))}
               </Select>
               <Field label="Unique asset tag" name="tag" required maxLength={64} />
-              <Field label="Serial number" name="serial" maxLength={120} />
+              <details>
+                <summary>Serial, price & notes</summary>
+                <AssetDetailsFields />
+              </details>
               <p className="muted">
                 Initial custody is recorded at the selected warehouse. Receipt is confirmed through a handoff.
               </p>

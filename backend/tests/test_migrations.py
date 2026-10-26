@@ -1,3 +1,5 @@
+import hashlib
+import json
 from io import StringIO
 from uuid import uuid4
 
@@ -17,6 +19,57 @@ from equipment.asset_creation import create_asset_at_warehouse
 from equipment.models import CustodyPeriod, ToolAsset, ToolRequest
 
 pytestmark = pytest.mark.django_db(transaction=True)
+
+
+def test_purchase_details_upgrade_preserves_existing_units_and_custody(world):
+    from tests.conftest import login_client
+
+    executor = MigrationExecutor(connection)
+    latest = executor.loader.graph.leaf_nodes()
+    previous = [("equipment", "0005_registration_retry_fingerprint")]
+    try:
+        executor.migrate(previous)
+        historical = executor.loader.project_state(previous).apps
+        Asset = historical.get_model("equipment", "ToolAsset")
+        Custody = historical.get_model("equipment", "CustodyPeriod")
+        key = uuid4()
+        original_input = {
+            "tool_model_id": str(world.model.pk),
+            "warehouse_id": str(world.warehouse.pk),
+            "asset_tag": world.assets[0].asset_tag,
+            "serial_number": None,
+            "photo_id": None,
+        }
+        Asset.objects.filter(pk=world.assets[0].pk).update(
+            registration_key=key,
+            registration_fingerprint=hashlib.sha256(
+                json.dumps(original_input, separators=(",", ":")).encode()
+            ).hexdigest(),
+        )
+        before = list(Asset.objects.order_by("pk").values())
+        custody = list(Custody.objects.order_by("pk").values())
+        MigrationExecutor(connection).migrate(latest)
+        assert list(ToolAsset.objects.order_by("pk").values(*before[0])) == before
+        assert list(CustodyPeriod.objects.order_by("pk").values()) == custody
+        for asset in ToolAsset.objects.all():
+            assert asset.acquisition_date is None
+            assert asset.acquisition_cost is None
+            assert asset.acquisition_currency == "" and asset.notes == ""
+        retry = login_client(world.user).post(
+            f"/api/companies/{world.company.pk}/tools",
+            {"request_key": str(key), **original_input},
+            content_type="application/json",
+        )
+        assert retry.status_code == 200 and retry.json()["id"] == str(world.assets[0].pk)
+        assert ToolAsset.objects.count() == len(before)
+        with pytest.raises(IntegrityError), transaction.atomic():
+            ToolAsset.objects.filter(pk=world.assets[0].pk).update(
+                acquisition_cost=10, acquisition_currency=""
+            )
+        with pytest.raises(IntegrityError), transaction.atomic():
+            ToolAsset.objects.filter(pk=world.assets[0].pk).update(acquisition_currency="USD")
+    finally:
+        MigrationExecutor(connection).migrate(latest)
 
 
 def test_company_profile_upgrade_preserves_existing_company_identity():

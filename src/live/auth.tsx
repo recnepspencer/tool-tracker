@@ -326,7 +326,6 @@ export function CompanySetup() {
 }
 export function Invitation() {
   const {
-    token,
     session,
     loading,
     refresh,
@@ -334,7 +333,7 @@ export function Invitation() {
     chooseCompany,
     navigate,
     accepted,
-    setAccepted,
+    accept,
     invitation,
     next,
     unavailable,
@@ -433,15 +432,7 @@ export function Invitation() {
               </>
             ) : (
               <>
-                <AccountForm
-                  label="Accept invitation"
-                  pendingLabel="Joining workspace…"
-                  submit={async () => {
-                    const member = result(await api.POST('/api/invitations/accept', { body: { token } }));
-
-                    setAccepted({ name: data.company_name, membershipId: member.id });
-                  }}
-                />
+                <AccountForm label="Accept invitation" pendingLabel="Joining workspace…" submit={accept} />
                 <p className="auth-help">Joining as {session.email}</p>
               </>
             )}

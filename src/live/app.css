@@ -13,6 +13,15 @@
 body {
   margin: 0;
 }
+.asset-notes {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.asset-purchase-price {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 100px;
+  gap: 12px;
+}
 a {
   color: #3f3f3f;
   text-underline-offset: 3px;

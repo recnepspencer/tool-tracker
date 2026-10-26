@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { api, type Model } from './client';
+import { AssetDetailsFields, assetDetailsInput } from './asset-details';
 import { PhotoField } from './photos';
 import { useStagedPhoto } from './photo-state';
 import type { useToolDetailState } from './tools-state';
@@ -78,20 +79,18 @@ export function ToolManagement({ state, asset: t }: Props) {
         {c.can('tools.manage') && (
           <>
             <Section title="Asset information">
-              <p className="muted">
-                Serial numbers identify this unit. Shared model changes apply to every unit of that model.
-              </p>
+              <p className="muted">Changes apply to this tool only.</p>
               <Link to="/app/catalog">Edit shared model in catalog</Link>
               <Form
-                label="Update serial number"
+                label="Save tool details"
                 submit={(f) =>
                   api.POST('/api/companies/{company_id}/tools/{asset_id}/update', {
                     params: { path },
-                    body: { expected_revision: t.revision, serial_number: text(f, 'serial') || null },
+                    body: { expected_revision: t.revision, ...assetDetailsInput(f) },
                   })
                 }
               >
-                <Field name="serial" label="Serial number" defaultValue={t.serial_number ?? ''} maxLength={120} />
+                <AssetDetailsFields asset={t} />
               </Form>
             </Section>
             <Section title="Warehouse responsibility">

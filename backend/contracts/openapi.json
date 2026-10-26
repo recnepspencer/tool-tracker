@@ -175,10 +175,49 @@
       "AssetUpdate": {
         "additionalProperties": false,
         "properties": {
+          "acquisition_cost": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acquisition Cost"
+          },
+          "acquisition_currency": {
+            "default": "",
+            "pattern": "^([A-Z]{3})?$",
+            "title": "Acquisition Currency",
+            "type": "string"
+          },
+          "acquisition_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acquisition Date"
+          },
           "expected_revision": {
             "minimum": 1,
             "title": "Expected Revision",
             "type": "integer"
+          },
+          "notes": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Notes",
+            "type": "string"
           },
           "serial_number": {
             "anyOf": [
@@ -201,6 +240,33 @@
       },
       "AssetView": {
         "properties": {
+          "acquisition_cost": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acquisition Cost"
+          },
+          "acquisition_currency": {
+            "title": "Acquisition Currency",
+            "type": "string"
+          },
+          "acquisition_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acquisition Date"
+          },
           "asset_tag": {
             "title": "Asset Tag",
             "type": "string"
@@ -305,6 +371,10 @@
           },
           "name": {
             "title": "Name",
+            "type": "string"
+          },
+          "notes": {
+            "title": "Notes",
             "type": "string"
           },
           "origin_warehouse_id": {
@@ -421,6 +491,10 @@
           "id",
           "asset_tag",
           "serial_number",
+          "acquisition_date",
+          "acquisition_cost",
+          "acquisition_currency",
+          "notes",
           "tool_model_id",
           "category_id",
           "category_name",
@@ -3931,10 +4005,49 @@
       "RegistrationInput": {
         "additionalProperties": false,
         "properties": {
+          "acquisition_cost": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acquisition Cost"
+          },
+          "acquisition_currency": {
+            "default": "",
+            "pattern": "^([A-Z]{3})?$",
+            "title": "Acquisition Currency",
+            "type": "string"
+          },
+          "acquisition_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acquisition Date"
+          },
           "asset_tag": {
             "maxLength": 64,
             "minLength": 1,
             "title": "Asset Tag",
+            "type": "string"
+          },
+          "notes": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Notes",
             "type": "string"
           },
           "photo_id": {

@@ -107,29 +107,40 @@ export function PeoplePage() {
       {c.can('people.manage') && (
         <Section title="Invitations">
           {invites.error && <Notice error>{errorMessage(invites.error)}</Notice>}
-          {invites.data?.map((i) => (
-            <article className="row" key={i.id}>
-              <div>
-                <strong>{i.preferred_name}</strong>
-                <p>
-                  {i.email} · {human(i.role_code)}
-                </p>
-                <small>{i.accepted_at ? 'Accepted' : i.revoked_at ? 'Revoked' : `Expires ${date(i.expires_at)}`}</small>
-              </div>
-              {!i.accepted_at && !i.revoked_at && (
-                <Form
-                  label="Revoke invitation"
-                  submit={() =>
-                    api.POST('/api/companies/{company_id}/invitations/{invitation_id}/revoke', {
-                      params: { path: { ...c.path, invitation_id: i.id } },
-                    })
-                  }
-                >
-                  <></>
-                </Form>
-              )}
-            </article>
-          ))}
+          {invites.data?.map((i) => {
+            const expired = new Date(i.expires_at).getTime() <= Date.now();
+            return (
+              <article className="row" key={i.id}>
+                <div>
+                  <strong>{i.preferred_name}</strong>
+                  <p>
+                    {i.email} · {human(i.role_code)}
+                  </p>
+                  <small>
+                    {i.accepted_at
+                      ? 'Accepted'
+                      : i.revoked_at
+                        ? 'Revoked'
+                        : expired
+                          ? 'Expired'
+                          : `Expires ${date(i.expires_at)}`}
+                  </small>
+                </div>
+                {!i.accepted_at && !i.revoked_at && !expired && (
+                  <Form
+                    label="Revoke invitation"
+                    submit={() =>
+                      api.POST('/api/companies/{company_id}/invitations/{invitation_id}/revoke', {
+                        params: { path: { ...c.path, invitation_id: i.id } },
+                      })
+                    }
+                  >
+                    <></>
+                  </Form>
+                )}
+              </article>
+            );
+          })}
           {invites.data?.length === 0 && <Empty>No invitations yet.</Empty>}
         </Section>
       )}

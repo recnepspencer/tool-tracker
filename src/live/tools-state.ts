@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api, requestKey, result } from './client';
+import { assetDetailsInput } from './asset-details';
 import { collect, useReferences } from './data';
 import { useCompany } from './session';
 import { uploadPhoto } from './photos';
@@ -75,7 +76,7 @@ export function useRegisterToolState() {
       tool_model_id: text(form, 'model'),
       warehouse_id: text(form, 'warehouse'),
       asset_tag: text(form, 'tag'),
-      serial_number: text(form, 'serial') || null,
+      ...assetDetailsInput(form),
       photo_id: uploadedPhoto.current,
     };
     const fingerprint = JSON.stringify(body);

@@ -60,6 +60,10 @@ class ToolAsset(CompanyRecord):
     tool_model = models.ForeignKey(ToolModel, on_delete=models.PROTECT)
     asset_tag = models.CharField(max_length=64)
     serial_number = models.CharField(max_length=120, null=True, blank=True)
+    acquisition_date = models.DateField(null=True, blank=True)
+    acquisition_cost = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    acquisition_currency = models.CharField(max_length=3, blank=True, default="")
+    notes = models.TextField(blank=True, default="")
     origin_warehouse = models.ForeignKey(
         Warehouse, on_delete=models.PROTECT, related_name="origin_assets"
     )
@@ -101,4 +105,13 @@ class ToolAsset(CompanyRecord):
                 name="asset_serviceability_valid",
             ),
             models.CheckConstraint(condition=Q(revision__gte=1), name="asset_revision_positive"),
+            models.CheckConstraint(
+                condition=Q(acquisition_cost__isnull=True, acquisition_currency="")
+                | Q(
+                    acquisition_cost__isnull=False,
+                    acquisition_cost__gte=0,
+                    acquisition_currency__regex=r"^[A-Z]{3}$",
+                ),
+                name="asset_acquisition_money_valid",
+            ),
         ]

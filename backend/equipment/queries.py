@@ -82,6 +82,12 @@ def asset_view(asset):
         "id": asset.id,
         "asset_tag": asset.asset_tag,
         "serial_number": asset.serial_number,
+        "acquisition_date": asset.acquisition_date,
+        "acquisition_cost": format(asset.acquisition_cost, ".2f")
+        if asset.acquisition_cost is not None
+        else None,
+        "acquisition_currency": asset.acquisition_currency,
+        "notes": asset.notes,
         "tool_model_id": asset.tool_model_id,
         "category_id": asset.tool_model.category_id,
         "category_name": asset.tool_model.category.name,

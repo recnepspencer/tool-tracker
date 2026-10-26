@@ -1,3 +1,4 @@
+from datetime import timedelta
 from types import SimpleNamespace
 
 import pytest
@@ -114,15 +115,22 @@ def test_invitation_is_email_bound_single_use_and_never_stores_raw_token(people,
     assert "token_digest" not in str(ctx.manager.get(f"{ctx.base}/invitations").json())
 
 
-def test_revoked_invitation_cannot_grant_membership(people, password_hash):
+@pytest.mark.parametrize("unavailable", ["revoked", "expired"])
+def test_unavailable_invitation_cannot_grant_membership(people, password_hash, unavailable):
     ctx = people
     invite = ctx.manager.post(
         f"{ctx.base}/invitations",
         {"email": "new@example.com", "preferred_name": "New", "role": "company_admin"},
         content_type="application/json",
     ).json()
-    response = ctx.manager.post(f"{ctx.base}/invitations/{invite['invitation']['id']}/revoke")
-    assert response.status_code == 200
+    if unavailable == "revoked":
+        response = ctx.manager.post(f"{ctx.base}/invitations/{invite['invitation']['id']}/revoke")
+        assert response.status_code == 200
+    else:
+        MembershipInvitation.objects.filter(pk=invite["invitation"]["id"]).update(
+            expires_at=timezone.now() - timedelta(seconds=1)
+        )
+    assert ctx.client.get(f"/api/invitations/{invite['token']}/preview").status_code == 404
     user = PlatformUser.objects.create(email="new@example.com", hashed_password=password_hash)
     assert (
         login_client(user)

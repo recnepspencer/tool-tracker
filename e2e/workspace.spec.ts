@@ -81,13 +81,13 @@ test('editing a stale record preserves the draft until the user loads latest val
     expected_revision: current.revision,
     serial_number: 'OTHER-EDITOR',
   });
-  await section.getByRole('button', { name: 'Update serial number' }).click();
+  await section.getByRole('button', { name: 'Save tool details' }).click();
   await expect(section.getByRole('alert')).toBeVisible();
   await expect(section.getByLabel('Serial number', { exact: true })).toHaveValue('LOCAL-DRAFT');
   await section.getByRole('button', { name: 'Load latest values' }).click();
   await expect(section.getByLabel('Serial number', { exact: true })).toHaveValue('OTHER-EDITOR');
   await section.getByLabel('Serial number', { exact: true }).fill('REVIEWED-VALUE');
-  await section.getByRole('button', { name: 'Update serial number' }).click();
+  await section.getByRole('button', { name: 'Save tool details' }).click();
   await expect(section.getByRole('status')).toBeVisible();
 });
 

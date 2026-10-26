@@ -84,9 +84,20 @@ export function useInvitationState() {
   const next = encodeURIComponent(`/invite/${token}`);
   const unavailable = invitation.error instanceof ApiError && invitation.error.status === 404;
   const data = invitation.data;
+  async function accept() {
+    if (!data) return;
+    try {
+      const member = result(await api.POST('/api/invitations/accept', { body: { token } }));
+      setAccepted({ name: data.company_name, membershipId: member.id });
+    } catch (error) {
+      if (error instanceof ApiError && (error.code === 'invitation_expired' || error.code === 'invitation_used')) {
+        await invitation.refetch();
+      }
+      throw error;
+    }
+  }
 
   return {
-    token,
     session,
     loading,
     refresh,
@@ -94,7 +105,7 @@ export function useInvitationState() {
     chooseCompany,
     navigate,
     accepted,
-    setAccepted,
+    accept,
     invitation,
     next,
     unavailable,

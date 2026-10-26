@@ -1280,13 +1280,33 @@ export interface components {
     };
     /** AssetUpdate */
     AssetUpdate: {
+      /** Acquisition Cost */
+      acquisition_cost?: number | string | null;
+      /**
+       * Acquisition Currency
+       * @default
+       */
+      acquisition_currency: string;
+      /** Acquisition Date */
+      acquisition_date?: string | null;
       /** Expected Revision */
       expected_revision: number;
+      /**
+       * Notes
+       * @default
+       */
+      notes: string;
       /** Serial Number */
       serial_number?: string | null;
     };
     /** AssetView */
     AssetView: {
+      /** Acquisition Cost */
+      acquisition_cost: string | null;
+      /** Acquisition Currency */
+      acquisition_currency: string;
+      /** Acquisition Date */
+      acquisition_date: string | null;
       /** Asset Tag */
       asset_tag: string;
       /**
@@ -1324,6 +1344,8 @@ export interface components {
       model_number: string;
       /** Name */
       name: string;
+      /** Notes */
+      notes: string;
       /**
        * Origin Warehouse Id
        * Format: uuid
@@ -2658,8 +2680,22 @@ export interface components {
     };
     /** RegistrationInput */
     RegistrationInput: {
+      /** Acquisition Cost */
+      acquisition_cost?: number | string | null;
+      /**
+       * Acquisition Currency
+       * @default
+       */
+      acquisition_currency: string;
+      /** Acquisition Date */
+      acquisition_date?: string | null;
       /** Asset Tag */
       asset_tag: string;
+      /**
+       * Notes
+       * @default
+       */
+      notes: string;
       /** Photo Id */
       photo_id?: string | null;
       /**

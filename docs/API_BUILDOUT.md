@@ -27,4 +27,6 @@ The backend suite covers fresh migration installation, populated upgrades, gener
 
 The frontend uses the generated OpenAPI client. Browser integration tests exercise real sessions and delivered email links, specific-asset custody, assignments, company policies, condition/service, photo authorization, stale edits, workspace switching, and offline behavior. Public HTTP commands create isolated fixture companies; scenarios assert visible user outcomes and persisted API state. The removed prototype and its mock-only tests are recoverable through Git history.
 
+Asset registration and metadata updates accept optional `serial_number`, `acquisition_date`, `acquisition_cost`, `acquisition_currency` and `notes`. Send purchase amounts as decimal strings, for example `"249.95"` with `"USD"`; reads return decimal strings without floating-point conversion. Metadata updates preserve omitted fields. An explicit `acquisition_cost: null` clears the amount and currency, while `"0.00"` records a known zero price. These fields belong to the physical unit and do not change its shared model, custody or future bid prices.
+
 Production SMTP and hosting are still deployment configuration tasks. Development emails use a private file inbox. Bidding, consumable stock, reservations, automatic identity merging, and optional site/allocation models remain future domains.

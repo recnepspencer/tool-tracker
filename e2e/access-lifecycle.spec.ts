@@ -35,7 +35,7 @@ test('an open equipment page loses revoked controls and gains combined roles thr
       roles: ['estimator'],
       reason: 'Move to estimating',
     });
-    await metadata.getByRole('button', { name: 'Update serial number', exact: true }).click();
+    await metadata.getByRole('button', { name: 'Save tool details', exact: true }).click();
     await expect(actor.getByText('Your company permissions do not allow access to this page.')).toBeVisible();
     await expect(actor.getByRole('dialog', { name: 'Tool details', exact: true })).toHaveCount(0);
     await expect(actor.getByRole('link', { name: 'Inventory', exact: true })).toHaveCount(0);

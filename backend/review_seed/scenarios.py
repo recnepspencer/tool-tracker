@@ -1,6 +1,7 @@
 """Deterministic review identities and coherent scenarios; never reset existing records."""
 
-from datetime import timedelta
+from datetime import date, timedelta
+from decimal import Decimal
 from uuid import NAMESPACE_URL, uuid5
 
 from cleanforce_identity.models import PlatformUser
@@ -139,6 +140,12 @@ def seed_review_scenarios(password):
                 "registered_by": members["manager"],
                 "serviceability": condition,
                 "serial_number": f"REVIEW-{tag}",
+                "acquisition_date": date(2026, 4, 12) if tag == "NE-001" else None,
+                "acquisition_cost": Decimal("249.95") if tag == "NE-001" else None,
+                "acquisition_currency": "USD" if tag == "NE-001" else "",
+                "notes": "Purchased with two batteries and a carrying case."
+                if tag == "NE-001"
+                else "",
                 "lifecycle": lifecycle,
             },
         )

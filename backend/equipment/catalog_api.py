@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import date, datetime
+from decimal import Decimal
 from uuid import UUID
 
 from backend_platform.api import define_http_endpoint
@@ -129,17 +130,24 @@ class ModelPage(Schema):
     next_offset: int | None
 
 
-class RegistrationInput(CommandInput):
+class AssetDetailsInput(CommandInput):
+    serial_number: str | None = Field(default=None, max_length=120)
+    acquisition_date: date | None = None
+    acquisition_cost: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
+    acquisition_currency: str = Field(default="", pattern=r"^([A-Z]{3})?$")
+    notes: str = Field(default="", max_length=4000)
+
+
+class RegistrationInput(AssetDetailsInput):
     request_key: UUID
     tool_model_id: UUID
     warehouse_id: UUID
     asset_tag: str = Field(min_length=1, max_length=64)
-    serial_number: str | None = Field(default=None, max_length=120)
     photo_id: UUID | None = None
 
 
-class AssetUpdate(RevisionInput):
-    serial_number: str | None = Field(default=None, max_length=120)
+class AssetUpdate(AssetDetailsInput, RevisionInput):
+    pass
 
 
 class StewardshipInput(RevisionInput):

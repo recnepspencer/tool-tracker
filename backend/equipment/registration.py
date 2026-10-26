@@ -1,4 +1,5 @@
 import hashlib
+import json
 
 from backend_platform.api import conflict, forbidden, not_found
 from django.db import IntegrityError, transaction
@@ -11,6 +12,7 @@ from evidence.files import claim_file
 
 from .access import active_warehouse, require_warehouse_authority
 from .asset_creation import create_asset_at_warehouse
+from .asset_details import ASSET_DETAIL_FIELDS, assign_asset_details
 from .events import asset_event_metadata
 from .models import ToolAsset, ToolCategory, ToolModel, ToolRegistrationPolicy
 
@@ -61,7 +63,15 @@ def set_registration_policy(identity, company_id, enabled, expected_revision):
 @transaction.atomic
 def register_asset(identity, company_id, data):
     member = authorize_write(identity, company_id, "tools.register")
-    fingerprint = hashlib.sha256(data.model_dump_json(exclude={"request_key"}).encode()).hexdigest()
+    payload = data.model_dump(mode="json", exclude={"request_key"})
+    # Keep existing retry hashes valid when optional details are added or schemas
+    # are reorganized. The original registration fields retain their wire order.
+    original_fields = ("tool_model_id", "warehouse_id", "asset_tag", "serial_number", "photo_id")
+    ordered = {field: payload.pop(field) for field in original_fields}
+    ordered.update({field: value for field, value in payload.items() if value not in (None, "")})
+    fingerprint = hashlib.sha256(
+        json.dumps(ordered, separators=(",", ":"), ensure_ascii=False).encode()
+    ).hexdigest()
     previous = ToolAsset.objects.filter(
         registered_by=member, registration_key=data.request_key
     ).first()
@@ -120,13 +130,13 @@ def register_asset(identity, company_id, data):
         ):
             raise conflict("Asset tag already exists.", code="asset_tag_exists") from exc
         raise
-    asset.serial_number = data.serial_number
+    assign_asset_details(asset, data)
     asset.registration_key = data.request_key
     asset.registration_fingerprint = fingerprint
     asset.registration_photo = photo
     asset.save(
         update_fields=[
-            "serial_number",
+            *ASSET_DETAIL_FIELDS,
             "registration_key",
             "registration_photo",
             "registration_fingerprint",

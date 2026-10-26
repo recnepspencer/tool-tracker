@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { errorMessage } from './client';
 import { ToolHistory, ToolReports } from './tool-history';
 import { AssetPhoto } from './asset-photo';
+import { purchasePrice } from './asset-details';
 import { useToolDetailState } from './tools-state';
 import { ToolReport, ToolRequest, ToolTransfer } from './tool-actions';
 import { ToolManagement, ToolReconciliation } from './tool-management';
@@ -147,6 +148,14 @@ export function ToolDetail() {
             <dd>{t.serial_number || 'Not recorded'}</dd>
           </div>
           <div>
+            <dt>Purchase price</dt>
+            <dd>{purchasePrice(t)}</dd>
+          </div>
+          <div>
+            <dt>Purchase date</dt>
+            <dd>{t.acquisition_date || 'Not recorded'}</dd>
+          </div>
+          <div>
             <dt>Condition</dt>
             <dd>
               {human(t.serviceability)}
@@ -158,6 +167,7 @@ export function ToolDetail() {
             <dd>{t.custody_started_at ? date(t.custody_started_at) : 'Not applicable'}</dd>
           </div>
         </dl>
+        {t.notes && <p className="asset-notes">{t.notes}</p>}
         {t.registration_photo_id && (
           <a href={`/api/companies/${c.company_id}/files/${t.registration_photo_id}`}>Download registration photo</a>
         )}

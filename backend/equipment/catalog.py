@@ -8,6 +8,7 @@ from companies.models import Company, CompanyMembership
 from companies.revisions import expect_revision
 
 from .access import active_warehouse, lock_asset
+from .asset_details import ASSET_DETAIL_FIELDS, assign_asset_details
 from .events import asset_event_metadata
 from .models import (
     CustodyHandoff,
@@ -217,9 +218,9 @@ def update_asset(identity, company_id, asset_id, data):
     authorize_write(identity, company_id, "tools.manage")
     asset = lock_asset(company_id, asset_id)
     expect_revision(asset, data.expected_revision)
-    asset.serial_number = data.serial_number
+    assign_asset_details(asset, data)
     asset.revision += 1
-    asset.save(update_fields=["serial_number", "revision"])
+    asset.save(update_fields=[*ASSET_DETAIL_FIELDS, "revision"])
     record_company_event(
         identity, company_id, "equipment.asset.updated", asset, metadata=asset_event_metadata(asset)
     )

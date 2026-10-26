@@ -1,4 +1,5 @@
 from datetime import timedelta
+from decimal import Decimal
 from io import BytesIO
 from types import SimpleNamespace
 from uuid import uuid4
@@ -92,6 +93,103 @@ def test_employee_switch_manager_override_and_duplicate_units(registration):
         ).status_code
         == 409
     )
+
+
+def test_purchase_details_round_trip_without_changing_model_or_custody(registration):
+    ctx = registration
+    details = {
+        "serial_number": "SERIAL-NEW",
+        "acquisition_date": "2026-04-12",
+        "acquisition_cost": "249.95",
+        "acquisition_currency": "USD",
+        "notes": "Purchased with two batteries.\nKeep the case with this unit.",
+    }
+    body = payload(ctx, **details)
+    created = assert_response(
+        ctx.worker.post(f"{ctx.base}/tools", body, content_type="application/json"),
+        "/api/companies/{company_id}/tools",
+        status=201,
+    )
+    assert {key: created[key] for key in details} == details
+    stored = ToolAsset.objects.get(pk=created["id"])
+    assert stored.acquisition_cost == Decimal("249.95")
+    custody = list(CustodyPeriod.objects.order_by("pk").values())
+    model = type(ctx.world.model).objects.values().get(pk=ctx.world.model.pk)
+    original_units = list(ToolAsset.objects.exclude(pk=stored.pk).order_by("pk").values())
+    url = f"{ctx.base}/tools/{stored.pk}"
+    assert ctx.worker.get(url).json() == created
+    assert (
+        ctx.worker.post(f"{ctx.base}/tools", body, content_type="application/json").json()
+        == created
+    )
+    changed = ctx.worker.post(
+        f"{ctx.base}/tools", {**body, "acquisition_cost": "250.00"}, content_type="application/json"
+    )
+    assert changed.status_code == 409 and changed.json()["code"] == "request_key_reused"
+
+    updated = assert_response(
+        ctx.manager.post(
+            f"{url}/update",
+            {"expected_revision": 1, "serial_number": "CORRECTED"},
+            content_type="application/json",
+        ),
+        "/api/companies/{company_id}/tools/{asset_id}/update",
+    )
+    assert {key: updated[key] for key in details if key != "serial_number"} == {
+        key: value for key, value in details.items() if key != "serial_number"
+    }
+    zero = ctx.manager.post(
+        f"{url}/update",
+        {"expected_revision": 2, "acquisition_cost": "0.00"},
+        content_type="application/json",
+    )
+    assert zero.status_code == 200 and zero.json()["acquisition_cost"] == "0.00"
+    stale = ctx.manager.post(
+        f"{url}/update",
+        {"expected_revision": 2, "notes": "stale replacement"},
+        content_type="application/json",
+    )
+    assert stale.status_code == 409
+    cleared = ctx.manager.post(
+        f"{url}/update",
+        {"expected_revision": 3, "acquisition_cost": None, "acquisition_date": None, "notes": ""},
+        content_type="application/json",
+    )
+    assert cleared.status_code == 200
+    assert {key: cleared.json()[key] for key in details} == {
+        "serial_number": "CORRECTED",
+        "acquisition_date": None,
+        "acquisition_cost": None,
+        "acquisition_currency": "",
+        "notes": "",
+    }
+    assert list(CustodyPeriod.objects.order_by("pk").values()) == custody
+    assert type(ctx.world.model).objects.values().get(pk=ctx.world.model.pk) == model
+    assert list(ToolAsset.objects.exclude(pk=stored.pk).order_by("pk").values()) == original_units
+
+
+@pytest.mark.parametrize("price", ["-1.00", "12.345"])
+def test_invalid_purchase_amount_does_not_register_a_tool(registration, price):
+    ctx = registration
+    response = ctx.worker.post(
+        f"{ctx.base}/tools",
+        payload(ctx, acquisition_cost=price, acquisition_currency="USD"),
+        content_type="application/json",
+    )
+    assert response.status_code == 400
+    assert not ToolAsset.objects.filter(asset_tag="NEW-UNIT").exists()
+
+
+def test_purchase_price_requires_currency_without_partial_registration(registration):
+    ctx = registration
+    before = CustodyPeriod.objects.count()
+    response = ctx.worker.post(
+        f"{ctx.base}/tools", payload(ctx, acquisition_cost="12.34"), content_type="application/json"
+    )
+    assert response.status_code == 409
+    assert response.json()["code"] == "acquisition_currency_required"
+    assert not ToolAsset.objects.filter(asset_tag="NEW-UNIT").exists()
+    assert CustodyPeriod.objects.count() == before
 
 
 def test_photo_staging_does_not_bypass_later_policy_disable(registration):

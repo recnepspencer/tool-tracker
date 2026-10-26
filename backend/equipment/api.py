@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 from uuid import UUID
 
@@ -19,6 +19,10 @@ class AssetView(Schema):
     id: UUID
     asset_tag: str
     serial_number: str | None
+    acquisition_date: date | None
+    acquisition_cost: str | None
+    acquisition_currency: str
+    notes: str
     tool_model_id: UUID
     category_id: UUID
     category_name: str
