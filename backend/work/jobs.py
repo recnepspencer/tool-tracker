@@ -98,7 +98,11 @@ def update_job(identity, company_id, job_id, data):
             ends_at=now, ended_by=actor, end_reason="Job archived or closed"
         )
         JobParticipationRequest.objects.filter(job=job, status="pending").update(
-            status="rejected", decided_at=now, decided_by=actor, revision=F("revision") + 1
+            status="rejected",
+            decided_at=now,
+            decided_by=actor,
+            decision_note="Job archived or closed",
+            revision=F("revision") + 1,
         )
     job.revision += 1
     job.save()

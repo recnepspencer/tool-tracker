@@ -174,3 +174,143 @@ def test_participation_retry_is_bound_to_payload_and_allows_multiple_jobs(crew):
         JobAssignment.objects.filter(membership=crew.worker.member, ends_at__isnull=True).count()
         == 2
     )
+
+
+@pytest.mark.parametrize(
+    "mode,expected", [("direct", "approved"), ("approval_required", "pending"), ("disabled", None)]
+)
+def test_leave_policy_is_independent_from_join_policy(crew, mode, expected):
+    joined = participate(crew, intent="join").json()
+    crew.policy.self_join_mode = "disabled"
+    crew.policy.self_leave_mode = mode
+    crew.policy.save()
+    result = participate(crew, intent="leave", assignment_id=joined["resulting_assignment_id"])
+    assert result.status_code == (201 if expected else 403)
+    if expected:
+        assert result.json()["status"] == expected
+    assignment = JobAssignment.objects.get(pk=joined["resulting_assignment_id"])
+    assert (assignment.ends_at is not None) == (mode == "direct")
+
+
+@pytest.mark.parametrize(
+    "role", ["company_admin", "equipment_manager", "field_member", "dispatcher", "estimator"]
+)
+def test_each_role_self_participates_only_with_field_capability(crew, password_hash, role):
+    actor = member_in(crew.company, password_hash, role)
+    client = login_client(actor.user)
+    allowed = role in {"company_admin", "equipment_manager", "field_member"}
+    crew.policy.self_leave_mode = "direct"
+    crew.policy.save()
+    response = client.post(
+        f"{crew.base}/jobs/{crew.job.pk}/participation",
+        {"request_key": str(uuid4()), "intent": "join"},
+        content_type="application/json",
+    )
+    assert response.status_code == (201 if allowed else 403)
+    if allowed:
+        joined = response.json()
+        response = client.post(
+            f"{crew.base}/jobs/{crew.job.pk}/participation",
+            {
+                "request_key": str(uuid4()),
+                "intent": "leave",
+                "assignment_id": joined["resulting_assignment_id"],
+            },
+            content_type="application/json",
+        )
+        assert response.status_code == 201 and response.json()["status"] == "approved"
+    assert not JobAssignment.objects.filter(membership=actor.member, ends_at__isnull=True).exists()
+
+
+def test_participation_projection_preserves_decision_and_names_when_subject_leaves(crew):
+    crew.worker.person.preferred_name = "Former crew lead"
+    crew.worker.person.save()
+    crew.admin.person.preferred_name = "Project coordinator"
+    crew.admin.person.save()
+    joined = participate(crew, intent="join").json()
+    leave = participate(
+        crew, intent="leave", assignment_id=joined["resulting_assignment_id"]
+    ).json()
+    decision = crew.manager.post(
+        f"{crew.base}/job-participation-requests/{leave['id']}/reject",
+        {"expected_revision": 1, "note": "Complete the warehouse handover first"},
+        content_type="application/json",
+    )
+    assert decision.status_code == 200
+    assert decision.json()["decision_note"] == "Complete the warehouse handover first"
+    ended = crew.manager.post(
+        f"{crew.base}/people/{crew.worker.member.pk}/update",
+        {
+            "expected_revision": 1,
+            "access_state": "disabled",
+            "roles": ["field_member"],
+            "end_membership": True,
+            "reason": "Employment ended",
+        },
+        content_type="application/json",
+    )
+    assert ended.status_code == 200
+    history = crew.manager.get(f"{crew.base}/assignments?current=false").json()["items"][0]
+    assert history["member_name"] == "Former crew lead"
+    assert history["assigned_by_name"] == "Former crew lead"
+    assert history["ended_by_name"] == "Project coordinator"
+    assert history["end_reason"] == "Employment ended"
+    requests = crew.manager.get(f"{crew.base}/job-participation-requests?pending=false").json()[
+        "items"
+    ]
+    rejected = next(item for item in requests if item["id"] == leave["id"])
+    assert rejected["member_name"] == "Former crew lead"
+    assert rejected["job_name"] == "Rough-in" and rejected["job_number"] == "J1"
+    assert rejected["decided_by_name"] == "Project coordinator"
+    assert rejected["decision_note"] == "Complete the warehouse handover first"
+
+
+def test_pending_participation_exposes_the_same_stale_assignment_denial_as_approval(crew):
+    joined = participate(crew, intent="join").json()
+    leave = participate(
+        crew, intent="leave", assignment_id=joined["resulting_assignment_id"]
+    ).json()
+    crew.job.refresh_from_db()
+    replacement = crew.manager.post(
+        f"{crew.base}/jobs/{crew.job.pk}/assignments",
+        {
+            "expected_revision": crew.job.revision,
+            "membership_id": str(crew.worker.member.pk),
+            "responsibility": "supervisor",
+            "reason": "Changed responsibility",
+        },
+        content_type="application/json",
+    ).json()
+    listed = crew.manager.get(f"{crew.base}/job-participation-requests").json()["items"][0]
+    assert "no longer current" in listed["approval_blocked_reason"]
+    rejected = crew.manager.post(
+        f"{crew.base}/job-participation-requests/{leave['id']}/approve",
+        {"expected_revision": 1},
+        content_type="application/json",
+    )
+    assert rejected.status_code == 409 and rejected.json()["code"] == "stale_assignment"
+    assert JobAssignment.objects.get(pk=replacement["id"]).ends_at is None
+
+
+def test_offboarding_rejects_pending_join_with_a_durable_reason(crew):
+    crew.policy.self_join_mode = "approval_required"
+    crew.policy.save()
+    pending = participate(crew, intent="join").json()
+    result = crew.manager.post(
+        f"{crew.base}/people/{crew.worker.member.pk}/update",
+        {
+            "expected_revision": 1,
+            "access_state": "disabled",
+            "roles": ["field_member"],
+            "end_membership": True,
+            "reason": "Employment ended before joining",
+        },
+        content_type="application/json",
+    )
+    assert result.status_code == 200
+    history = crew.manager.get(f"{crew.base}/job-participation-requests?pending=false").json()[
+        "items"
+    ]
+    assert history[0]["id"] == pending["id"] and history[0]["status"] == "rejected"
+    assert history[0]["decision_note"] == "Employment ended before joining"
+    assert not JobAssignment.objects.filter(membership=crew.worker.member).exists()

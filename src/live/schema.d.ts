@@ -1396,10 +1396,14 @@ export interface components {
        * Format: uuid
        */
       assigned_by_id: string;
+      /** Assigned By Name */
+      assigned_by_name: string;
       /** End Reason */
       end_reason: string;
       /** Ended By Id */
       ended_by_id: string | null;
+      /** Ended By Name */
+      ended_by_name: string | null;
       /** Ends At */
       ends_at: string | null;
       /**
@@ -1412,6 +1416,8 @@ export interface components {
        * Format: uuid
        */
       job_id: string;
+      /** Member Name */
+      member_name: string;
       /**
        * Membership Id
        * Format: uuid
@@ -2079,6 +2085,10 @@ export interface components {
        * Format: uuid
        */
       project_id: string;
+      /** Project Name */
+      project_name: string;
+      /** Project Number */
+      project_number: string;
       /** Revision */
       revision: number;
       /**
@@ -2330,8 +2340,16 @@ export interface components {
     };
     /** ParticipationView */
     ParticipationView: {
+      /** Approval Blocked Reason */
+      approval_blocked_reason: string | null;
       /** Decided At */
       decided_at: string | null;
+      /** Decided By Id */
+      decided_by_id: string | null;
+      /** Decided By Name */
+      decided_by_name: string | null;
+      /** Decision Note */
+      decision_note: string;
       /**
        * Id
        * Format: uuid
@@ -2347,6 +2365,12 @@ export interface components {
        * Format: uuid
        */
       job_id: string;
+      /** Job Name */
+      job_name: string;
+      /** Job Number */
+      job_number: string;
+      /** Member Name */
+      member_name: string;
       /**
        * Membership Id
        * Format: uuid

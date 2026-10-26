@@ -92,7 +92,7 @@ export function MyToolsPage() {
 
 export function InventoryPage({ flagged = false }: { flagged?: boolean }) {
   const location = useLocation();
-  const { c, refs, tools, groups, expanded, toggle, search, setSearch, warehouse, setWarehouse } =
+  const { c, refs, tools, groups, expanded, toggle, search, setSearch, warehouse, setWarehouse, canRegister } =
     useInventoryView(flagged);
   const rows = [...groups.values()].flat();
   return (
@@ -104,7 +104,7 @@ export function InventoryPage({ flagged = false }: { flagged?: boolean }) {
             {rows.length} tools · {warehouse ? refs.warehouse(warehouse) : 'All warehouses'}
           </p>
         </div>
-        {c.can('tools.register') && (
+        {canRegister && (
           <Link
             className="button primary"
             to="/app/tools/new"

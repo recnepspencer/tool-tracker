@@ -18,17 +18,20 @@ export function useCommandForm(submit: (data: FormData) => Promise<unknown>, onD
   async function run(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (running.current) return;
+    const form = event.currentTarget;
     running.current = true;
     setState({ busy: true, error: '', success: false, conflict: false });
     try {
       // Preserve the revision the user started editing, even if a background read
       // has since supplied a newer command closure to the rendered form.
-      await (draftCommand.current ?? submit)(new FormData(event.currentTarget));
+      await (draftCommand.current ?? submit)(new FormData(form));
       draftCommand.current = null;
+      // Complete this save before background reads can remove the edited row.
+      // A delayed close must never overwrite the user's next navigation.
+      if (form.isConnected) onDone?.();
       await cache.invalidateQueries({
         predicate: (query) => !['session', 'invitation'].includes(String(query.queryKey[0])),
       });
-      onDone?.();
       setState({ busy: false, error: '', success: true, conflict: false });
     } catch (error) {
       setState({

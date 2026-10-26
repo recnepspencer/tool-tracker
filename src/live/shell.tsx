@@ -36,9 +36,10 @@ import './experience/bridge.css';
 import './experience/jobs.css';
 
 export function Shell() {
-  const { session, chooseCompany, logout } = useSession();
+  const { session, chooseCompany, logout, refresh } = useSession();
   const c = useCompany();
-  const { menu, setMenu, theme, toggleTheme, accountOpen, setAccountOpen, navigationRef } = useShellNavigation();
+  const { menu, setMenu, theme, toggleTheme, accountOpen, setAccountOpen, navigationRef, navigateHome, canRegister } =
+    useShellNavigation();
   const control =
     c.can('tools.manage') || c.can('people.manage') || c.can('jobs.manage') || c.managed_warehouse_ids.length > 0;
   const destinations = control
@@ -48,7 +49,7 @@ export function Shell() {
         ['Damaged & lost', '/app/flagged', TriangleAlert, c.can('tools.read')],
         ['People', '/app/people', Users, c.can('people.manage')],
         ['Foremen', '/app/directory', BriefcaseBusiness, c.can('tools.read') && c.can('jobs.read')],
-        ['Jobs', '/app/jobs', BriefcaseBusiness, c.can('jobs.read') && !c.can('tools.read')],
+        [c.can('jobs.manage') ? 'Jobs' : 'My jobs', '/app/jobs', BriefcaseBusiness, c.can('jobs.read')],
         ['Warehouses', '/app/warehouses', Warehouse, c.can('catalog.manage')],
         ['Access', '/app/access', ShieldCheck, c.can('people.manage')],
         ['Activity', '/app/activity', Activity, true],
@@ -62,7 +63,7 @@ export function Shell() {
     : ([
         ['My tools', '/app/mine', Wrench, c.can('tools.read')],
         ['Checkout', '/app/checkout', PackageCheck, c.can('tools.read')],
-        ['My jobs', '/app/jobs', BriefcaseBusiness, c.can('jobs.read')],
+        [c.can('jobs.participate') ? 'My jobs' : 'Jobs', '/app/jobs', BriefcaseBusiness, c.can('jobs.read')],
         ['Foremen', '/app/directory', Users, c.can('tools.read') && c.can('jobs.read')],
         ['Activity', '/app/activity', Activity, true],
       ] as const);
@@ -100,6 +101,7 @@ export function Shell() {
           value={c.company_id}
           onChange={(event) => {
             chooseCompany(event.target.value);
+            navigateHome();
             setMenu(false);
             setAccountOpen(false);
           }}
@@ -112,6 +114,9 @@ export function Shell() {
         </select>
       </div>
       <Link to="/forgot-password">Change password</Link>
+      <Form label="Refresh access" submit={refresh} successMessage="Access refreshed.">
+        <></>
+      </Form>
       <Form label="Sign out" submit={logout}>
         <></>
       </Form>
@@ -194,7 +199,7 @@ export function Shell() {
                 <strong>{c.preferred_name}</strong>
               </div>
               <nav>{links}</nav>
-              {c.can('tools.register') && (
+              {canRegister && (
                 <Link className="worker-drawer-link" to="/app/tools/new" onClick={() => setMenu(false)}>
                   <Plus size={18} />
                   Add tool

@@ -50,12 +50,14 @@ export function Form({
   label = 'Save',
   onDone,
   disabled = false,
+  successMessage = 'Saved successfully.',
 }: {
   children: ReactNode;
   submit: (data: FormData) => Promise<unknown>;
   label?: string;
   onDone?: () => void;
   disabled?: boolean;
+  successMessage?: string;
 }) {
   const { busy, error, success, conflict, beginDraft, run, reload } = useCommandForm(submit, onDone);
   return (
@@ -67,7 +69,7 @@ export function Form({
           Load latest values
         </button>
       )}
-      {success && <Notice>Saved successfully.</Notice>}
+      {success && <Notice>{successMessage}</Notice>}
       <button className="primary" disabled={busy || disabled} type="submit">
         {busy ? 'Please wait…' : label}
       </button>

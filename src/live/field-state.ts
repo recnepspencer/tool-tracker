@@ -5,6 +5,7 @@ import { api, result, type Model } from './client';
 import { collect, useReferences } from './data';
 import { useListLocation } from './list-location';
 import { useCompany } from './session';
+import { useRegistrationPolicy } from './registration-policy';
 
 export function useAssetCollection(mine = false) {
   const c = useCompany();
@@ -58,6 +59,7 @@ export function useFieldTools() {
 
 export function useInventoryView(flagged = false) {
   const collection = useAssetCollection();
+  const { canRegister } = useRegistrationPolicy();
   const { params, update } = useListLocation({ background: true });
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const search = params.get('search') ?? '';
@@ -79,6 +81,7 @@ export function useInventoryView(flagged = false) {
   for (const tool of tools) groups.set(tool.tool_model_id, [...(groups.get(tool.tool_model_id) ?? []), tool]);
   return {
     ...collection,
+    canRegister,
     groups,
     search,
     warehouse,

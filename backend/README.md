@@ -46,7 +46,7 @@ Requests do not reserve tools. Approval creates a pending handoff; the recipient
 
 Mutable commands require `expected_revision` where declared. Stale revisions return 409. Request, registration, participation, and handoff creation use `request_key` with payload-bound retries. Replaying a resolved handoff returns the existing matching outcome; a conflicting decision returns 409. Search/list endpoints use bounded `limit`/`offset` pagination.
 
-Invitations deliver an email and return their single-use token once to an authorized administrator for sharing. Tokens are stored only as digests, expire after seven days, and require an authenticated matching email. `accounts` adds verified signup and JSON browser endpoints using CleanForce's password/session/recovery authority. Debug email is written to `artifacts/mail`; production SMTP configuration is deferred. See the root README for account and hosting configuration.
+Invitations deliver an email and return their single-use token once to an authorized administrator for sharing. Tokens are stored only as digests, expire after seven days, and require an authenticated matching email. Sent invitations remain valid when the sender's role or employment changes; administrators can explicitly revoke them. `accounts` adds verified signup and JSON browser endpoints using CleanForce's password/session/recovery authority. Debug email is written to `artifacts/mail`; production SMTP configuration is deferred. See the root README for account and hosting configuration.
 
 ## Ownership and integrity
 

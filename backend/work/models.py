@@ -140,6 +140,7 @@ class JobParticipationRequest(CompanyRecord):
         related_name="participation_decisions",
     )
     reason = models.TextField(blank=True)
+    decision_note = models.TextField(blank=True)
     revision = models.PositiveIntegerField(default=1)
 
     class Meta(CompanyRecord.Meta):

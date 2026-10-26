@@ -240,7 +240,8 @@ export function ResetPassword() {
   );
 }
 export function CompanySetup() {
-  const { session, loading, refresh, logout, key, createdCompanyId, setCreatedCompanyId } = useCompanySetupState();
+  const { session, loading, refresh, logout, key, createdCompanyId, setCreatedCompanyId, navigate, chooseCompany } =
+    useCompanySetupState();
   if (loading)
     return (
       <AuthLayout title="Your workspace" description="Checking your account.">
@@ -253,8 +254,31 @@ export function CompanySetup() {
   return (
     <AuthLayout
       title="Your company workspace"
-      description="Have an invitation? Open the link in your email to join your team. Otherwise, create a company below."
+      description={
+        session.memberships.length
+          ? 'Choose an available workspace, or create another company.'
+          : 'Open your invitation, refresh restored access, or create a company.'
+      }
     >
+      {session.memberships.length > 0 && (
+        <div className="auth-workspaces">
+          <p className="auth-help">Choose an available workspace to continue.</p>
+          {session.memberships.map((membership) => (
+            <AccountForm
+              key={membership.company_id}
+              secondary
+              label={`Open ${membership.company_name}`}
+              pendingLabel="Opening workspace…"
+              submit={async () => {
+                chooseCompany(membership.company_id);
+                navigate('/app', { replace: true });
+              }}
+            >
+              <></>
+            </AccountForm>
+          ))}
+        </div>
+      )}
       <AccountForm
         label="Create company"
         pendingLabel="Creating workspace…"
@@ -270,17 +294,28 @@ export function CompanySetup() {
             }),
           );
           await refresh();
+          chooseCompany(company.id);
           setCreatedCompanyId(company.id);
         }}
       >
         <Field label="Company name" name="company" autoComplete="organization" maxLength={200} required />
         <Field label="Your name" name="name" autoComplete="name" maxLength={120} required />
       </AccountForm>
-      {session.memberships.length > 0 && (
-        <Link className="text-link" to="/app">
-          Open existing company
-        </Link>
-      )}
+      <p className="auth-help">If an administrator changed your access, refresh it here.</p>
+      <AccountForm
+        secondary
+        label="Refresh access"
+        pendingLabel="Checking access…"
+        submit={async () => {
+          const next = await refresh();
+          if (next?.memberships.length === 1) {
+            chooseCompany(next.memberships[0].company_id);
+            navigate('/app', { replace: true });
+          }
+        }}
+      >
+        <></>
+      </AccountForm>
       <AccountFooter>
         <AccountForm secondary label="Sign out" pendingLabel="Signing out…" submit={logout}>
           <></>

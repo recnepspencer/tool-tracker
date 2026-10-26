@@ -19,6 +19,8 @@ const Context = createContext<{
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const cache = useQueryClient();
+  const [accessPending, setAccessPending] = useState(false);
+  const [source] = useState(() => crypto.randomUUID());
   const [companyId, setCompanyId] = useState(() => {
     try {
       return sessionStorage.getItem('nelson.company') ?? '';
@@ -30,7 +32,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     queryKey: ['session'],
     queryFn: async ({ signal }) => {
       try {
-        return result(await api.GET('/api/me', { signal }));
+        const previous = cache.getQueryData<Session>(['session']);
+        const next = result(await api.GET('/api/me', { signal }));
+        const selected =
+          previous?.memberships.find((member) => member.company_id === companyId) ?? previous?.memberships[0];
+        // Recover a removed workspace explicitly instead of reinterpreting an
+        // open resource in a different company.
+        if (!companyId && next.memberships.length) setCompanyId(selected?.company_id ?? next.memberships[0].company_id);
+        else if (selected && !next.memberships.some((member) => member.company_id === selected.company_id))
+          setCompanyId(selected.company_id);
+        return next;
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) return null;
         throw error;
@@ -43,29 +54,47 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   });
   const { refetch } = query;
   useEffect(() => {
+    let active = true;
+    let refreshing = false;
     const expire = () => {
       void cache.cancelQueries({ predicate: privateQuery });
       cache.removeQueries({ predicate: privateQuery });
       cache.setQueryData(['session'], null);
     };
     const channel = new BroadcastChannel('nelson-session');
-    channel.onmessage = () => {
-      expire();
-      void refetch();
+    const revalidate = async () => {
+      if (refreshing) return;
+      refreshing = true;
+      setAccessPending(true);
+      try {
+        await cache.cancelQueries({ predicate: privateQuery });
+        cache.removeQueries({ predicate: privateQuery });
+        await refetch();
+      } finally {
+        refreshing = false;
+        if (active) setAccessPending(false);
+      }
+    };
+    const accessChanged = () => void revalidate();
+    channel.onmessage = (event) => {
+      if (event.data?.source !== source) accessChanged();
     };
     window.addEventListener('session-expired', expire);
+    window.addEventListener('company-access-changed', accessChanged);
     return () => {
+      active = false;
       channel.close();
       window.removeEventListener('session-expired', expire);
+      window.removeEventListener('company-access-changed', accessChanged);
     };
-  }, [cache, refetch]);
+  }, [cache, refetch, source]);
   const refresh = async () => {
     await cache.cancelQueries({ predicate: privateQuery });
     cache.removeQueries({ predicate: privateQuery });
     const next = await query.refetch();
     if (next.error) throw next.error;
     const channel = new BroadcastChannel('nelson-session');
-    channel.postMessage('changed');
+    channel.postMessage({ source });
     channel.close();
     return next.data ?? null;
   };
@@ -75,7 +104,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     cache.setQueryData(['session'], null);
     cache.removeQueries({ predicate: privateQuery });
     const channel = new BroadcastChannel('nelson-session');
-    channel.postMessage('changed');
+    channel.postMessage({ source });
     channel.close();
   };
   const chooseCompany = (id: string) => {
@@ -88,13 +117,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       /* Storage is optional; membership remains server-owned. */
     }
   };
-  const member = query.data?.memberships.find((m) => m.company_id === companyId) ?? query.data?.memberships[0];
+  const member = companyId
+    ? query.data?.memberships.find((m) => m.company_id === companyId)
+    : query.data?.memberships[0];
   return (
     <Context.Provider
       value={{
         session: query.data,
         member,
-        loading: query.isPending,
+        loading: query.isPending || accessPending,
         error: query.error,
         refresh,
         chooseCompany,

@@ -66,6 +66,16 @@ class JobView(Schema):
     status: JobStatus
     archived_at: datetime | None
     revision: int
+    project_name: str
+    project_number: str
+
+    @staticmethod
+    def resolve_project_name(obj):
+        return obj.project.name
+
+    @staticmethod
+    def resolve_project_number(obj):
+        return obj.project.number
 
 
 class JobPage(Schema):
@@ -103,7 +113,39 @@ class ParticipationView(Schema):
     requested_at: datetime
     decided_at: datetime | None
     reason: str
+    decision_note: str
     revision: int
+    member_name: str
+    job_name: str
+    job_number: str
+    decided_by_id: UUID | None
+    decided_by_name: str | None
+    approval_blocked_reason: str | None
+
+    @staticmethod
+    def resolve_member_name(obj):
+        return obj.membership.person.preferred_name
+
+    @staticmethod
+    def resolve_job_name(obj):
+        return obj.job.name
+
+    @staticmethod
+    def resolve_job_number(obj):
+        return obj.job.number
+
+    @staticmethod
+    def resolve_decided_by_name(obj):
+        return obj.decided_by.person.preferred_name if obj.decided_by_id else None
+
+    @staticmethod
+    def resolve_approval_blocked_reason(obj):
+        if obj.status != "pending":
+            return None
+        issue = participation.intent_issue(
+            obj.job, obj.membership, obj.intent, obj.target_assignment_id
+        )
+        return issue[0] if issue else None
 
 
 class ParticipationPage(Schema):
@@ -131,6 +173,21 @@ class AssignmentView(Schema):
     assigned_by_id: UUID
     ended_by_id: UUID | None
     end_reason: str
+    member_name: str
+    assigned_by_name: str
+    ended_by_name: str | None
+
+    @staticmethod
+    def resolve_member_name(obj):
+        return obj.membership.person.preferred_name
+
+    @staticmethod
+    def resolve_assigned_by_name(obj):
+        return obj.assigned_by.person.preferred_name
+
+    @staticmethod
+    def resolve_ended_by_name(obj):
+        return obj.ended_by.person.preferred_name if obj.ended_by_id else None
 
 
 class AssignmentPage(Schema):
@@ -162,9 +219,9 @@ def jobs_list(
 ):
     require_member(current_identity(request), company_id, "jobs.read")
     return paginate(
-        Job.objects.filter(company_id=company_id, archived_at__isnull=not archived).order_by(
-            "number", "id"
-        ),
+        Job.objects.filter(company_id=company_id, archived_at__isnull=not archived)
+        .select_related("project")
+        .order_by("number", "id"),
         page.limit,
         page.offset,
     )
@@ -203,7 +260,9 @@ def participation_list(
     request: HttpRequest, company_id: UUID, page: Query[PageInput], pending: bool = True
 ):
     member = require_member(current_identity(request), company_id, "jobs.read")
-    query = JobParticipationRequest.objects.filter(company_id=company_id)
+    query = JobParticipationRequest.objects.filter(company_id=company_id).select_related(
+        "job", "membership__person", "decided_by__person"
+    )
     if "jobs.assign" not in capabilities(member):
         query = query.filter(membership=member)
     if pending:
@@ -247,7 +306,9 @@ def assignments_list(
     current: bool = True,
 ):
     require_member(current_identity(request), company_id, "jobs.read")
-    query = JobAssignment.objects.filter(company_id=company_id)
+    query = JobAssignment.objects.filter(company_id=company_id).select_related(
+        "membership__person", "assigned_by__person", "ended_by__person"
+    )
     if current:
         query = query.filter(ends_at__isnull=True)
     if job_id:

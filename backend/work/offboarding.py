@@ -15,6 +15,10 @@ def close_membership_participation(subject, actor, reason):
         ends_at=now, ended_by=actor, end_reason=reason
     )
     JobParticipationRequest.objects.filter(membership=subject, status="pending").update(
-        status="rejected", decided_at=now, decided_by=actor, revision=F("revision") + 1
+        status="rejected",
+        decided_at=now,
+        decided_by=actor,
+        decision_note=reason,
+        revision=F("revision") + 1,
     )
     Job.objects.filter(pk__in=[job.pk for job in jobs]).update(revision=F("revision") + 1)

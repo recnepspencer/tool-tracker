@@ -14,15 +14,20 @@ export async function collect<T>(
   }
   return items;
 }
-export function useReferences() {
-  const { path, company_id, can } = useCompany();
-  const people = useQuery({
+export function usePeople({ enabled = true } = {}) {
+  const { path, company_id } = useCompany();
+  return useQuery({
     queryKey: [company_id, 'people'],
+    enabled,
     queryFn: () =>
       collect((offset) =>
         api.GET('/api/companies/{company_id}/people', { params: { path, query: { offset, limit: 100 } } }).then(result),
       ),
   });
+}
+export function useReferences() {
+  const { path, company_id, can } = useCompany();
+  const people = usePeople();
   const warehouses = useQuery({
     queryKey: [company_id, 'warehouses'],
     queryFn: () =>

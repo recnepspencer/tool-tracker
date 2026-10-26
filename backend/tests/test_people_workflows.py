@@ -135,6 +135,49 @@ def test_revoked_invitation_cannot_grant_membership(people, password_hash):
     assert not CompanyMembership.objects.filter(person__identity_user=user).exists()
 
 
+def test_sent_invitation_survives_senders_role_change(people, password_hash):
+    ctx = people
+    invite = assert_response(
+        ctx.manager.post(
+            f"{ctx.base}/invitations",
+            {"email": "new@example.com", "preferred_name": "New", "role": "field_member"},
+            content_type="application/json",
+        ),
+        "/api/companies/{company_id}/invitations",
+    )
+    other_admin = member_in(ctx.company, password_hash, "company_admin")
+    changed = login_client(other_admin.user).post(
+        f"{ctx.base}/people/{ctx.admin.member.pk}/update",
+        {
+            "expected_revision": 1,
+            "access_state": "active",
+            "roles": ["field_member"],
+            "reason": "Changed responsibilities",
+        },
+        content_type="application/json",
+    )
+    assert_response(changed, "/api/companies/{company_id}/people/{membership_id}/update")
+    assert (
+        ctx.manager.post(
+            f"{ctx.base}/invitations",
+            {"email": "another@example.com", "preferred_name": "Another"},
+            content_type="application/json",
+        ).status_code
+        == 403
+    )
+    user = PlatformUser.objects.create(email="new@example.com", hashed_password=password_hash)
+    accepted = assert_response(
+        login_client(user).post(
+            "/api/invitations/accept", {"token": invite["token"]}, content_type="application/json"
+        ),
+        "/api/invitations/accept",
+    )
+    assert accepted["roles"] == ["field_member"]
+    stored = MembershipInvitation.objects.get(pk=invite["invitation"]["id"])
+    assert stored.invited_by_id == ctx.admin.member.pk
+    assert str(stored.accepted_membership_id) == accepted["id"]
+
+
 def test_foreign_membership_cannot_be_changed(people, password_hash):
     foreign = member_in(Company.objects.create(name="Other"), password_hash)
     response = people.manager.post(

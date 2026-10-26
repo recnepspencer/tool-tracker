@@ -7,6 +7,7 @@ import { useCompany } from './session';
 import { uploadPhoto } from './photos';
 import { text } from './ui';
 import { useListLocation } from './list-location';
+import { useRegistrationPolicy } from './registration-policy';
 
 export function useTransferPicker() {
   const [mode, setMode] = useState<'person' | 'warehouse'>('person');
@@ -29,6 +30,7 @@ export function useTransferPicker() {
 
 export function useRegisterToolState() {
   const c = useCompany();
+  const { policy, canRegister } = useRegistrationPolicy();
   const refs = useReferences();
   const [created, setCreated] = useState('');
   const [step, setStep] = useState<'photo' | 'details'>('photo');
@@ -86,13 +88,20 @@ export function useRegisterToolState() {
     );
     setCreated(tool.id);
   };
-  const policy = useQuery({
-    queryKey: [c.company_id, 'registration-policy'],
-    queryFn: () =>
-      api.GET('/api/companies/{company_id}/tool-registration-policy', { params: { path: c.path } }).then(result),
-  });
-
-  return { c, refs, created, policy, step, setStep, preview, photoError, choosePhoto, skipPhoto, register };
+  return {
+    c,
+    refs,
+    created,
+    policy,
+    canRegister,
+    step,
+    setStep,
+    preview,
+    photoError,
+    choosePhoto,
+    skipPhoto,
+    register,
+  };
 }
 export function useToolDetailState() {
   const c = useCompany();

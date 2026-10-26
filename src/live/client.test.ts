@@ -96,6 +96,30 @@ it('keeps evidence validation separate from stale-record recovery', async () => 
   expect(fetch).toHaveBeenCalledTimes(2);
 });
 
+it('revalidates company access on authorization changes without treating CSRF as sign-out', async () => {
+  const changed = vi.fn();
+  const expired = vi.fn();
+  window.addEventListener('company-access-changed', changed);
+  window.addEventListener('session-expired', expired);
+  try {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(response({ message: 'Access changed', code: 'capability_required' }, 403))
+      .mockResolvedValueOnce(response({ message: 'CSRF verification failed' }, 403));
+    const { api } = await client(fetch);
+    await expect(
+      api.GET('/api/companies/{company_id}/tools', { params: { path: { company_id: 'company' } } }),
+    ).rejects.toThrow('Access changed');
+    expect(changed).toHaveBeenCalledOnce();
+    await expect(api.GET('/api/me')).rejects.toThrow('CSRF verification failed');
+    expect(changed).toHaveBeenCalledOnce();
+    expect(expired).not.toHaveBeenCalled();
+  } finally {
+    window.removeEventListener('company-access-changed', changed);
+    window.removeEventListener('session-expired', expired);
+  }
+});
+
 it('notifies the session boundary on expired reads, without treating bad passwords as logout', async () => {
   const expired = vi.fn();
   window.addEventListener('session-expired', expired);

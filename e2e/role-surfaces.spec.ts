@@ -73,7 +73,7 @@ for (const item of cases)
         ['/app/flagged', 'Damaged & lost', item.equipment],
         ['/app/operations', 'Queue', item.equipment],
         ['/app/directory', 'Foremen', item.equipment],
-        ['/app/jobs', 'Jobs', true],
+        ['/app/jobs', item.equipment && !item.work ? 'My jobs' : 'Jobs', true],
         ['/app/people', 'People', item.people],
         ['/app/access', 'Access', item.people],
         ['/app/warehouses', 'Warehouses', item.catalog],
@@ -93,8 +93,12 @@ for (const item of cases)
             await expect(actor.getByRole('region', { name: 'Management authority' })).toHaveCount(0);
           }
           if (url === '/app/jobs') {
-            await expect(actor.getByText('Assign a person', { exact: true })).toHaveCount(item.work ? 1 : 0);
-            await expect(actor.getByText('Create a project or job', { exact: true })).toHaveCount(item.work ? 1 : 0);
+            await expect(actor.getByRole('button', { name: 'Add job', exact: true })).toHaveCount(item.work ? 1 : 0);
+            await actor.getByRole('button', { name: 'View people on Library wiring', exact: true }).click();
+            await expect(actor.getByRole('region', { name: 'Assign a person', exact: true })).toHaveCount(
+              item.work ? 1 : 0,
+            );
+            await actor.keyboard.press('Escape');
           }
           if (url === '/app/settings')
             await expect(actor.getByRole('region', { name: 'Company profile', exact: true })).toHaveCount(

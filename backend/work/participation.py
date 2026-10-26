@@ -17,9 +17,33 @@ def lock_job(company_id, job_id):
     return job
 
 
-def require_joinable(job):
+def join_issue(job):
     if job.archived_at or job.status not in {"planned", "active"}:
-        raise conflict("This job is not accepting assignments.", code="job_not_joinable")
+        return "This job is not accepting assignments.", "job_not_joinable"
+    return None
+
+
+def require_joinable(job):
+    if issue := join_issue(job):
+        raise conflict(issue[0], code=issue[1])
+
+
+def intent_issue(job, member, intent, assignment_id):
+    """The same current-state rule is read by the review UI and checked under the job lock."""
+    if member.access_state != "active" or member.ended_at:
+        return "Subject is no longer active.", "member_inactive"
+    if job.archived_at:
+        return "Job is archived.", "job_archived"
+    if intent == "join":
+        if issue := join_issue(job):
+            return issue
+        if JobAssignment.objects.filter(job=job, membership=member, ends_at__isnull=True).exists():
+            return "Member is already assigned to this job.", "already_assigned"
+    elif not JobAssignment.objects.filter(
+        pk=assignment_id, job=job, membership=member, ends_at__isnull=True
+    ).exists():
+        return "The referenced assignment is no longer current.", "stale_assignment"
+    return None
 
 
 def end_assignment(assignment, actor, reason):
@@ -30,12 +54,9 @@ def end_assignment(assignment, actor, reason):
 
 
 def apply_intent(request, job, actor):
+    if issue := intent_issue(job, request.membership, request.intent, request.target_assignment_id):
+        raise conflict(issue[0], code=issue[1])
     if request.intent == "join":
-        require_joinable(job)
-        if JobAssignment.objects.filter(
-            job=job, membership=request.membership, ends_at__isnull=True
-        ).exists():
-            raise conflict("Member is already assigned to this job.", code="already_assigned")
         request.resulting_assignment = JobAssignment.objects.create(
             company_id=job.company_id,
             job=job,
@@ -50,10 +71,6 @@ def apply_intent(request, job, actor):
             membership=request.membership,
             ends_at__isnull=True,
         ).first()
-        if target is None:
-            raise conflict(
-                "The referenced assignment is no longer current.", code="stale_assignment"
-            )
         end_assignment(target, actor, request.reason)
         request.resulting_assignment = target
     request.status = "approved"
@@ -115,20 +132,13 @@ def request_participation(identity, company_id, job_id, data):
             "Self-service is disabled for this operation.", code="participation_disabled"
         )
     job = lock_job(company_id, job_id)
-    if job.archived_at:
-        raise conflict("Job is archived.", code="job_archived")
     if data.intent == "join":
-        require_joinable(job)
         if data.assignment_id is not None:
             raise conflict(
                 "A join request cannot name an existing assignment.", code="invalid_assignment"
             )
-        if JobAssignment.objects.filter(job=job, membership=member, ends_at__isnull=True).exists():
-            raise conflict("Already assigned to this job.", code="already_assigned")
-    elif not JobAssignment.objects.filter(
-        pk=data.assignment_id, job=job, membership=member, ends_at__isnull=True
-    ).exists():
-        raise conflict("Name your current assignment when leaving.", code="stale_assignment")
+    if issue := intent_issue(job, member, data.intent, data.assignment_id):
+        raise conflict(issue[0], code=issue[1])
     if JobParticipationRequest.objects.filter(
         job=job, membership=member, intent=data.intent, status="pending"
     ).exists():
@@ -168,7 +178,11 @@ def decide_participation(identity, company_id, request_id, action, data):
         related_members=[reference.membership_id],
     )
     job = lock_job(company_id, reference.job_id)
-    result = JobParticipationRequest.objects.select_for_update().get(pk=request_id)
+    result = (
+        JobParticipationRequest.objects.select_for_update(of=("self",))
+        .select_related("membership")
+        .get(pk=request_id)
+    )
     if action == "withdraw" and result.membership_id != member.pk:
         raise forbidden("Only the subject may withdraw this request.")
     target = {"approve": "approved", "reject": "rejected", "withdraw": "withdrawn"}[action]
@@ -178,16 +192,11 @@ def decide_participation(identity, company_id, request_id, action, data):
     if result.status != "pending":
         raise conflict("Participation request is already resolved.", code="participation_resolved")
     if action == "approve":
-        if not CompanyMembership.objects.filter(
-            pk=result.membership_id, access_state="active", ended_at__isnull=True
-        ).exists():
-            raise conflict("Subject is no longer active.", code="member_inactive")
-        if job.archived_at:
-            raise conflict("Job is archived.", code="job_archived")
         apply_intent(result, job, member)
     result.status = target
     result.decided_at = timezone.now()
     result.decided_by = member
+    result.decision_note = data.note
     result.revision += 1
     result.save()
     record_company_event(

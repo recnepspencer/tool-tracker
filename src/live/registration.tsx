@@ -7,13 +7,21 @@ import { useRegisterToolState } from './tools-state';
 import { Field, Form, Loading, Notice, Select } from './ui';
 
 export function RegisterTool() {
-  const { c, refs, created, policy, step, setStep, preview, photoError, choosePhoto, skipPhoto, register } =
-    useRegisterToolState();
+  const {
+    c,
+    refs,
+    created,
+    policy,
+    canRegister,
+    step,
+    setStep,
+    preview,
+    photoError,
+    choosePhoto,
+    skipPhoto,
+    register,
+  } = useRegisterToolState();
   const { close } = useSheetNavigation();
-  if (policy.isPending) return <Loading />;
-  if (policy.error) return <Notice error>{errorMessage(policy.error)}</Notice>;
-  if (!c.can('tools.register') || (!c.can('tools.manage') && !policy.data.employee_tool_creation_enabled))
-    return <Notice>Employee tool registration is disabled by your company. Contact your equipment manager.</Notice>;
   return (
     <RecordSheet title="Add a tool" onClose={close}>
       <header className="page-heading">
@@ -22,7 +30,13 @@ export function RegisterTool() {
           <h1>Add a tool</h1>
         </div>
       </header>
-      {created ? (
+      {policy.isPending ? (
+        <Loading />
+      ) : policy.error ? (
+        <Notice error>{errorMessage(policy.error)}</Notice>
+      ) : !canRegister ? (
+        <Notice>Employee tool registration is disabled by your company. Contact your equipment manager.</Notice>
+      ) : created ? (
         <Notice>
           Tool registered. <Link to={`/app/tools/${created}`}>Open its custody record</Link>
         </Notice>

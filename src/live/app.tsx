@@ -23,7 +23,7 @@ const ActivityPage = lazy(() => import('./activity').then((m) => ({ default: m.A
 const DirectoryPage = lazy(() => import('./directory').then((m) => ({ default: m.DirectoryPage })));
 
 function RequireAccount() {
-  const { session, loading, error, refresh } = useSession();
+  const { session, member, loading, error, refresh } = useSession();
   const location = useLocation();
   if (loading) return <Loading />;
   if (error)
@@ -36,8 +36,11 @@ function RequireAccount() {
         </Form>
       </main>
     );
-  if (!session) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace />;
-  if (!session.memberships.length) return <Navigate to="/company-setup" replace />;
+  if (!session)
+    return (
+      <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search + location.hash)}`} replace />
+    );
+  if (!session.memberships.length || !member) return <Navigate to="/company-setup" replace />;
   return <Outlet />;
 }
 function Permit({ capabilities }: { capabilities: string[] }) {

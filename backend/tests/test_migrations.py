@@ -44,6 +44,51 @@ def test_company_profile_upgrade_preserves_existing_company_identity():
         MigrationExecutor(connection).migrate(latest)
 
 
+def test_work_decision_note_upgrade_preserves_existing_participation(password_hash):
+    from django.utils import timezone
+
+    from companies.models import Company
+    from tests.factories import member_in
+
+    executor = MigrationExecutor(connection)
+    latest = executor.loader.graph.leaf_nodes()
+    previous = [("work", "0001_initial")]
+    try:
+        executor.migrate(previous)
+        historical = executor.loader.project_state(previous).apps
+        company = Company.objects.create(name="Existing work records")
+        actor = member_in(company, password_hash, "company_admin")
+        Project = historical.get_model("work", "Project")
+        Job = historical.get_model("work", "Job")
+        Request = historical.get_model("work", "JobParticipationRequest")
+        project = Project.objects.create(company_id=company.pk, number="OLD-P", name="Campus")
+        job = Job.objects.create(
+            company_id=company.pk, project=project, number="OLD-J", name="Rough-in"
+        )
+        request = Request.objects.create(
+            company_id=company.pk,
+            job=job,
+            membership_id=actor.member.pk,
+            intent="join",
+            request_key=uuid4(),
+            status="rejected",
+            policy_revision=3,
+            reason="Original request",
+            decided_by_id=actor.member.pk,
+            decided_at=timezone.now(),
+            revision=2,
+        )
+        before = Request.objects.values().get(pk=request.pk)
+        MigrationExecutor(connection).migrate(latest)
+        from work.models import JobParticipationRequest
+
+        upgraded = JobParticipationRequest.objects.get(pk=request.pk)
+        assert JobParticipationRequest.objects.values(*before).get(pk=request.pk) == before
+        assert upgraded.decision_note == ""  # An unknown historical note is not invented.
+    finally:
+        MigrationExecutor(connection).migrate(latest)
+
+
 def test_existing_database_upgrades_without_losing_assets_custody_or_requests(world):
     executor = MigrationExecutor(connection)
     latest = executor.loader.graph.leaf_nodes()

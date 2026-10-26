@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useModalFocusTrap } from './experience/use-modal-focus-trap';
+import { useRegistrationPolicy } from './registration-policy';
 
 export function useShellNavigation() {
+  const { canRegister } = useRegistrationPolicy();
   const location = useLocation();
+  const navigate = useNavigate();
   const [openPath, setOpenPath] = useState<string | null>(null);
   const [accountPath, setAccountPath] = useState<string | null>(null);
   const navigationRef = useRef<HTMLElement>(null);
@@ -20,6 +23,8 @@ export function useShellNavigation() {
     window.scrollTo(0, 0);
   }, [location.pathname]);
   return {
+    canRegister,
+    navigateHome: () => navigate('/app'),
     menu: openPath === location.pathname,
     navigationRef,
     setMenu: (open: boolean) => setOpenPath(open ? location.pathname : null),

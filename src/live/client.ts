@@ -65,6 +65,17 @@ api.use({
         window.dispatchEvent(new Event('session-expired'));
       }
       const error = new ApiError(response.status, messageFrom(body), codeFrom(body));
+      if (
+        response.status === 403 &&
+        [
+          'membership_required',
+          'capability_required',
+          'warehouse_authority_required',
+          'employee_registration_disabled',
+          'participation_disabled',
+        ].includes(error.code ?? '')
+      )
+        window.dispatchEvent(new Event('company-access-changed'));
       if (isStaleRecord(error)) error.message += ' Refresh the record before trying again.';
       throw error;
     }

@@ -39,10 +39,36 @@ test('company profile and warehouse dialogs persist changes and recover stale dr
   await expect(warehouse).toBeVisible();
   await page.screenshot({ path: 'artifacts/parity-warehouse-dialog.png', fullPage: true });
   await warehouse.getByLabel('Archived', { exact: true }).check();
-  await warehouse.getByRole('button', { name: 'Save warehouse', exact: true }).click();
-  await expect(warehouse).toHaveCount(0);
-  await page.getByLabel('Show archived warehouses').click();
-  await expect(page.getByLabel('Show archived warehouses')).toBeChecked();
+  let releaseRead!: () => void;
+  let readStarted!: () => void;
+  const slowRead = new Promise<void>((resolve) => {
+    releaseRead = resolve;
+  });
+  const started = new Promise<void>((resolve) => {
+    readStarted = resolve;
+  });
+  await page.route(
+    `**${fixture.base}/tool-registration-policy`,
+    async (route) => {
+      const response = await route.fetch();
+      readStarted();
+      await slowRead;
+      await route.fulfill({ response });
+    },
+    { times: 1 },
+  );
+  try {
+    await warehouse.getByRole('button', { name: 'Save warehouse', exact: true }).click();
+    await started;
+    await expect(warehouse).toHaveCount(0);
+    // Saving and closing must finish before a slow background read; the next
+    // user's navigation must not be replaced by a delayed close callback.
+    await expect(page).toHaveURL(/\/app\/warehouses$/);
+    await page.getByLabel('Show archived warehouses').click();
+    await expect(page.getByLabel('Show archived warehouses')).toBeChecked();
+  } finally {
+    releaseRead();
+  }
   await page.getByRole('button', { name: 'East warehouse', exact: true }).click();
   await warehouse.getByLabel('Archived', { exact: true }).uncheck();
   await warehouse.getByRole('button', { name: 'Save warehouse', exact: true }).click();
@@ -60,22 +86,65 @@ test('company profile and warehouse dialogs persist changes and recover stale dr
   ).toBeNull();
 });
 
+test('closing a saving sheet does not navigate back when its committed response arrives', async ({ page }) => {
+  const fixture = await workspace(page);
+  await page.goto('/app/warehouses');
+  await page.getByRole('button', { name: 'Main warehouse', exact: true }).click();
+  const sheet = page.getByRole('dialog', { name: 'Warehouse details', exact: true });
+  await sheet.getByLabel('Name', { exact: true }).fill('Updated main warehouse');
+  let releaseResponse!: () => void;
+  let committed = false;
+  const responseGate = new Promise<void>((resolve) => {
+    releaseResponse = resolve;
+  });
+  await page.route(
+    `**${fixture.base}/warehouses/${fixture.warehouse.id}/update`,
+    async (route) => {
+      const response = await route.fetch();
+      expect(response.ok()).toBe(true);
+      committed = true;
+      await responseGate;
+      await route.fulfill({ response });
+    },
+    { times: 1 },
+  );
+  try {
+    await sheet.getByRole('button', { name: 'Save warehouse', exact: true }).click();
+    await expect.poll(() => committed).toBe(true);
+    await page.keyboard.press('Escape');
+    await expect(sheet).toHaveCount(0);
+    await page.getByRole('link', { name: 'Inventory', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Inventory', exact: true })).toBeVisible();
+    const refreshed = page.waitForResponse(
+      (response) =>
+        response.url().endsWith(`${fixture.base}/tool-registration-policy`) && response.request().method() === 'GET',
+    );
+    releaseResponse();
+    await refreshed;
+    await expect(
+      page
+        .getByLabel('Warehouse', { exact: true })
+        .getByRole('option', { name: 'Updated main warehouse', exact: true }),
+    ).toHaveCount(1);
+    await expect(page).toHaveURL(/\/app\/tools$/);
+  } finally {
+    releaseResponse();
+  }
+});
+
 test('foremen directory filters actual assignments and preserves held tool identity', async ({ page, browser }) => {
   const fixture = await workspace(page);
   const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
   const worker = await context.newPage();
   try {
     const member = await invitedMember(page, worker, fixture.base, 'field_member', 'Assigned Foreman');
-    await page.goto('/app/jobs');
-    const job = page
-      .locator('article.panel')
-      .filter({ has: page.getByRole('heading', { name: 'Library wiring', exact: true }) });
-    await job.getByText('Assign a person', { exact: true }).click();
-    await job.getByLabel('Person', { exact: true }).selectOption(member.id);
-    await job.getByLabel('Responsibility').selectOption('foreman');
-    await job.getByLabel('Reason', { exact: true }).fill('Lead installation');
-    await job.getByRole('button', { name: 'Save assignment' }).click();
-    await expect(job.locator('strong').filter({ hasText: 'Assigned Foreman' })).toBeVisible();
+    const assignment = await command(page.request, `${fixture.base}/jobs/${fixture.job.id}/assignments`, {
+      expected_revision: fixture.job.revision,
+      membership_id: member.id,
+      responsibility: 'foreman',
+      reason: 'Lead installation',
+    });
+    expect(assignment).toMatchObject({ membership_id: member.id, responsibility: 'foreman' });
     const handoff = await command(page.request, `${fixture.base}/tools/${fixture.asset.id}/handoffs`, {
       request_key: crypto.randomUUID(),
       expected_revision: fixture.asset.revision,

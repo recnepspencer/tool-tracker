@@ -136,6 +136,13 @@
 .experience .side-nav {
   overflow: auto;
 }
+.experience .side-nav-links {
+  gap: 2px;
+}
+.experience .side-nav .side-nav-link {
+  min-height: 40px;
+  padding: 8px 12px;
+}
 .experience .side-nav-theme {
   margin-top: auto;
 }

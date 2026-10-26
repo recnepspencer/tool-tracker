@@ -117,13 +117,14 @@ test('field layout follows the demo with real photographed custody and review sh
       'Damaged & lost',
       'People',
       'Foremen',
+      'Jobs',
       'Warehouses',
       'Access',
       'Activity',
       'Settings',
     ]) {
       await expect(page.getByRole('link', { name, exact: true })).toBeVisible();
-      await expect(page.getByRole('link', { name, exact: true })).toBeInViewport();
+      await expect(page.getByRole('link', { name, exact: true })).toBeInViewport({ ratio: 1 });
     }
     await page.getByRole('button', { name: 'Expand Hammer drill, 2 tools' }).click();
     await page.screenshot({ path: 'artifacts/parity-inventory-desktop.png', fullPage: true });

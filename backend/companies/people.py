@@ -8,7 +8,7 @@ from cleanforce_identity.models import PlatformUser
 from django.db import transaction
 from django.utils import timezone
 
-from .access import authorize_write, capabilities
+from .access import authorize_write
 from .audit import record_company_event
 from .models import Company, CompanyMembership, CompanyRoleGrant, MembershipInvitation, Person
 from .revisions import expect_revision
@@ -87,31 +87,20 @@ def revoke_invitation(identity, company_id, invitation_id):
 def accept_invitation(identity, token):
     PlatformUser.objects.select_for_update().get(pk=identity.user_id)
     digest = hashlib.sha256(token.encode()).hexdigest()
-    reference = MembershipInvitation.objects.filter(token_digest=digest).first()
-    if reference is None:
+    invite = MembershipInvitation.objects.select_for_update().filter(token_digest=digest).first()
+    if invite is None:
         raise not_found("Invitation not found.")
-    if (identity.email or "").casefold() != reference.email:
+    if (identity.email or "").casefold() != invite.email:
         raise forbidden("Sign in with the invited email address.", code="invitation_email_mismatch")
-    prior_member = CompanyMembership.objects.filter(
-        company_id=reference.company_id, person__identity_user_id=identity.user_id
-    ).first()
-    ids = [reference.invited_by_id] + ([prior_member.pk] if prior_member else [])
-    list(CompanyMembership.objects.select_for_update().filter(pk__in=ids).order_by("id"))
-    invite = MembershipInvitation.objects.select_for_update().get(pk=reference.pk)
     if invite.accepted_at:
         raise conflict("Invitation has already been used.", code="invitation_used")
     if invite.revoked_at or invite.expires_at <= timezone.now():
         raise conflict("Invitation is expired or revoked.", code="invitation_expired")
-    inviter = CompanyMembership.objects.get(pk=invite.invited_by_id)
-    if (
-        inviter.access_state != "active"
-        or inviter.ended_at
-        or "people.manage" not in capabilities(inviter)
-    ):
-        raise forbidden(
-            "Invitation issuer no longer has invitation authority.", code="inviter_unauthorized"
-        )
-    if prior_member:
+    # Authority was checked when sending; invited_by records provenance, not a
+    # continuing dependency on the sender's employment or role.
+    if CompanyMembership.objects.filter(
+        company_id=invite.company_id, person__identity_user_id=identity.user_id
+    ).exists():
         raise conflict(
             "Membership already exists; an administrator must update it.", code="membership_exists"
         )

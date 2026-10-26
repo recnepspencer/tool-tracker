@@ -3,6 +3,7 @@ import { api, result } from './client';
 import { collect } from './data';
 import { useListLocation } from './list-location';
 import { useCompany } from './session';
+import { useRegistrationPolicy } from './registration-policy';
 
 export function useSettingsPageState() {
   const c = useCompany();
@@ -12,12 +13,7 @@ export function useSettingsPageState() {
     queryKey: [c.company_id, 'company-profile'],
     queryFn: () => api.GET('/api/companies/{company_id}', { params: { path: c.path } }).then(result),
   });
-  const tools = useQuery({
-    queryKey: [c.company_id, 'registration-policy'],
-    enabled: c.can('tools.manage_registration_policy'),
-    queryFn: () =>
-      api.GET('/api/companies/{company_id}/tool-registration-policy', { params: { path: c.path } }).then(result),
-  });
+  const { policy: tools } = useRegistrationPolicy();
   const jobs = useQuery({
     queryKey: [c.company_id, 'participation-policy'],
     enabled: c.can('jobs.manage_policy'),

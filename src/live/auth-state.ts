@@ -21,7 +21,10 @@ export function useSignupState() {
   const next = safeNext(search.get('next'));
   async function send(values: typeof draft) {
     await api.POST('/api/auth/signup', {
-      body: { ...values, invitation_token: next.startsWith('/invite/') ? next.slice(8) : '' },
+      body: {
+        ...values,
+        invitation_token: next.startsWith('/invite/') ? new URL(next, window.location.origin).pathname.slice(8) : '',
+      },
     });
   }
 
@@ -62,11 +65,11 @@ export function useResetPasswordState() {
 }
 export function useCompanySetupState() {
   const [createdCompanyId, setCreatedCompanyId] = useState('');
-  const { session, loading, refresh, logout } = useSession();
+  const { session, loading, refresh, logout, chooseCompany } = useSession();
   const [key] = useState(requestKey);
   const navigate = useNavigate();
 
-  return { session, loading, refresh, logout, key, navigate, createdCompanyId, setCreatedCompanyId };
+  return { session, loading, refresh, logout, chooseCompany, key, navigate, createdCompanyId, setCreatedCompanyId };
 }
 export function useInvitationState() {
   const { token = '' } = useParams();

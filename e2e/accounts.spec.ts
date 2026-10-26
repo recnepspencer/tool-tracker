@@ -13,7 +13,7 @@ async function signup(page: Page, email: string, name: string) {
   await page.getByRole('button', { name: 'Create account', exact: true }).click();
 }
 
-test('verified signup, company, delivered invitation, real login and password recovery', async ({ page, browser }) => {
+test('verified signup, invitation, first tool receipt and password recovery', async ({ page, browser }) => {
   const unique = crypto.randomUUID().slice(0, 8);
   const owner = `owner-${unique}@example.com`;
   const employee = `employee-${unique}@example.com`;
@@ -109,25 +109,8 @@ test('verified signup, company, delivered invitation, real login and password re
   await expect(
     worker.getByRole('region', { name: 'Current custody', exact: true }).getByText('Field Employee', { exact: true }),
   ).toBeVisible();
-  await page.goto('/app/jobs');
-  await page.getByText('Create a project or job', { exact: true }).click();
-  await section('New project').getByLabel('Project number').fill('P-001');
-  await section('New project').getByLabel('Project name').fill('Library');
-  await section('New project').getByRole('button', { name: 'Create project' }).click();
-  await expect(section('New project').getByRole('status')).toContainText('Saved successfully');
-  await section('New job').getByLabel('Project', { exact: true }).selectOption({ label: 'P-001 · Library' });
-  await section('New job').getByLabel('Job number').fill('J-001');
-  await section('New job').getByLabel('Job name').fill('Library wiring');
-  await section('New job').getByRole('button', { name: 'Create job' }).click();
-  await expect(page.getByRole('heading', { name: 'Library wiring', exact: true })).toBeVisible();
-  await page.getByText('Assign a person', { exact: true }).click();
-  await page.getByLabel('Person', { exact: true }).selectOption({ label: 'Field Employee' });
-  await page.getByLabel('Responsibility', { exact: true }).selectOption('foreman');
-  await page.getByLabel('Reason', { exact: true }).fill('Lead the wiring crew');
-  await page.getByRole('button', { name: 'Save assignment' }).click();
-  await worker.goto('/app/jobs');
-  await expect(worker.getByText('Field Employee', { exact: true }).last()).toBeVisible();
-  await expect(worker.getByText(/foreman ·/)).toBeVisible();
+  await worker.goto('/app/mine');
+  await expect(worker.getByRole('link', { name: 'TEST-001 Hammer drill', exact: true })).toBeVisible();
   const credentials = await worker.evaluate(() => ({ local: { ...localStorage }, session: { ...sessionStorage } }));
   expect(JSON.stringify(credentials)).not.toContain(password);
   await worker.screenshot({ path: 'artifacts/real-app-mobile.png', fullPage: true });

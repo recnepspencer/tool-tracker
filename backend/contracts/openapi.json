@@ -523,6 +523,10 @@
             "title": "Assigned By Id",
             "type": "string"
           },
+          "assigned_by_name": {
+            "title": "Assigned By Name",
+            "type": "string"
+          },
           "end_reason": {
             "title": "End Reason",
             "type": "string"
@@ -538,6 +542,17 @@
               }
             ],
             "title": "Ended By Id"
+          },
+          "ended_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended By Name"
           },
           "ends_at": {
             "anyOf": [
@@ -559,6 +574,10 @@
           "job_id": {
             "format": "uuid",
             "title": "Job Id",
+            "type": "string"
+          },
+          "member_name": {
+            "title": "Member Name",
             "type": "string"
           },
           "membership_id": {
@@ -590,7 +609,10 @@
           "ends_at",
           "assigned_by_id",
           "ended_by_id",
-          "end_reason"
+          "end_reason",
+          "member_name",
+          "assigned_by_name",
+          "ended_by_name"
         ],
         "title": "AssignmentView",
         "type": "object"
@@ -2428,6 +2450,14 @@
             "title": "Project Id",
             "type": "string"
           },
+          "project_name": {
+            "title": "Project Name",
+            "type": "string"
+          },
+          "project_number": {
+            "title": "Project Number",
+            "type": "string"
+          },
           "revision": {
             "title": "Revision",
             "type": "integer"
@@ -2451,7 +2481,9 @@
           "name",
           "status",
           "archived_at",
-          "revision"
+          "revision",
+          "project_name",
+          "project_number"
         ],
         "title": "JobView",
         "type": "object"
@@ -3053,6 +3085,17 @@
       },
       "ParticipationView": {
         "properties": {
+          "approval_blocked_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Blocked Reason"
+          },
           "decided_at": {
             "anyOf": [
               {
@@ -3064,6 +3107,33 @@
               }
             ],
             "title": "Decided At"
+          },
+          "decided_by_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided By Id"
+          },
+          "decided_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided By Name"
+          },
+          "decision_note": {
+            "title": "Decision Note",
+            "type": "string"
           },
           "id": {
             "format": "uuid",
@@ -3081,6 +3151,18 @@
           "job_id": {
             "format": "uuid",
             "title": "Job Id",
+            "type": "string"
+          },
+          "job_name": {
+            "title": "Job Name",
+            "type": "string"
+          },
+          "job_number": {
+            "title": "Job Number",
+            "type": "string"
+          },
+          "member_name": {
+            "title": "Member Name",
             "type": "string"
           },
           "membership_id": {
@@ -3152,7 +3234,14 @@
           "requested_at",
           "decided_at",
           "reason",
-          "revision"
+          "decision_note",
+          "revision",
+          "member_name",
+          "job_name",
+          "job_number",
+          "decided_by_id",
+          "decided_by_name",
+          "approval_blocked_reason"
         ],
         "title": "ParticipationView",
         "type": "object"
