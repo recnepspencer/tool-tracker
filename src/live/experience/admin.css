@@ -1,0 +1,326 @@
+.experience .card-heading {
+  align-items: flex-end;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-16);
+}
+.experience .card-heading h2 {
+  font-size: var(--text-4xl);
+  letter-spacing: var(--tracking-heading);
+  margin: var(--space-8) 0 0;
+}
+.experience .admin-toolbar {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-14);
+  justify-content: space-between;
+  margin-bottom: var(--space-14);
+}
+.experience .admin-filters {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: var(--space-10);
+  min-width: 0;
+}
+.experience .admin-filters .field--search {
+  flex: 1 1 var(--space-220);
+  min-width: min(var(--space-220), 100%);
+}
+.experience .admin-filters > :not(.field--search) {
+  flex: 1 1 var(--space-160);
+}
+.experience .admin-table-card {
+  overflow: hidden;
+  padding: 0;
+}
+.experience .admin-table-wrap {
+  overflow-x: auto;
+}
+.experience .admin-table {
+  border-collapse: collapse;
+  min-width: var(--space-760);
+  width: 100%;
+}
+.experience .admin-table th,
+.experience .admin-table td {
+  border-bottom: var(--border-width) solid var(--border);
+  padding: var(--space-12) var(--space-16);
+  text-align: left;
+  vertical-align: middle;
+}
+.experience .admin-table th {
+  color: var(--dim);
+  font: var(--font-mono-xs);
+  letter-spacing: var(--tracking-table);
+  text-transform: uppercase;
+}
+.experience .admin-table td > span,
+.experience .admin-table td > a + span {
+  color: var(--dim);
+  display: block;
+  font: var(--font-mono-sm);
+  margin-top: var(--space-4);
+}
+.experience .admin-person-link {
+  color: var(--ink);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+.experience .admin-person-link:hover {
+  color: var(--blue-soft);
+}
+.experience .admin-record-button {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--weight-semibold);
+  padding: 0;
+  text-align: left;
+}
+.experience .admin-record-button:hover {
+  color: var(--blue-soft);
+}
+.experience .lifecycle-pill,
+.experience .capability-pill {
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  color: var(--muted);
+  display: inline-flex;
+  font: var(--font-mono-xs);
+  padding: var(--space-5) var(--space-8);
+  white-space: nowrap;
+}
+.experience .lifecycle-pill--active {
+  color: var(--green);
+}
+.experience .lifecycle-pill--suspended {
+  color: var(--amber);
+}
+.experience .lifecycle-pill--removed {
+  color: var(--red);
+}
+.experience .lifecycle-pill--invited {
+  color: var(--blue-soft);
+}
+.experience .admin-empty {
+  color: var(--muted);
+  padding: var(--space-22);
+}
+.experience .admin-form,
+.experience .admin-danger-zone {
+  display: grid;
+  gap: var(--space-14);
+}
+.experience .dialog-heading {
+  margin-bottom: var(--space-20);
+  padding-right: var(--space-48);
+}
+.experience .dialog-heading h2 {
+  font-size: var(--text-8xl);
+  letter-spacing: var(--tracking-display);
+  margin: var(--space-8) 0;
+}
+.experience .dialog-heading p {
+  color: var(--muted);
+  margin: 0;
+}
+.experience .dialog-actions {
+  display: flex;
+  gap: var(--space-10);
+  justify-content: flex-end;
+  margin-top: var(--space-8);
+}
+.experience .form-error {
+  color: var(--red);
+  font-size: var(--text-md);
+  margin: 0;
+}
+.experience .admin-meta-kind {
+  color: var(--dim);
+  font: var(--font-mono-xs);
+  text-transform: uppercase;
+}
+.experience .admin-dialog,
+.experience .admin-drawer {
+  background: var(--card-2);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-dialog);
+  box-shadow: var(--elevation-dialog);
+  box-sizing: border-box;
+  max-height: min(var(--space-760), calc(100dvh - var(--space-24)));
+  max-width: min(var(--space-620), calc(100vw - var(--space-24)));
+  overflow-y: auto;
+  padding: var(--space-22);
+  width: 100%;
+}
+.experience .person-detail-grid {
+  display: grid;
+  gap: var(--space-10);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: var(--space-22);
+}
+.experience .person-detail-grid > div {
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  display: grid;
+  gap: var(--space-7);
+  padding: var(--space-12);
+}
+.experience .person-detail-grid strong {
+  font-size: var(--text-body);
+}
+.experience .admin-detail-list {
+  border-top: var(--border-width) solid var(--border);
+  display: grid;
+  gap: var(--space-10);
+  margin-top: var(--space-18);
+  padding-top: var(--space-18);
+}
+.experience .admin-detail-list > div {
+  display: flex;
+  gap: var(--space-12);
+  justify-content: space-between;
+}
+.experience .admin-detail-list > div span {
+  color: var(--dim);
+  font: var(--font-mono-xs);
+}
+.experience .admin-danger-zone {
+  border-top: var(--border-width) solid var(--border);
+  display: grid;
+  gap: var(--space-12);
+  margin-top: var(--space-20);
+  padding-top: var(--space-20);
+}
+.experience .capability-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-7);
+}
+.experience .capability-pill {
+  text-transform: capitalize;
+}
+@media (max-width: 840px) {
+  .experience .admin-toolbar,
+  .experience .admin-filters {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .experience .admin-filters input {
+    min-width: 0;
+  }
+  .experience .admin-filters .field--search {
+    flex: none;
+  }
+  .experience .admin-filters > :not(.field--search) {
+    flex: none;
+  }
+  .experience .admin-toolbar > .button {
+    width: 100%;
+  }
+  .experience .person-detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .experience .admin-table--responsive {
+    min-width: 0;
+  }
+  .experience .admin-table--responsive thead {
+    display: none;
+  }
+  .experience .admin-table--responsive,
+  .experience .admin-table--responsive tbody,
+  .experience .admin-table--responsive tr,
+  .experience .admin-table--responsive td {
+    display: block;
+    width: 100%;
+  }
+  .experience .admin-table--responsive tr {
+    border-bottom: var(--border-width) solid var(--border);
+    padding: var(--space-12) var(--space-14);
+  }
+  .experience .admin-table--responsive tbody tr:last-child {
+    border-bottom: 0;
+  }
+  .experience .admin-table--responsive td {
+    align-items: baseline;
+    border: 0;
+    display: flex;
+    gap: var(--space-12);
+    justify-content: space-between;
+    padding: var(--space-6) 0;
+  }
+  .experience .admin-table--responsive td::before {
+    color: var(--dim);
+    content: attr(data-label);
+    flex: 0 0 auto;
+    font: var(--font-mono-xs);
+    letter-spacing: var(--tracking-table);
+    text-transform: uppercase;
+  }
+  .experience .admin-table--responsive td:first-child {
+    align-items: flex-start;
+    display: grid;
+    gap: var(--space-4);
+  }
+  .experience .admin-table--responsive td:first-child::before,
+  .experience .admin-table--responsive td:empty {
+    display: none;
+  }
+  .experience .admin-table--responsive td:last-child .button {
+    width: 100%;
+  }
+  .experience .directory-table tr {
+    align-items: center;
+    display: grid !important;
+    gap: var(--space-8) var(--space-12);
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: var(--space-14) var(--space-16);
+  }
+  .experience .directory-table td {
+    display: block !important;
+    padding: 0;
+  }
+  .experience .directory-table td::before {
+    display: none !important;
+  }
+  .experience .directory-table td:first-child {
+    grid-row: 1 / span 2;
+    margin: 0;
+    min-width: 0;
+  }
+  .experience .directory-table .directory-table__mobile-hide {
+    display: none !important;
+  }
+  .experience .directory-table__status,
+  .experience .directory-table__actions {
+    grid-column: 2;
+  }
+  .experience .directory-table__actions .button {
+    min-height: var(--space-34);
+    padding-inline: var(--space-10);
+    width: auto !important;
+  }
+}
+@media (max-width: 42rem) {
+  .experience .admin-meta-kind {
+    justify-self: start;
+  }
+  .experience .admin-dialog {
+    border-radius: var(--radius-panel);
+    max-height: calc(100dvh - var(--space-16));
+    max-width: calc(100vw - var(--space-16));
+    padding: var(--space-20);
+  }
+  .experience .dialog-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .experience .dialog-actions .button {
+    width: 100%;
+  }
+}

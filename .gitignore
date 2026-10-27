@@ -2,11 +2,17 @@
 node_modules/
 dist/
 artifacts/
+backend/.venv/
+backend/.env
+backend/media/
+**/__pycache__/
+backend/.pytest_cache/
+backend/.ruff_cache/
 
 # Local editor and OS noise
 .DS_Store
 *.local
 .phase-1-fingerprint.txt
 
-# Legacy prototype references stay local; the React app uses public/tool-images.
+# Legacy prototype references stay local; the real app serves only public/app.
 Nelson Electric tool custody system/

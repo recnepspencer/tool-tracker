@@ -1,0 +1,160 @@
+from datetime import date, datetime
+from typing import Literal
+from uuid import UUID
+
+from backend_platform.api import define_http_endpoint
+from cleanforce_identity.users.facade import current_identity
+from django.http import HttpRequest
+from django.views.decorators.csrf import csrf_protect
+from ninja import Query, Router, Schema, Status
+from pydantic import ConfigDict, Field
+
+from .queries import list_assets, read_request
+from .request_tool import request_tool
+
+router = Router(tags=["tools"])
+
+
+class AssetView(Schema):
+    id: UUID
+    asset_tag: str
+    serial_number: str | None
+    acquisition_date: date | None
+    acquisition_cost: str | None
+    acquisition_currency: str
+    notes: str
+    tool_model_id: UUID
+    category_id: UUID
+    category_name: str
+    custody_started_at: datetime | None
+    name: str
+    manufacturer: str
+    model_number: str
+    lifecycle: Literal["active", "retired", "disposed"]
+    serviceability: Literal["serviceable", "damaged", "out_of_service"]
+    missing: bool
+    warehouse_id: UUID | None
+    requestable: bool
+    unavailable_reason: str | None
+    revision: int
+    holder_membership_id: UUID | None
+    holder_name: str | None
+    holder_access_state: Literal["active", "suspended", "disabled"] | None
+    holder_ended_at: datetime | None
+    warehouse_name: str | None
+    origin_warehouse_id: UUID
+    origin_warehouse_name: str
+    responsible_warehouse_id: UUID
+    responsible_warehouse_name: str
+    pending_handoff_id: UUID | None
+    registration_photo_id: UUID | None
+
+
+class AssetPage(Schema):
+    items: list[AssetView]
+    next_offset: int | None
+
+
+class PageInput(Schema):
+    limit: int = Field(default=50, ge=1, le=100)
+    offset: int = Field(default=0, ge=0)
+
+
+class RequestInput(Schema):
+    model_config = ConfigDict(extra="forbid")
+    request_key: UUID
+    note: str = Field(default="", max_length=2000)
+
+
+class RequestView(Schema):
+    id: UUID
+    asset_id: UUID
+    requester_id: UUID
+    source_custody_id: UUID
+    status: Literal["pending", "approved", "rejected", "withdrawn", "fulfilled"]
+    note: str
+    requested_at: datetime
+    revision: int
+    decided_at: datetime | None
+    decision_note: str
+    source_warehouse_id: UUID | None
+    requester_name: str
+    requester_eligible: bool
+
+    @staticmethod
+    def resolve_source_warehouse_id(obj):
+        return obj.source_custody.holder_warehouse_id
+
+    @staticmethod
+    def resolve_requester_name(obj):
+        return obj.requester.person.preferred_name
+
+    @staticmethod
+    def resolve_requester_eligible(obj):
+        from companies.access import capabilities
+
+        return (
+            obj.requester.access_state == "active"
+            and obj.requester.ended_at is None
+            and "tools.transfer" in capabilities(obj.requester)
+        )
+
+
+def browse_tools(
+    request: HttpRequest,
+    company_id: UUID,
+    page: Query[PageInput],
+    search: str = "",
+    warehouse_id: UUID | None = None,
+    holder_membership_id: UUID | None = None,
+):
+    return list_assets(
+        current_identity(request),
+        company_id,
+        limit=page.limit,
+        offset=page.offset,
+        search=search,
+        warehouse_id=warehouse_id,
+        holder_membership_id=holder_membership_id,
+    )
+
+
+@csrf_protect
+def create_request(request: HttpRequest, company_id: UUID, asset_id: UUID, data: RequestInput):
+    result, created = request_tool(
+        identity=current_identity(request),
+        company_id=company_id,
+        asset_id=asset_id,
+        request_key=data.request_key,
+        note=data.note,
+    )
+    return Status(201 if created else 200, RequestView.model_validate(result))
+
+
+def get_request(request: HttpRequest, company_id: UUID, request_id: UUID):
+    return RequestView.model_validate(
+        read_request(current_identity(request), company_id, request_id)
+    )
+
+
+define_http_endpoint(
+    router,
+    method="get",
+    path="/companies/{company_id}/tools",
+    endpoint=browse_tools,
+    response=AssetPage,
+)
+define_http_endpoint(
+    router,
+    method="post",
+    path="/companies/{company_id}/tools/{asset_id}/requests",
+    endpoint=create_request,
+    response={201: RequestView, 200: RequestView},
+)
+define_http_endpoint(
+    router,
+    method="get",
+    path="/companies/{company_id}/tool-requests/{request_id}",
+    endpoint=get_request,
+    response=RequestView,
+)

@@ -1,17 +1,13 @@
-# Jobs and foremen
+# Jobs and assignments
 
-Administrators manage jobs in **Settings → Jobs**. They can create, rename, archive, and restore jobs. There is no delete operation. Names are unique, including archived jobs; restore the existing job to reuse it.
+Jobs belong to projects and have company-unique job numbers. Names may repeat. Administrators create, edit, archive, and restore jobs from the Jobs workspace. Archival ends current assignments and preserves history; restoring does not reassign former participants.
 
-The existing `worker` access role is used for the foreman workflows. **My jobs** lets each active field user join or leave any combination of active jobs. They can change only their own memberships. **Foremen** lists all active field users, including people with no current jobs or tools. Search matches names, jobs, tool names, brands, models, unit IDs, and serial numbers; the job filter includes a no-current-jobs option.
+A person may work on several jobs. Crew, foreman, and supervisor are assignment responsibilities, separate from company access roles. Changing jobs never transfers tool custody.
 
-Job assignments are independent of custody. Switching jobs never moves a tool. The directory reads each individual tool's canonical holder and shows pending transfer destinations and damaged/lost status. A pending transfer remains under its sender until accepted. Tool and people mutations invalidate directory queries.
+Company rules independently configure joining and leaving as direct, approval required, or disabled. Field employees can request only their own participation and cannot promote themselves. Managers can explicitly assign people regardless of the self-service mode. Approval of a leave request targets the original assignment rather than a later replacement.
 
-Archiving closes open job assignments and preserves their start/end timestamps. Archived jobs disappear from current selections and directory job lists, but remain available to admins under Archived jobs. Restoring does not automatically reassign previous members. Job and membership changes appear in the admin audit trail.
+The API enforces active membership, company scope, revisions, and assignment intervals. The frontend displays current server policy and refreshes affected queries after commands. The Team directory joins real assignment and custody records. All reads and commands use authenticated sessions and the generated OpenAPI client.
 
-## Data boundary
+Job lists use searchable rows with separate project, job, archive/restore and roster dialogs. Direct participation uses the original field switch, backed by confirmed assignments and a retryable command. Approval rules show a request action, pending state and withdrawal action, rather than offering a second request or changing membership before approval. When self-service is disabled, the row explains that a manager must add or remove the person. Joining and leaving can use different rules. Closed jobs do not offer new assignments. Current assignments load once for the workspace; a selected roster loads its history separately.
 
-`JobsApi` is implemented by both the mock and HTTP adapters. The GitHub Pages site uses the existing in-memory mock database: state survives navigation and profile switching in the same page, but resets on a full reload and is not shared between devices. The HTTP adapter defines the integration contract; this repository does not implement a backend.
-
-HTTP reads are `GET /jobs?actor_id=…` and `GET /foremen?actor_id=…`. Commands are `POST /jobs` and `POST /jobs/:id/{rename,archive,restore,membership}`. Versioned commands carry `expected_revision`; membership also carries `joined`. The mock checks authorization, job state, unique names, and assignment references atomically. A production server must enforce the same rules using the authenticated session rather than trusting `actor_id`.
-
-Jobs use stable IDs, names, revisions, and optional archive timestamps. Assignments use stable IDs, member/job references, and join/end timestamps. Renaming therefore preserves associations. No quantities or job references are added to individual tool records.
+Assignment and participation reads include durable person, job and actor names. A request stores its own decision note. Offboarding and job closure reject outstanding requests with the recorded reason, and historical names do not depend on the active-person picker. Review eligibility comes from the same intent validation used by the command, including the exact assignment referenced by a leave request.

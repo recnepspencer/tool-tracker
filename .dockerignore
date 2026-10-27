@@ -1,0 +1,15 @@
+.git
+node_modules
+dist
+artifacts
+Nelson Electric tool custody system
+backend/.venv
+backend/media
+**/.env
+**/.env.*
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/*.pem
+**/id_ed25519*
+**/id_rsa*
