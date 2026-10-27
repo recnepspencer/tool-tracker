@@ -136,7 +136,11 @@ try {
     )
     .toBeGreaterThan(0);
   await page.goto(`/app/tools/${asset.id}`);
-  await expect(page.getByRole('dialog')).toBeVisible();
+  const toolSheet = page.getByRole('dialog');
+  await expect(toolSheet.getByRole('heading', { name: asset.name, exact: true })).toBeVisible();
+  await expect
+    .poll(() => toolSheet.locator('img.catalog-photo').evaluate((image) => image.complete && image.naturalWidth > 0))
+    .toBe(true);
   await page.screenshot({ path: 'artifacts/deployed-tool-mobile.png', fullPage: true });
 
   const email = `deploy-${randomUUID().slice(0, 12)}@example.com`;
@@ -149,6 +153,7 @@ try {
   const memberContext = await browser.newContext({ baseURL: origin, viewport: { width: 390, height: 844 } });
   const member = await memberContext.newPage();
   member.setDefaultTimeout(20_000);
+  member.on('pageerror', (error) => browserErrors.push(error.message));
   await member.goto(invitation);
   await member.getByRole('link', { name: 'Create an account', exact: true }).click();
   await member.getByLabel('Your name', { exact: true }).fill('Deployment member');
@@ -174,6 +179,8 @@ try {
   await memberContext.close();
 
   await page.goto('/app/tools');
+  await expect(page.getByRole('heading', { name: 'Inventory', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: `${asset.asset_tag} ${asset.name}`, exact: true })).toBeVisible();
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
   });
