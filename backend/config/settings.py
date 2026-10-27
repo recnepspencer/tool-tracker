@@ -3,6 +3,7 @@ from pathlib import Path
 
 SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 DEBUG = os.getenv("DJANGO_DEBUG", "0") == "1"
+NELSON_ENVIRONMENT = os.getenv("NELSON_ENVIRONMENT", "development" if DEBUG else "production")
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 INSTALLED_APPS = [
     "django.contrib.admin",

@@ -88,13 +88,25 @@ def test_seed_scenarios_are_coherent_and_reruns_preserve_user_changes():
     call_command("check_database_schema", stdout=StringIO())
 
 
-def test_seed_command_is_explicitly_local_only(settings, monkeypatch):
+def test_seed_command_requires_a_review_environment_and_explicit_password(settings, monkeypatch):
     monkeypatch.setenv("NELSON_REVIEW_PASSWORD", "test")
     settings.DEBUG = False
-    with pytest.raises(CommandError, match="local review only"):
+    with pytest.raises(CommandError, match="Requires local review"):
         call_command("seed_review_data")
     settings.DEBUG = True
     monkeypatch.delenv("NELSON_REVIEW_PASSWORD")
     with pytest.raises(CommandError):
         call_command("seed_review_data")
     assert not ToolAsset.objects.exists()
+
+
+def test_testing_seed_command_works_with_debug_off(settings, monkeypatch):
+    settings.DEBUG = False
+    settings.NELSON_ENVIRONMENT = "testing"
+    monkeypatch.setenv("NELSON_REVIEW_PASSWORD", PASSWORD)
+    call_command("seed_review_data", stdout=StringIO())
+    admin = PlatformUser.objects.get(email="admin@example.com")
+    response = login_client(admin).get("/api/me")
+    assert response.status_code == 200
+    assert response.json()["memberships"][0]["company_name"] == "Nelson Electric review"
+    assert ToolAsset.objects.count() == 10

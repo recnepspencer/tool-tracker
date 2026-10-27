@@ -1,0 +1,70 @@
+name: nelson-test
+
+x-application: &application
+  image: nelson-app:${RELEASE_SHA:?Set the release commit}
+  restart: unless-stopped
+  env_file: /srv/nelson/shared/app.env
+  environment:
+    POSTGRES_HOST: db
+    POSTGRES_PORT: "5432"
+    NELSON_MEDIA_ROOT: /data/media
+    EMAIL_HOST: mail
+    EMAIL_PORT: "1025"
+    EMAIL_USE_TLS: "0"
+  volumes:
+    - /srv/nelson/shared/media:/data/media
+  depends_on:
+    db:
+      condition: service_healthy
+    mail:
+      condition: service_started
+  logging: &logging
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: "3"
+
+services:
+  api:
+    <<: *application
+    ports:
+      - "127.0.0.1:8001:8000"
+  worker:
+    <<: *application
+    command: [python, manage.py, run_platform_worker]
+    healthcheck:
+      disable: true
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Set the database}
+      POSTGRES_USER: ${POSTGRES_USER:?Set the database user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set the database password}
+    volumes:
+      - /srv/nelson/shared/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    logging: *logging
+  mail:
+    image: axllent/mailpit:v1.32.0
+    user: "10001:10001"
+    restart: unless-stopped
+    environment:
+      MP_DATABASE: /data/mailpit.db
+      MP_MAX_MESSAGES: "1000"
+    volumes:
+      - /srv/nelson/shared/mail:/data
+    ports:
+      - "127.0.0.1:8025:8025"
+    logging: *logging
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.42.0/24
+          gateway: 172.30.42.1

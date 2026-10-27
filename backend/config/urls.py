@@ -12,6 +12,7 @@ from evidence.openapi import describe_photo_download
 from work.api import router as work_router
 
 from .api import router as session_router
+from .health import readiness
 from .read_api import router as read_router
 
 api = create_api(title="Nelson Electric API", version="0.1.0")
@@ -28,6 +29,7 @@ api.add_router("", read_router)
 describe_photo_download(api)
 
 urlpatterns = [
+    path("healthz", readiness),
     path("", include("backend_platform.urls")),
     path("api/", api.urls),
 ]

@@ -7,12 +7,14 @@ from review_seed.scenarios import seed_review_scenarios
 
 
 class Command(BaseCommand):
-    help = "Create coherent, repeatable local review scenarios without resetting existing state."
+    help = "Create repeatable local or testing scenarios without resetting existing state."
 
     def handle(self, *args, **options):
         password = os.getenv("NELSON_REVIEW_PASSWORD")
-        if not settings.DEBUG or not password:
-            raise CommandError("Requires DEBUG=1 and NELSON_REVIEW_PASSWORD; local review only.")
+        if not (settings.DEBUG or settings.NELSON_ENVIRONMENT == "testing") or not password:
+            raise CommandError(
+                "Requires local review or NELSON_ENVIRONMENT=testing and NELSON_REVIEW_PASSWORD."
+            )
         result = seed_review_scenarios(password)
         self.stdout.write(f"Company: {result['company'].pk}")
         for tag, asset in result["assets"].items():

@@ -1,0 +1,90 @@
+name: Deploy testing environment
+
+on:
+  push:
+    branches: [main, codex/tool-tracker-api]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nelson-testing-deployment
+  cancel-in-progress: false
+
+jobs:
+  quality:
+    uses: ./.github/workflows/api-quality.yml
+    secrets:
+      CLEANFORCE_DEPLOY_KEY: ${{ secrets.CLEANFORCE_DEPLOY_KEY }}
+
+  deploy:
+    name: Build, deploy, and verify the release
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: testing
+      url: https://${{ vars.TEST_DEPLOY_HOST }}
+    env:
+      DEPLOY_HOST: ${{ vars.TEST_DEPLOY_HOST }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Configure the pinned deployment connection
+        env:
+          DEPLOY_KEY: ${{ secrets.TEST_DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.TEST_DEPLOY_KNOWN_HOSTS }}
+        run: |
+          test -n "$DEPLOY_KEY" && test -n "$KNOWN_HOSTS"
+          [[ "$DEPLOY_HOST" =~ ^[0-9.]+$ ]]
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" | tr -d '\r' > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+      - uses: docker/setup-buildx-action@v3
+      - name: Build the immutable application image
+        env:
+          CLEANFORCE_DEPLOY_KEY: ${{ secrets.CLEANFORCE_DEPLOY_KEY }}
+        run: |
+          curl --fail --silent --show-error https://api.github.com/meta | jq -r '.ssh_keys[] | "github.com " + .' > "$RUNNER_TEMP/github_known_hosts"
+          docker buildx build --load --tag "nelson-app:$GITHUB_SHA" \
+            --build-arg "RELEASE_SHA=$GITHUB_SHA" \
+            --secret id=cleanforce_key,env=CLEANFORCE_DEPLOY_KEY \
+            --secret "id=github_known_hosts,src=$RUNNER_TEMP/github_known_hosts" .
+      - name: Transfer and deploy the checked release
+        run: |
+          release="$RUNNER_TEMP/release"
+          mkdir -p "$release"
+          cp -r deploy "$release/"
+          docker save "nelson-app:$GITHUB_SHA" | gzip > "$release/image.tar.gz"
+          (cd "$release" && sha256sum image.tar.gz deploy/*.* > SHA256SUMS && tar -czf ../release.tgz image.tar.gz deploy SHA256SUMS)
+          ssh -o StrictHostKeyChecking=yes "nelson-deploy@$DEPLOY_HOST" "mkdir -p /srv/nelson/incoming/$GITHUB_SHA"
+          scp -o StrictHostKeyChecking=yes "$RUNNER_TEMP/release.tgz" "nelson-deploy@$DEPLOY_HOST:/srv/nelson/incoming/$GITHUB_SHA/release.tgz"
+          ssh -o StrictHostKeyChecking=yes "nelson-deploy@$DEPLOY_HOST" \
+            "cd /srv/nelson/incoming/$GITHUB_SHA && tar -xzf release.tgz && sudo bash deploy/release.sh $GITHUB_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install the deployed browser checks
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Verify HTTPS accounts, photos, activity and the PWA
+        env:
+          TEST_APP_URL: https://${{ vars.TEST_DEPLOY_HOST }}
+          TEST_PASSWORD: ${{ secrets.TEST_REVIEW_PASSWORD }}
+          EXPECTED_RELEASE: ${{ github.sha }}
+        run: |
+          ssh -o StrictHostKeyChecking=yes -o ExitOnForwardFailure=yes -fN \
+            -L 127.0.0.1:8025:127.0.0.1:8025 "nelson-deploy@$DEPLOY_HOST"
+          node deploy/smoke.mjs
+          printf 'Testing app: https://%s\n\nRelease: `%s`\n' "$DEPLOY_HOST" "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deployed-browser-checks
+          path: artifacts/deployed-*.png
+          retention-days: 7

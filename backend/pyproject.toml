@@ -4,6 +4,7 @@ version = "0.1.0"
 requires-python = ">=3.13,<3.14"
 dependencies = [
   "cleanforce-backend-platform[postgres] @ git+https://github.com/recnepspencer/CleanForce.git@80ea29899246a4680f01624e03b896522770b6dd",
+  "gunicorn>=26.2,<27",
 ]
 
 [dependency-groups]

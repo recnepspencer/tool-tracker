@@ -1,6 +1,6 @@
 # Nelson Electric API
 
-The tool-tracker backend uses CleanForce authentication and governed HTTP declarations, Django, and PostgreSQL. Business models follow the company/equipment/work domains in [the proposal](../docs/DATABASE_PROPOSAL.md). Future bidding can share company, people, and project identities. The React app uses these APIs through a generated OpenAPI client; the retired demo has been removed. Production hosting remains to be configured.
+The tool-tracker backend uses CleanForce authentication and governed HTTP declarations, Django, and PostgreSQL. Business models follow the company/equipment/work domains in [the proposal](../docs/DATABASE_PROPOSAL.md). Future bidding can share company, people, and project identities. The React app uses these APIs through a generated OpenAPI client; the retired demo has been removed. Production hosting remains to be configured; see [the testing deployment](../deploy/README.md).
 
 ## Run and review
 
@@ -68,7 +68,7 @@ uv run --env-file .env python manage.py generate_platform_openapi --output contr
 
 The gate checks Django declarations, missing migrations, unapplied migrations, PostgreSQL scoped-constraint drift, OpenAPI drift, a fresh test database with migrations, regression tests, and formatting/lint. Migration tests upgrade populated historical records. Domain-owned fixtures keep job tests independent of equipment; HTTP tests validate real responses against the checked OpenAPI instead of importing implementation schemas. Tests exercise rollback, access revocation, tenant isolation, policy changes, competing receipt decisions, and seed preservation.
 
-[API quality](../.github/workflows/api-quality.yml) runs on branch pushes and PRs using real PostgreSQL and production-browser journeys. The [web packaging workflow](../.github/workflows/deploy-pages.yml) invokes the same reusable check; it no longer publishes the retired static demo. CI uses a dedicated read-only CleanForce deploy key, removed from the runner after dependency installation. Fork PRs without the secret fail closed. The generated OpenAPI document is uploaded as a workflow artifact.
+[API quality](../.github/workflows/api-quality.yml) runs on branch pushes and PRs using real PostgreSQL and production-browser journeys. The [testing deployment workflow](../.github/workflows/deploy-test.yml) invokes the same reusable check before building and deploying a release. CI uses a dedicated read-only CleanForce deploy key, removed from the runner after dependency installation. Fork PRs without the secret fail closed. The generated OpenAPI document is uploaded as a workflow artifact.
 
 The schema command checks declared scoped foreign keys and obsolete custody triggers; it is not a general comparison of every database object. Review generated migration and contract diffs alongside behavior tests.
 

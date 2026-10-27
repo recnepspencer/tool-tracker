@@ -6,8 +6,6 @@ on:
       CLEANFORCE_DEPLOY_KEY:
         required: true
   pull_request:
-  push:
-    branches: ["codex/**"]
   workflow_dispatch:
 
 permissions:
@@ -46,6 +44,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Check deployment scripts
+        working-directory: .
+        run: |
+          shellcheck deploy/*.sh
+          node --check deploy/smoke.mjs
       - uses: astral-sh/setup-uv@v6
         with:
           version: "0.13.5"
