@@ -53,28 +53,34 @@ try {
   if (process.env.EXPECTED_RELEASE)
     assert.equal((await (await page.request.get('/__release')).text()).trim(), process.env.EXPECTED_RELEASE);
   assert.equal((await page.request.get('/api/me')).status(), 401);
+
+  // A dedicated identity keeps CI independent of changes to human review accounts.
+  const ownerEmail = 'deployment-checks@example.com';
+  const setup = await browser.newContext({ baseURL: origin });
+  const csrf = await (await setup.request.get('/api/auth/csrf')).json();
+  const ownerLogin = await setup.request.post('/api/auth/sign-in', {
+    data: { email: ownerEmail, password },
+    headers: { Origin: origin, 'X-CSRFToken': csrf.csrf_token },
+  });
+  if (ownerLogin.status() === 401) {
+    await command(setup.request, '/api/auth/signup', { email: ownerEmail, name: 'Deployment checks' });
+    const verification = new URL(await emailLink(ownerEmail, '/verify-email'));
+    await command(setup.request, '/api/auth/verify-signup', {
+      token: verification.searchParams.get('token'),
+      password,
+    });
+  } else assert.equal(ownerLogin.status(), 200);
+  await command(setup.request, '/api/auth/sign-out', {});
+  await setup.close();
+
   await page.goto('/login');
   assert.equal(await page.evaluate(() => window.isSecureContext && typeof crypto.randomUUID === 'function'), true);
-  await page.getByLabel('Email address', { exact: true }).fill('admin@example.com');
+  await page.getByLabel('Email address', { exact: true }).fill(ownerEmail);
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page).toHaveURL(/\/app/);
   const sessionCookie = (await context.cookies()).find((cookie) => cookie.name === 'sessionid');
   assert(sessionCookie?.secure && sessionCookie.httpOnly, 'Expected the real secure session cookie.');
-
-  // Keep deployment mutations out of the company's review workspace.
-  await command(page.request, '/api/auth/sign-out', {});
-  const ownerEmail = 'deployment-checks@example.com';
-  const csrf = await (await page.request.get('/api/auth/csrf')).json();
-  const ownerLogin = await page.request.post('/api/auth/sign-in', {
-    data: { email: ownerEmail, password },
-    headers: { Origin: origin, 'X-CSRFToken': csrf.csrf_token },
-  });
-  if (ownerLogin.status() === 401) {
-    await command(page.request, '/api/auth/signup', { email: ownerEmail, name: 'Deployment checks' });
-    const verification = new URL(await emailLink(ownerEmail, '/verify-email'));
-    await command(page.request, '/api/auth/verify-signup', { token: verification.searchParams.get('token'), password });
-  } else assert.equal(ownerLogin.status(), 200);
 
   const company = await command(page.request, '/api/companies', {
     request_key: 'e37a519c-0a36-48c2-bd81-e83fc054b991',

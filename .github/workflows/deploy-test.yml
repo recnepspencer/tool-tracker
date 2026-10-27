@@ -48,10 +48,15 @@ jobs:
         env:
           CLEANFORCE_DEPLOY_KEY: ${{ secrets.CLEANFORCE_DEPLOY_KEY }}
         run: |
+          umask 077
+          key="$RUNNER_TEMP/cleanforce-build-key"
+          trap 'rm -f "$key"' EXIT
+          printf '%s\n' "$CLEANFORCE_DEPLOY_KEY" | tr -d '\r' > "$key"
+          ssh-keygen -y -f "$key" > /dev/null
           curl --fail --silent --show-error https://api.github.com/meta | jq -r '.ssh_keys[] | "github.com " + .' > "$RUNNER_TEMP/github_known_hosts"
           docker buildx build --load --tag "nelson-app:$GITHUB_SHA" \
             --build-arg "RELEASE_SHA=$GITHUB_SHA" \
-            --secret id=cleanforce_key,env=CLEANFORCE_DEPLOY_KEY \
+            --secret "id=cleanforce_key,src=$key" \
             --secret "id=github_known_hosts,src=$RUNNER_TEMP/github_known_hosts" .
       - name: Transfer and deploy the checked release
         run: |

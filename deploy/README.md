@@ -16,7 +16,7 @@ Repository configuration:
 
 Workflow concurrency and a host lock serialize releases. The full commit tags/labels the image, and transferred files have SHA-256 checksums. The release script stops API/worker writes, backs up existing data, applies migrations, verifies scoped constraints and starts the candidate services. Healthy services are promoted together with the frontend. `/__release` reports the running commit. Expect a short maintenance interval during deployments.
 
-The deployed browser check uses real HTTPS, secure sessions, CSRF, SMTP-to-Mailpit, PostgreSQL, private photo bytes and the audit worker. It checks admin login, signup/invitation/reset and Chromium PWA eligibility. A separate account/company owns its test mutations. Physical phone capture/installation remains a device acceptance check.
+The deployed browser check uses real HTTPS, secure sessions, CSRF, SMTP-to-Mailpit, PostgreSQL, private photo bytes and the audit worker. It checks login, signup/invitation/reset and Chromium PWA eligibility. A dedicated account/company owns its test mutations; human review accounts can change without breaking CI's fixture. Physical phone capture/installation remains a device acceptance check.
 
 ## Persistent data and recovery
 
