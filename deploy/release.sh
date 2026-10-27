@@ -37,7 +37,8 @@ if [[ ! -f $root/shared/seeded ]]; then
     "${compose[@]}" run --rm --no-deps api python manage.py seed_review_data
     touch "$root/shared/seeded"
 fi
-"${compose[@]}" up -d --wait --wait-timeout 90 api worker
+"${compose[@]}" up -d --wait --wait-timeout 90 api
+"${compose[@]}" up -d --no-deps worker
 export PUBLIC_IP
 # envsubst receives the variable name; Nginx's own $variables remain untouched.
 # shellcheck disable=SC2016

@@ -42,7 +42,7 @@ The PWA controller preserves prompt-mode worker activation. Reload consent is lo
 ## Verification gates
 
 - `npm run check`: frontend/e2e types, page-boundary lint, formatting, ten client/controller tests and the production PWA build.
-- `uv run --env-file .env python scripts/check_api.py` from `backend/`: PostgreSQL declarations and 56 scoped foreign keys, fresh/populated migrations, checked OpenAPI, 127 backend tests, lint and formatting.
+- `uv run --env-file .env python scripts/check_api.py` from `backend/`: PostgreSQL declarations and 56 scoped foreign keys, fresh/populated migrations, checked OpenAPI, 130 backend tests, lint and formatting.
 - `npm run test:browser`: 69 production-browser scenarios with actual sessions, CSRF, email links, PostgreSQL, private photos and the audit worker. Business responses are not mocked.
 - CI repeats the seeder, verifies generated TypeScript drift and runs all gates before the web artifact can be packaged.
 
@@ -52,4 +52,4 @@ Visual evidence and reference behavior are mapped in [DEMO_PARITY.md](DEMO_PARIT
 
 ## Scope boundaries
 
-Production SMTP and hosting are deliberately deferred, as requested. Development uses the private file inbox; no production email provider or public deployment is claimed. Chromium manifest eligibility and real worker behavior are tested; physical iOS/Android installation has not been performed. Future bidding, consumables, reservations and accounting remain separate domains.
+Production SMTP remains deferred, as requested. Development uses the private file inbox. The DigitalOcean testing environment uses trusted HTTPS, persistent PostgreSQL/photos and a private SMTP inbox; deployment and recovery procedures are in [deploy/README.md](../deploy/README.md). Chromium manifest eligibility and real worker behavior are tested; physical iOS/Android installation has not been performed. Future bidding, consumables, reservations and accounting remain separate domains.
