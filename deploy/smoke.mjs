@@ -70,6 +70,11 @@ try {
       password,
     });
   } else assert.equal(ownerLogin.status(), 200);
+  const company = await command(setup.request, '/api/companies', {
+    request_key: 'e37a519c-0a36-48c2-bd81-e83fc054b991',
+    name: 'Deployment checks',
+    preferred_name: 'Deployment checks',
+  });
   await command(setup.request, '/api/auth/sign-out', {});
   await setup.close();
 
@@ -82,11 +87,6 @@ try {
   const sessionCookie = (await context.cookies()).find((cookie) => cookie.name === 'sessionid');
   assert(sessionCookie?.secure && sessionCookie.httpOnly, 'Expected the real secure session cookie.');
 
-  const company = await command(page.request, '/api/companies', {
-    request_key: 'e37a519c-0a36-48c2-bd81-e83fc054b991',
-    name: 'Deployment checks',
-    preferred_name: 'Deployment checks',
-  });
   const base = `/api/companies/${company.id}`;
   const warehouse = await ensure(
     `${base}/warehouses`,
