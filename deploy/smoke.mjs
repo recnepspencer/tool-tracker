@@ -146,7 +146,11 @@ try {
   const toolSheet = page.getByRole('dialog');
   await expect(toolSheet.getByRole('heading', { name: asset.name, exact: true })).toBeVisible();
   await expect
-    .poll(() => toolSheet.locator('img.catalog-photo').evaluate((image) => image.complete && image.naturalWidth > 0))
+    .poll(() =>
+      toolSheet
+        .getByRole('img', { name: `${asset.name} product photo`, exact: true })
+        .evaluate((image) => image.complete && image.naturalWidth > 0),
+    )
     .toBe(true);
   await page.screenshot({ path: 'artifacts/deployed-tool-mobile.png', fullPage: true });
 
@@ -187,7 +191,7 @@ try {
 
   await page.goto('/app/tools');
   await expect(page.getByRole('heading', { name: 'Inventory', exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: `${asset.asset_tag} ${asset.name}`, exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: `Open ${asset.name}, ${asset.asset_tag}`, exact: true })).toBeVisible();
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
   });
