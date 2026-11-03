@@ -277,8 +277,10 @@
 .experience .auth-logo-field {
   align-items: center;
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-14);
 }
+/* A logo keeps its own shape at the slot's height; the empty placeholder is square. */
 .experience .auth-logo-preview {
   align-items: center;
   background: var(--card);
@@ -289,18 +291,16 @@
   flex: none;
   height: var(--space-56);
   justify-content: center;
+  max-width: calc(var(--space-56) * 4);
+  min-width: var(--space-56);
   object-fit: contain;
-  width: var(--space-56);
 }
 .experience .logo-cropper {
   display: grid;
   gap: var(--space-14);
-}
-.experience .logo-cropper-stage {
-  align-items: end;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-18);
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  min-width: 0;
 }
 .experience .logo-cropper-view {
   display: block;
@@ -314,17 +314,17 @@
   position: absolute;
   user-select: none;
 }
-/* The editing square uses the header mark's proportions: corners a fifth of its width. */
+/* The editing frame takes the chosen shape at a fixed height, narrowing only on small screens. */
 .experience .logo-cropper-frame {
+  aspect-ratio: var(--logo-shape);
   background: var(--card);
   border: var(--border-width) dashed var(--border);
-  border-radius: 20%;
   cursor: grab;
   display: block;
-  height: var(--space-200);
+  max-width: 100%;
   overflow: hidden;
   touch-action: none;
-  width: var(--space-200);
+  width: calc(var(--space-120) * var(--logo-shape));
 }
 .experience .logo-cropper-frame:active {
   cursor: grabbing;
@@ -338,20 +338,28 @@
   width: 100%;
 }
 .experience .logo-cropper-slots {
+  align-items: end;
   color: var(--dim);
   display: flex;
+  flex-wrap: wrap;
   font-size: var(--text-md);
   gap: var(--space-18);
 }
 .experience .logo-cropper-slots > span {
-  align-items: center;
   display: grid;
   gap: var(--space-6);
-  justify-items: center;
+  justify-items: start;
 }
-.experience .logo-cropper-slots .brand-mark {
+/* Previews at the real slot heights: the app header and the form preview. */
+.experience .logo-cropper-slot--header {
+  aspect-ratio: var(--logo-shape);
   height: var(--space-30);
-  width: var(--space-30);
+}
+.experience .logo-cropper-slot--form {
+  aspect-ratio: var(--logo-shape);
+  background: var(--card);
+  border-radius: var(--radius-field);
+  height: var(--space-56);
 }
 .experience .logo-cropper-size {
   align-items: center;

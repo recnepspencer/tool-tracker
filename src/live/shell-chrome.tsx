@@ -4,17 +4,6 @@ import { Plus, X } from 'lucide-react';
 import { Switch } from './kit';
 import { initials } from './format';
 import type { ShellDestination } from './shell-state';
-import './experience/brand-mark.css';
-
-/** Demo BrandMark: the company's logo, or the first letter of its name (Tool Tracker's when signed out). */
-export function BrandMark({ logoId, name = 'Tool Tracker' }: { logoId?: string | null; name?: string }) {
-  if (logoId) return <img className="brand-mark brand-mark--logo" src={`/api/logos/${logoId}`} alt="" />;
-  return (
-    <span className="brand-mark" aria-hidden="true">
-      {name.trim().charAt(0).toUpperCase() || 'T'}
-    </span>
-  );
-}
 
 /** Demo ThemeToggle: the Appearance switch in the side nav and drawers. */
 export function ThemeToggle({ theme, onToggleTheme }: { theme: 'dark' | 'light'; onToggleTheme(): void }) {

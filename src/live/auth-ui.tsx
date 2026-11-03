@@ -3,7 +3,6 @@ import { useEffect, useId, useRef, useState, type FormEvent, type InputHTMLAttri
 import { errorMessage } from './client';
 import { Button, FieldShell } from './kit';
 import { LogoCropper } from './logo-cropper';
-import { BrandMark } from './shell-chrome';
 import './experience/auth.css';
 
 /** Demo AuthHero: the brand statement beside every account screen. */
@@ -11,10 +10,7 @@ function AuthHero() {
   return (
     <section className="auth-hero">
       <div className="auth-brand">
-        <BrandMark />
-        <span>
-          Tool <em>Tracker</em>
-        </span>
+        Tool <em>Tracker</em>
       </div>
       <span className="eyebrow">Tool custody system</span>
       <h1>Know where every tool went.</h1>
@@ -150,7 +146,7 @@ export type LogoChoice = { id?: string | null; file?: File };
 
 const LOGO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-/** Optional company logo, sized and cropped to its square slots; the form uploads `file` when it submits. */
+/** Optional company logo, shaped and cropped for its slots; the form uploads `file` when it submits. */
 export function LogoField({ value, onChange }: { value: LogoChoice; onChange: (value: LogoChoice) => void }) {
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
@@ -239,7 +235,7 @@ export function LogoField({ value, onChange }: { value: LogoChoice; onChange: (v
         onChange={(event) => choose(event.currentTarget.files?.[0])}
       />
       <small className="auth-hint" role={error ? 'alert' : undefined}>
-        {error || 'Shown as a square in the app header and on forms. JPEG, PNG, or WebP, up to 10 MB.'}
+        {error || 'Shown at its own shape, up to four times as wide as tall. JPEG, PNG, or WebP, up to 10 MB.'}
       </small>
     </FieldShell>
   );

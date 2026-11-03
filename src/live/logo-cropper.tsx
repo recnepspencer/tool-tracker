@@ -1,14 +1,27 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
 import { Button } from './kit';
-import { clampCrop, fillZoom, LOGO_SIZE, maxZoom, MIN_ZOOM, placement, type Crop } from './logo-crop';
+import {
+  clampCrop,
+  fillZoom,
+  LOGO_HEIGHT,
+  MAX_SHAPE,
+  maxZoom,
+  MIN_SHAPE,
+  MIN_ZOOM,
+  naturalShape,
+  placement,
+  type Crop,
+} from './logo-crop';
 
 type Loaded = { image: HTMLImageElement; width: number; height: number };
 
-/** The logo as one of its square slots shows it. */
+const shapeStyle = (crop: Crop) => ({ '--logo-shape': crop.shape }) as CSSProperties;
+
+/** The logo cropped to a frame of the chosen shape; CSS sizes the frame from `--logo-shape`. */
 function CropView({ loaded, crop, className }: { loaded: Loaded; crop: Crop; className: string }) {
   const at = placement(crop, loaded.width, loaded.height);
   return (
-    <span className={className}>
+    <span className={className} style={shapeStyle(crop)}>
       <img
         src={loaded.image.src}
         alt=""
@@ -26,18 +39,25 @@ function CropView({ loaded, crop, className }: { loaded: Loaded; crop: Crop; cla
 
 async function render({ image, width, height }: Loaded, crop: Crop) {
   const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = LOGO_SIZE;
+  canvas.height = LOGO_HEIGHT;
+  canvas.width = Math.round(LOGO_HEIGHT * crop.shape);
   const context = canvas.getContext('2d');
   if (!context) throw new Error('This browser cannot prepare the logo.');
   context.imageSmoothingQuality = 'high';
   const at = placement(crop, width, height);
-  context.drawImage(image, at.left * LOGO_SIZE, at.top * LOGO_SIZE, at.width * LOGO_SIZE, at.height * LOGO_SIZE);
+  context.drawImage(
+    image,
+    at.left * canvas.width,
+    at.top * canvas.height,
+    at.width * canvas.width,
+    at.height * canvas.height,
+  );
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
   if (!blob) throw new Error('The logo could not be prepared. Try another image.');
   return new File([blob], 'logo.png', { type: 'image/png' });
 }
 
-/** Size and position a logo inside the square it will be shown in, then save it at a fixed size. */
+/** Choose a logo's shape, size and position for its fixed-height slots, then save it at a fixed height. */
 export function LogoCropper({
   source,
   onCancel,
@@ -47,14 +67,19 @@ export function LogoCropper({
   onCancel: () => void;
   onDone: (file: File) => void;
 }) {
+  const shapeId = useId();
   const sizeId = useId();
   const [loaded, setLoaded] = useState<Loaded>();
   const [error, setError] = useState('');
-  const [crop, setCrop] = useState<Crop>({ zoom: 1, x: 0, y: 0 });
+  const [crop, setCrop] = useState<Crop>({ shape: 1, zoom: 1, x: 0, y: 0 });
   const drag = useRef<{ pointer: number; x: number; y: number; frame: number } | null>(null);
   useEffect(() => {
     const image = new Image();
-    image.onload = () => setLoaded({ image, width: image.naturalWidth, height: image.naturalHeight });
+    image.onload = () => {
+      setLoaded({ image, width: image.naturalWidth, height: image.naturalHeight });
+      // Start with the logo's own shape, whole and edge to edge where the slot allows.
+      setCrop({ shape: naturalShape(image.naturalWidth, image.naturalHeight), zoom: 1, x: 0, y: 0 });
+    };
     image.onerror = () => setError('This image could not be opened. Try another file.');
     image.src = source;
   }, [source]);
@@ -72,7 +97,7 @@ export function LogoCropper({
       pointer: event.pointerId,
       x: event.clientX,
       y: event.clientY,
-      frame: event.currentTarget.getBoundingClientRect().width,
+      frame: event.currentTarget.getBoundingClientRect().height,
     };
   }
   function move(event: PointerEvent<HTMLSpanElement>) {
@@ -100,49 +125,71 @@ export function LogoCropper({
   }
   return (
     <div className="logo-cropper" role="group" aria-label="Adjust company logo">
-      <div className="logo-cropper-stage">
-        <span
-          className="logo-cropper-frame"
-          tabIndex={0}
-          role="img"
-          aria-label="Logo position. Drag, or use the arrow keys, to move it."
-          onPointerDown={start}
-          onPointerMove={move}
-          onPointerUp={() => (drag.current = null)}
-          onPointerCancel={() => (drag.current = null)}
-          onKeyDown={nudge}
-        >
-          <CropView loaded={loaded} crop={crop} className="logo-cropper-view" />
+      <span
+        className="logo-cropper-frame"
+        style={shapeStyle(crop)}
+        tabIndex={0}
+        role="img"
+        aria-label="Logo position. Drag, or use the arrow keys, to move it."
+        onPointerDown={start}
+        onPointerMove={move}
+        onPointerUp={() => (drag.current = null)}
+        onPointerCancel={() => (drag.current = null)}
+        onKeyDown={nudge}
+      >
+        <CropView loaded={loaded} crop={crop} className="logo-cropper-view" />
+      </span>
+      <div className="logo-cropper-slots" aria-hidden="true">
+        <span>
+          <CropView loaded={loaded} crop={crop} className="logo-cropper-view logo-cropper-slot--header" />
+          Header
         </span>
-        <div className="logo-cropper-slots" aria-hidden="true">
-          <span>
-            <CropView loaded={loaded} crop={crop} className="logo-cropper-view brand-mark brand-mark--logo" />
-            Header
-          </span>
-          <span>
-            <CropView loaded={loaded} crop={crop} className="logo-cropper-view auth-logo-preview" />
-            Forms
-          </span>
-        </div>
+        <span>
+          <CropView loaded={loaded} crop={crop} className="logo-cropper-view logo-cropper-slot--form" />
+          Forms
+        </span>
       </div>
+      <label className="logo-cropper-size" htmlFor={shapeId}>
+        <span>Width</span>
+        <input
+          id={shapeId}
+          type="range"
+          min={MIN_SHAPE}
+          max={MAX_SHAPE}
+          step={0.01}
+          value={crop.shape}
+          onChange={(event) => update({ ...crop, shape: Number(event.currentTarget.value) })}
+        />
+      </label>
       <label className="logo-cropper-size" htmlFor={sizeId}>
         <span>Size</span>
         <input
           id={sizeId}
           type="range"
           min={MIN_ZOOM}
-          max={maxZoom(width, height)}
+          max={maxZoom(crop.shape, width, height)}
           step={0.01}
           value={crop.zoom}
           onChange={(event) => update({ ...crop, zoom: Number(event.currentTarget.value) })}
         />
       </label>
       <div className="auth-logo-actions">
-        <Button type="button" variant="ghost" onClick={() => update({ zoom: 1, x: 0, y: 0 })}>
-          Fit whole logo
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => update({ shape: naturalShape(width, height), zoom: 1, x: 0, y: 0 })}
+        >
+          Match logo shape
         </Button>
-        <Button type="button" variant="ghost" onClick={() => update({ zoom: fillZoom(width, height), x: 0, y: 0 })}>
-          Fill the square
+        <Button type="button" variant="ghost" onClick={() => update({ shape: 1, zoom: 1, x: 0, y: 0 })}>
+          Square
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => update({ ...crop, zoom: fillZoom(crop.shape, width, height), x: 0, y: 0 })}
+        >
+          Fill frame
         </Button>
       </div>
       {error && (

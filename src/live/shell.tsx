@@ -4,7 +4,8 @@ import { Menu } from 'lucide-react';
 import { LoadingState } from './kit';
 import { useCompany } from './session';
 import { AccountMenu, AccountSheet } from './shell-account';
-import { BrandMark, ShellNavigationDrawer, ShellNavItems, ThemeToggle } from './shell-chrome';
+import { CompanyMark } from './company-mark';
+import { ShellNavigationDrawer, ShellNavItems, ThemeToggle } from './shell-chrome';
 import { useShellAccount, useShellDestinations, useShellNavigation } from './shell-state';
 // Stylesheets follow the demo's cascade order: equal-specificity ties resolve the same way.
 import './kit';
@@ -99,10 +100,7 @@ export function Shell() {
             <Menu aria-hidden="true" />
           </button>
           <Link className="wordmark" to="/app">
-            <span className="desktop-wordmark-mark">
-              <BrandMark logoId={account.logoId} name={account.companyName} />
-            </span>
-            <span className="desktop-wordmark-copy">{account.companyName}</span>
+            <CompanyMark logoId={account.logoId} name={account.companyName} />
             <span className="mobile-wordmark-copy">{account.companyName}</span>
           </Link>
         </div>

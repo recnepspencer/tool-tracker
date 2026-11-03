@@ -32,7 +32,6 @@
   --on-accent: #06080c;
   --primary-from: #ffffff;
   --primary-to: #d5deea;
-  --brand-mark-to: #c7d2e0;
   --photo-matte: #eef0f2;
   --auth-hero-deep: #0c1725;
   --switch-knob-fill: var(--ink);
@@ -426,5 +425,4 @@
   --switch-knob-fill: #ffffff;
   --photo-matte: #e8eef6;
   --auth-hero-deep: #d9e4f2;
-  --brand-mark-to: #c7d2e0;
 }

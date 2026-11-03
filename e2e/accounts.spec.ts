@@ -124,9 +124,10 @@ test('a signup code starts a company with its logo and hands ownership to a name
   await page.getByLabel('Work email', { exact: true }).fill(founder);
   await page.getByLabel('Company name', { exact: true }).fill(`Logo Company ${unique}`);
   await page.locator('input[type="file"]').setInputFiles('e2e/fixtures/hammer-drill.jpg');
-  // The logo is sized inside the square it is shown in before it is used.
+  // The logo's shape, size and position are chosen before it is used.
   const cropper = page.getByRole('group', { name: 'Adjust company logo' });
-  await cropper.getByRole('button', { name: 'Fill the square', exact: true }).click();
+  await cropper.getByRole('button', { name: 'Square', exact: true }).click();
+  await cropper.getByRole('button', { name: 'Fill frame', exact: true }).click();
   await cropper.getByRole('img', { name: /Logo position/ }).press('ArrowRight');
   await cropper.getByRole('button', { name: 'Use logo', exact: true }).click();
   await expect(page.getByRole('img', { name: 'Company logo preview' })).toBeVisible();
@@ -146,10 +147,10 @@ test('a signup code starts a company with its logo and hands ownership to a name
   await page.getByLabel('Owner’s email', { exact: true }).fill(boss);
   await page.getByRole('button', { name: 'Create company', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Queue', exact: true })).toBeVisible();
-  const logo = page.locator('.wordmark img.brand-mark--logo');
+  const logo = page.locator('.wordmark img.company-logo');
   await expect(logo).toBeVisible();
   expect(await logo.evaluate((image: HTMLImageElement) => [image.naturalWidth, image.naturalHeight])).toEqual([
-    256, 256,
+    224, 224,
   ]);
 
   const bossContext = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });

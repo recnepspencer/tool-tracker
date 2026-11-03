@@ -1,0 +1,9 @@
+/* A company logo keeps its own shape at the header's height, up to four times as wide as tall. */
+.experience .company-logo {
+  display: block;
+  flex: none;
+  height: var(--space-30);
+  max-width: calc(var(--space-30) * 4);
+  object-fit: contain;
+  width: auto;
+}
