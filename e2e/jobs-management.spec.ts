@@ -33,6 +33,7 @@ for (const role of ['company_admin', 'dispatcher'])
       await dialog.getByRole('button', { name: 'Save', exact: true }).click();
       await expect(dialog).toHaveCount(0);
       await actor.getByLabel('Search jobs').fill('Riverside electrical');
+      await expect(actor).toHaveURL(/search=Riverside/);
       await actor.reload();
       await expect(actor.getByLabel('Search jobs')).toHaveValue('Riverside electrical');
       await actor.getByRole('button', { name: 'View people on Riverside electrical', exact: true }).click();
