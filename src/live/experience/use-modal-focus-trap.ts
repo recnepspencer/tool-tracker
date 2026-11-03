@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
 
 export function useModalFocusTrap(open: boolean, onClose: () => void, containerRef: RefObject<HTMLElement | null>) {
   const onCloseRef = useRef(onClose);
@@ -6,7 +6,8 @@ export function useModalFocusTrap(open: boolean, onClose: () => void, containerR
     onCloseRef.current = onClose;
   }, [onClose]);
 
-  useEffect(() => {
+  // Before paint, so a sheet answers Escape and holds focus from the moment it is visible.
+  useLayoutEffect(() => {
     if (!open) return;
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const container = containerRef.current;

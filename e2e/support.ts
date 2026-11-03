@@ -163,7 +163,7 @@ export async function invitedMember(owner: Page, memberPage: Page, base: string,
 }
 const mailDir = process.env.NELSON_MAIL_ROOT ?? resolve('artifacts/mail');
 // Each worker rereads a mail file only when the backend has appended to it.
-const mail = new Map<string, { size: number; body: string }>();
+const mail = new Map<string, { size: number; mtimeMs: number; body: string }>();
 const separator = `\n${'-'.repeat(79)}\n`;
 export async function emailLink(email: string, path: string) {
   const pattern = new RegExp(`https?://[^\\s]*${path}[^\\s]*`);
@@ -171,11 +171,12 @@ export async function emailLink(email: string, path: string) {
   await expect
     .poll(async () => {
       for (const file of await readdir(mailDir)) {
-        const { size } = await stat(resolve(mailDir, file));
+        const { size, mtimeMs } = await stat(resolve(mailDir, file));
         if (mail.get(file)?.size !== size)
-          mail.set(file, { size, body: await readFile(resolve(mailDir, file), 'utf8') });
+          mail.set(file, { size, mtimeMs, body: await readFile(resolve(mailDir, file), 'utf8') });
       }
-      for (const { body } of [...mail.values()].reverse())
+      // Newest file first: directory order is not the order the backend wrote them in.
+      for (const { body } of [...mail.values()].sort((a, b) => b.mtimeMs - a.mtimeMs))
         // Django ends each message with a dashed line; anything after the last one may be mid-write.
         for (const message of body.split(separator).slice(0, -1).reverse()) {
           if (!message.includes(`To: ${email}`)) continue;
