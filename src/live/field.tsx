@@ -1,394 +1,170 @@
-import { AssetPhoto } from './asset-photo';
-import { Link, Outlet, useLocation } from 'react-router-dom';
-import { ChevronDown, Grid2X2, List } from 'lucide-react';
-import type { Model } from './client';
-import { errorMessage } from './client';
-import { useCheckout, useFieldTools, useInventoryView, useSheetNavigation } from './field-state';
-import { RecordSheet } from './experience/RecordSheet';
-import { ToolDetail } from './tools';
-import { Badge, date, Empty, Field, human, Loading, Notice } from './ui';
+import { Link, Outlet } from 'react-router-dom';
+import { ToolCatalogCard } from './checkout-card';
+import { CatalogFilters } from './checkout-filters';
+import { useCheckout, useMyTools } from './field-state';
+import { InventoryPage } from './inventory';
+import { ErrorState, LoadingState, SearchField } from './kit';
+import { ToolRow } from './my-tools-row';
+import { PendingGroup } from './pending-card';
+import { PendingHandoffReviewSheet } from './pending-review';
 
-type Asset = Model<'AssetView'>;
-export function assetStatus(tool: Asset) {
-  return tool.lifecycle !== 'active'
-    ? human(tool.lifecycle)
-    : tool.missing
-      ? 'Lost'
-      : tool.serviceability !== 'serviceable'
-        ? human(tool.serviceability)
-        : tool.holder_membership_id
-          ? 'In use'
-          : 'In stock';
-}
+const CATALOG_PRIORITY_IMAGE_COUNT = 4;
 
 export function MyToolsPage() {
-  const { c, tools, handoffs, pendingAsset } = useFieldTools();
+  const { c, tools, pending, transferStatus, openTool, startTransfer } = useMyTools();
+  if (tools.isPending) return <LoadingState label="Loading your tools…" />;
+  if (tools.error || !tools.data)
+    return <ErrorState message="Your tools could not be loaded." onRetry={() => void tools.refetch()} />;
   return (
     <div className="worker-screen">
-      <header className="worker-screen-heading">
+      <div className="worker-screen-heading">
         <div>
-          <span className="worker-eyebrow">{c.preferred_name}</span>
+          <div className="worker-eyebrow">{c.preferred_name}</div>
           <h1>My tools</h1>
         </div>
-      </header>
+      </div>
       <section className="worker-pending-section" aria-label="Pending tool movements">
-        {handoffs.isPending && <Loading />}
-        {handoffs.error && <Notice error>{errorMessage(handoffs.error)}</Notice>}
-        {handoffs.data?.map((handoff) => (
-          <article className="pending-movement" key={handoff.id}>
-            <span className="worker-eyebrow">
-              {handoff.destination_membership_id === c.membership_id
-                ? 'Awaiting acceptance'
-                : 'Waiting on someone else'}
-            </span>
-            <p>Transfer to {handoff.destination_name}</p>
-            <p className="muted">{pendingAsset(handoff.asset_id)?.name ?? 'Loading tool…'}</p>
-            <Link className="button" to={`/app/operations?review=handoff:${handoff.id}`}>
-              Review
-            </Link>
-          </article>
-        ))}
+        {pending.isPending && <LoadingState label="Checking pending handoffs…" />}
+        {pending.error && <ErrorState message="Pending handoffs could not be loaded." onRetry={pending.retry} />}
+        <PendingGroup title="Needs your response" items={pending.needsResponse} onReview={pending.openReview} />
+        <PendingGroup title="Waiting on someone else" items={pending.waiting} onReview={pending.openReview} />
       </section>
       <section className="worker-possession-section">
         <div className="worker-section-heading">
-          <span className="worker-eyebrow">In my possession</span>
-          <span className="worker-section-count">{tools.data?.length ?? 0}</span>
+          <div>
+            <span className="worker-eyebrow">In my possession</span>
+          </div>
+          <span className="worker-section-count">{tools.data.length}</span>
         </div>
-        {tools.isPending && <Loading />}
-        {tools.error && <Notice error>{errorMessage(tools.error)}</Notice>}
+        {!tools.data.length && (
+          <p className="worker-empty-copy">No tools in your custody yet. Browse checkout to find what you need.</p>
+        )}
         <div className="worker-tool-list">
-          {tools.data?.map((tool) => (
-            <article className="worker-tool-row" key={tool.id}>
-              <Link
-                className="worker-tool-main"
-                to={`/app/mine/${tool.id}`}
-                aria-label={`${tool.asset_tag} ${tool.name}`}
-              >
-                <AssetPhoto asset={tool} companyId={c.company_id} />
-                <div className="worker-tool-copy">
-                  <strong>{tool.name}</strong>
-                  <span className="muted">
-                    {tool.manufacturer} · {tool.model_number}
-                  </span>
-                  <small>
-                    {assetStatus(tool)} · {date(tool.custody_started_at)} · {tool.asset_tag}
-                  </small>
-                </div>
-              </Link>
-              <Link className="button worker-transfer-button" to={`/app/mine/${tool.id}?action=transfer`}>
-                {tool.lifecycle === 'active' && !tool.missing ? 'Transfer' : 'View details'}
-              </Link>
-            </article>
+          {tools.data.map((tool) => (
+            <ToolRow
+              key={tool.id}
+              tool={tool}
+              companyId={c.company_id}
+              transferState={
+                tool.pending_handoff_id || pending.pendingAssetIds.has(tool.id)
+                  ? 'pending'
+                  : tool.lifecycle !== 'active' || tool.missing
+                    ? 'unavailable'
+                    : transferStatus
+              }
+              onSelect={openTool}
+              onTransfer={startTransfer}
+            />
           ))}
         </div>
-        {tools.data?.length === 0 && <p className="worker-empty-copy">You don’t have any tools in your custody yet.</p>}
       </section>
-      <Link className="worker-checkout-pill" to="/app/checkout">
+      <Link className="worker-checkout-pill" to="/app/checkout" aria-label="Browse checkout catalog">
         Need something else? Browse checkout
       </Link>
+      {pending.reviewing && (
+        <PendingHandoffReviewSheet key={pending.reviewing.key} item={pending.reviewing} onClose={pending.closeReview} />
+      )}
     </div>
   );
 }
 
-export function InventoryPage({ flagged = false }: { flagged?: boolean }) {
-  const location = useLocation();
-  const { c, refs, tools, groups, expanded, toggle, search, setSearch, warehouse, setWarehouse, canRegister } =
-    useInventoryView(flagged);
-  const rows = [...groups.values()].flat();
-  return (
-    <div className="page-content admin-operations-page">
-      <header className="page-heading">
-        <div>
-          <h1>{flagged ? 'Damaged & lost' : 'Inventory'}</h1>
-          <p>
-            {rows.length} tools · {warehouse ? refs.warehouse(warehouse) : 'All warehouses'}
-          </p>
-        </div>
-        {canRegister && (
-          <Link
-            className="button primary"
-            to="/app/tools/new"
-            state={{ returnTo: location.pathname + location.search }}
-          >
-            Add tool
-          </Link>
-        )}
-      </header>
-      <div className="toolbar">
-        <Field
-          label="Search inventory"
-          type="search"
-          value={search}
-          placeholder="Search tools…"
-          onChange={(event) => setSearch(event.target.value)}
-        />
-        <div className="field">
-          <label htmlFor="inventory-warehouse">Warehouse</label>
-          <select id="inventory-warehouse" value={warehouse} onChange={(event) => setWarehouse(event.target.value)}>
-            <option value="">All warehouses</option>
-            {refs.warehouses.data?.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-      {tools.isPending && <Loading />}
-      {tools.error && <Notice error>{errorMessage(tools.error)}</Notice>}
-      <div className="inventory-card">
-        <div className="inventory-table-wrap">
-          <table className="inventory-table">
-            <thead>
-              <tr>
-                <th>Tool</th>
-                <th>Holder</th>
-                <th>Status</th>
-                <th>Warehouse</th>
-                <th>Last moved</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...groups.entries()].map(([id, units]) =>
-                units.length === 1 ? (
-                  <InventoryRow
-                    key={units[0].id}
-                    asset={units[0]}
-                    companyId={c.company_id}
-                    holder={units[0].holder_name ?? units[0].warehouse_name ?? 'No current custodian'}
-                    warehouse={units[0].responsible_warehouse_name}
-                  />
-                ) : (
-                  <InventoryGroup
-                    key={id}
-                    units={units}
-                    companyId={c.company_id}
-                    expanded={expanded.has(id)}
-                    toggle={() => toggle(id)}
-                    holder={refs.person}
-                    warehouse={refs.warehouse}
-                  />
-                ),
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      {tools.data && !rows.length && <Empty>No tools match this inventory view.</Empty>}
-    </div>
-  );
-}
-function InventoryGroup({
-  units,
-  companyId,
-  expanded,
-  toggle,
-  holder,
-  warehouse,
-}: {
-  units: Asset[];
-  companyId: string;
-  expanded: boolean;
-  toggle: () => void;
-  holder: (id: string | null) => string;
-  warehouse: (id: string | null) => string;
-}) {
-  const first = units[0];
-  return (
-    <>
-      <tr
-        className="inventory-group-row"
-        tabIndex={0}
-        role="button"
-        aria-label={`${expanded ? 'Collapse' : 'Expand'} ${first.name}, ${units.length} tools`}
-        aria-expanded={expanded}
-        onClick={toggle}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            toggle();
-          }
-        }}
-      >
-        <td>
-          <div className="inventory-tool">
-            <ChevronDown size={14} />
-            <AssetPhoto asset={first} companyId={companyId} />
-            <div>
-              <strong>{first.name}</strong>
-              <span>
-                {first.manufacturer} · {first.model_number}
-              </span>
-            </div>
-          </div>
-        </td>
-        <td>{units.length} individual tools</td>
-        <td>{units.filter((unit) => unit.requestable).length} available</td>
-        <td>{new Set(units.map((unit) => unit.responsible_warehouse_id)).size} warehouses</td>
-        <td />
-      </tr>
-      {expanded &&
-        units.map((unit) => (
-          <InventoryRow
-            nested
-            key={unit.id}
-            asset={unit}
-            companyId={companyId}
-            holder={
-              unit.holder_membership_id
-                ? (unit.holder_name ?? holder(unit.holder_membership_id))
-                : (unit.warehouse_name ?? warehouse(unit.warehouse_id))
-            }
-            warehouse={unit.responsible_warehouse_name}
-          />
-        ))}
-    </>
-  );
-}
-function InventoryRow({
-  asset,
-  companyId,
-  holder,
-  warehouse,
-  nested = false,
-}: {
-  asset: Asset;
-  companyId: string;
-  holder: string;
-  warehouse: string;
-  nested?: boolean;
-}) {
-  const location = useLocation();
-  return (
-    <tr className={nested ? 'inventory-row inventory-row--nested' : 'inventory-row'}>
-      <td>
-        <Link
-          className="inventory-tool"
-          to={`${location.pathname.startsWith('/app/flagged') ? '/app/flagged' : '/app/tools'}/${asset.id}`}
-          state={{ returnTo: location.pathname + location.search }}
-          aria-label={`${asset.asset_tag} ${asset.name}`}
-        >
-          <AssetPhoto asset={asset} companyId={companyId} />
-          <div>
-            <strong>{nested ? asset.asset_tag : asset.name}</strong>
-            <span>{nested ? asset.name : `${asset.manufacturer} · ${asset.model_number}`}</span>
-          </div>
-        </Link>
-      </td>
-      <td>{holder}</td>
-      <td>
-        <Badge>{assetStatus(asset)}</Badge>
-      </td>
-      <td>{warehouse}</td>
-      <td>{date(asset.custody_started_at)}</td>
-    </tr>
-  );
-}
 export function CheckoutPage() {
-  const location = useLocation();
-  const {
-    c,
-    refs,
-    tools,
-    groups,
-    search,
-    setSearch,
-    warehouse,
-    setWarehouse,
-    mode,
-    setMode,
-    category,
-    categories,
-    setCategory,
-    availability,
-    setAvailability,
-  } = useCheckout();
+  const checkout = useCheckout();
+  const { c, tools, items, filters, mode } = checkout;
+  if (tools.isPending) return <LoadingState label="Loading the checkout catalog…" />;
+  if (tools.error || !tools.data)
+    return <ErrorState message="The checkout catalog could not be loaded." onRetry={() => void tools.refetch()} />;
   return (
-    <div className="worker-screen">
-      <header className="worker-screen-heading">
-        <h1>Checkout</h1>
-        <div className="view-controls">
-          <button aria-label="Grid" aria-pressed={mode === 'grid'} onClick={() => setMode('grid')}>
-            <Grid2X2 size={16} />
-          </button>
-          <button aria-label="List" aria-pressed={mode === 'list'} onClick={() => setMode('list')}>
-            <List size={16} />
-          </button>
-        </div>
-      </header>
-      <Field
-        label="Search tools"
-        type="search"
-        value={search}
-        placeholder="Search tools"
-        onChange={(event) => setSearch(event.target.value)}
-      />
-      <div className="field" style={{ margin: '16px 0' }}>
-        <label htmlFor="checkout-warehouse">Warehouse</label>
-        <select id="checkout-warehouse" value={warehouse} onChange={(event) => setWarehouse(event.target.value)}>
-          <option value="">All warehouses</option>
-          {refs.warehouses.data?.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="checkout-filters">
-        <div className="field">
-          <label htmlFor="checkout-category">Category</label>
-          <select id="checkout-category" value={category} onChange={(event) => setCategory(event.target.value)}>
-            <option value="">All categories</option>
-            {categories.map(([id, label]) => (
-              <option key={id} value={id}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="field">
-          <label htmlFor="checkout-availability">Availability</label>
-          <select
-            id="checkout-availability"
-            value={availability}
-            onChange={(event) => setAvailability(event.target.value)}
+    <div className="worker-screen worker-checkout-screen">
+      <div className="worker-screen-heading worker-checkout-heading">
+        <h1 aria-label="Browse tools">Checkout</h1>
+        <div className="worker-checkout-controls">
+          <button
+            type="button"
+            className={`worker-filter-button${checkout.filtersOpen ? ' worker-filter-button--active' : ''}`}
+            onClick={checkout.openFilters}
+            aria-expanded={checkout.filtersOpen}
+            aria-label="Filter catalog"
           >
-            <option value="">All tools</option>
-            <option value="available">Available at warehouse</option>
-            <option value="held">With a person</option>
-          </select>
+            <span className="worker-filter-icon" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+            <span>Filter</span>
+          </button>
+          <div className="worker-view-toggle" aria-label="Catalog view">
+            <button
+              type="button"
+              className={mode === 'grid' ? 'worker-view-toggle--active' : ''}
+              aria-label="Grid"
+              aria-pressed={mode === 'grid'}
+              onClick={() => checkout.setMode('grid')}
+            >
+              <span className="worker-grid-icon" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+                <i />
+              </span>
+            </button>
+            <button
+              type="button"
+              className={mode === 'list' ? 'worker-view-toggle--active' : ''}
+              aria-label="List"
+              aria-pressed={mode === 'list'}
+              onClick={() => checkout.setMode('list')}
+            >
+              <span className="worker-list-icon" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+              </span>
+            </button>
+          </div>
         </div>
       </div>
-      {tools.isPending && <Loading />}
-      {tools.error && <Notice error>{errorMessage(tools.error)}</Notice>}
-      <div className={`checkout-grid checkout-grid--${mode}`}>
-        {[...groups.entries()].map(([id, units]) => (
-          <article className="checkout-card" key={id}>
-            <AssetPhoto asset={units[0]} companyId={c.company_id} large />
-            <div>
-              <h2>{units[0].name}</h2>
-              <p>
-                {units[0].manufacturer} · {units[0].model_number}
-              </p>
-              <p>
-                {units.filter((unit) => unit.requestable).length} of {units.length} available
-              </p>
-              {units.map((unit) => (
-                <Link
-                  key={unit.id}
-                  className="button"
-                  style={{ margin: '4px 4px 0 0', fontSize: 11 }}
-                  to={`/app/checkout/${unit.id}`}
-                  state={{ returnTo: location.pathname + location.search }}
-                >
-                  {unit.asset_tag} · {unit.requestable ? 'Request' : assetStatus(unit)}
-                </Link>
-              ))}
-            </div>
-          </article>
-        ))}
-      </div>
-      {tools.data && groups.size === 0 && <Empty>No tools match those filters.</Empty>}
+      <SearchField
+        className="worker-search-field"
+        label="Search tools"
+        placeholder="Search tools"
+        value={filters.search}
+        onChange={checkout.setSearch}
+      />
+      {items.length ? (
+        <div className={`catalog-grid catalog-grid--${mode}`}>
+          {items.map((item, index) => (
+            <ToolCatalogCard
+              key={item.id}
+              item={item}
+              companyId={c.company_id}
+              mode={mode}
+              priority={index < CATALOG_PRIORITY_IMAGE_COUNT}
+              onSelect={checkout.openItem}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="catalog-empty worker-catalog-empty">
+          <h2 aria-label="No tools match those filters.">Nothing matches that.</h2>
+          <span>Try another warehouse or clear the filters.</span>
+          <button type="button" className="worker-secondary-button" onClick={checkout.clearFilters}>
+            Clear filters
+          </button>
+        </div>
+      )}
+      {checkout.filtersOpen && (
+        <CatalogFilters
+          filters={filters}
+          warehouses={checkout.warehouses}
+          categories={checkout.categories}
+          onToggleAvailable={checkout.toggleAvailable}
+          onWarehouse={checkout.setWarehouse}
+          onCategory={checkout.setCategory}
+          onClear={checkout.clearFilters}
+          onClose={checkout.closeFilters}
+        />
+      )}
     </div>
   );
 }
@@ -406,11 +182,4 @@ export function ToolSurface({ field = 'inventory' }: { field?: 'mine' | 'checkou
     </>
   );
 }
-export function ToolSheet() {
-  const { close } = useSheetNavigation();
-  return (
-    <RecordSheet title="Tool details" onClose={close}>
-      <ToolDetail />
-    </RecordSheet>
-  );
-}
+export { ToolSheet } from './tools';

@@ -1,4 +1,5 @@
 import {
+  saveLogo,
   useCompanySetupState,
   useInvitationState,
   useLoginState,
@@ -12,21 +13,44 @@ import { Link, Navigate } from 'react-router-dom';
 
 import { api, ApiError, errorMessage, result } from './client';
 
-import { AccountFooter, AccountForm, AuthLayout, EmailDelivery, PasswordFields, PasswordInput } from './auth-ui';
-import { Field, human, Loading, Notice, text } from './ui';
+import {
+  AccountField as Field,
+  AccountForm,
+  AuthLayout,
+  EmailDelivery,
+  LogoField,
+  PasswordFields,
+  PasswordInput,
+} from './auth-ui';
+import { ErrorState, LoadingState } from './kit';
+import { human, text } from './ui';
+
+const primaryLink = 'button button--primary button--full';
 
 export function Login() {
   const { navigate, session, loading, refresh, error, next } = useLoginState();
   if (loading)
     return (
-      <AuthLayout title="Signing in" description="Checking your session.">
-        <Loading />
+      <AuthLayout eyebrow="Welcome back" title="Signing in" description="Checking your session.">
+        <LoadingState label="Checking your session…" />
       </AuthLayout>
     );
   if (session) return <Navigate to={next} replace />;
   return (
-    <AuthLayout title="Sign in" description="Use your work email to continue.">
-      {error && <Notice error>Unable to check your session. Check your connection and try again.</Notice>}
+    <AuthLayout
+      eyebrow="Welcome back"
+      title="Sign in"
+      description="Use your work email to continue."
+      footer={
+        <>
+          <Link to={`/forgot-password?next=${encodeURIComponent(next)}`}>Forgot password?</Link>
+          <span>
+            Don’t have an account? <Link to={`/signup?next=${encodeURIComponent(next)}`}>Create an account</Link>
+          </span>
+        </>
+      }
+    >
+      {error && <ErrorState message="Unable to check your session. Check your connection and try again." />}
       <AccountForm
         label="Sign in"
         pendingLabel="Signing in…"
@@ -41,22 +65,31 @@ export function Login() {
         <Field label="Email address" name="email" type="email" autoComplete="username" required />
         <PasswordInput label="Password" name="password" />
       </AccountForm>
-      <Link className="text-link auth-recovery" to={`/forgot-password?next=${encodeURIComponent(next)}`}>
-        Forgot password?
-      </Link>
-      <AccountFooter>
-        Don’t have an account? <Link to={`/signup?next=${encodeURIComponent(next)}`}>Create an account</Link>
-      </AccountFooter>
     </AuthLayout>
   );
 }
 export function Signup() {
-  const { sent, setSent, draft, setDraft, session, loading, next, send } = useSignupState();
+  const { sent, setSent, draft, setDraft, logo, setLogo, session, loading, next, invitation, send } = useSignupState();
   if (!loading && session) return <Navigate to={next} replace />;
   return (
     <AuthLayout
-      title={sent ? 'Check your email' : 'Create your account'}
-      description={sent ? 'One more step to get started.' : 'Start with your name and work email.'}
+      eyebrow={sent ? 'Verify your email' : 'New account'}
+      title={sent ? 'Check your email' : invitation ? 'Create your account' : 'Set up your company'}
+      description={
+        sent
+          ? 'One more step to get started.'
+          : invitation
+            ? 'Start with your name and work email.'
+            : 'Enter the signup code you were given, then tell us about your company.'
+      }
+      footer={
+        <>
+          <span>
+            Already have an account? <Link to={`/login?next=${encodeURIComponent(next)}`}>Sign in</Link>
+          </span>
+          {sent && <Link to={`/forgot-password?next=${encodeURIComponent(next)}`}>Reset your password</Link>}
+        </>
+      }
     >
       {sent ? (
         <EmailDelivery email={draft.email} resend={() => send(draft)} changeEmail={() => setSent(false)} />
@@ -65,12 +98,31 @@ export function Signup() {
           label="Send verification link"
           pendingLabel="Sending verification…"
           submit={async (f) => {
-            const values = { name: text(f, 'name'), email: text(f, 'email') };
+            const values = { ...draft, name: text(f, 'name'), email: text(f, 'email') };
+            if (!invitation) {
+              values.signup_code = text(f, 'signup_code');
+              values.company_name = text(f, 'company_name');
+              values.logo_id = await saveLogo(logo, values.signup_code);
+              // Keep the stored logo so a resend or retry does not upload it again.
+              if (logo.file) setLogo({ ...logo, id: values.logo_id });
+            }
             await send(values);
             setDraft(values);
             setSent(true);
           }}
         >
+          {!invitation && (
+            <Field
+              label="Signup code"
+              name="signup_code"
+              autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              required
+              maxLength={40}
+              defaultValue={draft.signup_code}
+            />
+          )}
           <Field label="Your name" name="name" autoComplete="name" required maxLength={120} defaultValue={draft.name} />
           <Field
             label="Work email"
@@ -80,16 +132,21 @@ export function Signup() {
             required
             defaultValue={draft.email}
           />
+          {!invitation && (
+            <>
+              <Field
+                label="Company name"
+                name="company_name"
+                autoComplete="organization"
+                required
+                maxLength={200}
+                defaultValue={draft.company_name}
+              />
+              <LogoField value={logo} onChange={setLogo} />
+            </>
+          )}
         </AccountForm>
       )}
-      <AccountFooter>
-        Already have an account? <Link to={`/login?next=${encodeURIComponent(next)}`}>Sign in</Link>
-        {sent && (
-          <Link className="auth-footer-row" to={`/forgot-password?next=${encodeURIComponent(next)}`}>
-            Reset your password
-          </Link>
-        )}
-      </AccountFooter>
     </AuthLayout>
   );
 }
@@ -102,13 +159,23 @@ export function VerifyEmail() {
   const { search, refresh, navigate, invalid, setInvalid, invite, next, signupUrl } = useVerifyEmailState();
   return (
     <AuthLayout
+      eyebrow="Verify your email"
       title={invalid ? 'Verification link unavailable' : 'Choose your password'}
       description={
         invalid ? 'This link is missing, expired, or already used.' : 'Finish creating your Nelson Electric account.'
       }
+      footer={
+        invalid ? (
+          <span>
+            Already verified? <Link to={`/login?next=${encodeURIComponent(next)}`}>Sign in</Link>
+          </span>
+        ) : (
+          <Link to={signupUrl}>Request a new verification link</Link>
+        )
+      }
     >
       {invalid ? (
-        <Link className="button primary" to={signupUrl}>
+        <Link className={primaryLink} to={signupUrl}>
           Request a new verification link
         </Link>
       ) : (
@@ -134,15 +201,6 @@ export function VerifyEmail() {
           <PasswordFields />
         </AccountForm>
       )}
-      <AccountFooter>
-        {invalid ? (
-          <>
-            Already verified? <Link to={`/login?next=${encodeURIComponent(next)}`}>Sign in</Link>
-          </>
-        ) : (
-          <Link to={signupUrl}>Request a new verification link</Link>
-        )}
-      </AccountFooter>
     </AuthLayout>
   );
 }
@@ -150,10 +208,12 @@ export function Recovery() {
   const { sent, setSent, email, setEmail, next, send } = useRecoveryState();
   return (
     <AuthLayout
+      eyebrow="Account recovery"
       title={sent ? 'Check your email' : 'Reset your password'}
       description={
         sent ? 'Follow the link to get back to your account.' : 'Enter your work email to receive a reset link.'
       }
+      footer={<Link to={`/login?next=${encodeURIComponent(next)}`}>Back to sign in</Link>}
     >
       {sent ? (
         <EmailDelivery email={email} recovery resend={() => send(email)} changeEmail={() => setSent(false)} />
@@ -171,9 +231,6 @@ export function Recovery() {
           <Field label="Email address" name="email" type="email" autoComplete="email" required defaultValue={email} />
         </AccountForm>
       )}
-      <AccountFooter>
-        <Link to={`/login?next=${encodeURIComponent(next)}`}>Back to sign in</Link>
-      </AccountFooter>
     </AuthLayout>
   );
 }
@@ -181,6 +238,7 @@ export function ResetPassword() {
   const { done, setDone, refresh, email, token, missing, recoveryUrl } = useResetPasswordState();
   return (
     <AuthLayout
+      eyebrow="Account recovery"
       title={done ? 'Password updated' : missing ? 'Reset link unavailable' : 'Set a new password'}
       description={
         done
@@ -189,23 +247,29 @@ export function ResetPassword() {
             ? 'Open the complete link from your email, or request another.'
             : 'Choose a password you haven’t used before.'
       }
+      footer={
+        !done &&
+        (missing ? <Link to="/login">Back to sign in</Link> : <Link to={recoveryUrl}>Request a new reset link</Link>)
+      }
     >
       {done ? (
         <>
-          <p className="auth-message" role="status">
-            Your password has been updated. Your other sessions have been signed out.
-          </p>
-          <Link className="button primary" to="/login">
+          <div className="auth-notice" role="status">
+            <p>Your password has been updated. Your other sessions have been signed out.</p>
+          </div>
+          <Link className={primaryLink} to="/login">
             Sign in
           </Link>
         </>
       ) : missing ? (
-        <Link className="button primary" to={recoveryUrl}>
+        <Link className={primaryLink} to={recoveryUrl}>
           Request a new reset link
         </Link>
       ) : (
         <>
-          <p className="auth-account-email">{email}</p>
+          <p className="auth-help">
+            Resetting the password for <strong>{email}</strong>. Changing it signs out your other sessions.
+          </p>
           <AccountForm
             label="Update password"
             pendingLabel="Updating password…"
@@ -228,24 +292,33 @@ export function ResetPassword() {
           >
             <PasswordFields />
           </AccountForm>
-          <p className="auth-help">Changing your password signs out your other sessions.</p>
         </>
-      )}
-      {!done && (
-        <AccountFooter>
-          {missing ? <Link to="/login">Back to sign in</Link> : <Link to={recoveryUrl}>Request a new reset link</Link>}
-        </AccountFooter>
       )}
     </AuthLayout>
   );
 }
 export function CompanySetup() {
-  const { session, loading, refresh, logout, key, createdCompanyId, setCreatedCompanyId, navigate, chooseCompany } =
-    useCompanySetupState();
+  const {
+    session,
+    loading,
+    refresh,
+    logout,
+    key,
+    createdCompanyId,
+    setCreatedCompanyId,
+    navigate,
+    chooseCompany,
+    signup,
+    logo,
+    setLogo,
+    ownerElse,
+    setOwnerElse,
+  } = useCompanySetupState();
+  const pending = signup?.pending;
   if (loading)
     return (
-      <AuthLayout title="Your workspace" description="Checking your account.">
-        <Loading />
+      <AuthLayout eyebrow="Workspace setup" title="Your workspace" description="Checking your account.">
+        <LoadingState label="Checking your account…" />
       </AuthLayout>
     );
   if (!session) return <Navigate to="/login?next=/company-setup" replace />;
@@ -253,29 +326,29 @@ export function CompanySetup() {
     return <Navigate to="/app" replace />;
   return (
     <AuthLayout
+      eyebrow="Workspace setup"
       title="Your company workspace"
       description={
-        session.memberships.length
-          ? 'Choose an available workspace, or create another company.'
-          : 'Open your invitation, refresh restored access, or create a company.'
+        pending
+          ? 'Confirm your company details and who owns the company.'
+          : session.memberships.length
+            ? 'Choose an available workspace, or create another company with a signup code.'
+            : 'Open your invitation, refresh restored access, or create a company with a signup code.'
       }
     >
       {session.memberships.length > 0 && (
         <div className="auth-workspaces">
-          <p className="auth-help">Choose an available workspace to continue.</p>
           {session.memberships.map((membership) => (
             <AccountForm
               key={membership.company_id}
-              secondary
+              variant="secondary"
               label={`Open ${membership.company_name}`}
               pendingLabel="Opening workspace…"
               submit={async () => {
                 chooseCompany(membership.company_id);
                 navigate('/app', { replace: true });
               }}
-            >
-              <></>
-            </AccountForm>
+            />
           ))}
         </div>
       )}
@@ -283,6 +356,9 @@ export function CompanySetup() {
         label="Create company"
         pendingLabel="Creating workspace…"
         submit={async (f) => {
+          const logo_id = await saveLogo(logo);
+          // A stored logo is reused if creating the company has to be retried.
+          if (logo.file) setLogo({ ...logo, id: logo_id });
           const company = result(
             await api.POST('/api/companies', {
               body: {
@@ -290,6 +366,10 @@ export function CompanySetup() {
                 name: text(f, 'company'),
                 preferred_name: text(f, 'name'),
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                signup_code: pending ? '' : text(f, 'signup_code'),
+                logo_id,
+                owner_email: ownerElse ? text(f, 'owner_email') : null,
+                owner_name: ownerElse ? text(f, 'owner_name') : '',
               },
             }),
           );
@@ -298,12 +378,51 @@ export function CompanySetup() {
           setCreatedCompanyId(company.id);
         }}
       >
-        <Field label="Company name" name="company" autoComplete="organization" maxLength={200} required />
-        <Field label="Your name" name="name" autoComplete="name" maxLength={120} required />
+        {!pending && (
+          <Field
+            label="Signup code"
+            name="signup_code"
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            maxLength={40}
+            required
+          />
+        )}
+        <Field
+          label="Company name"
+          name="company"
+          autoComplete="organization"
+          maxLength={200}
+          required
+          defaultValue={pending?.company_name}
+        />
+        <LogoField value={logo} onChange={setLogo} />
+        <Field label="Your name" name="name" autoComplete="name" maxLength={120} required defaultValue={signup?.name} />
+        <fieldset className="auth-choice">
+          <legend>Company owner</legend>
+          <label>
+            <input type="radio" name="owner" checked={!ownerElse} onChange={() => setOwnerElse(false)} />I own this
+            company
+          </label>
+          <label>
+            <input type="radio" name="owner" checked={ownerElse} onChange={() => setOwnerElse(true)} />
+            Someone else owns it
+          </label>
+        </fieldset>
+        {ownerElse && (
+          <>
+            <Field label="Owner’s name" name="owner_name" autoComplete="off" maxLength={120} required />
+            <Field label="Owner’s email" name="owner_email" type="email" autoComplete="off" required />
+            <p className="auth-help">
+              We’ll email them an invitation. You hold ownership until they accept, and you stay an administrator.
+            </p>
+          </>
+        )}
       </AccountForm>
       <p className="auth-help">If an administrator changed your access, refresh it here.</p>
       <AccountForm
-        secondary
+        variant="secondary"
         label="Refresh access"
         pendingLabel="Checking access…"
         submit={async () => {
@@ -313,14 +432,8 @@ export function CompanySetup() {
             navigate('/app', { replace: true });
           }
         }}
-      >
-        <></>
-      </AccountForm>
-      <AccountFooter>
-        <AccountForm secondary label="Sign out" pendingLabel="Signing out…" submit={logout}>
-          <></>
-        </AccountForm>
-      </AccountFooter>
+      />
+      <AccountForm variant="ghost" label="Sign out" pendingLabel="Signing out…" submit={logout} />
     </AuthLayout>
   );
 }
@@ -341,7 +454,11 @@ export function Invitation() {
   } = useInvitationState();
   if (accepted)
     return (
-      <AuthLayout title="Invitation accepted" description={`Your access to ${accepted.name} is ready.`}>
+      <AuthLayout
+        eyebrow="Invitation"
+        title="Invitation accepted"
+        description={`Your access to ${accepted.name} is ready.`}
+      >
         <AccountForm
           label="Open workspace"
           pendingLabel="Opening workspace…"
@@ -357,70 +474,69 @@ export function Invitation() {
     );
   return (
     <AuthLayout
-      title={unavailable ? 'Invitation unavailable' : 'Join your team'}
+      eyebrow="Invitation"
+      title={unavailable ? 'Invitation unavailable' : data?.owner ? 'Take ownership' : 'Join your team'}
       description={
         unavailable
           ? 'This invitation has expired, been withdrawn, or already been accepted.'
-          : 'You’ve been invited to a company workspace.'
+          : data?.owner
+            ? 'You’ve been named the owner of a company workspace.'
+            : 'You’ve been invited to a company workspace.'
+      }
+      footer={
+        session ? (
+          <Link to="/app">Back to your workspace</Link>
+        ) : invitation.error ? (
+          <Link to="/login">Back to sign in</Link>
+        ) : (
+          data && (
+            <span>
+              Already registered? <Link to={`/login?next=${next}`}>Sign in to accept</Link>
+            </span>
+          )
+        )
       }
     >
       {invitation.isPending || loading ? (
-        <Loading />
+        <LoadingState label="Loading invitation…" />
       ) : invitation.error ? (
-        <>
-          {unavailable ? (
-            <p className="auth-message">
-              If you’ve already joined, sign in to open your workspace. Otherwise, ask your manager for a new
-              invitation.
-            </p>
-          ) : (
-            <>
-              <p className="auth-error" role="alert">
-                {errorMessage(invitation.error)}
-              </p>
-              <AccountForm
-                label="Try again"
-                pendingLabel="Loading invitation…"
-                submit={async () => {
-                  const response = await invitation.refetch();
-                  if (response.error) throw response.error;
-                }}
-              />
-            </>
-          )}
-        </>
+        unavailable ? (
+          <p className="auth-help">
+            If you’ve already joined, sign in to open your workspace. Otherwise, ask your manager for a new invitation.
+          </p>
+        ) : (
+          <>
+            <ErrorState message={errorMessage(invitation.error)} />
+            <AccountForm
+              label="Try again"
+              pendingLabel="Loading invitation…"
+              submit={async () => {
+                const response = await invitation.refetch();
+                if (response.error) throw response.error;
+              }}
+            />
+          </>
+        )
       ) : (
         data && (
           <>
-            <div className="auth-invitation">
-              <span className="auth-caption">WORKSPACE</span>
+            <div className="auth-invitation-card">
               <strong>{data.company_name}</strong>
-              <dl>
-                <div>
-                  <dt>Invited email</dt>
-                  <dd>{data.email}</dd>
-                </div>
-                <div>
-                  <dt>Role</dt>
-                  <dd>{human(data.role)}</dd>
-                </div>
-              </dl>
+              <span>{data.email}</span>
+              <span>{data.owner ? 'Owner · Company admin' : human(data.role)}</span>
             </div>
             {!session ? (
-              <>
-                <Link className="button primary" to={`/signup?next=${next}`}>
-                  Create an account
-                </Link>
-                <AccountFooter>
-                  Already registered? <Link to={`/login?next=${next}`}>Sign in to accept</Link>
-                </AccountFooter>
-              </>
+              <Link className={primaryLink} to={`/signup?next=${next}`}>
+                Create an account
+              </Link>
             ) : session.email.toLowerCase() !== data.email.toLowerCase() ? (
               <>
-                <p className="auth-message" role="status">
-                  You’re signed in as <strong>{session.email}</strong>. Switch to <strong>{data.email}</strong> to
-                  accept this invitation.
-                </p>
+                <div className="auth-notice" role="status">
+                  <p>
+                    You’re signed in as <strong>{session.email}</strong>. Switch to <strong>{data.email}</strong> to
+                    accept this invitation.
+                  </p>
+                </div>
                 <AccountForm
                   label="Switch account"
                   pendingLabel="Signing out…"
@@ -438,11 +554,6 @@ export function Invitation() {
             )}
           </>
         )
-      )}
-      {(invitation.error || session) && (
-        <AccountFooter>
-          <Link to={session ? '/app' : '/login'}>{session ? 'Back to your workspace' : 'Back to sign in'}</Link>
-        </AccountFooter>
       )}
     </AuthLayout>
   );

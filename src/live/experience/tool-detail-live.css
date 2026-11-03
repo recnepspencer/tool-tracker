@@ -1,0 +1,30 @@
+/* Live-only additions to the demo tool detail: record notes, evidence thumbnails, open reports. */
+.experience .tool-detail-note {
+  color: var(--ink-2);
+  font-size: var(--text-md);
+  line-height: var(--leading-body);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.experience .tool-detail-evidence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+}
+.experience .tool-detail-evidence a {
+  border-radius: var(--radius-md);
+  display: block;
+}
+.experience .tool-detail-reports {
+  margin-bottom: var(--space-22);
+}
+.experience .tool-detail-reports li > div {
+  flex: 1;
+  min-width: 0;
+}
+.experience .tool-detail-report-action {
+  flex: none;
+}
+.experience .tool-detail-fact--wide {
+  grid-column: 1 / -1;
+}

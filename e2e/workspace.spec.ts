@@ -1,19 +1,25 @@
-import { test, expect } from '@playwright/test';
-import { command, workspace, emailLink, password } from './support';
+import { expect, type Page } from '@playwright/test';
+import { command, workspace, emailLink, password, chooseOption, signupCode, test } from './support';
+
+const unitRow = (page: Page, tag: string) =>
+  page.getByRole('button', { name: `Open Hammer drill, ${tag}`, exact: true });
+const details = (page: Page) => page.getByRole('dialog', { name: 'Hammer drill details', exact: true });
 
 test('physical assets remain distinct and list navigation survives refresh', async ({ page }) => {
   await workspace(page);
   await page.getByRole('button', { name: 'Expand Hammer drill, 2 tools' }).click();
-  await expect(page.getByRole('link', { name: /UNIT-001/ })).toBeVisible();
-  await expect(page.getByRole('link', { name: /UNIT-002/ })).toBeVisible();
+  await expect(unitRow(page, 'UNIT-001')).toBeVisible();
+  await expect(unitRow(page, 'UNIT-002')).toBeVisible();
   await page.getByLabel('Search inventory', { exact: true }).fill('UNIT-002');
-  await expect(page.getByRole('link', { name: /UNIT-001/ })).toHaveCount(0);
+  await expect(unitRow(page, 'UNIT-001')).toHaveCount(0);
   await expect(page).toHaveURL(/search=UNIT-002/);
   await page.reload();
   await expect(page.getByLabel('Search inventory', { exact: true })).toHaveValue('UNIT-002');
-  await page.getByRole('link', { name: /UNIT-002/ }).click();
-  await expect(page.getByRole('heading', { name: 'Hammer drill' })).toBeVisible();
+  await unitRow(page, 'UNIT-002').click();
+  await expect(details(page)).toBeVisible();
+  await expect(details(page).getByRole('heading', { name: 'Hammer drill' })).toBeVisible();
   await page.goBack();
+  await expect(details(page)).toHaveCount(0);
   await expect(page.getByLabel('Search inventory', { exact: true })).toHaveValue('UNIT-002');
   await expect(page.getByRole('heading', { name: 'Inventory', exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'Add tool', exact: true }).click();
@@ -28,83 +34,120 @@ test('physical assets remain distinct and list navigation survives refresh', asy
 test('condition incidents and service do not change custody or the other physical unit', async ({ page }) => {
   const fixture = await workspace(page);
   await page.getByRole('button', { name: 'Expand Hammer drill, 2 tools' }).click();
-  await page.getByRole('link', { name: /UNIT-001/ }).click();
-  await page.getByRole('button', { name: 'Report lost', exact: true }).click();
-  const report = page.getByRole('region', { name: 'Report a problem', exact: true });
-  await report.getByLabel('Problem').selectOption('missing');
-  await report.getByLabel('What happened?').fill('Could not locate during stock check');
-  await report.getByRole('button', { name: 'Submit report' }).click();
-  await expect(page.getByText('Could not locate during stock check', { exact: true })).toBeVisible();
-  await page.getByLabel('Where was it found?').fill('Located in secured cabinet');
-  await page.getByRole('button', { name: 'Mark found', exact: true }).click();
-  await expect(page.getByText('No open reports.')).toBeVisible();
-  await page.getByText('Manage this tool', { exact: true }).click();
-  const service = page.getByRole('region', { name: 'Record service', exact: true });
-  await service.getByLabel('Condition').selectOption('damaged');
+  await unitRow(page, 'UNIT-001').click();
+  const reports = page.getByRole('region', { name: 'Open reports', exact: true });
+  await page.getByRole('button', { name: 'Mark lost', exact: true }).click();
+  const lost = page.getByRole('dialog', { name: 'Mark lost: Hammer drill', exact: true });
+  await expect(lost.getByRole('combobox', { name: 'Condition', exact: true })).toHaveText('Lost');
+  await lost.getByLabel('Evidence note').fill('Could not locate during stock check');
+  await lost.getByRole('button', { name: 'Mark lost', exact: true }).click();
+  await expect(lost).toHaveCount(0);
+  await expect(reports.getByText('Could not locate during stock check', { exact: true })).toBeVisible();
+  await reports.getByRole('button', { name: 'Mark found', exact: true }).click();
+  const found = page.getByRole('dialog', { name: 'Mark Hammer drill found', exact: true });
+  await found.getByLabel('Where was it found?').fill('Located in secured cabinet');
+  await found.getByRole('button', { name: 'Mark found', exact: true }).click();
+  await expect(found).toHaveCount(0);
+  // The reports section is only shown while a report is open.
+  await expect(reports).toHaveCount(0);
+  await page.getByRole('button', { name: 'Record service', exact: true }).click();
+  const service = page.getByRole('dialog', { name: 'Record service for Hammer drill', exact: true });
+  await chooseOption(service, 'Condition', 'damaged');
   await service.getByLabel('Work performed').fill('Inspection found a damaged trigger');
-  await service.getByRole('button', { name: 'Save service record' }).click();
-  await expect(service.getByRole('status')).toBeVisible();
+  await service.getByRole('button', { name: 'Save service record', exact: true }).click();
+  await expect(service).toHaveCount(0);
   const current = await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}`)).json();
   const other = await (await page.request.get(`${fixture.base}/tools/${fixture.second.id}`)).json();
   expect(current).toMatchObject({ missing: false, serviceability: 'damaged', warehouse_id: fixture.warehouse.id });
   expect(other).toMatchObject({ missing: false, serviceability: 'serviceable', warehouse_id: fixture.warehouse.id });
-  const lifecycle = page.getByRole('region', { name: 'Retirement & disposal', exact: true });
-  await lifecycle.getByLabel('Inventory status').selectOption('retired');
-  await lifecycle.getByLabel('Reason').fill('Awaiting repair');
-  await lifecycle.getByRole('button', { name: 'Update status' }).click();
-  await expect(lifecycle.getByRole('status')).toBeVisible();
-  await lifecycle.getByLabel('Inventory status').selectOption('active');
-  await lifecycle.getByLabel('Reason').fill('Returned to inventory');
-  await lifecycle.getByRole('button', { name: 'Update status' }).click();
+  await page.getByRole('button', { name: 'Decommission tool', exact: true }).click();
+  const decommission = page.getByRole('dialog', { name: 'Decommission Hammer drill', exact: true });
+  await chooseOption(decommission, 'Lifecycle', 'retired');
+  await decommission.getByLabel('Reason or evidence note').fill('Awaiting repair');
+  await decommission.getByRole('button', { name: 'Decommission', exact: true }).click();
+  await expect(decommission).toHaveCount(0);
+  await expect
+    .poll(async () => (await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}`)).json()).lifecycle)
+    .toBe('retired');
+  await page.getByRole('button', { name: 'Reinstate or dispose', exact: true }).click();
+  const reinstate = page.getByRole('dialog', { name: 'Change lifecycle of Hammer drill', exact: true });
+  await chooseOption(reinstate, 'Lifecycle', 'active');
+  await reinstate.getByLabel('Reason or evidence note').fill('Returned to inventory');
+  await reinstate.getByRole('button', { name: 'Update lifecycle', exact: true }).click();
+  await expect(reinstate).toHaveCount(0);
   await expect
     .poll(async () => (await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}`)).json()).lifecycle)
     .toBe('active');
   await page.goto('/app/flagged?search=UNIT-001');
-  await page.getByRole('link', { name: 'UNIT-001 Hammer drill', exact: true }).click();
-  await expect(page).toHaveURL(new RegExp(`/app/flagged/${fixture.asset.id}$`));
-  await page.getByRole('button', { name: 'Manage this tool', exact: true }).click();
+  const edit = page
+    .getByRole('article')
+    .filter({ hasText: 'UNIT-001' })
+    .getByRole('link', { name: 'Edit', exact: true });
+  await edit.click();
+  await expect(page).toHaveURL(new RegExp(`/app/flagged/${fixture.asset.id}\\?action=edit$`));
+  await expect(page.getByRole('dialog', { name: 'Edit Hammer drill', exact: true })).toBeVisible();
+  // The first Escape closes the edit dialog, the second the tool drawer behind it.
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Edit Hammer drill', exact: true })).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(page).toHaveURL(/\/app\/flagged\?search=UNIT-001$/);
   await expect(page.getByRole('heading', { name: 'Damaged & lost', exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'UNIT-001 Hammer drill', exact: true })).toBeFocused();
+  await expect(edit).toBeFocused();
 });
 
 test('editing a stale record preserves the draft until the user loads latest values', async ({ page }) => {
   const fixture = await workspace(page);
   await page.getByRole('button', { name: 'Expand Hammer drill, 2 tools' }).click();
-  await page.getByRole('link', { name: /UNIT-001/ }).click();
-  await page.getByText('Manage this tool', { exact: true }).click();
-  const section = page.getByRole('region', { name: 'Asset information' });
+  await unitRow(page, 'UNIT-001').click();
+  await details(page).getByRole('button', { name: 'Edit', exact: true }).click();
+  const section = page.getByRole('dialog', { name: 'Edit Hammer drill', exact: true });
   await section.getByLabel('Serial number', { exact: true }).fill('LOCAL-DRAFT');
   const current = await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}`)).json();
   await command(page.request, `${fixture.base}/tools/${fixture.asset.id}/update`, {
     expected_revision: current.revision,
     serial_number: 'OTHER-EDITOR',
   });
-  await section.getByRole('button', { name: 'Save tool details' }).click();
+  await section.getByRole('button', { name: 'Save changes' }).click();
   await expect(section.getByRole('alert')).toBeVisible();
   await expect(section.getByLabel('Serial number', { exact: true })).toHaveValue('LOCAL-DRAFT');
   await section.getByRole('button', { name: 'Load latest values' }).click();
   await expect(section.getByLabel('Serial number', { exact: true })).toHaveValue('OTHER-EDITOR');
   await section.getByLabel('Serial number', { exact: true }).fill('REVIEWED-VALUE');
-  await section.getByRole('button', { name: 'Save tool details' }).click();
-  await expect(section.getByRole('status')).toBeVisible();
+  await section.getByRole('button', { name: 'Save changes' }).click();
+  await expect(section).toHaveCount(0);
+  await expect
+    .poll(
+      async () => (await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}`)).json()).serial_number,
+    )
+    .toBe('REVIEWED-VALUE');
 });
 
 test('company switching isolates inventory and policy changes survive reload', async ({ page }) => {
   const fixture = await workspace(page);
+  // Registration starts off; turn it on so switching it off in the UI is a real change.
+  const policy = await (await page.request.get(`${fixture.base}/tool-registration-policy`)).json();
+  await command(page.request, `${fixture.base}/tool-registration-policy`, {
+    expected_revision: policy.revision,
+    employee_tool_creation_enabled: true,
+  });
   await page.goto('/app/settings');
-  const registration = page.getByRole('region', { name: 'Employee tool uploads' });
-  await registration.getByLabel('Can employees register tools and upload registration photos?').selectOption('false');
-  await registration.getByRole('button', { name: 'Save registration rule' }).click();
-  await expect(registration.getByRole('status')).toBeVisible();
+  const registration = page.getByRole('region', { name: 'Employee tool uploads', exact: true });
+  const registrationSwitch = registration.getByRole('switch', { name: 'Employees can register tools' });
+  await expect(registrationSwitch).toHaveAttribute('aria-checked', 'true');
+  await registrationSwitch.click();
+  await expect(registrationSwitch).toHaveAttribute('aria-checked', 'false');
+  await expect
+    .poll(
+      async () =>
+        (await (await page.request.get(`${fixture.base}/tool-registration-policy`)).json())
+          .employee_tool_creation_enabled,
+    )
+    .toBe(false);
   await page.reload();
-  await expect(registration.getByLabel('Can employees register tools and upload registration photos?')).toHaveValue(
-    'false',
-  );
+  await expect(registrationSwitch).toHaveAttribute('aria-checked', 'false');
   const jobs = page.getByRole('region', { name: 'Job participation', exact: true });
-  await jobs.getByLabel('Employees joining jobs').selectOption('approval_required');
-  await jobs.getByLabel('Employees leaving jobs').selectOption('disabled');
+  await chooseOption(jobs, 'Employees joining jobs', 'approval_required');
+  await chooseOption(jobs, 'Employees leaving jobs', 'disabled');
   await jobs.getByRole('button', { name: 'Save job rules' }).click();
   await expect
     .poll(
@@ -115,19 +158,21 @@ test('company switching isolates inventory and policy changes survive reload', a
     request_key: crypto.randomUUID(),
     name: 'Second company',
     preferred_name: 'Workspace Owner',
+    signup_code: signupCode(),
   });
   await page.reload();
-  await page.getByRole('button', { name: 'Open account', exact: true }).click();
-  await page.getByLabel('Workspace', { exact: true }).selectOption(second.id);
-  await expect(page.getByRole('heading', { name: 'Queue', exact: true })).toBeVisible();
+  const account = page.getByRole('dialog', { name: 'Workspace Owner', exact: true });
+  await page.getByRole('button', { name: 'Open account menu', exact: true }).click();
+  await chooseOption(account, 'Workspace', second.id);
+  await expect(page.getByRole('heading', { level: 1, name: 'Queue', exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'Inventory', exact: true }).click();
   await expect(page.getByText('No tools match this inventory view.')).toBeVisible();
-  await page.getByRole('button', { name: 'Open account', exact: true }).click();
-  await page.getByLabel('Workspace', { exact: true }).selectOption(fixture.company.id);
-  await expect(page.getByRole('heading', { name: 'Queue', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Open account menu', exact: true }).click();
+  await chooseOption(account, 'Workspace', fixture.company.id);
+  await expect(page.getByRole('heading', { level: 1, name: 'Queue', exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'Inventory', exact: true }).click();
   await page.getByRole('button', { name: 'Expand Hammer drill, 2 tools' }).click();
-  await expect(page.getByRole('link', { name: /UNIT-001/ })).toBeVisible();
+  await expect(unitRow(page, 'UNIT-001')).toBeVisible();
 });
 
 test('worker participation needs approval and suspended access is revoked', async ({ page, browser }) => {
@@ -141,7 +186,11 @@ test('worker participation needs approval and suspended access is revoked', asyn
       preferred_name: 'Crew Member',
       role: 'field_member',
     });
-    await command(worker.request, '/api/auth/signup', { email, name: 'Crew Member' });
+    await command(worker.request, '/api/auth/signup', {
+      email,
+      name: 'Crew Member',
+      invitation_token: invitation.token,
+    });
     const verification = new URL(await emailLink(email, '/verify-email'), 'http://localhost');
     await command(worker.request, '/api/auth/verify-signup', {
       token: verification.searchParams.get('token'),
@@ -162,24 +211,29 @@ test('worker participation needs approval and suspended access is revoked', asyn
     await worker.goto('/app/tools/new');
     await expect(worker.getByText(/Employee tool registration is disabled/)).toBeVisible();
     await worker.goto('/app/jobs');
-    await worker.getByRole('button', { name: 'Request to join job', exact: true }).click();
-    await expect(worker.getByText('Join awaiting approval', { exact: true })).toBeVisible();
+    const membership = worker.getByRole('switch', { name: 'Library wiring', exact: true });
+    await membership.click();
+    const asking = worker.getByRole('dialog', { name: 'Request to join Library wiring', exact: true });
+    await asking.getByRole('button', { name: 'Send request', exact: true }).click();
+    await expect(asking).toHaveCount(0);
+    await expect(worker.getByText('Request pending', { exact: true })).toBeVisible();
     await page.goto('/app/jobs');
     const requests = page.getByRole('region', { name: 'Participation requests' });
-    await requests.getByRole('button', { name: 'Submit decision' }).click();
-    await expect(requests.getByText('No pending participation requests.')).toBeVisible();
+    await requests.getByRole('button', { name: 'Approve Crew Member’s request', exact: true }).click();
+    await expect(requests.getByText('No one is waiting on a decision.')).toBeVisible();
     await worker.reload();
-    await expect(worker.getByRole('switch', { name: 'Library wiring', exact: true })).toBeChecked();
-    await worker.getByRole('switch', { name: 'Library wiring', exact: true }).click();
-    await expect(worker.getByRole('button', { name: 'Request to join job', exact: true })).toBeVisible();
+    await expect(membership).toBeChecked();
+    // Leaving is direct under this policy.
+    await membership.click();
+    await expect(membership).not.toBeChecked();
+    await expect(worker.getByRole('dialog')).toHaveCount(0);
     await page.goto('/app/people');
-    await page.getByRole('button', { name: 'Crew Member', exact: true }).click();
-    const person = page.getByRole('dialog', { name: 'Person details' });
-    await person.getByText('Manage access', { exact: true }).click();
-    await person.getByLabel('Access', { exact: true }).selectOption('suspended');
-    await person.getByLabel('Reason for change').fill('Temporary access suspension');
-    await person.getByRole('button', { name: 'Save member access' }).click();
-    await expect(page.getByRole('heading', { name: 'Crew Member', exact: true })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Open Crew Member', exact: true }).click();
+    const person = page.getByRole('dialog', { name: 'Person details for Crew Member', exact: true });
+    await person.getByLabel('Access change reason').fill('Temporary access suspension');
+    await person.getByRole('button', { name: 'Suspend', exact: true }).click();
+    await expect(person.getByText('Suspended', { exact: true })).toBeVisible();
+    await expect(person.getByLabel('Access change reason')).toHaveValue('');
     expect((await worker.request.get(`${fixture.base}/jobs`)).status()).toBe(403);
     await worker.reload();
     await expect(worker).toHaveURL(/company-setup/);
@@ -198,13 +252,13 @@ test('registration attaches a real photo served through authorized download', as
   });
   await page.reload(); // Complete external fixture setup before testing the UI's catalog read.
   await page.getByRole('link', { name: 'Add tool', exact: true }).click();
-  await page.getByLabel('Tool photo (up to 8 MB)').setInputFiles('e2e/fixtures/hammer-drill.jpg');
-  await page.getByLabel('Tool model').selectOption(model.id);
-  await page.getByLabel('Starting warehouse').selectOption({ label: 'Main warehouse' });
-  await page.getByLabel('Unique asset tag').fill('PHOTO-003');
-  await page.getByRole('button', { name: 'Register tool', exact: true }).click();
-  await page.getByRole('link', { name: 'Open its custody record' }).click();
-  const photo = page.getByRole('link', { name: 'Download registration photo' });
+  await page.getByLabel('Choose a tool photo', { exact: true }).setInputFiles('e2e/fixtures/hammer-drill.jpg');
+  await chooseOption(page, 'Tool model', model.id);
+  await chooseOption(page, 'Home warehouse', fixture.warehouse.id);
+  await page.getByLabel('Asset tag', { exact: true }).fill('PHOTO-003');
+  await page.getByRole('button', { name: 'Add tool', exact: true }).click();
+  // The new tool's record opens on its own after registration.
+  const photo = details(page).getByRole('link', { name: 'View photo', exact: true });
   const href = await photo.getAttribute('href');
   const download = await page.request.get(href!);
   expect(download.status()).toBe(200);

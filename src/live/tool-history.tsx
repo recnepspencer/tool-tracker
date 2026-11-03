@@ -1,127 +1,110 @@
-import { api, errorMessage, type Model } from './client';
-import type { useToolDetailState } from './tools-state';
-import { date, Empty, Field, Form, human, Loading, Notice, Section, text } from './ui';
+import { useId } from 'react';
+import { formatStamp } from './format';
+import { Button, ErrorState, LoadingState, ToolPhoto } from './kit';
+import { photoSrc } from './tool-status';
+import { incidentLabels, timelineEntries } from './tool-detail-timeline';
+import type { ToolDetailState } from './tools-state';
+import './experience/tool-detail-live.css';
 
-type State = ReturnType<typeof useToolDetailState>;
-
-function EvidenceLinks({ companyId, ids, label }: { companyId: string; ids: string[]; label: string }) {
-  return ids.map((id, index) => (
-    <a key={id} href={`/api/companies/${companyId}/files/${id}`}>
-      Download {label} photo {index + 1}
-    </a>
-  ));
-}
-
-export function ToolReports({ state, manages }: { state: Pick<State, 'c' | 'incidents'>; manages: boolean }) {
-  const { c, incidents } = state;
-  const open = incidents.data?.filter((incident) => !incident.resolved_at) ?? [];
-  const resolved = incidents.data?.filter((incident) => incident.resolved_at) ?? [];
+/** Evidence photos as the demo's small matted thumbnails, each opening the full photo. */
+export function EvidenceThumbnails({ companyId, ids, label }: { companyId: string; ids: string[]; label: string }) {
+  if (!ids.length) return null;
   return (
-    <Section title="Open reports">
-      {incidents.isPending && <Loading />}
-      {incidents.error && <Notice error>{errorMessage(incidents.error)}</Notice>}
-      {open.map((incident) => (
-        <article className="tool-history-entry" key={incident.id} aria-label={`${human(incident.kind)} report`}>
-          <ReportRecord companyId={c.company_id} incident={incident} />
-          {manages && incident.kind === 'missing' && (
-            <Form
-              label="Mark found"
-              submit={(form) =>
-                api.POST('/api/companies/{company_id}/incidents/{incident_id}/found', {
-                  params: { path: { ...c.path, incident_id: incident.id } },
-                  body: { expected_revision: incident.revision, note: text(form, 'note') },
-                })
-              }
-            >
-              <Field label="Where was it found?" name="note" required maxLength={2000} />
-            </Form>
-          )}
-        </article>
+    <div className="tool-detail-evidence">
+      {ids.map((id, index) => (
+        <a key={id} href={photoSrc(companyId, id) ?? undefined} target="_blank" rel="noreferrer">
+          <ToolPhoto src={photoSrc(companyId, id)} alt={`${label} photo ${index + 1}`} size="small" />
+        </a>
       ))}
-      {incidents.data && open.length === 0 && <Empty>No open reports.</Empty>}
-      {resolved.length > 0 && (
-        <details className="resolved-reports">
-          <summary>Resolved reports ({resolved.length})</summary>
-          {resolved.map((incident) => (
-            <article
-              className="tool-history-entry"
-              key={incident.id}
-              aria-label={`Resolved ${human(incident.kind)} report`}
-            >
-              <ReportRecord companyId={c.company_id} incident={incident} />
-              <p>{incident.resolution_note}</p>
-              <small>
-                Resolved{incident.resolved_by_name ? ` by ${incident.resolved_by_name}` : ''} ·{' '}
-                {date(incident.resolved_at)}
-              </small>
-            </article>
+    </div>
+  );
+}
+
+/** The demo's CustodyTimeline, fed by custody, service, lifecycle and incident records. */
+export function CustodyTimeline({ state }: { state: ToolDetailState }) {
+  const { c, history, service, lifecycle, incidents, retryHistory } = state;
+  const headingId = useId();
+  const loading = history.isPending || service.isPending || lifecycle.isPending || incidents.isPending;
+  const failed = history.error || service.error || lifecycle.error || incidents.error;
+  if (loading) return <LoadingState label="Loading custody history…" />;
+  if (failed) return <ErrorState message="Custody history could not be loaded." onRetry={retryHistory} />;
+  const events = timelineEntries({
+    custody: history.data ?? [],
+    service: service.data ?? [],
+    lifecycle: lifecycle.data ?? [],
+    incidents: incidents.data ?? [],
+  });
+  return (
+    <section className="detail-timeline" aria-labelledby={headingId}>
+      <div className="detail-section-heading">
+        <span className="eyebrow">Custody record</span>
+        <h3 id={headingId}>Timeline</h3>
+      </div>
+      {events.length ? (
+        <ol>
+          {events.map((event) => (
+            <li key={event.id}>
+              <span className={`activity-dot activity-dot--${event.kind}`} />
+              <div>
+                <strong>{event.action}</strong>
+                {event.note && <p className="tool-detail-note">{event.note}</p>}
+                <EvidenceThumbnails companyId={c.company_id} ids={event.photos} label={event.action} />
+                <span>{event.meta}</span>
+              </div>
+            </li>
           ))}
-        </details>
+        </ol>
+      ) : (
+        <p className="detail-empty">No movement events have been recorded for this unit yet.</p>
       )}
-    </Section>
+    </section>
   );
 }
 
-function ReportRecord({ companyId, incident }: { companyId: string; incident: Model<'IncidentView'> }) {
+/** Open damage and loss reports as a second timeline section, with "Mark found" for managers. */
+export function ToolReports({
+  state,
+  manages,
+  onMarkFound,
+}: {
+  state: ToolDetailState;
+  manages: boolean;
+  onMarkFound(incidentId: string): void;
+}) {
+  const { c, incidents } = state;
+  const headingId = useId();
+  const open = incidents.data?.filter((incident) => !incident.resolved_at) ?? [];
+  if (!open.length) return null;
   return (
-    <>
-      <strong>{human(incident.kind)}</strong>
-      <p>{incident.description}</p>
-      <small>
-        Reported by {incident.reported_by_name} · {date(incident.reported_at)}
-      </small>
-      <EvidenceLinks companyId={companyId} ids={incident.photo_ids} label="report" />
-    </>
-  );
-}
-
-export function ToolHistory({ state }: { state: Pick<State, 'c' | 'history' | 'service' | 'lifecycle'> }) {
-  const { c, history, service, lifecycle } = state;
-  return (
-    <>
-      <Section title="Custody history">
-        {history.isPending && <Loading />}
-        {history.error && <Notice error>{errorMessage(history.error)}</Notice>}
-        {history.data?.map((period) => (
-          <div className="row" key={period.id}>
-            <strong>{period.holder_name}</strong>
-            <span>
-              {date(period.starts_at)} → {date(period.ends_at)}
-            </span>
-          </div>
+    <section className="detail-timeline tool-detail-reports" aria-labelledby={headingId}>
+      <div className="detail-section-heading">
+        <span className="eyebrow">Condition</span>
+        <h3 id={headingId}>Open reports</h3>
+      </div>
+      <ol>
+        {open.map((incident) => (
+          <li key={incident.id} aria-label={incidentLabels[incident.kind]}>
+            <span className="activity-dot activity-dot--flag" />
+            <div>
+              <strong>{incidentLabels[incident.kind]}</strong>
+              <p className="tool-detail-note">{incident.description}</p>
+              <EvidenceThumbnails companyId={c.company_id} ids={incident.photo_ids} label="Report" />
+              <span>
+                {incident.reported_by_name} · {formatStamp(incident.reported_at)}
+              </span>
+            </div>
+            {manages && incident.kind === 'missing' && (
+              <Button
+                variant="secondary"
+                className="tool-detail-report-action"
+                onClick={() => onMarkFound(incident.id)}
+              >
+                Mark found
+              </Button>
+            )}
+          </li>
         ))}
-      </Section>
-      <Section title="Service history">
-        {service.isPending && <Loading />}
-        {service.error && <Notice error>{errorMessage(service.error)}</Notice>}
-        {service.data?.map((event) => (
-          <article className="tool-history-entry" key={event.id}>
-            <strong>{human(event.resulting_serviceability)}</strong>
-            <p>{event.note}</p>
-            <small>
-              Recorded by {event.performed_by_name} · {date(event.occurred_at)}
-            </small>
-            <EvidenceLinks companyId={c.company_id} ids={event.photo_ids} label="service" />
-          </article>
-        ))}
-        {service.data?.length === 0 && <Empty>No service records.</Empty>}
-      </Section>
-      <Section title="Retirement & disposal history">
-        {lifecycle.isPending && <Loading />}
-        {lifecycle.error && <Notice error>{errorMessage(lifecycle.error)}</Notice>}
-        {lifecycle.data?.map((event) => (
-          <article className="tool-history-entry" key={event.id}>
-            <strong>
-              {human(event.from_lifecycle)} → {human(event.to_lifecycle)}
-            </strong>
-            <p>{event.reason}</p>
-            <small>
-              Changed by {event.actor_name} · {date(event.occurred_at)}
-            </small>
-          </article>
-        ))}
-        {lifecycle.data?.length === 0 && <Empty>No retirement or disposal records.</Empty>}
-      </Section>
-    </>
+      </ol>
+    </section>
   );
 }

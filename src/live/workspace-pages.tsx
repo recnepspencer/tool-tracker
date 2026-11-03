@@ -1,139 +1,338 @@
-import { WarehouseAuthority } from './warehouse-authority';
+import { Check, Minus } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { api, errorMessage } from './client';
-import { RecordSheet } from './experience/RecordSheet';
-import { useAccessDirectory, useWarehouseDirectory } from './workspace-pages-state';
-import { Badge, Empty, Field, Form, human, Loading, Notice, Section, text } from './ui';
+import { capabilityRows, LOCKED_RULES } from './access-capabilities';
+import { api, type Model } from './client';
+import { Button, DirectoryToolbar, ErrorState, LoadingState, OverlayDialog, PageHeading, SurfaceCard } from './kit';
+import { ROLE_LABELS, ROLE_SHORT, ROLES } from './people-roles';
+import { CommandError, CommandForm } from './settings-command';
+import { Field, text } from './ui';
+import { WarehouseAuthority } from './warehouse-authority';
+import { useAccessDirectory, useWarehouseDirectory, type WarehouseDirectory } from './workspace-pages-state';
+import './experience/access-matrix.css';
+
+type Warehouse = Model<'WarehouseView'>;
+type WarehouseTab = 'active' | 'archived';
+
+const WAREHOUSE_TABS: { value: WarehouseTab; label: string }[] = [
+  { value: 'active', label: 'Active' },
+  { value: 'archived', label: 'Archived' },
+];
+
+function managerSummary(warehouse: Warehouse) {
+  if (!warehouse.managers.length) return { name: 'Equipment managers', detail: 'Company-wide' };
+  const [first, ...rest] = warehouse.managers;
+  return {
+    name: rest.length ? `${first.name} +${rest.length}` : first.name,
+    detail: rest.length ? `${warehouse.managers.length} warehouse managers` : 'Warehouse manager',
+  };
+}
 
 export function WarehousesPage() {
-  const { c, warehouses, selected, select, creating, archived, setArchived } = useWarehouseDirectory();
+  const state = useWarehouseDirectory();
+  const { c, warehouses, rows, selected, creating, archived } = state;
+  const manages = c.can('warehouses.manage');
+  if (warehouses.isPending && !warehouses.data) return <LoadingState label="Loading warehouses…" />;
+  if (!warehouses.data)
+    return (
+      <ErrorState message="The warehouse directory could not be loaded." onRetry={() => void warehouses.refetch()} />
+    );
   return (
-    <>
-      <header className="page-heading">
-        <div>
-          <h1>Warehouses</h1>
-          <p>Locations, stock, and warehouse authority.</p>
-        </div>
-        <button className="button primary" onClick={() => select('new')}>
-          Add warehouse
-        </button>
-      </header>
-      {warehouses.isPending && <Loading />}
-      {warehouses.error && <Notice error>{errorMessage(warehouses.error)}</Notice>}
-      <label className="check">
-        <input type="checkbox" checked={archived} onChange={(event) => setArchived(event.target.checked)} />
-        Show archived warehouses
-      </label>
-      {creating && (
-        <RecordSheet title="Add warehouse" onClose={() => select('')}>
-          <h1>Add warehouse</h1>
-          <Form
-            label="Create warehouse"
-            onDone={() => select('')}
-            submit={(f) =>
-              api.POST('/api/companies/{company_id}/warehouses', {
-                params: { path: c.path },
-                body: { code: text(f, 'code'), name: text(f, 'name'), address: text(f, 'address') },
-              })
-            }
-          >
-            <Field label="Code" name="code" required maxLength={40} />
-            <Field label="Name" name="name" required maxLength={200} />
-            <Field label="Address" name="address" maxLength={2000} />
-          </Form>
-        </RecordSheet>
+    <div className="page-content">
+      <PageHeading
+        eyebrow="Admin view · Warehouses"
+        title="Warehouses"
+        description="Manage custody locations and the people responsible for them."
+        action={manages ? <Button onClick={() => state.select('new')}>Add warehouse</Button> : undefined}
+      />
+      {warehouses.isError && (
+        <ErrorState
+          message="The warehouse directory could not be refreshed."
+          onRetry={() => void warehouses.refetch()}
+        />
       )}
-      <div className="inventory-card">
-        <table className="inventory-table">
-          <thead>
-            <tr>
-              <th>Warehouse</th>
-              <th>Code</th>
-              <th>Status</th>
-              <th>Address</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {warehouses.data?.map((item) => (
-              <tr key={item.id}>
-                <td>
-                  <button onClick={() => select(item.id)}>{item.name}</button>
-                </td>
-                <td>{item.code}</td>
-                <td>
-                  <Badge>{item.archived_at ? 'Archived' : 'Active'}</Badge>
-                </td>
-                <td>{item.address || '—'}</td>
-                <td>
-                  <button onClick={() => select(item.id)}>Open</button>
-                </td>
+      {state.assets.isError && (
+        <ErrorState message="Custody counts could not be loaded." onRetry={() => void state.assets.refetch()} />
+      )}
+      <DirectoryToolbar<WarehouseTab>
+        searchLabel="Search warehouses"
+        searchPlaceholder="Search warehouses…"
+        search={state.search}
+        onSearchChange={state.setSearch}
+        filterLabel="Warehouse status"
+        filters={WAREHOUSE_TABS}
+        activeFilter={archived ? 'archived' : 'active'}
+        onFilterChange={(value) => state.setArchived(value === 'archived')}
+      />
+      <SurfaceCard className="admin-table-card">
+        <div className="admin-table-wrap">
+          <table className="admin-table admin-table--responsive directory-table warehouses-table">
+            <thead>
+              <tr>
+                <th>Warehouse</th>
+                <th>Manager</th>
+                <th>Status</th>
+                <th>Custody</th>
+                <th />
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {warehouses.data?.length === 0 && <Empty>No warehouses yet.</Empty>}
-      {selected && (
-        <RecordSheet title="Warehouse details" onClose={() => select('')}>
-          <h1>{selected.name}</h1>
-          <Section title="Warehouse information">
-            <Form
-              label="Save warehouse"
-              onDone={() => select('')}
-              submit={(f) =>
-                api.POST('/api/companies/{company_id}/warehouses/{warehouse_id}/update', {
-                  params: { path: { ...c.path, warehouse_id: selected.id } },
-                  body: {
-                    expected_revision: selected.revision,
-                    name: text(f, 'name'),
-                    address: text(f, 'address'),
-                    archived: f.get('archive') === 'on',
-                  },
-                })
-              }
-            >
-              <Field name="name" label="Name" defaultValue={selected.name} required />
-              <Field name="address" label="Address" defaultValue={selected.address} />
-              <label className="check">
-                <input type="checkbox" name="archive" defaultChecked={!!selected.archived_at} />
-                Archived
-              </label>
-            </Form>
-          </Section>
-          <WarehouseAuthority warehouse={selected} />
-          <Link to={`/app/tools?warehouse=${selected.id}`}>View inventory</Link>
-        </RecordSheet>
-      )}
-    </>
+            </thead>
+            <tbody>
+              {rows.map((warehouse) => {
+                const manager = managerSummary(warehouse);
+                const custody = state.custody(warehouse.id);
+                const counts = custody ? `${custody.stock} in stock · ${custody.out} checked out` : '';
+                return (
+                  <tr key={warehouse.id}>
+                    <td data-label="Warehouse">
+                      <button className="admin-record-button" type="button" onClick={() => state.select(warehouse.id)}>
+                        {warehouse.name}
+                      </button>
+                      <span>{[warehouse.code, warehouse.address].filter(Boolean).join(' · ')}</span>
+                      <span className="warehouses-table__mobile-meta">
+                        {manager.name}
+                        {counts ? ` · ${counts}` : ''}
+                      </span>
+                    </td>
+                    <td className="directory-table__mobile-hide" data-label="Manager">
+                      {manager.name}
+                      <span>{manager.detail}</span>
+                    </td>
+                    <td className="directory-table__status" data-label="Status">
+                      {warehouse.archived_at ? (
+                        <span className="lifecycle-pill lifecycle-pill--removed">Archived</span>
+                      ) : (
+                        <span className="lifecycle-pill lifecycle-pill--active">Active</span>
+                      )}
+                    </td>
+                    <td className="directory-table__mobile-hide" data-label="Custody">
+                      {custody ? (
+                        <>
+                          {custody.stock} in stock
+                          <span>{custody.out} checked out</span>
+                        </>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td className="directory-table__actions" data-label="Actions">
+                      <Button
+                        variant="ghost"
+                        onClick={() => state.select(warehouse.id)}
+                        aria-label={`Open ${warehouse.name}`}
+                      >
+                        Open
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {!rows.length && (
+          <p className="admin-empty">
+            {warehouses.data.length
+              ? 'No warehouses match this search.'
+              : archived
+                ? 'No archived warehouses.'
+                : 'No warehouses are configured.'}
+          </p>
+        )}
+      </SurfaceCard>
+      {manages && creating && <WarehouseDialog state={state} />}
+      {selected && !state.confirmingArchive && <WarehouseDialog key={selected.id} warehouse={selected} state={state} />}
+      {selected && state.confirmingArchive && <ArchiveWarehouseDialog warehouse={selected} state={state} />}
+    </div>
   );
 }
+
+function WarehouseDialog({ warehouse, state }: { warehouse?: Warehouse; state: WarehouseDirectory }) {
+  const { c } = state;
+  const manages = c.can('warehouses.manage');
+  const close = () => state.select('');
+  return (
+    <OverlayDialog
+      label={warehouse ? 'Edit warehouse' : 'Create warehouse'}
+      onClose={close}
+      panelClassName="admin-dialog"
+      showCloseButton
+    >
+      <div className="dialog-heading">
+        <span className="eyebrow">Warehouses</span>
+        <h2>{warehouse ? (manages ? 'Edit warehouse' : warehouse.name) : 'Add a warehouse'}</h2>
+        {warehouse && <p>{warehouse.code}</p>}
+      </div>
+      {manages && (
+        <CommandForm
+          label="Save warehouse"
+          onCancel={close}
+          onDone={close}
+          submit={(form) =>
+            warehouse
+              ? api.POST('/api/companies/{company_id}/warehouses/{warehouse_id}/update', {
+                  params: { path: { ...c.path, warehouse_id: warehouse.id } },
+                  body: {
+                    expected_revision: warehouse.revision,
+                    name: text(form, 'name'),
+                    address: text(form, 'address'),
+                    archived: Boolean(warehouse.archived_at),
+                  },
+                })
+              : api.POST('/api/companies/{company_id}/warehouses', {
+                  params: { path: c.path },
+                  body: { code: text(form, 'code'), name: text(form, 'name'), address: text(form, 'address') },
+                })
+          }
+        >
+          {!warehouse && <Field label="Code" name="code" required maxLength={40} />}
+          <Field label="Name" name="name" defaultValue={warehouse?.name} required maxLength={200} />
+          <Field label="Address" name="address" defaultValue={warehouse?.address} maxLength={2000} />
+        </CommandForm>
+      )}
+      {warehouse && !manages && (
+        <div className="admin-detail-list">
+          <span className="eyebrow">Address</span>
+          <span>{warehouse.address || 'No address recorded.'}</span>
+        </div>
+      )}
+      {warehouse && <WarehouseAuthority warehouse={warehouse} />}
+      {warehouse && manages && (
+        <div className="admin-danger-zone">
+          <span className="eyebrow">Warehouse status</span>
+          {warehouse.archived_at ? (
+            <Button
+              variant="secondary"
+              disabled={state.archive.busy}
+              onClick={() => state.setWarehouseArchived(warehouse, false)}
+            >
+              {state.archive.busy ? 'Restoring…' : 'Restore warehouse'}
+            </Button>
+          ) : (
+            <Button variant="secondary" onClick={state.startArchive}>
+              Archive warehouse
+            </Button>
+          )}
+          <CommandError error={state.archive.error} />
+        </div>
+      )}
+      {warehouse && c.can('tools.read') && (
+        <Link className="text-link" to={`/app/tools?warehouse=${warehouse.id}`}>
+          View inventory
+        </Link>
+      )}
+    </OverlayDialog>
+  );
+}
+
+function ArchiveWarehouseDialog({ warehouse, state }: { warehouse: Warehouse; state: WarehouseDirectory }) {
+  const { archive } = state;
+  return (
+    <OverlayDialog
+      label="Archive warehouse"
+      onClose={() => !archive.busy && state.cancelArchive()}
+      panelClassName="admin-dialog"
+      showCloseButton
+    >
+      <div className="dialog-heading">
+        <span className="eyebrow">Warehouses</span>
+        <h2>Archive {warehouse.name}?</h2>
+        <p>Archived warehouses stay in custody history. Restore it to receive stock or add managers again.</p>
+      </div>
+      <CommandError error={archive.error} />
+      <div className="dialog-actions">
+        <Button variant="ghost" onClick={state.cancelArchive} disabled={archive.busy}>
+          Cancel
+        </Button>
+        <Button variant="danger" onClick={() => state.setWarehouseArchived(warehouse, true)} disabled={archive.busy}>
+          {archive.busy ? 'Archiving…' : 'Archive warehouse'}
+        </Button>
+      </div>
+    </OverlayDialog>
+  );
+}
+
 export function AccessPage() {
   const { access } = useAccessDirectory();
+  if (access.isPending && !access.data) return <LoadingState label="Loading permissions…" />;
+  if (!access.data)
+    return <ErrorState message="The permission matrix could not be loaded." onRetry={() => void access.refetch()} />;
+  const known = new Set<string>(ROLES);
+  const roles = [
+    ...ROLES.map((role) => access.data.find((entry) => entry.role === role)).filter((entry) => entry !== undefined),
+    ...access.data.filter((entry) => !known.has(entry.role)),
+  ];
+  const label = (role: string) => (ROLE_LABELS as Record<string, string>)[role] ?? role;
+  const short = (role: string) => (ROLE_SHORT as Record<string, string>)[role] ?? role.slice(0, 1).toUpperCase();
+  const rows = capabilityRows(roles.flatMap((role) => role.capabilities));
   return (
-    <>
-      <header className="page-heading">
-        <div>
-          <h1>Access</h1>
-          <p>Company roles and the capabilities each role grants.</p>
-        </div>
-        <Link className="button" to="/app/people">
-          Manage people
-        </Link>
-      </header>
-      {access.isPending && <Loading />}
-      {access.error && <Notice error>{errorMessage(access.error)}</Notice>}
-      {access.data?.map((role) => (
-        <Section title={human(role.role)} key={role.role}>
-          <div className="capability-list">
-            {role.capabilities.map((capability) => (
-              <span className="badge" key={capability}>
-                {human(capability.replaceAll('.', ' '))}
+    <div className="page-content">
+      <PageHeading
+        eyebrow="Admin view · Permissions"
+        title="Access guide"
+        description="See what each role can do in this workspace. Access changes are managed from People."
+        action={
+          <Link className="button button--secondary" to="/app/people">
+            Manage people
+          </Link>
+        }
+      />
+      {access.isError && (
+        <ErrorState message="The permission matrix could not be refreshed." onRetry={() => void access.refetch()} />
+      )}
+      <SurfaceCard className="permission-matrix-card">
+        <div className="permission-matrix access-matrix" role="table" aria-label="Role access matrix">
+          <div className="permission-matrix__row permission-matrix__header" role="row">
+            <span role="columnheader">Capability</span>
+            {roles.map((role) => (
+              <span role="columnheader" title={label(role.role)} key={role.role}>
+                <span className="permission-role-full">{label(role.role)}</span>
+                <span className="permission-role-short" aria-hidden="true">
+                  {short(role.role)}
+                </span>
               </span>
             ))}
           </div>
-        </Section>
-      ))}
-    </>
+          {rows.map((row) => (
+            <div className="permission-matrix__row" role="row" key={row.capability}>
+              <span role="rowheader">
+                <strong>{row.label}</strong>
+                {row.description && <small>{row.description}</small>}
+              </span>
+              {roles.map((role) => {
+                const granted = role.capabilities.includes(row.capability);
+                return (
+                  <span
+                    className={granted ? 'permission-cell permission-cell--granted' : 'permission-cell'}
+                    role="cell"
+                    aria-label={`${label(role.role)}: ${granted ? 'Allowed' : 'Not allowed'}`}
+                    key={role.role}
+                  >
+                    {granted ? <Check aria-hidden="true" /> : <Minus aria-hidden="true" />}
+                  </span>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </SurfaceCard>
+      <p className="permission-legend">
+        {roles.map((role) => `${short(role.role)} · ${label(role.role)}`).join('   ')}
+      </p>
+      <SurfaceCard className="permission-rules-card">
+        <div className="permission-rules-heading">
+          <div>
+            <span className="eyebrow">Structural policy</span>
+            <h2>Locked rules</h2>
+          </div>
+        </div>
+        <ul className="permission-rules-list" aria-label="Locked structural rules">
+          {LOCKED_RULES.map((rule) => (
+            <li key={rule.id}>
+              <strong>{rule.label}</strong>
+              <p>{rule.description}</p>
+            </li>
+          ))}
+        </ul>
+      </SurfaceCard>
+    </div>
   );
 }

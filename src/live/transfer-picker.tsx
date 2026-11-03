@@ -1,82 +1,78 @@
-import { Users, Warehouse } from 'lucide-react';
-import { Field } from './ui';
-import { useTransferPicker } from './tools-state';
+import type { Model } from './client';
+import { SelectField } from './kit';
+import type { TransferMode, useTransferPicker } from './tools-state';
 
-export type TransferTarget = { value: string; kind: 'person' | 'warehouse'; name: string; detail: string };
-export function TransferPicker({
-  targets,
+export type TransferCandidates = { people: Model<'MemberView'>[]; warehouses: Model<'WarehouseView'>[] };
+export type TransferTarget = { value: string; kind: TransferMode; name: string };
+
+/** Resolves the picker's `person:<id>` / `warehouse:<id>` value to its destination. */
+export function selectedTransferTarget(candidates: TransferCandidates, value: string): TransferTarget | null {
+  const [kind, id] = value.split(':');
+  if (kind === 'person') {
+    const person = candidates.people.find((candidate) => candidate.id === id);
+    return person ? { value, kind, name: person.preferred_name } : null;
+  }
+  if (kind === 'warehouse') {
+    const warehouse = candidates.warehouses.find((candidate) => candidate.id === id);
+    return warehouse ? { value, kind, name: warehouse.name } : null;
+  }
+  return null;
+}
+
+/** The demo's TransferDestinationPicker: "Send to", then a Person or Warehouse. Submits `destination`. */
+export function TransferDestinationPicker({
+  candidates,
   picker,
+  presentation = 'sheet',
 }: {
-  targets: TransferTarget[];
+  candidates: TransferCandidates;
   picker: ReturnType<typeof useTransferPicker>;
+  presentation?: 'popover' | 'sheet';
 }) {
-  const selected = targets.find((target) => target.value === picker.selected);
+  const { people, warehouses } = candidates;
+  const modeOptions = [
+    { value: 'warehouse', label: 'Back to a warehouse', description: 'Returns to stock, claimable by anyone' },
+    ...(people.length
+      ? [{ value: 'person', label: 'To a person', description: 'Stays pending until they accept' }]
+      : []),
+  ];
+  const destinationOptions =
+    picker.mode === 'person'
+      ? people.map((person) => ({
+          value: `person:${person.id}`,
+          label: person.preferred_name,
+          ...(person.title ? { description: person.title } : {}),
+        }))
+      : warehouses.map((warehouse) => ({
+          value: `warehouse:${warehouse.id}`,
+          label: warehouse.name,
+          description: 'Warehouse · returns to available stock',
+        }));
   return (
-    <div className="transfer-picker">
-      <input type="hidden" name="destination" value={selected?.value ?? ''} />
-      {selected ? (
-        <div className="transfer-selected">
-          <div>
-            <strong>{selected.name}</strong>
-            <p className="muted">{selected.detail}</p>
-          </div>
-          <button type="button" onClick={picker.change}>
-            Change destination
-          </button>
-        </div>
-      ) : (
-        <>
-          <div className="transfer-modes" role="group" aria-label="Destination type">
-            <button type="button" aria-pressed={picker.mode === 'person'} onClick={() => picker.setMode('person')}>
-              <Users size={20} />
-              Person
-            </button>
-            <button
-              type="button"
-              aria-pressed={picker.mode === 'warehouse'}
-              onClick={() => picker.setMode('warehouse')}
-            >
-              <Warehouse size={20} />
-              Warehouse
-            </button>
-          </div>
-          <Field
-            label="Search destinations"
-            type="search"
-            value={picker.search}
-            onChange={(event) => picker.setSearch(event.target.value)}
-          />
-          <div className="transfer-options" role="radiogroup" aria-label="Send to">
-            {targets
-              .filter(
-                (target) =>
-                  target.kind === picker.mode &&
-                  `${target.name} ${target.detail}`.toLowerCase().includes(picker.search.toLowerCase()),
-              )
-              .map((target) => (
-                <label className="transfer-option" key={target.value}>
-                  <input
-                    type="radio"
-                    name="target-choice"
-                    aria-label={target.name}
-                    value={target.value}
-                    checked={picker.selected === target.value}
-                    onChange={() => picker.select(target.value)}
-                  />
-                  <div>
-                    <strong>{target.name}</strong>
-                    <small>{target.detail}</small>
-                  </div>
-                </label>
-              ))}
-            {!targets.some(
-              (target) =>
-                target.kind === picker.mode &&
-                `${target.name} ${target.detail}`.toLowerCase().includes(picker.search.toLowerCase()),
-            ) && <p className="muted">No eligible destinations match.</p>}
-          </div>
-        </>
-      )}
+    <div className="transfer-destination-picker">
+      <SelectField
+        label="Send to"
+        value={picker.mode ?? ''}
+        onChange={(value) => picker.setMode(value ? (value as TransferMode) : null)}
+        options={modeOptions}
+        placeholder="Choose a destination type"
+        searchable={false}
+        presentation={presentation}
+      />
+      {picker.mode ? (
+        <SelectField
+          label={picker.mode === 'person' ? 'Person' : 'Warehouse'}
+          name="destination"
+          required
+          value={picker.target}
+          onChange={picker.setTarget}
+          options={destinationOptions}
+          placeholder={picker.mode === 'person' ? 'Choose a person' : 'Choose a warehouse'}
+          emptyMessage={picker.mode === 'person' ? 'No matching people' : 'No warehouses found'}
+          searchable={picker.mode === 'person'}
+          presentation={presentation}
+        />
+      ) : null}
     </div>
   );
 }

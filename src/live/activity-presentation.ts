@@ -1,3 +1,6 @@
+import type { ActivityRow } from './activity-state';
+import { formatDate, sentence } from './format';
+
 const titles: Record<string, string> = {
   'companies.company.created': 'Company created',
   'companies.company.updated': 'Company profile updated',
@@ -43,4 +46,57 @@ const titles: Record<string, string> = {
   'work.participation.withdrawn': 'Job participation withdrawn',
 };
 
-export const activityTitle = (key: string) => titles[key] ?? key.split('.').slice(1).join(' ').replaceAll('_', ' ');
+/** Unknown keys fall back to sentence case rather than raw lowercase words. */
+export const activityTitle = (key: string) => titles[key] ?? sentence(key.split('.').slice(1).join(' '));
+
+/** The demo's activity kinds. The groups mirror the server's `kind` filter. */
+export type ActivityKind = 'custody' | 'request' | 'flag' | 'admin';
+
+export function activityKind(key: string): ActivityKind {
+  if (key.startsWith('equipment.handoff.') || key.startsWith('equipment.reconciliation.')) return 'custody';
+  if (key === 'equipment.tool.requested' || key.startsWith('equipment.request.')) return 'request';
+  if (key.startsWith('equipment.incident.') || key === 'equipment.asset.serviced') return 'flag';
+  if (key.startsWith('equipment.asset.lifecycle')) return 'flag';
+  return 'admin';
+}
+
+/** Worker feed tag copy (demo `ActivityFeed.activityLabel`). */
+export const activityTag: Record<ActivityKind, string> = {
+  request: 'Request',
+  flag: 'Condition',
+  custody: 'Custody',
+  admin: 'Record',
+};
+
+/** Groups newest-first events by calendar day, keeping server order inside each day. */
+export function groupByDay<T extends { occurred_at: string }>(items: T[], label = formatDate) {
+  const groups = new Map<string, T[]>();
+  for (const item of items) {
+    const day = label(item.occurred_at);
+    groups.set(day, [...(groups.get(day) ?? []), item]);
+  }
+  return [...groups.entries()].map(([day, events]) => ({ label: day, items: events }));
+}
+
+/** Text metadata value, or undefined. */
+export const metaText = (metadata: Record<string, unknown>, key: string) =>
+  typeof metadata[key] === 'string' && metadata[key] ? (metadata[key] as string) : undefined;
+
+/** Demo "Export log": the loaded audit rows as CSV. */
+export function exportAuditLog(rows: ActivityRow[]) {
+  const quote = (value: string) => `"${value.replaceAll('"', '""')}"`;
+  const lines = rows.map((row) =>
+    [row.occurredAt, row.actor, row.action, row.toolName ?? '', row.unit ?? '', row.warehouseName ?? '', row.kind]
+      .map(quote)
+      .join(','),
+  );
+  const blob = new Blob([['Timestamp,Actor,Action,Tool,Unit,Warehouse,Kind', ...lines].join('\n')], {
+    type: 'text/csv',
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'nelson-electric-audit.csv';
+  link.click();
+  URL.revokeObjectURL(url);
+}

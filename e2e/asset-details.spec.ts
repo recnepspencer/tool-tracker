@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { command, invitedMember, workspace } from './support';
+import { expect } from '@playwright/test';
+import { command, invitedMember, workspace, chooseOption, test } from './support';
 
 for (const role of ['company_admin', 'equipment_manager', 'field_member'])
   test(`${role} registers purchase details for one physical tool and a manager can edit or clear them`, async ({
@@ -18,29 +18,36 @@ for (const role of ['company_admin', 'equipment_manager', 'field_member'])
     const actor = role === 'company_admin' ? page : await context.newPage();
     try {
       if (actor !== page) await invitedMember(page, actor, fixture.base, role);
-      await actor.goto('/app/tools/new');
+      // Field crew add tools from My tools; managers from the inventory.
+      const root = role === 'field_member' ? '/app/mine' : '/app/tools';
+      await actor.goto(`${root}/new`);
       const sheet = actor.getByRole('dialog', { name: 'Add a tool', exact: true });
       await sheet.getByRole('button', { name: 'Continue without a photo' }).click();
-      await sheet.getByLabel('Tool model').selectOption(fixture.asset.tool_model_id);
-      await sheet.getByLabel('Starting warehouse').selectOption(fixture.warehouse.id);
-      await sheet.getByLabel('Unique asset tag').fill('PURCHASE-003');
-      await sheet.getByText('Serial, price & notes', { exact: true }).click();
+      await chooseOption(sheet, 'Tool model', fixture.asset.tool_model_id);
+      await chooseOption(sheet, 'Home warehouse', fixture.warehouse.id);
+      await sheet.getByLabel('Asset tag', { exact: true }).fill('PURCHASE-003');
+      await sheet.getByRole('button', { name: 'Serial, price, notes', exact: true }).click();
       await sheet.getByLabel('Serial number', { exact: true }).fill('SERIAL-003');
       await sheet.getByLabel('Purchase price', { exact: true }).fill('249.95');
       await sheet.getByLabel('Currency', { exact: true }).fill('usd');
       await sheet.getByLabel('Purchase date', { exact: true }).fill('2026-04-12');
       await sheet.getByLabel('Notes', { exact: true }).fill('Two batteries included.\nKeep the case with this tool.');
-      await sheet.getByRole('button', { name: 'Change photo', exact: true }).click();
+      // Going back to the photo step keeps the details already typed.
+      await sheet.getByRole('button', { name: 'Retake', exact: false }).click();
       await sheet.getByRole('button', { name: 'Continue without a photo' }).click();
       await expect(sheet.getByLabel('Purchase price', { exact: true })).toHaveValue('249.95');
       await expect(sheet.getByLabel('Notes', { exact: true })).toHaveValue(
         'Two batteries included.\nKeep the case with this tool.',
       );
-      await sheet.getByRole('button', { name: 'Register tool', exact: true }).click();
-      await sheet.getByRole('link', { name: 'Open its custody record' }).click();
-      const tool = actor.getByRole('dialog', { name: 'Tool details', exact: true });
+      await sheet.getByRole('button', { name: 'Add tool', exact: true }).click();
+      // The wizard closes onto the new tool's record.
+      await expect(sheet).toHaveCount(0);
+      const tool = actor.getByRole('dialog', {
+        name: role === 'field_member' ? 'Tool details' : 'Hammer drill details',
+        exact: true,
+      });
       await expect(tool.getByText('$249.95', { exact: true })).toBeVisible();
-      await expect(tool.getByText('2026-04-12', { exact: true })).toBeVisible();
+      await expect(tool.getByText('Apr 12, 2026', { exact: true })).toBeVisible();
       await expect(
         tool.getByText('Two batteries included.\nKeep the case with this tool.', { exact: true }),
       ).toBeVisible();
@@ -60,35 +67,35 @@ for (const role of ['company_admin', 'equipment_manager', 'field_member'])
       );
       const manager = role === 'field_member' ? page : actor;
       if (role === 'field_member') {
-        await expect(tool.getByRole('button', { name: 'Manage this tool', exact: true })).toHaveCount(0);
+        await expect(tool.getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0);
         await manager.goto(`/app/tools/${created.id}`);
       }
-      const managerTool = manager.getByRole('dialog', { name: 'Tool details', exact: true });
-      await managerTool.getByRole('button', { name: 'Manage this tool', exact: true }).click();
-      const details = managerTool.getByRole('region', { name: 'Asset information', exact: true });
-      await expect(details.getByLabel('Purchase price', { exact: true })).toHaveValue('249.95');
-      await details.getByLabel('Purchase price', { exact: true }).fill('0');
-      await details.getByLabel('Currency', { exact: true }).fill('CAD');
-      await details.getByLabel('Notes', { exact: true }).fill('Warranty replacement.');
-      await details.getByRole('button', { name: 'Save tool details', exact: true }).click();
-      await expect(details.getByRole('status')).toBeVisible();
+      const managerTool = manager.getByRole('dialog', { name: 'Hammer drill details', exact: true });
+      const edit = manager.getByRole('dialog', { name: 'Edit Hammer drill', exact: true });
+      await managerTool.getByRole('button', { name: 'Edit', exact: true }).click();
+      await expect(edit.getByLabel('Purchase price', { exact: true })).toHaveValue('249.95');
+      await edit.getByLabel('Purchase price', { exact: true }).fill('0');
+      await edit.getByLabel('Currency', { exact: true }).fill('CAD');
+      await edit.getByLabel('Notes', { exact: true }).fill('Warranty replacement.');
+      await edit.getByRole('button', { name: 'Save changes', exact: true }).click();
+      await expect(edit).toHaveCount(0);
       await expect(managerTool.getByText('CA$0.00', { exact: true })).toBeVisible();
       await manager.reload();
-      await expect(details.getByLabel('Purchase price', { exact: true })).toHaveValue('0.00');
-      await expect(details.getByLabel('Notes', { exact: true })).toHaveValue('Warranty replacement.');
+      await managerTool.getByRole('button', { name: 'Edit', exact: true }).click();
+      await expect(edit.getByLabel('Purchase price', { exact: true })).toHaveValue('0.00');
+      await expect(edit.getByLabel('Notes', { exact: true })).toHaveValue('Warranty replacement.');
       if (role === 'field_member') {
-        await details.scrollIntoViewIfNeeded();
         await manager.screenshot({ path: 'artifacts/asset-purchase-details-desktop.png', fullPage: true });
         await actor.reload();
         await expect(tool.getByText('CA$0.00', { exact: true })).toBeVisible();
         await tool.getByText('Warranty replacement.', { exact: true }).scrollIntoViewIfNeeded();
         await actor.screenshot({ path: 'artifacts/asset-purchase-details-mobile.png', fullPage: true });
       }
-      await details.getByLabel('Purchase price', { exact: true }).fill('');
-      await details.getByLabel('Purchase date', { exact: true }).fill('');
-      await details.getByLabel('Notes', { exact: true }).fill('');
-      await details.getByRole('button', { name: 'Save tool details', exact: true }).click();
-      await expect(details.getByRole('status')).toBeVisible();
+      await edit.getByLabel('Purchase price', { exact: true }).fill('');
+      await edit.getByLabel('Purchase date', { exact: true }).fill('');
+      await edit.getByLabel('Notes', { exact: true }).fill('');
+      await edit.getByRole('button', { name: 'Save changes', exact: true }).click();
+      await expect(edit).toHaveCount(0);
       await expect(managerTool.getByText('CA$0.00', { exact: true })).toHaveCount(0);
       const final = await (await page.request.get(`${fixture.base}/tools/${created.id}`)).json();
       expect(final).toMatchObject({

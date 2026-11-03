@@ -1,0 +1,62 @@
+.experience *,
+.experience *::before,
+.experience *::after {
+  box-sizing: border-box;
+}
+.experience,
+.experience body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+.experience body {
+  margin: 0;
+}
+.experience .skip-link {
+  background: var(--card);
+  border-radius: var(--radius-field);
+  color: var(--ink);
+  left: var(--space-16);
+  padding: var(--space-12) var(--space-16);
+  position: fixed;
+  top: calc(var(--space-120) * -1);
+  z-index: var(--z-popover);
+}
+.experience .skip-link:focus {
+  top: var(--space-16);
+}
+/* Element resets keep the demo's element-only specificity so component classes still win. */
+:where(.experience) button,
+:where(.experience) input,
+:where(.experience) textarea,
+:where(.experience) select {
+  font: inherit;
+}
+:where(.experience) button,
+:where(.experience) a {
+  -webkit-tap-highlight-color: transparent;
+}
+:where(.experience) a {
+  color: inherit;
+}
+@media (prefers-reduced-motion: reduce) {
+  .experience *,
+  .experience *::before,
+  .experience *::after {
+    animation-duration: var(--duration-none) !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: var(--duration-none) !important;
+  }
+}
+.visually-hidden {
+  height: var(--space-1);
+  margin: calc(var(--space-1) * -1);
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: var(--space-1);
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

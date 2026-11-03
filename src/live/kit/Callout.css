@@ -1,0 +1,46 @@
+.callout {
+  align-items: center;
+  border: var(--border-width) solid var(--blue-border-muted);
+  border-radius: var(--radius-card);
+  display: flex;
+  gap: var(--space-22);
+  justify-content: space-between;
+  margin-top: var(--space-44);
+  overflow: hidden;
+  padding: var(--space-24) var(--space-26);
+}
+.callout--blue {
+  background: linear-gradient(105deg, var(--blue-wash), var(--card) var(--gradient-mid));
+}
+.callout--amber {
+  background: linear-gradient(105deg, var(--amber-wash), var(--card) var(--gradient-mid));
+  border-color: var(--amber-border-soft);
+}
+.callout h2 {
+  font-size: var(--text-4xl);
+  letter-spacing: var(--tracking-heading);
+  margin: var(--space-8) 0 0;
+}
+.callout p {
+  color: var(--muted);
+  font-size: var(--text-body);
+  line-height: var(--leading-relaxed);
+  margin: var(--space-9) 0 0;
+  max-width: var(--space-680);
+}
+.callout-mark {
+  color: var(--blue);
+  font: var(--weight-medium) var(--text-metric) / var(--leading-none) var(--font-mono);
+  opacity: var(--opacity-mark);
+}
+.callout--amber .callout-mark {
+  color: var(--amber);
+}
+@media (max-width: 620px) {
+  .callout {
+    padding: var(--space-20);
+  }
+  .callout-mark {
+    font-size: var(--text-8xl);
+  }
+}

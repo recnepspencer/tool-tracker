@@ -1,216 +1,140 @@
-import { RecordSheet } from './experience/RecordSheet';
 import { Suspense } from 'react';
-import { Link, NavLink, Outlet } from 'react-router-dom';
-import {
-  Activity,
-  Boxes,
-  BriefcaseBusiness,
-  ClipboardList,
-  Menu,
-  Moon,
-  PackageCheck,
-  Plus,
-  Settings,
-  ShieldCheck,
-  Sun,
-  TriangleAlert,
-  Users,
-  Warehouse,
-  Wrench,
-  X,
-} from 'lucide-react';
-import { useCompany, useSession } from './session';
-import { Form, Loading } from './ui';
-import { useShellNavigation } from './shell-state';
-import './experience/tokens.css';
-import './experience/shell.css';
-import './experience/WorkerRoleShell.css';
+import { Link, Outlet } from 'react-router-dom';
+import { Menu } from 'lucide-react';
+import { LoadingState } from './kit';
+import { useCompany } from './session';
+import { AccountMenu, AccountSheet } from './shell-account';
+import { BrandMark, ShellNavigationDrawer, ShellNavItems, ThemeToggle } from './shell-chrome';
+import { useShellAccount, useShellDestinations, useShellNavigation } from './shell-state';
+// Stylesheets follow the demo's cascade order: equal-specificity ties resolve the same way.
+import './kit';
+import './experience/account.css';
+import './experience/tool-detail.css';
+import './experience/activity-indicator.css';
+import './experience/custody.css';
 import './experience/worker.css';
 import './experience/catalog.css';
-import './experience/admin.css';
-import './experience/admin-operations.css';
+import './experience/activity.css';
 import './experience/admin-people.css';
+import './experience/permissions.css';
 import './experience/admin-warehouses.css';
-import './experience/tool-detail.css';
-import './experience/bridge.css';
+import './experience/admin-operations.css';
+import './experience/admin-activity.css';
 import './experience/jobs.css';
+import './experience/admin-settings.css';
+import './experience/account-menu.css';
+import './experience/theme-toggle.css';
+import './experience/WorkerRoleShell.css';
+import './experience/add-tool.css';
+import './experience/shell.css';
+import './experience/admin.css';
 
 export function Shell() {
-  const { session, chooseCompany, logout, refresh } = useSession();
   const c = useCompany();
-  const { menu, setMenu, theme, toggleTheme, accountOpen, setAccountOpen, navigationRef, navigateHome, canRegister } =
-    useShellNavigation();
-  const control =
-    c.can('tools.manage') || c.can('people.manage') || c.can('jobs.manage') || c.managed_warehouse_ids.length > 0;
-  const destinations = control
-    ? ([
-        ['Queue', '/app/operations', ClipboardList, c.can('tools.read')],
-        ['Inventory', '/app/tools', Boxes, c.can('tools.read')],
-        ['Damaged & lost', '/app/flagged', TriangleAlert, c.can('tools.read')],
-        ['People', '/app/people', Users, c.can('people.manage')],
-        ['Foremen', '/app/directory', BriefcaseBusiness, c.can('tools.read') && c.can('jobs.read')],
-        [c.can('jobs.manage') ? 'Jobs' : 'My jobs', '/app/jobs', BriefcaseBusiness, c.can('jobs.read')],
-        ['Warehouses', '/app/warehouses', Warehouse, c.can('catalog.manage')],
-        ['Access', '/app/access', ShieldCheck, c.can('people.manage')],
-        ['Activity', '/app/activity', Activity, true],
-        [
-          'Settings',
-          '/app/settings',
-          Settings,
-          c.can('company.manage') || c.can('tools.manage_registration_policy') || c.can('jobs.manage_policy'),
-        ],
-      ] as const)
-    : ([
-        ['My tools', '/app/mine', Wrench, c.can('tools.read')],
-        ['Checkout', '/app/checkout', PackageCheck, c.can('tools.read')],
-        [c.can('jobs.participate') ? 'My jobs' : 'Jobs', '/app/jobs', BriefcaseBusiness, c.can('jobs.read')],
-        ['Foremen', '/app/directory', Users, c.can('tools.read') && c.can('jobs.read')],
-        ['Activity', '/app/activity', Activity, true],
-      ] as const);
-  const links = destinations
-    .filter((entry) => entry[3])
-    .map(([label, href, Icon]) => (
-      <NavLink
-        key={href}
-        to={href}
-        onClick={() => setMenu(false)}
-        className={({ isActive }) =>
-          control
-            ? 'side-nav-link' + (isActive ? ' side-nav-link--active' : '')
-            : 'worker-drawer-link' + (isActive ? ' worker-drawer-link--active' : '')
-        }
-      >
-        <Icon size={18} aria-hidden="true" />
-        {label}
-      </NavLink>
-    ));
-  const appearance = (
-    <button type="button" className="appearance-control" onClick={toggleTheme}>
-      {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-      {theme === 'dark' ? 'Light appearance' : 'Dark appearance'}
-    </button>
+  const shell = useShellNavigation();
+  const { control, settings, destinations } = useShellDestinations();
+  const account = useShellAccount(shell.closeAll);
+  const content = (
+    <main id="main-content" className={control ? 'shell-main' : 'worker-main'} key={c.company_id}>
+      <Suspense fallback={<LoadingState />}>
+        <Outlet />
+      </Suspense>
+    </main>
   );
-  const account = (
-    <div className="experience-account">
-      <strong>{c.preferred_name}</strong>
-      <small>{session?.email}</small>
-      <div className="field">
-        <label htmlFor="workspace-company">Workspace</label>
-        <select
-          id="workspace-company"
-          value={c.company_id}
-          onChange={(event) => {
-            chooseCompany(event.target.value);
-            navigateHome();
-            setMenu(false);
-            setAccountOpen(false);
-          }}
-        >
-          {session?.memberships.map((member) => (
-            <option key={member.company_id} value={member.company_id}>
-              {member.company_name}
-            </option>
-          ))}
-        </select>
-      </div>
-      <Link to="/forgot-password">Change password</Link>
-      <Form label="Refresh access" submit={refresh} successMessage="Access refreshed.">
-        <></>
-      </Form>
-      <Form label="Sign out" submit={logout}>
-        <></>
-      </Form>
-    </div>
+  const drawer = shell.menu && (
+    <ShellNavigationDrawer
+      label={control ? 'Admin navigation' : 'Worker navigation'}
+      drawerRef={shell.navigationRef}
+      name={account.name}
+      title={account.title}
+      destinations={destinations}
+      addToolPath={!control && shell.canRegister ? '/app/mine/new' : undefined}
+      theme={shell.theme}
+      onToggleTheme={shell.toggleTheme}
+      onClose={() => shell.setMenu(false)}
+      onOpenAccount={shell.openAccountSheet}
+    />
   );
-  return (
-    <div className="experience" data-theme={theme}>
-      <div className={control ? 'control-app-shell' : 'worker-app-shell'}>
-        <header className={control ? 'app-header' : 'worker-topbar'}>
-          <div className="header-leading">
-            <button
-              type="button"
-              className={control ? 'worker-menu-button control-menu-button' : 'worker-menu-button'}
-              aria-label={menu ? 'Close navigation' : 'Open navigation'}
-              aria-expanded={menu}
-              onClick={() => setMenu(!menu)}
-            >
-              {menu ? <X size={18} /> : <Menu size={18} />}
-            </button>
-            {control && (
-              <Link className="wordmark" to="/app">
-                <span className="control-brand-mark">N</span>
-                <span>
-                  Nelson <em>Electric</em>
-                </span>
-              </Link>
-            )}
-          </div>
-          {control ? (
-            <button className="control-account-label" aria-label="Open account" onClick={() => setAccountOpen(true)}>
-              {c.preferred_name}
-              <span className="session-avatar">{c.preferred_name.slice(0, 1)}</span>
-            </button>
-          ) : (
-            <Link className="worker-wordmark" to="/app/mine">
-              NELSON ELECTRIC
-            </Link>
-          )}
+  const sheet = (
+    <AccountSheet
+      account={account}
+      open={shell.accountSheetOpen}
+      settings={settings}
+      onClose={shell.closeAccountSheet}
+    />
+  );
+  if (!control)
+    return (
+      <div className="worker-app-shell">
+        <header className="worker-topbar">
+          <button
+            type="button"
+            className="worker-menu-button"
+            aria-label="Open navigation"
+            aria-expanded={shell.menu}
+            onClick={() => shell.setMenu(true)}
+          >
+            <Menu aria-hidden="true" />
+          </button>
+          <Link className="worker-wordmark" to="/app">
+            NELSON ELECTRIC
+          </Link>
         </header>
-        <div className={control ? 'shell-body' : 'worker-shell-body'}>
-          {control && (
-            <aside className="side-nav">
-              <div className="side-nav-heading">Control room</div>
-              <nav className="side-nav-links" aria-label="Company navigation">
-                {links}
-              </nav>
-              <div className="side-nav-theme">{appearance}</div>
-              <small className="side-nav-footer">Nelson Electric · Tools & custody</small>
-            </aside>
-          )}
-          <main id="main-content" className={control ? 'shell-main' : 'worker-main'} key={c.company_id}>
-            <Suspense fallback={<Loading />}>
-              <Outlet />
-            </Suspense>
-          </main>
-        </div>
-        {accountOpen && (
-          <RecordSheet title="Your account" onClose={() => setAccountOpen(false)}>
-            <h1>Your account</h1>
-            {account}
-          </RecordSheet>
-        )}
-        {menu && (
-          <div className="worker-navigation-layer">
-            <button className="worker-scrim" aria-label="Close navigation backdrop" onClick={() => setMenu(false)} />
-            <aside
-              ref={navigationRef}
-              className="worker-navigation-drawer"
-              role="dialog"
-              aria-modal="true"
-              aria-label="Navigation"
-            >
-              <div className="worker-drawer-header">
-                <button className="worker-close-button" aria-label="Close navigation" onClick={() => setMenu(false)}>
-                  <X size={18} />
-                </button>
-              </div>
-              <div className="worker-drawer-profile">
-                <span className="session-avatar">{c.preferred_name.slice(0, 1)}</span>
-                <strong>{c.preferred_name}</strong>
-              </div>
-              <nav>{links}</nav>
-              {canRegister && (
-                <Link className="worker-drawer-link" to="/app/tools/new" onClick={() => setMenu(false)}>
-                  <Plus size={18} />
-                  Add tool
-                </Link>
-              )}
-              {appearance}
-              {account}
-            </aside>
-          </div>
-        )}
+        {content}
+        {drawer}
+        {sheet}
       </div>
+    );
+  return (
+    <div className="app-shell">
+      <header className="app-header">
+        <div className="header-leading">
+          <button
+            type="button"
+            className="mobile-nav-trigger worker-menu-button"
+            aria-label="Open navigation"
+            aria-expanded={shell.menu}
+            onClick={() => shell.setMenu(true)}
+          >
+            <Menu aria-hidden="true" />
+          </button>
+          <Link className="wordmark" to="/app">
+            <span className="desktop-wordmark-mark">
+              <BrandMark logoId={account.logoId} />
+            </span>
+            <span className="desktop-wordmark-copy">
+              Nelson <em>Electric</em>
+            </span>
+            <span className="mobile-wordmark-copy">NELSON ELECTRIC</span>
+          </Link>
+        </div>
+        <div className="desktop-header-account">
+          <AccountMenu
+            account={account}
+            open={shell.accountOpen}
+            settings={settings}
+            onOpenChange={shell.setAccountOpen}
+          />
+        </div>
+      </header>
+      <div className="shell-body">
+        <aside className="side-nav" aria-label="Control room navigation">
+          <div className="side-nav-heading">Control room</div>
+          <nav className="side-nav-links" aria-label="Control room destinations">
+            <ShellNavItems destinations={destinations} />
+          </nav>
+          <div className="side-nav-theme">
+            <ThemeToggle theme={shell.theme} onToggleTheme={shell.toggleTheme} />
+          </div>
+          <div className="side-nav-footer">
+            <span className="eyebrow">Nelson Electric</span>
+            <span>Tools · custody · activity</span>
+          </div>
+        </aside>
+        {drawer}
+        {content}
+      </div>
+      {sheet}
     </div>
   );
 }

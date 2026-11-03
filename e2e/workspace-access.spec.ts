@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { command, invitedMember, workspace } from './support';
+import { expect } from '@playwright/test';
+import { command, invitedMember, workspace, chooseOption, signupCode, test } from './support';
 
 test('workspace changes leave old details behind and a revoked workspace does not sign out another membership', async ({
   page,
@@ -16,33 +16,50 @@ test('workspace changes leave old details behind and a revoked workspace does no
       request_key: crypto.randomUUID(),
       name: 'Recovery workspace',
       preferred_name: 'Cross-company employee',
+      signup_code: signupCode(),
     });
+    const toolSheet = actor.getByRole('dialog', { name: 'Tool details', exact: true });
+    await expect(toolSheet).toBeVisible();
     await actor.keyboard.press('Escape');
+    await expect(toolSheet).toHaveCount(0);
     await actor.getByRole('button', { name: 'Open navigation', exact: true }).click();
-    let nav = actor.getByRole('dialog', { name: 'Navigation' });
-    await nav.getByRole('button', { name: 'Refresh access', exact: true }).click();
+    await actor
+      .getByRole('dialog', { name: 'Worker navigation', exact: true })
+      .getByRole('button', { name: 'Open account for Cross-company employee', exact: true })
+      .click();
+    const sheet = actor.getByRole('dialog', { name: 'Cross-company employee', exact: true });
+    await sheet.getByRole('button', { name: 'Refresh access', exact: true }).click();
+    await sheet.getByRole('combobox', { name: 'Workspace', exact: true }).click();
     await expect(
-      nav.getByLabel('Workspace').getByRole('option', { name: 'Recovery workspace', exact: true }),
-    ).toBeAttached();
-    await nav.getByLabel('Workspace').selectOption(second.id);
+      actor
+        .getByRole('listbox', { name: 'Workspace', exact: true })
+        .getByRole('option', { name: 'Recovery workspace', exact: true }),
+    ).toBeVisible();
+    // The workspace sheet opens beneath the account sheet (z-index), so choose it by keyboard.
+    const recovery = actor
+      .getByRole('listbox', { name: 'Workspace', exact: true })
+      .locator(`[data-value="${second.id}"]`);
+    await recovery.focus();
+    await recovery.press('Enter');
     await expect(actor).toHaveURL(/\/app\/operations$/);
     await expect(actor.getByRole('heading', { name: 'Queue', exact: true })).toBeVisible();
     await expect(actor.getByRole('dialog', { name: 'Tool details', exact: true })).toHaveCount(0);
-    await actor.getByRole('button', { name: 'Open account', exact: true }).click();
-    await actor
-      .getByRole('dialog', { name: 'Your account', exact: true })
-      .getByLabel('Workspace')
-      .selectOption(fixture.company.id);
+    await actor.getByRole('button', { name: 'Open account menu', exact: true }).click();
+    await chooseOption(
+      actor.getByRole('dialog', { name: 'Cross-company employee', exact: true }),
+      'Workspace',
+      fixture.company.id,
+    );
     await expect(actor).toHaveURL(/\/app\/mine$/);
     await actor.goto(`/app/checkout/${fixture.asset.id}?action=request`);
-    await expect(actor.getByRole('button', { name: 'Request tool', exact: true })).toBeVisible();
+    await expect(actor.getByRole('button', { name: 'Request from Main warehouse', exact: true })).toBeVisible();
     await command(page.request, `${fixture.base}/people/${member.id}/update`, {
       expected_revision: 1,
       access_state: 'suspended',
       roles: ['field_member'],
       reason: 'Suspend only this company membership',
     });
-    await actor.getByRole('button', { name: 'Request tool', exact: true }).click();
+    await actor.getByRole('button', { name: 'Request from Main warehouse', exact: true }).click();
     await expect(actor).toHaveURL(/company-setup/);
     await expect(actor.getByRole('heading', { name: 'Sign in', exact: true })).toHaveCount(0);
     await actor.getByRole('button', { name: 'Open Recovery workspace', exact: true }).click();

@@ -1,120 +1,68 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { api, requestKey, result } from './client';
-import { assetDetailsInput } from './asset-details';
+import { useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { api, requestKey, result, type Model } from './client';
 import { collect, useReferences } from './data';
 import { useCompany } from './session';
-import { uploadPhoto } from './photos';
-import { text } from './ui';
 import { useListLocation } from './list-location';
-import { useRegistrationPolicy } from './registration-policy';
+import { useSheetNavigation } from './sheet-navigation';
 
+export type TransferMode = 'warehouse' | 'person';
+export type RequestUnit = { unitId: string; warehouseId: string; warehouseName: string };
+
+/** The demo's two-step destination picker: a destination type, then a person or warehouse. */
 export function useTransferPicker() {
-  const [mode, setMode] = useState<'person' | 'warehouse'>('person');
-  const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState('');
+  const [mode, setModeValue] = useState<TransferMode | null>(null);
+  const [target, setTarget] = useState('');
   return {
     mode,
-    search,
-    setSearch,
-    selected,
-    select: setSelected,
-    change: () => setSelected(''),
-    setMode: (value: 'person' | 'warehouse') => {
-      setMode(value);
-      setSearch('');
-      setSelected('');
+    target,
+    setTarget,
+    setMode: (value: TransferMode | null) => {
+      setModeValue(value);
+      setTarget('');
+    },
+    reset: () => {
+      setModeValue(null);
+      setTarget('');
     },
   };
 }
 
-export function useRegisterToolState() {
-  const c = useCompany();
-  const { policy, canRegister } = useRegistrationPolicy();
-  const refs = useReferences();
-  const [created, setCreated] = useState('');
-  const [step, setStep] = useState<'photo' | 'details'>('photo');
-  const [preview, setPreview] = useState('');
-  const [photoError, setPhotoError] = useState('');
-  const selectedPhoto = useRef<File | null>(null);
-  const uploadedPhoto = useRef<string | null>(null);
-  const submission = useRef<{ fingerprint: string; key: string } | null>(null);
-  // A preview URL is a browser resource and must be released when its file changes.
-  useEffect(
-    () => () => {
-      if (preview) URL.revokeObjectURL(preview);
-    },
-    [preview],
-  );
-  const choosePhoto = (file: File | undefined) => {
-    if (!file) return;
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 8 * 1024 * 1024) {
-      setPhotoError('Choose a JPEG, PNG, or WebP photo under 8 MB.');
-      return;
-    }
-    setPhotoError('');
-    selectedPhoto.current = file;
-    uploadedPhoto.current = null;
-    setPreview(URL.createObjectURL(file));
-    setStep('details');
-  };
-  const skipPhoto = () => {
-    selectedPhoto.current = null;
-    uploadedPhoto.current = null;
-    setPreview('');
-    setPhotoError('');
-    setStep('details');
-  };
-  const register = async (form: FormData) => {
-    if (selectedPhoto.current && !uploadedPhoto.current) {
-      const photo = new FormData();
-      photo.set('photo', selectedPhoto.current);
-      uploadedPhoto.current = await uploadPhoto(c.company_id, photo, 'registration');
-    }
-    const body = {
-      tool_model_id: text(form, 'model'),
-      warehouse_id: text(form, 'warehouse'),
-      asset_tag: text(form, 'tag'),
-      ...assetDetailsInput(form),
-      photo_id: uploadedPhoto.current,
-    };
-    const fingerprint = JSON.stringify(body);
-    if (submission.current?.fingerprint !== fingerprint) submission.current = { fingerprint, key: requestKey() };
-    const tool = result(
-      await api.POST('/api/companies/{company_id}/tools', {
-        params: { path: c.path },
-        body: { ...body, request_key: submission.current.key },
-      }),
-    );
-    setCreated(tool.id);
-  };
-  return {
-    c,
-    refs,
-    created,
-    policy,
-    canRegister,
-    step,
-    setStep,
-    preview,
-    photoError,
-    choosePhoto,
-    skipPhoto,
-    register,
-  };
+/** A single local choice for a dialog field whose value also drives its heading. */
+export function useChoice<T extends string>(initial: T) {
+  const [value, setValue] = useState<T>(initial);
+  return [value, setValue] as const;
 }
+
+const workerActions = ['request', 'transfer', 'damage', 'missing'];
+const controlActions = [
+  'edit',
+  'transfer',
+  'damage',
+  'missing',
+  'restore',
+  'service',
+  'lifecycle',
+  'stewardship',
+  'reconcile',
+];
+
 export function useToolDetailState() {
   const c = useCompany();
   const refs = useReferences();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const sheet = useSheetNavigation();
+  const control = sheet.root === '/app/tools' || sheet.root === '/app/flagged';
   const { assetId = '' } = useParams();
   const path = { ...c.path, asset_id: assetId };
   const [key, setKey] = useState(requestKey);
-  const location = useListLocation();
-  const rawAction = location.params.get('action') ?? '';
-  const action = ['request', 'transfer', 'damage', 'missing', 'manage', 'reconcile'].includes(rawAction)
-    ? rawAction
-    : '';
+  const picker = useTransferPicker();
+  const list = useListLocation();
+  const rawAction = list.params.get('action') ?? '';
+  const action =
+    (control ? controlActions : workerActions).includes(rawAction) || rawAction.startsWith('found:') ? rawAction : '';
   const tool = useQuery({
     queryKey: [c.company_id, 'tool', assetId],
     queryFn: () => api.GET('/api/companies/{company_id}/tools/{asset_id}', { params: { path } }).then(result),
@@ -137,6 +85,32 @@ export function useToolDetailState() {
         api
           .GET('/api/companies/{company_id}/tool-requests', {
             params: { path: c.path, query: { offset, asset_id: assetId, mine: true } },
+          })
+          .then(result),
+      ),
+  });
+  // The control room shows anyone's open checkout request for this unit.
+  const assetRequests = useQuery({
+    queryKey: [c.company_id, 'asset-tool-requests', assetId],
+    enabled: control,
+    queryFn: () =>
+      collect((offset) =>
+        api
+          .GET('/api/companies/{company_id}/tool-requests', {
+            params: { path: c.path, query: { offset, asset_id: assetId, pending: true } },
+          })
+          .then(result),
+      ),
+  });
+  const pendingHandoffId = tool.data?.pending_handoff_id ?? null;
+  const handoffs = useQuery({
+    queryKey: [c.company_id, 'pending-handoffs', control ? 'all' : 'mine'],
+    enabled: !!pendingHandoffId,
+    queryFn: () =>
+      collect((offset) =>
+        api
+          .GET('/api/companies/{company_id}/handoffs', {
+            params: { path: c.path, query: { offset, pending: true, ...(control ? {} : { mine: true }) } },
           })
           .then(result),
       ),
@@ -172,12 +146,26 @@ export function useToolDetailState() {
           .then(result),
       ),
   });
+  // Checkout cards pass the requestable units of the model, as the demo's request sheet receives them.
+  const requestUnits: RequestUnit[] =
+    sheet.root === '/app/checkout' && Array.isArray(location.state?.requestUnits)
+      ? (location.state.requestUnits as RequestUnit[]).filter(
+          (unit) => typeof unit?.unitId === 'string' && typeof unit?.warehouseName === 'string',
+        )
+      : [];
+
+  const setAction = (value: string) => {
+    if (!value) picker.reset();
+    list.update('action', value);
+  };
 
   return {
     c,
     refs,
     path,
     key,
+    control,
+    close: sheet.close,
     renewKey: () => setKey(requestKey()),
     tool,
     history,
@@ -185,7 +173,67 @@ export function useToolDetailState() {
     service,
     lifecycle,
     requests,
+    assetRequests,
+    pendingHandoff: handoffs.data?.find((handoff) => handoff.id === pendingHandoffId) ?? null,
+    requestUnits,
+    chooseRequestUnit: (unitId: string) =>
+      navigate(
+        { pathname: `${sheet.root}/${unitId}`, search: '?action=request' },
+        { replace: true, state: location.state },
+      ),
+    picker,
     action,
-    setAction: (value: string) => location.update('action', value),
+    setAction,
+    retryHistory: () => {
+      void history.refetch();
+      void incidents.refetch();
+      void service.refetch();
+      void lifecycle.refetch();
+    },
   };
+}
+
+export type ToolDetailState = ReturnType<typeof useToolDetailState>;
+
+/** What the signed-in member may do with this unit; mirrors the server's custody rules. */
+export function toolPermissions(state: ToolDetailState, t: Model<'AssetView'>) {
+  const { c, incidents, requests } = state;
+  const manages = c.can('tools.manage') || c.managed_warehouse_ids.includes(t.responsible_warehouse_id);
+  const canHandoff =
+    t.warehouse_id !== null && (c.can('tools.manage') || c.managed_warehouse_ids.includes(t.warehouse_id));
+  const holds = t.holder_membership_id === c.membership_id;
+  const open = incidents.data?.filter((incident) => !incident.resolved_at) ?? [];
+  return {
+    manages,
+    holds,
+    request: c.can('tools.request') && (t.requestable || !!requests.data?.length),
+    transfer: (holds || canHandoff) && t.lifecycle === 'active' && !t.missing,
+    report: (holds || manages) && t.lifecycle === 'active',
+    damageOpen: open.some((incident) => incident.kind === 'damage'),
+    missingOpen: open.some((incident) => incident.kind === 'missing'),
+    service: manages && t.lifecycle !== 'disposed',
+    restore: manages && t.lifecycle !== 'disposed' && t.serviceability !== 'serviceable',
+    lifecycle: manages && t.lifecycle !== 'disposed',
+    edit: c.can('tools.manage'),
+    stewardship: c.can('tools.manage'),
+    reconcile: c.can('reconciliation.manage'),
+  };
+}
+
+export type ToolPermissions = ReturnType<typeof toolPermissions>;
+
+/** People and warehouses that may receive this unit, as the demo's destination candidates. */
+export function transferCandidates(state: ToolDetailState, t: Model<'AssetView'>) {
+  const people = (state.refs.people.data ?? []).filter(
+    (person) =>
+      t.serviceability === 'serviceable' &&
+      person.id !== t.holder_membership_id &&
+      person.access_state === 'active' &&
+      !person.ended_at &&
+      person.capabilities.includes('tools.transfer'),
+  );
+  const warehouses = (state.refs.warehouses.data ?? []).filter(
+    (warehouse) => warehouse.id !== t.warehouse_id && !warehouse.archived_at,
+  );
+  return { people, warehouses };
 }

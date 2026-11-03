@@ -1,56 +1,90 @@
-import { api, type Model } from './client';
-import { useHandoffDecision } from './operations-state';
-import { useCompany } from './session';
-import { Field, Form, Notice, Select, text } from './ui';
+import type { Model } from './client';
+import { Button, OverlayDialog, TextAreaField } from './kit';
+import { useQueueDecision, useQueuePermissions, type QueueItem } from './operations-state';
 
-export function HandoffReview({
+/**
+ * Demo WarehouseQueueReviewDialog for a handoff. Accept and decline belong to
+ * the receiver; the proposer may cancel; a responsible manager may void with a
+ * recorded reason.
+ */
+export function HandoffReviewDialog({
   handoff,
-  receiving,
-  cancelling,
-  voidAllowed,
-  onDone,
+  asset,
+  item,
+  onClose,
 }: {
   handoff: Model<'HandoffView'>;
-  receiving: boolean;
-  cancelling: boolean;
-  voidAllowed: boolean;
-  onDone: () => void;
+  asset: Model<'AssetView'> | undefined;
+  item: QueueItem | undefined;
+  onClose(): void;
 }) {
-  const c = useCompany();
-  const { decision, setDecision } = useHandoffDecision(receiving, cancelling);
+  const decision = useQueueDecision();
+  const { receiving, cancelling, voidAllowed } = useQueuePermissions().handoff(handoff, asset);
+  const toolName = item?.toolName ?? asset?.name ?? 'Tool';
+  const isReturn = item?.kind === 'return';
+  const decide = (action: 'accept' | 'decline' | 'cancel' | 'void') => {
+    if (action === 'void' && !decision.note.trim()) {
+      decision.setError('Add a decision note explaining why this handoff is being voided.');
+      return;
+    }
+    void decision.decideHandoff(handoff, action, onClose);
+  };
   return (
-    <Form
-      label="Confirm handoff decision"
-      onDone={onDone}
-      submit={(f) =>
-        api.POST('/api/companies/{company_id}/handoffs/{handoff_id}/{action}', {
-          params: {
-            path: {
-              ...c.path,
-              handoff_id: handoff.id,
-              action: text(f, 'action') as 'accept' | 'decline' | 'cancel' | 'void',
-            },
-          },
-          body: { expected_revision: handoff.revision, note: text(f, 'note') },
-        })
-      }
+    <OverlayDialog
+      label={`Review ${toolName}`}
+      onClose={onClose}
+      panelClassName="admin-dialog operations-dialog"
+      showCloseButton
     >
-      <Select label="Decision" name="action" value={decision} onChange={(event) => setDecision(event.target.value)}>
+      <div className="dialog-heading">
+        <span className="eyebrow">{item?.eyebrow ?? (isReturn ? 'Accept return' : 'Review handoff')}</span>
+        <h2>{toolName}</h2>
+        <p>
+          {item?.from ?? handoff.proposed_by_name} → {handoff.destination_name}
+        </p>
+        {handoff.note && <p className="queue-item__note">“{handoff.note}”</p>}
+        {handoff.resolution_note && <p className="queue-item__note">“{handoff.resolution_note}”</p>}
+      </div>
+      {(receiving || cancelling || voidAllowed) && (
+        <TextAreaField
+          label="Decision note"
+          hint={voidAllowed ? 'Required to void' : undefined}
+          value={decision.note}
+          onChange={decision.setNote}
+          placeholder="Optional context for the audit trail"
+          maxLength={2000}
+        />
+      )}
+      {decision.error && (
+        <p className="form-error" role="alert">
+          {decision.error}
+        </p>
+      )}
+      <div className="dialog-actions">
+        <Button variant="ghost" onClick={onClose}>
+          Cancel
+        </Button>
+        {cancelling && (
+          <Button variant="ghost" disabled={decision.busy} onClick={() => decide('cancel')}>
+            Cancel my handoff
+          </Button>
+        )}
+        {voidAllowed && (
+          <Button variant="danger" disabled={decision.busy} onClick={() => decide('void')}>
+            Void handoff
+          </Button>
+        )}
         {receiving && (
           <>
-            <option value="accept">Accept — I have received this tool</option>
-            <option value="decline">Decline receipt</option>
+            <Button variant="secondary" disabled={decision.busy} onClick={() => decide('decline')}>
+              Decline
+            </Button>
+            <Button disabled={decision.busy} onClick={() => decide('accept')}>
+              {decision.busy ? 'Saving…' : isReturn ? 'Accept return' : 'Accept'}
+            </Button>
           </>
         )}
-        {cancelling && <option value="cancel">Cancel my handoff</option>}
-        {voidAllowed && <option value="void">Administrative cancellation</option>}
-      </Select>
-      {decision === 'void' && (
-        <Notice>
-          Cancel the proposal without changing custody. The reason and your identity are retained in the history.
-        </Notice>
-      )}
-      <Field label="Note" name="note" maxLength={2000} required={decision === 'void'} />
-    </Form>
+      </div>
+    </OverlayDialog>
   );
 }

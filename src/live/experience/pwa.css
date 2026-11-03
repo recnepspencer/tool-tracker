@@ -1,0 +1,56 @@
+/* Offline, update and install notices on every screen, in demo tokens. */
+.experience .status-bar {
+  align-items: center;
+  background: var(--amber-bg);
+  border-bottom: var(--border-width) solid var(--amber-border-muted);
+  color: var(--amber);
+  display: flex;
+  flex-wrap: wrap;
+  font: var(--font-meta);
+  gap: var(--space-8);
+  padding: var(--space-10) var(--space-16);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sheet);
+}
+.experience .install-bar {
+  align-items: center;
+  background: var(--card);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 var(--space-8) var(--space-24) var(--shadow);
+  color: var(--ink);
+  gap: var(--space-4);
+  bottom: calc(var(--space-16) + env(safe-area-inset-bottom));
+  display: flex;
+  max-width: calc(100vw - var(--space-32));
+  padding: var(--space-4);
+  position: fixed;
+  right: var(--space-16);
+  z-index: var(--z-sheet);
+}
+.experience .status-bar button,
+.experience .install-bar button {
+  background: transparent;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-pill);
+  color: inherit;
+  cursor: pointer;
+  font: var(--font-control-compact);
+  min-height: var(--space-32);
+  padding: 0 var(--space-12);
+}
+.experience .install-bar button:first-child {
+  background: linear-gradient(180deg, var(--primary-from), var(--primary-to));
+  border-color: transparent;
+  color: var(--on-accent);
+}
+.experience .install-bar button[aria-label] {
+  border-color: transparent;
+  min-width: var(--space-32);
+  padding: 0;
+}
+.experience .install-bar span {
+  font: var(--font-meta);
+  padding: 0 var(--space-8);
+}

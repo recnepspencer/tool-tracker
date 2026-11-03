@@ -2,11 +2,12 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
-  workers: 1,
-  fullyParallel: false,
-  timeout: 90_000,
-  expect: { timeout: 10_000 },
-  use: { baseURL: 'http://127.0.0.1:4173', trace: 'retain-on-failure', screenshot: 'only-on-failure' },
+  // Each scenario creates its own company, so every test can run on its own worker.
+  fullyParallel: true,
+  // Half the cores: each worker drives a browser, and multi-person scenarios open several contexts.
+  workers: '50%',
+  // Recording a trace for every test roughly doubles the suite's CPU cost; pass --trace on to debug.
+  use: { baseURL: 'http://127.0.0.1:4173', screenshot: 'only-on-failure' },
   outputDir: process.env.NELSON_BROWSER_RESULTS ?? 'artifacts/browser-results',
   webServer: {
     command: 'npm run preview',

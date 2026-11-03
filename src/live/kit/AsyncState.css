@@ -1,0 +1,36 @@
+.async-state {
+  color: var(--muted);
+  display: grid;
+  gap: var(--space-10);
+  min-height: var(--size-async);
+  place-items: center;
+}
+.async-state--error {
+  color: var(--red);
+  min-height: var(--size-async-error);
+}
+.async-state--paused {
+  color: var(--amber);
+}
+.async-state--empty {
+  color: var(--muted);
+}
+.pulse-dot {
+  animation: pulse var(--duration-pulse) var(--ease-in-out) infinite;
+  background: var(--blue);
+  border-radius: var(--radius-full);
+  box-shadow: var(--elevation-pulse) var(--blue);
+  height: var(--space-8);
+  width: var(--space-8);
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: var(--opacity-pulse);
+    transform: scale(var(--scale-pulse-min));
+  }
+  50% {
+    opacity: var(--opacity-full);
+    transform: scale(var(--scale-pulse-max));
+  }
+}

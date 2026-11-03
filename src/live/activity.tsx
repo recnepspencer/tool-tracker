@@ -1,104 +1,145 @@
-import { useActivityPageState } from './settings-state';
+import type { ReactNode } from 'react';
+import { AuditKindChips, AuditLog } from './activity-audit';
+import { ActivityFilters, ActivityGroups } from './activity-feed';
+import { exportAuditLog } from './activity-presentation';
+import { useActivityState, type ActivityState } from './activity-state';
 import { errorMessage } from './client';
-import { Link } from 'react-router-dom';
-import { activityTitle } from './activity-presentation';
-import { date, Empty, Field, Loading, Notice } from './ui';
+import { Button, ErrorState, LoadingState, PageHeading, SearchField, SelectField } from './kit';
+import './experience/activity-pagination.css';
 
 export function ActivityPage() {
-  const { c, offset, setOffset, activity, search, kind, warehouse, mine, warehouses, update } = useActivityPageState();
+  const state = useActivityState();
+  return state.control ? <AuditLogPage state={state} /> : <WorkerActivityPage state={state} />;
+}
+
+/** Demo `WorkerActivityPage`. */
+function WorkerActivityPage({ state }: { state: ActivityState }) {
+  const { activity, rows, filter, setFilter, warehouse, setWarehouse, warehouses, search, setSearch, open } = state;
   return (
-    <div className="activity-page">
-      <header className="page-heading">
-        <div>
-          <h1>Activity</h1>
-          <p>
-            {c.can('activity.read') ? 'Company activity' : 'Your activity'}. Changes to tools, custody, and team
-            assignments.
-          </p>
-        </div>
-      </header>
-      <div className="toolbar">
-        <Field
-          label="Search activity"
-          type="search"
-          value={search}
-          onChange={(event) => update('search', event.target.value)}
+    <div className="worker-screen worker-activity-screen">
+      <div className="worker-screen-heading worker-activity-heading">
+        <h1 aria-label="Movement record">Activity</h1>
+        <span className="worker-activity-unread">{rows.length ? `${rows.length} events` : 'Quiet'}</span>
+      </div>
+      <SearchField compact label="Search activity" placeholder="Search activity…" value={search} onChange={setSearch} />
+      <ActivityFilters value={filter} onChange={setFilter} />
+      {filter === 'warehouse' && (
+        <SelectField
+          compact
+          hideLabel
+          searchable={false}
+          label="Warehouse"
+          value={warehouse}
+          onChange={setWarehouse}
+          options={(warehouses.data ?? []).map((item) => ({ value: item.id, label: item.name }))}
         />
-        <div className="field">
-          <label htmlFor="activity-warehouse">Warehouse</label>
-          <select
-            id="activity-warehouse"
-            value={warehouse}
-            onChange={(event) => update('warehouse', event.target.value)}
-          >
-            <option value="">All warehouses</option>
-            {warehouses.data?.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-      <div className="view-controls" role="group" aria-label="Activity type">
-        {[
-          ['all', 'Everything'],
-          ['custody', 'Custody'],
-          ['request', 'Requests'],
-          ['flag', 'Damage & loss'],
-          ['admin', 'Admin'],
-        ].map(([value, label]) => (
-          <button
-            key={value}
-            aria-pressed={kind === value}
-            onClick={() => update('kind', value === 'all' ? '' : value)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      {c.can('activity.read') && (
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={mine}
-            onChange={(event) => update('mine', event.target.checked ? 'true' : '')}
-          />
-          Only my activity
-        </label>
       )}
-      {activity.isPending && <Loading />}
-      {(activity.error || warehouses.error) && (
-        <Notice error>{errorMessage(activity.error || warehouses.error)}</Notice>
-      )}
-      <div className="activity-feed">
-        {activity.data?.items.map((item) => (
-          <article className="activity-entry panel" key={item.id}>
-            <strong>{activityTitle(item.event_key)}</strong>
-            <p>
-              {item.effective_name ?? 'System'} · {date(item.occurred_at)}
-            </p>
-            {typeof item.metadata.asset_tag === 'string' &&
-              (c.can('tools.read') && typeof item.metadata.asset_id === 'string' ? (
-                <Link to={`/app/tools/${item.metadata.asset_id}`}>{item.metadata.asset_tag}</Link>
-              ) : (
-                <p>{item.metadata.asset_tag}</p>
-              ))}
-            {typeof item.metadata.reason === 'string' && <p>{item.metadata.reason}</p>}
-            {typeof item.metadata.note === 'string' && <p>{item.metadata.note}</p>}
-          </article>
-        ))}
+      <Feed state={state} label="Loading field activity…" error="Worker activity could not be loaded.">
+        {rows.length ? (
+          <ActivityGroups rows={rows} onSelect={open} />
+        ) : (
+          <div className="activity-empty">
+            <h2>No activity in this view.</h2>
+            <p>Try another filter to see the shared movement record.</p>
+          </div>
+        )}
+      </Feed>
+      {activity.hasNextPage && <LoadEarlier state={state} />}
+    </div>
+  );
+}
+
+/** Demo `AdminActivityPage` ("Audit log"). */
+function AuditLogPage({ state }: { state: ActivityState }) {
+  const { c, activity, rows, search, setSearch, kind, setKind, mine, setMine, warehouse, setWarehouse, warehouses } =
+    state;
+  const company = c.can('activity.read');
+  return (
+    <div className="page-content admin-activity-page">
+      <PageHeading
+        eyebrow="Admin view · Governance"
+        title="Audit log"
+        description={
+          company
+            ? 'Immutable operational history across tools, people, and settings.'
+            : 'Your own changes to tools, custody, and team assignments.'
+        }
+        action={
+          <Button variant="secondary" disabled={!rows.length} onClick={() => exportAuditLog(rows)}>
+            Export log
+          </Button>
+        }
+      />
+      <div className="activity-toolbar">
+        <SearchField
+          compact
+          label="Search audit log"
+          placeholder="Search activity…"
+          value={search}
+          onChange={setSearch}
+        />
+        <SelectField
+          compact
+          hideLabel
+          searchable={false}
+          label="Warehouse"
+          value={warehouse || 'all'}
+          onChange={setWarehouse}
+          options={[
+            { value: 'all', label: 'All warehouses' },
+            ...(warehouses.data ?? []).map((item) => ({ value: item.id, label: item.name })),
+          ]}
+        />
       </div>
-      {activity.data?.items.length === 0 && <Empty>No activity matches these filters.</Empty>}
-      {activity.data && (
-        <div className="pagination">
-          <button disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 30))}>
-            Previous
-          </button>
-          <button disabled={activity.data.next_offset === null} onClick={() => setOffset(activity.data.next_offset!)}>
-            Next
-          </button>
-        </div>
+      <AuditKindChips kind={kind} onKindChange={setKind} mine={mine} onMineChange={company ? setMine : undefined} />
+      <Feed state={state} label="Loading the audit log…" error="The audit log could not be loaded.">
+        <AuditLog rows={rows} />
+      </Feed>
+      {activity.hasNextPage && <LoadEarlier state={state} />}
+    </div>
+  );
+}
+
+function Feed({
+  state,
+  label,
+  error,
+  children,
+}: {
+  state: ActivityState;
+  label: string;
+  error: string;
+  children: ReactNode;
+}) {
+  const { activity, warehouses } = state;
+  if (activity.isPending) return <LoadingState label={label} />;
+  if (!activity.data)
+    return <ErrorState message={`${error} ${errorMessage(activity.error)}`} onRetry={() => void activity.refetch()} />;
+  return (
+    <>
+      {warehouses.isError && (
+        <ErrorState
+          message={`Warehouse names could not be loaded. ${errorMessage(warehouses.error)}`}
+          onRetry={() => void warehouses.refetch()}
+        />
+      )}
+      {children}
+    </>
+  );
+}
+
+/** Live-only pagination in the demo idiom: one full-width secondary button. */
+function LoadEarlier({ state }: { state: ActivityState }) {
+  const { activity, loadMore } = state;
+  return (
+    <div className="activity-pagination">
+      <Button variant="secondary" fullWidth disabled={activity.isFetchingNextPage} onClick={loadMore}>
+        {activity.isFetchingNextPage ? 'Loading…' : 'Load earlier activity'}
+      </Button>
+      {activity.isFetchNextPageError && (
+        <p className="form-error" role="alert">
+          {errorMessage(activity.error)}
+        </p>
       )}
     </div>
   );

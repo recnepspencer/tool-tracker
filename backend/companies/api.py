@@ -24,6 +24,12 @@ class CompanyInput(CommandInput):
     name: str = Field(min_length=1, max_length=200)
     preferred_name: str = Field(min_length=1, max_length=120)
     timezone: str = Field(default="America/Denver", max_length=64)
+    # Not needed when the account already claimed a code at signup.
+    signup_code: str = Field(default="", max_length=40)
+    logo_id: UUID | None = None
+    # Leave empty, or use your own email, to own the company yourself.
+    owner_email: EmailStr | None = None
+    owner_name: str = Field(default="", max_length=120)
 
 
 class CompanyView(Schema):
@@ -32,6 +38,16 @@ class CompanyView(Schema):
     address: str
     timezone: str
     revision: int
+    logo_id: UUID | None
+    owner_id: UUID | None
+
+
+class OwnershipInput(CommandInput):
+    membership_id: UUID
+
+
+class LogoInput(CommandInput):
+    logo_id: UUID | None
 
 
 class CompanyUpdate(RevisionInput):
@@ -50,6 +66,7 @@ class MemberView(Schema):
     revision: int
     roles: list[RoleCode]
     capabilities: list[str]
+    is_owner: bool
 
 
 class MemberPage(Schema):
@@ -76,6 +93,7 @@ class InvitationView(Schema):
     email: str
     preferred_name: str
     role_code: RoleCode
+    grants_ownership: bool
     expires_at: datetime
     accepted_at: datetime | None
     revoked_at: datetime | None
@@ -115,12 +133,46 @@ def member_view(member):
             )
         ),
         "capabilities": sorted(capabilities(member)),
+        "is_owner": member.company.owner_id == member.pk,
     }
+
+
+def send_invitation_mail(invitation, token):
+    from accounts.mail import app_url, send_account_mail
+
+    company = invitation.company.name
+    if invitation.grants_ownership:
+        subject = f"Take ownership of {company}"
+        body = f"You have been named the owner of {company} on Nelson Electric."
+    else:
+        subject = f"Join {company}"
+        body = f"You have been invited to {company}."
+    send_account_mail(
+        invitation.email,
+        subject,
+        f"{body}\n\nAccept your invitation: {app_url(f'invite/{token}')}\n\nThis link expires in seven days.",
+    )
 
 
 @csrf_protect
 def company_create(request: HttpRequest, data: CompanyInput):
-    return people.bootstrap_company(current_identity(request), data)
+    from django.db import transaction
+
+    with transaction.atomic():
+        company, invitation, token = people.bootstrap_company(current_identity(request), data)
+        if invitation:
+            send_invitation_mail(invitation, token)
+    return company
+
+
+@csrf_protect
+def ownership_transfer(request: HttpRequest, company_id: UUID, data: OwnershipInput):
+    return people.transfer_ownership(current_identity(request), company_id, data.membership_id)
+
+
+@csrf_protect
+def company_logo(request: HttpRequest, company_id: UUID, data: LogoInput):
+    return people.set_company_logo(current_identity(request), company_id, data.logo_id)
 
 
 def company_read(request: HttpRequest, company_id: UUID):
@@ -141,7 +193,9 @@ def people_list(
     include_inactive: bool = False,
 ):
     require_member(current_identity(request), company_id, "company.read")
-    query = CompanyMembership.objects.filter(company_id=company_id).select_related("person")
+    query = CompanyMembership.objects.filter(company_id=company_id).select_related(
+        "person", "company"
+    )
     if include_inactive:
         require_member(current_identity(request), company_id, "people.manage")
     else:
@@ -166,15 +220,9 @@ def member_update(
 def invitation_create(request: HttpRequest, company_id: UUID, data: InvitationInput):
     from django.db import transaction
 
-    from accounts.mail import app_url, send_account_mail
-
     with transaction.atomic():
         result, token = people.create_invitation(current_identity(request), company_id, data)
-        send_account_mail(
-            result.email,
-            f"Join {result.company.name}",
-            f"You have been invited to {result.company.name}.\n\nAccept your invitation: {app_url(f'invite/{token}')}\n\nThis link expires in seven days.",
-        )
+        send_invitation_mail(result, token)
     return {"invitation": InvitationView.model_validate(result), "token": token}
 
 
@@ -219,6 +267,20 @@ define_http_endpoint(
     method="post",
     path="/companies/{company_id}/update",
     endpoint=company_update,
+    response=CompanyView,
+)
+define_http_endpoint(
+    router,
+    method="post",
+    path="/companies/{company_id}/ownership",
+    endpoint=ownership_transfer,
+    response=CompanyView,
+)
+define_http_endpoint(
+    router,
+    method="post",
+    path="/companies/{company_id}/logo",
+    endpoint=company_logo,
     response=CompanyView,
 )
 define_http_endpoint(

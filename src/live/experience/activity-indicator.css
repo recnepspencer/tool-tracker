@@ -1,0 +1,17 @@
+.experience .activity-dot {
+  background: var(--dim);
+  border-radius: var(--radius-full);
+  flex: 0 0 auto;
+  height: var(--space-8);
+  width: var(--space-8);
+}
+.experience .activity-dot--admin,
+.experience .activity-dot--custody {
+  background: var(--blue);
+}
+.experience .activity-dot--flag {
+  background: var(--amber);
+}
+.experience .activity-dot--request {
+  background: var(--green);
+}

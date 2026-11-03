@@ -1,13 +1,12 @@
 import type { Model } from './client';
-import { useId } from 'react';
-import { Field, text } from './ui';
+import { Field, TextArea, text } from './ui';
 
+/** Unit-level purchase and serial fields, form-owned, in the demo's field shells. */
 export function AssetDetailsFields({ asset }: { asset?: Model<'AssetView'> }) {
-  const notesId = useId();
   return (
     <>
       <Field label="Serial number" name="serial" defaultValue={asset?.serial_number ?? ''} maxLength={120} />
-      <div className="asset-purchase-price">
+      <div className="operations-form-grid">
         <Field
           label="Purchase price"
           name="price"
@@ -28,10 +27,14 @@ export function AssetDetailsFields({ asset }: { asset?: Model<'AssetView'> }) {
         />
       </div>
       <Field label="Purchase date" name="purchased" type="date" defaultValue={asset?.acquisition_date ?? ''} />
-      <div className="field">
-        <label htmlFor={notesId}>Notes</label>
-        <textarea id={notesId} name="notes" defaultValue={asset?.notes ?? ''} maxLength={4000} rows={3} />
-      </div>
+      <TextArea
+        label="Notes"
+        hint="optional"
+        name="notes"
+        defaultValue={asset?.notes ?? ''}
+        maxLength={4000}
+        rows={3}
+      />
     </>
   );
 }

@@ -1,0 +1,4 @@
+/* Live-only: the "Load earlier activity" control under the demo feed and audit log. */
+.experience .activity-pagination {
+  margin-top: var(--space-16);
+}

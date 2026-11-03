@@ -1,44 +1,38 @@
 import { Link } from 'react-router-dom';
-import { CategoryCreate, CategoryList } from './catalog-categories';
-import { errorMessage } from './client';
+import { CategoryManager } from './category-manager';
 import { JobsPage } from './jobs';
+import { ErrorState, LoadingState, PageHeading } from './kit';
 import { CompanyProfile, ParticipationSettings, RegistrationSettings } from './settings-controls';
 import { useSettingsPageState } from './settings-state';
-import { Loading, Notice, Section } from './ui';
-import './experience/settings.css';
 
 export function SettingsPage() {
   const state = useSettingsPageState();
-  const { c, categories, categoryArchived, visibleCategories, setCategoryArchived } = state;
+  const { c, company } = state;
+  const admin = c.can('company.manage') || c.can('catalog.manage') || c.can('people.manage');
+  if (company.isPending && !company.data) return <LoadingState label="Loading settings…" />;
+  if (!company.data)
+    return <ErrorState message="Settings could not be loaded." onRetry={() => void company.refetch()} />;
   return (
-    <div className="settings-page">
-      <header className="page-heading">
-        <div>
-          <span className="eyebrow">Company workspace</span>
-          <h1>Settings</h1>
-          <p>Company details, jobs, tool categories and team rules.</p>
-        </div>
-      </header>
+    <div className="page-content admin-settings-page">
+      <PageHeading
+        eyebrow={admin ? 'Admin view · Settings' : 'Company workspace · Settings'}
+        title="Settings"
+        description="Manage company details, jobs, tool categories, and team rules."
+      />
       <div className="settings-grid">
         <CompanyProfile state={state} />
         {c.can('jobs.manage') && <JobsPage embedded />}
         {c.can('catalog.manage') && (
-          <Section title="Tool categories">
-            <p className="muted">Organize the shared tool catalog.</p>
-            <CategoryCreate label="New category" />
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={categoryArchived}
-                onChange={(event) => setCategoryArchived(event.target.checked)}
-              />
-              Show archived categories
-            </label>
-            {categories.isPending && <Loading />}
-            {categories.error && <Notice error>{errorMessage(categories.error)}</Notice>}
-            <CategoryList categories={visibleCategories} />
-            <Link to="/app/catalog">Manage tool models & warehouses</Link>
-          </Section>
+          <CategoryManager
+            categories={state.categories}
+            archived={state.categoryArchived}
+            onArchivedChange={state.setCategoryArchived}
+            footer={
+              <Link className="text-link" to="/app/catalog">
+                Manage tool models
+              </Link>
+            }
+          />
         )}
         <RegistrationSettings state={state} />
         <ParticipationSettings state={state} />

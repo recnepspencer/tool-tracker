@@ -1,7 +1,11 @@
-import { test, expect, type Page } from '@playwright/test';
-import { password, emailLink } from './support';
+import { expect, type Page } from '@playwright/test';
+import { password, emailLink, chooseOption, invitedMember, ownedCompany, signupCode, test } from './support';
 
-async function signup(page: Page, email: string, name: string) {
+async function signup(page: Page, email: string, name: string, company?: string) {
+  if (company) {
+    await page.getByLabel('Signup code', { exact: true }).fill(signupCode());
+    await page.getByLabel('Company name', { exact: true }).fill(company);
+  }
   await page.getByLabel('Your name', { exact: true }).fill(name);
   await page.getByLabel('Work email', { exact: true }).fill(email);
   await page.getByRole('button', { name: 'Send verification link' }).click();
@@ -13,29 +17,35 @@ async function signup(page: Page, email: string, name: string) {
   await page.getByRole('button', { name: 'Create account', exact: true }).click();
 }
 
-test('verified signup, invitation, first tool receipt and password recovery', async ({ page, browser }) => {
+test('verified signup, company setup and an invitation accepted across accounts', async ({ page, browser }) => {
   const unique = crypto.randomUUID().slice(0, 8);
   const owner = `owner-${unique}@example.com`;
   const employee = `employee-${unique}@example.com`;
   await page.goto('/signup');
-  await signup(page, owner, 'Company Owner');
+  await signup(page, owner, 'Company Owner', `Browser Company ${unique}`);
   await expect(page).toHaveURL(/company-setup/);
-  await page.getByLabel('Company name', { exact: true }).fill(`Browser Company ${unique}`);
-  await page.getByLabel('Your name', { exact: true }).fill('Company Owner');
+  // The details entered at signup carry over, and the claimed code needs no re-entry.
+  await expect(page.getByLabel('Company name', { exact: true })).toHaveValue(`Browser Company ${unique}`);
+  await expect(page.getByLabel('Your name', { exact: true })).toHaveValue('Company Owner');
+  await expect(page.getByLabel('Signup code', { exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Create company', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Queue', exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Queue', exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'People', exact: true }).click();
-  // Sections are selected by their visible heading, rather than internal component names.
   await page.getByRole('button', { name: 'Invite person', exact: true }).click();
-  const form = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Invite a teammate' }) });
+  const form = page.getByRole('dialog', { name: 'Invite a person', exact: true });
   await form.getByLabel('Name', { exact: true }).fill('Field Employee');
   await form.getByLabel('Email address', { exact: true }).fill(employee);
-  await form.getByRole('button', { name: 'Send invitation' }).click();
-  await expect(page.getByText('Invitation sent.', { exact: false })).toBeVisible();
+  await form.getByRole('button', { name: 'Create invitation', exact: true }).click();
+  await expect(form.getByText('We emailed the invitation.', { exact: false })).toBeVisible();
   const invitation = await emailLink(employee, '/invite/');
-  await page.getByRole('button', { name: 'Close invite a teammate' }).click();
+  await expect(form.getByRole('link', { name: 'View invitation', exact: true })).toHaveAttribute(
+    'href',
+    new URL(invitation, 'http://127.0.0.1:4173').pathname,
+  );
+  await form.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(form).toHaveCount(0);
   // A different signed-in user must explicitly switch accounts, preserving the invite.
   const wrongAccountContext = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
   const wrongAccount = await wrongAccountContext.newPage();
@@ -67,53 +77,151 @@ test('verified signup, invitation, first tool receipt and password recovery', as
   await worker.getByRole('button', { name: 'Open workspace', exact: true }).click();
   await expect(worker.getByRole('heading', { name: 'My tools', exact: true })).toBeVisible();
   await expect(worker.getByText('Choose your profile')).toHaveCount(0);
-  // Build an inventory through the same public screens a new company uses.
+  await workerContext.close();
+});
+
+test('a signup code starts a company with its logo and hands ownership to a named owner', async ({ page, browser }) => {
+  const unique = crypto.randomUUID().slice(0, 8);
+  const founder = `founder-${unique}@example.com`;
+  const boss = `boss-${unique}@example.com`;
+  await page.goto('/signup');
+  await expect(page.getByRole('heading', { name: 'Set up your company' })).toBeVisible();
+  await page.getByLabel('Signup code', { exact: true }).fill('ZZZZ-ZZZZ-ZZZZ');
+  await page.getByLabel('Your name', { exact: true }).fill('Office Manager');
+  await page.getByLabel('Work email', { exact: true }).fill(founder);
+  await page.getByLabel('Company name', { exact: true }).fill(`Logo Company ${unique}`);
+  await page.locator('input[type="file"]').setInputFiles('e2e/fixtures/hammer-drill.jpg');
+  await expect(page.getByRole('img', { name: 'Company logo preview' })).toBeVisible();
+  await page.getByRole('button', { name: 'Send verification link' }).click();
+  await expect(page.getByRole('alert')).toHaveText('This signup code is invalid, expired, or already used.');
+  await page.getByLabel('Signup code', { exact: true }).fill(signupCode());
+  await page.getByRole('button', { name: 'Send verification link' }).click();
+  await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
+  await page.goto(await emailLink(founder, '/verify-email'));
+  await page.getByLabel('New password', { exact: true }).fill(password);
+  await page.getByLabel('Confirm password', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Create account', exact: true }).click();
+  await expect(page).toHaveURL(/company-setup/);
+  await expect(page.getByRole('img', { name: 'Company logo preview' })).toBeVisible();
+  await page.getByRole('radio', { name: 'Someone else owns it' }).check();
+  await page.getByLabel('Owner’s name', { exact: true }).fill('Company Boss');
+  await page.getByLabel('Owner’s email', { exact: true }).fill(boss);
+  await page.getByRole('button', { name: 'Create company', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Queue', exact: true })).toBeVisible();
+  const logo = page.locator('.wordmark img.brand-mark--logo');
+  await expect(logo).toBeVisible();
+  expect(await logo.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
+
+  const bossContext = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
+  const bossPage = await bossContext.newPage();
+  await bossPage.goto(await emailLink(boss, '/invite/'));
+  await expect(bossPage.getByRole('heading', { name: 'Take ownership' })).toBeVisible();
+  await expect(bossPage.getByText('Owner · Company admin', { exact: true })).toBeVisible();
+  await bossPage.getByRole('link', { name: 'Create an account', exact: true }).click();
+  await signup(bossPage, boss, 'Company Boss');
+  await bossPage.getByRole('button', { name: 'Accept invitation' }).click();
+  await bossPage.getByRole('button', { name: 'Open workspace', exact: true }).click();
+  await bossPage.getByRole('link', { name: 'People', exact: true }).click();
+  const founderRow = bossPage.getByRole('row').filter({ hasText: 'Office Manager' });
+  await expect(bossPage.getByRole('row').filter({ hasText: 'Company Boss' })).toContainText('Owner, Company admin');
+  await founderRow.getByRole('button', { name: 'Open Office Manager' }).click();
+  const drawer = bossPage.getByRole('dialog', { name: 'Person details for Office Manager' });
+  await drawer.getByRole('button', { name: 'Make Office Manager the owner' }).click();
+  await drawer.getByRole('button', { name: 'Make owner', exact: true }).click();
+  await expect(drawer.getByRole('button', { name: 'Make owner', exact: true })).toHaveCount(0);
+  await expect(founderRow).toContainText('Owner, Company admin');
+  await bossContext.close();
+});
+
+test('a new company builds its inventory through public screens and a worker receives a tool', async ({
+  page,
+  browser,
+}) => {
+  const { base } = await ownedCompany(page);
+  const workerContext = await browser.newContext({
+    baseURL: 'http://127.0.0.1:4173',
+    viewport: { width: 390, height: 844 },
+  });
+  const worker = await workerContext.newPage();
+  await invitedMember(page, worker, base, 'field_member', 'Field Employee');
+  await page.goto('/app/warehouses');
+  await page.getByRole('button', { name: 'Add warehouse', exact: true }).click();
+  const warehouseDialog = page.getByRole('dialog', { name: 'Create warehouse', exact: true });
+  await warehouseDialog.getByLabel('Code', { exact: true }).fill('MAIN');
+  await warehouseDialog.getByLabel('Name', { exact: true }).fill('Main warehouse');
+  await warehouseDialog.getByRole('button', { name: 'Save warehouse', exact: true }).click();
+  await expect(warehouseDialog).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Main warehouse', exact: true })).toBeVisible();
   await page.goto('/app/catalog');
-  const section = (name: string) =>
-    page.locator('section').filter({ has: page.getByRole('heading', { name, exact: true }) });
-  await section('Add warehouse').getByLabel('Code', { exact: true }).fill('MAIN');
-  await section('Add warehouse').getByLabel('Name', { exact: true }).fill('Main warehouse');
-  await section('Add warehouse').getByRole('button', { name: 'Create warehouse' }).click();
-  await expect(section('Add warehouse').getByRole('status')).toContainText('Saved successfully');
-  await section('Add category').getByLabel('Category name').fill('Drills');
-  await section('Add category').getByRole('button', { name: 'Create category' }).click();
-  await expect(section('Add category').getByRole('status')).toContainText('Saved successfully');
-  await section('Add model').getByLabel('Category', { exact: true }).selectOption({ label: 'Drills' });
-  await section('Add model').getByLabel('Tool name').fill('Hammer drill');
-  await section('Add model').getByLabel('Manufacturer').fill('Makita');
-  await section('Add model').getByLabel('Model number').fill('XPH14');
-  await section('Add model').getByRole('button', { name: 'Create model' }).click();
-  await expect(section('Add model').getByRole('status')).toContainText('Saved successfully');
+  const categories = page.getByRole('region', { name: 'Tool categories', exact: true });
+  await categories.getByLabel('New category').fill('Drills');
+  await categories.getByRole('button', { name: 'Add category', exact: true }).click();
+  await expect(categories.getByText('Drills', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Add model', exact: true }).click();
+  const modelDialog = page.getByRole('dialog', { name: 'Create model', exact: true });
+  await chooseOption(modelDialog, 'Category', { label: 'Drills' });
+  await modelDialog.getByLabel('Tool name').fill('Hammer drill');
+  await modelDialog.getByLabel('Manufacturer').fill('Makita');
+  await modelDialog.getByLabel('Model number').fill('XPH14');
+  await modelDialog.getByRole('button', { name: 'Save model', exact: true }).click();
+  await expect(modelDialog).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Edit Hammer drill', exact: true })).toBeVisible();
   await page.goto('/app/tools/new');
   await page.getByRole('button', { name: 'Continue without a photo' }).click();
-  await page.getByLabel('Tool model').selectOption({ label: 'Makita Hammer drill · XPH14' });
-  await page.getByLabel('Starting warehouse').selectOption({ label: 'Main warehouse' });
-  await page.getByLabel('Unique asset tag').fill('TEST-001');
-  await page.getByRole('button', { name: 'Register tool', exact: true }).click();
-  await expect(page.getByText('Tool registered.', { exact: false })).toBeVisible();
-  await worker.goto('/app/tools');
-  await worker.getByRole('link', { name: /TEST-001/ }).click();
-  await worker.getByRole('button', { name: 'Request this tool', exact: true }).click();
-  await worker.getByRole('button', { name: 'Request tool', exact: true }).click();
-  await expect(worker.getByText('Your request is waiting for review.')).toBeVisible();
+  await chooseOption(page, 'Tool model', { label: 'Makita Hammer drill' });
+  await chooseOption(page, 'Home warehouse', { label: 'Main warehouse' });
+  await page.getByLabel('Asset tag', { exact: true }).fill('TEST-001');
+  await page.getByRole('button', { name: 'Add tool', exact: true }).click();
+  // The wizard closes onto the new tool's record.
+  await expect(page.getByRole('dialog', { name: 'Hammer drill details', exact: true })).toBeVisible();
+  const toolId = new URL(page.url()).pathname.split('/').pop();
+  await worker.goto(`/app/checkout/${toolId}?action=request`);
+  await worker.getByRole('button', { name: 'Request from Main warehouse', exact: true }).click();
+  // The action panel closes once the request is recorded.
+  await expect(worker.getByRole('form', { name: 'Action details', exact: true })).toHaveCount(0);
+  await worker.goto(`/app/checkout/${toolId}?action=request`);
+  await expect(worker.getByText('You already requested this tool. It is waiting for review.')).toBeVisible();
   await page.goto('/app/operations');
-  await page.getByRole('button', { name: 'Review request', exact: true }).click();
-  await page.getByRole('button', { name: 'Apply decision' }).click();
-  await expect(page.getByText('approved', { exact: true })).toBeVisible();
-  await worker.goto('/app/operations');
-  await worker.getByRole('button', { name: 'Review handoff', exact: true }).click();
-  await worker.getByRole('button', { name: 'Confirm handoff decision' }).click();
-  await expect(worker.getByText('No handoffs to review.')).toBeVisible();
-  await worker.goto('/app/tools');
-  await worker.getByRole('link', { name: /TEST-001/ }).click();
-  await expect(
-    worker.getByRole('region', { name: 'Current custody', exact: true }).getByText('Field Employee', { exact: true }),
-  ).toBeVisible();
+  await page.getByRole('button', { name: 'Review request for Hammer drill', exact: true }).click();
+  await page
+    .getByRole('dialog', { name: 'Review Hammer drill', exact: true })
+    .getByRole('button', { name: 'Release to worker', exact: true })
+    .click();
+  await expect(page.getByRole('dialog', { name: 'Review Hammer drill', exact: true })).toHaveCount(0);
+  await expect(page.getByText('Released · awaiting pickup', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Release for Hammer drill', exact: true })).toHaveCount(0);
+  // The released tool waits in the worker's own pending list until they accept custody.
   await worker.goto('/app/mine');
-  await expect(worker.getByRole('link', { name: 'TEST-001 Hammer drill', exact: true })).toBeVisible();
-  const credentials = await worker.evaluate(() => ({ local: { ...localStorage }, session: { ...sessionStorage } }));
-  expect(JSON.stringify(credentials)).not.toContain(password);
+  await worker
+    .getByRole('article', { name: 'Hammer drill pending handoff', exact: true })
+    .getByRole('button', { name: 'Review and accept', exact: true })
+    .click();
+  const receipt = worker.getByRole('dialog', { name: 'Hammer drill transfer review', exact: true });
+  await receipt.getByRole('checkbox', { name: 'I have inspected this tool', exact: true }).click();
+  await receipt.getByRole('button', { name: 'Accept — take custody', exact: true }).click();
+  await expect(receipt).toHaveCount(0);
+  await expect(worker.getByRole('article', { name: 'Hammer drill pending handoff', exact: true })).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Review request for Hammer drill', exact: true })).toHaveCount(0);
+  await page.goto(`/app/tools/${toolId}`);
+  await expect(
+    page.getByRole('region', { name: 'Current custody', exact: true }).getByText('Field Employee', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    worker.getByRole('button', { name: 'Open details for Hammer drill unit TEST-001', exact: true }),
+  ).toBeVisible();
   await worker.screenshot({ path: 'artifacts/real-app-mobile.png', fullPage: true });
+  await workerContext.close();
+});
+
+test('a member recovers their password, signs in with it and signs out', async ({ page, browser }) => {
+  const { base } = await ownedCompany(page);
+  const workerContext = await browser.newContext({
+    baseURL: 'http://127.0.0.1:4173',
+    viewport: { width: 390, height: 844 },
+  });
+  const worker = await workerContext.newPage();
+  const { email: employee } = await invitedMember(page, worker, base, 'field_member', 'Field Employee');
   await worker.goto('/forgot-password');
   await worker.getByLabel('Email address', { exact: true }).fill(employee);
   await worker.getByRole('button', { name: 'Send reset link' }).click();
@@ -134,7 +242,10 @@ test('verified signup, invitation, first tool receipt and password recovery', as
   await worker.getByLabel('Password', { exact: true }).fill(password + '-updated');
   await worker.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(worker.getByRole('heading', { name: 'My tools', exact: true })).toBeVisible();
+  const credentials = await worker.evaluate(() => ({ local: { ...localStorage }, session: { ...sessionStorage } }));
+  expect(JSON.stringify(credentials)).not.toContain(password);
   await worker.getByRole('button', { name: 'Open navigation' }).click();
+  await worker.getByRole('button', { name: 'Open account for Field Employee', exact: true }).click();
   await worker.getByRole('button', { name: 'Sign out', exact: true }).click();
   await expect(worker.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible();
   await worker.goto('/app/tools');
@@ -178,8 +289,10 @@ test('account links, resend, password validation, and recovery have actionable s
   await page.setViewportSize({ width: 390, height: 844 });
   await page.clock.install();
   await page.goto('/signup');
+  await page.getByLabel('Signup code', { exact: true }).fill(signupCode());
   await page.getByLabel('Your name', { exact: true }).fill('Account Test');
   await page.getByLabel('Work email', { exact: true }).fill(email);
+  await page.getByLabel('Company name', { exact: true }).fill('Account Test Company');
   await page.getByRole('button', { name: 'Send verification link' }).click();
   await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
   await expect(page.getByRole('button', { name: /Resend email in/ })).toBeDisabled();

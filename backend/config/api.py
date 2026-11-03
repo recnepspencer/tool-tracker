@@ -20,7 +20,9 @@ class CsrfToken(Schema):
 class MembershipView(Schema):
     company_id: UUID
     company_name: str
+    company_logo_id: UUID | None
     membership_id: UUID
+    is_owner: bool
     preferred_name: str
     capabilities: list[str]
     managed_warehouse_ids: list[UUID]
@@ -52,7 +54,9 @@ def session_info(request: HttpRequest):
             {
                 "company_id": member.company_id,
                 "company_name": member.company.name,
+                "company_logo_id": member.company.logo_id,
                 "membership_id": member.id,
+                "is_owner": member.company.owner_id == member.id,
                 "preferred_name": member.person.preferred_name,
                 "capabilities": sorted(capabilities(member)),
                 "managed_warehouse_ids": list(

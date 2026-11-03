@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import type { LogoChoice } from './auth-ui';
 import { api, ApiError, requestKey, result } from './client';
 import { safeNext } from './navigation';
 import { useSession } from './session';
@@ -13,22 +14,49 @@ export function useLoginState() {
 
   return { navigate, session, loading, refresh, error, next };
 }
+/** Store a chosen logo, or keep the one already stored. Signed-out uploads need a signup code. */
+export async function saveLogo(choice: LogoChoice, signup_code = '') {
+  if (choice.id || !choice.file) return choice.id ?? null;
+  const file = choice.file;
+  return result(
+    await api.POST('/api/auth/logos', {
+      body: { file: '', signup_code },
+      bodySerializer: () => {
+        const body = new FormData();
+        body.set('file', file);
+        body.set('signup_code', signup_code);
+        return body;
+      },
+    }),
+  ).id;
+}
+
+type SignupDraft = { name: string; email: string; signup_code: string; company_name: string; logo_id: string | null };
+
 export function useSignupState() {
   const [search] = useSearchParams();
   const [sent, setSent] = useState(false);
-  const [draft, setDraft] = useState({ name: '', email: '' });
+  const [draft, setDraft] = useState<SignupDraft>({
+    name: '',
+    email: '',
+    signup_code: search.get('code') ?? '',
+    company_name: '',
+    logo_id: null,
+  });
+  const [logo, setLogo] = useState<LogoChoice>({});
   const { session, loading } = useSession();
   const next = safeNext(search.get('next'));
-  async function send(values: typeof draft) {
+  // Invited people join an existing company; everyone else is starting one with a code.
+  const invitation = next.startsWith('/invite/') ? new URL(next, window.location.origin).pathname.slice(8) : '';
+  async function send(values: SignupDraft) {
     await api.POST('/api/auth/signup', {
-      body: {
-        ...values,
-        invitation_token: next.startsWith('/invite/') ? new URL(next, window.location.origin).pathname.slice(8) : '',
-      },
+      body: invitation
+        ? { ...values, signup_code: '', company_name: '', logo_id: null, invitation_token: invitation }
+        : { ...values, invitation_token: '' },
     });
   }
 
-  return { sent, setSent, draft, setDraft, session, loading, next, send };
+  return { sent, setSent, draft, setDraft, logo, setLogo, session, loading, next, invitation, send };
 }
 export function useVerifyEmailState() {
   const [search] = useSearchParams();
@@ -68,8 +96,34 @@ export function useCompanySetupState() {
   const { session, loading, refresh, logout, chooseCompany } = useSession();
   const [key] = useState(requestKey);
   const navigate = useNavigate();
+  // The company name and logo entered at signup wait on the claimed code until setup.
+  const signup = useQuery({
+    queryKey: ['company-signup', session?.user_id],
+    queryFn: () => api.GET('/api/company-signup').then(result),
+    enabled: Boolean(session),
+    staleTime: Infinity,
+  });
+  const [logo, setLogo] = useState<LogoChoice>();
+  const [ownerElse, setOwnerElse] = useState(false);
+  const pending = signup.data?.pending;
+  const shownLogo = logo ?? { id: pending?.logo_id };
 
-  return { session, loading, refresh, logout, chooseCompany, key, navigate, createdCompanyId, setCreatedCompanyId };
+  return {
+    session,
+    loading: loading || (Boolean(session) && signup.isPending),
+    refresh,
+    logout,
+    chooseCompany,
+    key,
+    navigate,
+    createdCompanyId,
+    setCreatedCompanyId,
+    signup: signup.data,
+    logo: shownLogo,
+    setLogo,
+    ownerElse,
+    setOwnerElse,
+  };
 }
 export function useInvitationState() {
   const { token = '' } = useParams();

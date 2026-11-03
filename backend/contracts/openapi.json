@@ -1233,10 +1233,40 @@
       "CompanyInput": {
         "additionalProperties": false,
         "properties": {
+          "logo_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Id"
+          },
           "name": {
             "maxLength": 200,
             "minLength": 1,
             "title": "Name",
+            "type": "string"
+          },
+          "owner_email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Email"
+          },
+          "owner_name": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Owner Name",
             "type": "string"
           },
           "preferred_name": {
@@ -1248,6 +1278,12 @@
           "request_key": {
             "format": "uuid",
             "title": "Request Key",
+            "type": "string"
+          },
+          "signup_code": {
+            "default": "",
+            "maxLength": 40,
+            "title": "Signup Code",
             "type": "string"
           },
           "timezone": {
@@ -1263,6 +1299,30 @@
           "preferred_name"
         ],
         "title": "CompanyInput",
+        "type": "object"
+      },
+      "CompanySignupView": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "pending": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PendingCompanyView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "pending"
+        ],
+        "title": "CompanySignupView",
         "type": "object"
       },
       "CompanySummary": {
@@ -1349,9 +1409,33 @@
             "title": "Id",
             "type": "string"
           },
+          "logo_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Id"
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "owner_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Id"
           },
           "revision": {
             "title": "Revision",
@@ -1367,7 +1451,9 @@
           "name",
           "address",
           "timezone",
-          "revision"
+          "revision",
+          "logo_id",
+          "owner_id"
         ],
         "title": "CompanyView",
         "type": "object"
@@ -2315,6 +2401,10 @@
             "title": "Email",
             "type": "string"
           },
+          "owner": {
+            "title": "Owner",
+            "type": "boolean"
+          },
           "preferred_name": {
             "title": "Preferred Name",
             "type": "string"
@@ -2328,7 +2418,8 @@
           "company_name",
           "email",
           "preferred_name",
-          "role"
+          "role",
+          "owner"
         ],
         "title": "InvitationPreview",
         "type": "object"
@@ -2355,6 +2446,10 @@
             "format": "date-time",
             "title": "Expires At",
             "type": "string"
+          },
+          "grants_ownership": {
+            "title": "Grants Ownership",
+            "type": "boolean"
           },
           "id": {
             "format": "uuid",
@@ -2394,6 +2489,7 @@
           "email",
           "preferred_name",
           "role_code",
+          "grants_ownership",
           "expires_at",
           "accepted_at",
           "revoked_at"
@@ -2701,6 +2797,52 @@
         "title": "LifecycleView",
         "type": "object"
       },
+      "LogoInput": {
+        "additionalProperties": false,
+        "properties": {
+          "logo_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Id"
+          }
+        },
+        "required": [
+          "logo_id"
+        ],
+        "title": "LogoInput",
+        "type": "object"
+      },
+      "LogoView": {
+        "properties": {
+          "byte_count": {
+            "title": "Byte Count",
+            "type": "integer"
+          },
+          "content_type": {
+            "title": "Content Type",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "content_type",
+          "byte_count"
+        ],
+        "title": "LogoView",
+        "type": "object"
+      },
       "MemberPage": {
         "properties": {
           "items": {
@@ -2764,6 +2906,10 @@
             "title": "Id",
             "type": "string"
           },
+          "is_owner": {
+            "title": "Is Owner",
+            "type": "boolean"
+          },
           "person_id": {
             "format": "uuid",
             "title": "Person Id",
@@ -2805,7 +2951,8 @@
           "ended_at",
           "revision",
           "roles",
-          "capabilities"
+          "capabilities",
+          "is_owner"
         ],
         "title": "MemberView",
         "type": "object"
@@ -2884,9 +3031,25 @@
             "title": "Company Id",
             "type": "string"
           },
+          "company_logo_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Logo Id"
+          },
           "company_name": {
             "title": "Company Name",
             "type": "string"
+          },
+          "is_owner": {
+            "title": "Is Owner",
+            "type": "boolean"
           },
           "managed_warehouse_ids": {
             "items": {
@@ -2909,7 +3072,9 @@
         "required": [
           "company_id",
           "company_name",
+          "company_logo_id",
           "membership_id",
+          "is_owner",
           "preferred_name",
           "capabilities",
           "managed_warehouse_ids"
@@ -3105,6 +3270,21 @@
           "expected_revision"
         ],
         "title": "NoteInput",
+        "type": "object"
+      },
+      "OwnershipInput": {
+        "additionalProperties": false,
+        "properties": {
+          "membership_id": {
+            "format": "uuid",
+            "title": "Membership Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "membership_id"
+        ],
+        "title": "OwnershipInput",
         "type": "object"
       },
       "PageInput": {
@@ -3521,6 +3701,32 @@
           "email"
         ],
         "title": "PasswordResetRequestContract",
+        "type": "object"
+      },
+      "PendingCompanyView": {
+        "properties": {
+          "company_name": {
+            "title": "Company Name",
+            "type": "string"
+          },
+          "logo_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Id"
+          }
+        },
+        "required": [
+          "company_name",
+          "logo_id"
+        ],
+        "title": "PendingCompanyView",
         "type": "object"
       },
       "ProjectInput": {
@@ -4450,6 +4656,12 @@
       "SignupInput": {
         "additionalProperties": false,
         "properties": {
+          "company_name": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Company Name",
+            "type": "string"
+          },
           "email": {
             "format": "email",
             "title": "Email",
@@ -4461,10 +4673,28 @@
             "title": "Invitation Token",
             "type": "string"
           },
+          "logo_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Id"
+          },
           "name": {
             "maxLength": 120,
             "minLength": 1,
             "title": "Name",
+            "type": "string"
+          },
+          "signup_code": {
+            "default": "",
+            "maxLength": 40,
+            "title": "Signup Code",
             "type": "string"
           }
         },
@@ -4831,6 +5061,54 @@
         "tags": [
           "identity",
           "identity.impersonation"
+        ]
+      }
+    },
+    "/api/auth/logos": {
+      "post": {
+        "operationId": "accounts_api_upload_logo",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "file": {
+                    "format": "binary",
+                    "title": "File",
+                    "type": "string"
+                  },
+                  "signup_code": {
+                    "default": "",
+                    "title": "Signup Code",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "title": "MultiPartBodyParams",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Upload Logo",
+        "tags": [
+          "accounts"
         ]
       }
     },
@@ -6732,6 +7010,92 @@
         "summary": "Job Update",
         "tags": [
           "work"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/logo": {
+      "post": {
+        "operationId": "companies_api_company_logo",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogoInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Company Logo",
+        "tags": [
+          "company and people"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/ownership": {
+      "post": {
+        "operationId": "companies_api_ownership_transfer",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnershipInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Ownership Transfer",
+        "tags": [
+          "company and people"
         ]
       }
     },
@@ -8905,6 +9269,28 @@
         ]
       }
     },
+    "/api/company-signup": {
+      "get": {
+        "operationId": "accounts_api_company_signup",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanySignupView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Company Signup",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
     "/api/invitations/accept": {
       "post": {
         "operationId": "companies_api_invitation_accept",
@@ -8964,6 +9350,41 @@
           }
         },
         "summary": "Preview Invitation",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/logos/{logo_id}": {
+      "get": {
+        "operationId": "accounts_api_download_logo",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "logo_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Logo Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "format": "binary",
+                  "title": "Response",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Download Logo",
         "tags": [
           "accounts"
         ]

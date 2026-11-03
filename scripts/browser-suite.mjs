@@ -1,8 +1,9 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { createWriteStream, existsSync } from 'node:fs';
-import { cp, mkdir, readdir } from 'node:fs/promises';
-import { createServer } from 'node:net';
+import { cp, mkdir } from 'node:fs/promises';
+import { connect, createServer } from 'node:net';
+import { availableParallelism } from 'node:os';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -12,14 +13,6 @@ if (existsSync(resolve(backend, '.env'))) process.loadEnvFile(resolve(backend, '
 const python = resolve(backend, '.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
 const playwright = resolve(root, 'node_modules/@playwright/test/cli.js');
 const args = process.argv.slice(2);
-const selected = args.filter((arg) => arg.endsWith('.spec.ts'));
-const options = args.filter((arg) => !arg.endsWith('.spec.ts'));
-const files = selected.length
-  ? selected
-  : (await readdir(resolve(root, 'e2e')))
-      .filter((name) => name.endsWith('.spec.ts'))
-      .sort()
-      .map((name) => `e2e/${name}`);
 let interrupted = false;
 let activeTest;
 
@@ -59,12 +52,12 @@ function launch(executable, commandArgs, env, log) {
   }
   return child;
 }
-async function ready(api) {
+async function ready(api, port) {
   const deadline = Date.now() + 60_000;
   while (Date.now() < deadline) {
     if (interrupted || api.exitCode !== null) throw new Error('Browser API stopped before becoming ready.');
     try {
-      const response = await fetch('http://127.0.0.1:8002/api/auth/csrf', { signal: AbortSignal.timeout(1000) });
+      const response = await fetch(`http://127.0.0.1:${port}/api/auth/csrf`, { signal: AbortSignal.timeout(1000) });
       if (response.ok) return;
     } catch {
       /* Wait for the owned API to bind. */
@@ -72,6 +65,22 @@ async function ready(api) {
     await new Promise((resolveWait) => setTimeout(resolveWait, 200));
   }
   throw new Error('Browser API did not become ready; inspect its log.');
+}
+
+// One Python process serialises every browser worker behind its GIL, so the suite runs
+// several API processes and spreads connections across them at 8002.
+function balance(ports) {
+  let next = 0;
+  const server = createServer((client) => {
+    const upstream = connect(ports[next++ % ports.length], '127.0.0.1');
+    client.pipe(upstream).pipe(client);
+    client.on('error', () => upstream.destroy());
+    upstream.on('error', () => client.destroy());
+  });
+  return new Promise((resolveListen, reject) => {
+    server.once('error', reject);
+    server.listen(8002, '127.0.0.1', () => resolveListen(server));
+  });
 }
 
 async function requireFreePort(port) {
@@ -82,60 +91,69 @@ async function requireFreePort(port) {
   });
 }
 
-let failed = false;
-for (const file of files) {
-  if (interrupted) break;
-  const name = `nelson_browser_${process.pid}_${randomBytes(6).toString('hex')}`;
-  const artifactDir = resolve(root, 'artifacts/browser-runs', name);
-  await mkdir(resolve(artifactDir, 'mail'), { recursive: true });
-  const env = {
-    ...process.env,
-    PYTHONUNBUFFERED: '1',
-    DJANGO_DEBUG: '1',
-    DJANGO_ALLOWED_HOSTS: '127.0.0.1,localhost,testserver',
-    NELSON_APP_URL: 'http://127.0.0.1:4173',
-    EMAIL_BACKEND: 'django.core.mail.backends.filebased.EmailBackend',
-    POSTGRES_DB: name,
-    NELSON_API_TARGET: 'http://127.0.0.1:8002',
-    NELSON_BROWSER_ISOLATED: '1',
-    NELSON_BROWSER_RESULTS: resolve(artifactDir, 'results'),
-    NELSON_BROWSER_DIST: resolve(artifactDir, 'web'),
-    NELSON_MAIL_ROOT: resolve(artifactDir, 'mail'),
-    NELSON_MEDIA_ROOT: resolve(artifactDir, 'media'),
-  };
-  const log = createWriteStream(resolve(artifactDir, 'api.log'));
-  const workerLog = createWriteStream(resolve(artifactDir, 'worker.log'));
-  let api,
-    worker,
-    created = false;
-  try {
-    console.log(`\nBrowser file: ${file}\nDiagnostics: ${artifactDir}`);
-    await cp(resolve(root, 'dist'), env.NELSON_BROWSER_DIST, { recursive: true });
-    await requireFreePort(8002);
-    await requireFreePort(4173);
-    await run(python, ['backend/scripts/browser_database.py', 'create', name], env);
-    created = true;
-    await run(python, ['backend/manage.py', 'migrate', '--noinput'], env, log);
-    api = launch(python, ['backend/manage.py', 'runserver', '127.0.0.1:8002', '--noreload'], env, log);
-    worker = launch(python, ['backend/manage.py', 'run_platform_worker'], env, workerLog);
-    await ready(api);
-    activeTest = launch(process.execPath, [playwright, 'test', file, ...options], env);
-    const code = await new Promise((resolveExit, reject) => {
-      activeTest.once('error', reject);
-      activeTest.once('exit', (status) => resolveExit(status ?? 1));
-    });
-    if (code !== 0) failed = true;
-  } catch (error) {
-    console.error(error.message);
-    failed = true;
-  } finally {
-    await stop(activeTest);
-    activeTest = undefined;
-    await stop(worker);
-    await stop(api);
-    log.end();
-    workerLog.end();
-    if (created) await run(python, ['backend/scripts/browser_database.py', 'drop', name], env);
-  }
+// One database, API and activity worker serve the whole run. Every scenario creates its own
+// company, so Playwright workers share the backend and run in parallel.
+const name = `nelson_browser_${process.pid}_${randomBytes(6).toString('hex')}`;
+const artifactDir = resolve(root, 'artifacts/browser-runs', name);
+await mkdir(resolve(artifactDir, 'mail'), { recursive: true });
+const env = {
+  ...process.env,
+  PYTHONUNBUFFERED: '1',
+  DJANGO_DEBUG: '1',
+  DJANGO_ALLOWED_HOSTS: '127.0.0.1,localhost,testserver',
+  NELSON_APP_URL: 'http://127.0.0.1:4173',
+  NELSON_FAST_PASSWORD_HASHING: '1',
+  NELSON_TRUSTED_PROXY_IPS: '127.0.0.1',
+  EMAIL_BACKEND: 'django.core.mail.backends.filebased.EmailBackend',
+  POSTGRES_DB: name,
+  NELSON_API_TARGET: 'http://127.0.0.1:8002',
+  NELSON_BROWSER_ISOLATED: '1',
+  NELSON_BROWSER_RESULTS: resolve(artifactDir, 'results'),
+  NELSON_BROWSER_DIST: resolve(artifactDir, 'web'),
+  NELSON_MAIL_ROOT: resolve(artifactDir, 'mail'),
+  NELSON_MEDIA_ROOT: resolve(artifactDir, 'media'),
+};
+const log = createWriteStream(resolve(artifactDir, 'api.log'));
+const workerLog = createWriteStream(resolve(artifactDir, 'worker.log'));
+const apiPorts = Array.from(
+  { length: Math.max(2, Math.floor(availableParallelism() / 4)) },
+  (_, index) => 8003 + index,
+);
+let apis = [],
+  balancer,
+  worker,
+  created = false,
+  failed = false;
+try {
+  console.log(`Diagnostics: ${artifactDir}`);
+  for (const port of [8002, 4173, ...apiPorts]) await requireFreePort(port);
+  await Promise.all([
+    cp(resolve(root, 'dist'), env.NELSON_BROWSER_DIST, { recursive: true }),
+    run(python, ['backend/scripts/browser_database.py', 'create', name], env).then(() => (created = true)),
+  ]);
+  await run(python, ['backend/manage.py', 'migrate', '--noinput'], env, log);
+  apis = apiPorts.map((port) => launch(python, ['backend/scripts/browser_api.py', `127.0.0.1:${port}`], env, log));
+  // Scenarios wait on materialised activity, so the worker picks jobs up promptly.
+  worker = launch(python, ['backend/manage.py', 'run_platform_worker', '--poll-seconds', '0.2'], env, workerLog);
+  await Promise.all(apis.map((api, index) => ready(api, apiPorts[index])));
+  balancer = await balance(apiPorts);
+  activeTest = launch(process.execPath, [playwright, 'test', ...args], env);
+  const code = await new Promise((resolveExit, reject) => {
+    activeTest.once('error', reject);
+    activeTest.once('exit', (status) => resolveExit(status ?? 1));
+  });
+  if (code !== 0) failed = true;
+} catch (error) {
+  console.error(error.message);
+  failed = true;
+} finally {
+  await stop(activeTest);
+  activeTest = undefined;
+  await stop(worker);
+  balancer?.close();
+  await Promise.all(apis.map(stop));
+  log.end();
+  workerLog.end();
+  if (created) await run(python, ['backend/scripts/browser_database.py', 'drop', name], env);
 }
 process.exitCode = failed || interrupted ? 1 : 0;

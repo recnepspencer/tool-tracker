@@ -63,7 +63,14 @@ try {
     headers: { Origin: origin, 'X-CSRFToken': csrf.csrf_token },
   });
   if (ownerLogin.status() === 401) {
-    await command(setup.request, '/api/auth/signup', { email: ownerEmail, name: 'Deployment checks' });
+    // Starting a company needs a code; issue one with `manage.py signup_codes create` on a fresh environment.
+    assert(process.env.TEST_SIGNUP_CODE, 'Set TEST_SIGNUP_CODE to create the deployment-check company.');
+    await command(setup.request, '/api/auth/signup', {
+      email: ownerEmail,
+      name: 'Deployment checks',
+      signup_code: process.env.TEST_SIGNUP_CODE,
+      company_name: 'Deployment checks',
+    });
     const verification = new URL(await emailLink(ownerEmail, '/verify-email'));
     await command(setup.request, '/api/auth/verify-signup', {
       token: verification.searchParams.get('token'),

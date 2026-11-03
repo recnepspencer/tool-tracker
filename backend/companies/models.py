@@ -6,6 +6,20 @@ from django.db.models import Q
 from .constraints import ScopedForeignKey
 
 
+class CompanyLogo(models.Model):
+    """An uploaded logo image. Pending uploads expire unless a company or signup adopts them."""
+
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
+    storage_key = models.CharField(max_length=300, unique=True)
+    content_type = models.CharField(max_length=80)
+    byte_count = models.PositiveIntegerField()
+    uploaded_by = models.ForeignKey(
+        "cleanforce_identity.PlatformUser", null=True, on_delete=models.PROTECT
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=True, db_index=True)
+
+
 class Company(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     name = models.CharField(max_length=200)
@@ -15,6 +29,16 @@ class Company(models.Model):
     setup_key = models.UUIDField(null=True, unique=True)
     created_by = models.ForeignKey(
         "cleanforce_identity.PlatformUser", null=True, on_delete=models.PROTECT
+    )
+    logo = models.ForeignKey(CompanyLogo, null=True, blank=True, on_delete=models.SET_NULL)
+    # One owner per company. The owner always holds Company Admin and cannot be demoted,
+    # suspended or removed until ownership moves to another member.
+    owner = models.ForeignKey(
+        "CompanyMembership",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="owned_companies",
     )
 
 
@@ -102,6 +126,8 @@ class MembershipInvitation(models.Model):
     accepted_membership = models.ForeignKey(
         CompanyMembership, null=True, on_delete=models.PROTECT, related_name="accepted_invitations"
     )
+    # Accepting an ownership invitation makes the new member the company owner.
+    grants_ownership = models.BooleanField(default=False)
 
     class Meta:
         constraints = [

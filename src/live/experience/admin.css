@@ -140,6 +140,11 @@
   font-size: var(--text-md);
   margin: 0;
 }
+.experience .form-status {
+  color: var(--green);
+  font-size: var(--text-md);
+  margin: 0;
+}
 .experience .admin-meta-kind {
   color: var(--dim);
   font: var(--font-mono-xs);

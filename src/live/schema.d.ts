@@ -40,6 +40,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/auth/logos': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Upload Logo */
+    post: operations['accounts_api_upload_logo'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/auth/logout': {
     parameters: {
       query?: never;
@@ -638,6 +655,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/companies/{company_id}/logo': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Company Logo */
+    post: operations['companies_api_company_logo'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/companies/{company_id}/ownership': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Ownership Transfer */
+    post: operations['companies_api_ownership_transfer'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/companies/{company_id}/people': {
     parameters: {
       query?: never;
@@ -1173,6 +1224,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/company-signup': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Company Signup */
+    get: operations['accounts_api_company_signup'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/invitations/accept': {
     parameters: {
       query?: never;
@@ -1199,6 +1267,23 @@ export interface paths {
     };
     /** Preview Invitation */
     get: operations['accounts_api_preview_invitation'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/logos/{logo_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Download Logo */
+    get: operations['accounts_api_download_logo'];
     put?: never;
     post?: never;
     delete?: never;
@@ -1629,8 +1714,17 @@ export interface components {
     };
     /** CompanyInput */
     CompanyInput: {
+      /** Logo Id */
+      logo_id?: string | null;
       /** Name */
       name: string;
+      /** Owner Email */
+      owner_email?: string | null;
+      /**
+       * Owner Name
+       * @default
+       */
+      owner_name: string;
       /** Preferred Name */
       preferred_name: string;
       /**
@@ -1639,10 +1733,21 @@ export interface components {
        */
       request_key: string;
       /**
+       * Signup Code
+       * @default
+       */
+      signup_code: string;
+      /**
        * Timezone
        * @default America/Denver
        */
       timezone: string;
+    };
+    /** CompanySignupView */
+    CompanySignupView: {
+      /** Name */
+      name: string;
+      pending: components['schemas']['PendingCompanyView'] | null;
     };
     /** CompanySummary */
     CompanySummary: {
@@ -1682,8 +1787,12 @@ export interface components {
        * Format: uuid
        */
       id: string;
+      /** Logo Id */
+      logo_id: string | null;
       /** Name */
       name: string;
+      /** Owner Id */
+      owner_id: string | null;
       /** Revision */
       revision: number;
       /** Timezone */
@@ -2021,6 +2130,8 @@ export interface components {
       company_name: string;
       /** Email */
       email: string;
+      /** Owner */
+      owner: boolean;
       /** Preferred Name */
       preferred_name: string;
       /** Role */
@@ -2037,6 +2148,8 @@ export interface components {
        * Format: date-time
        */
       expires_at: string;
+      /** Grants Ownership */
+      grants_ownership: boolean;
       /**
        * Id
        * Format: uuid
@@ -2180,6 +2293,23 @@ export interface components {
        */
       to_lifecycle: 'active' | 'retired' | 'disposed';
     };
+    /** LogoInput */
+    LogoInput: {
+      /** Logo Id */
+      logo_id: string | null;
+    };
+    /** LogoView */
+    LogoView: {
+      /** Byte Count */
+      byte_count: number;
+      /** Content Type */
+      content_type: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+    };
     /** MemberPage */
     MemberPage: {
       /** Items */
@@ -2203,6 +2333,8 @@ export interface components {
        * Format: uuid
        */
       id: string;
+      /** Is Owner */
+      is_owner: boolean;
       /**
        * Person Id
        * Format: uuid
@@ -2250,8 +2382,12 @@ export interface components {
        * Format: uuid
        */
       company_id: string;
+      /** Company Logo Id */
+      company_logo_id: string | null;
       /** Company Name */
       company_name: string;
+      /** Is Owner */
+      is_owner: boolean;
       /** Managed Warehouse Ids */
       managed_warehouse_ids: string[];
       /**
@@ -2338,6 +2474,14 @@ export interface components {
        * @default
        */
       note: string;
+    };
+    /** OwnershipInput */
+    OwnershipInput: {
+      /**
+       * Membership Id
+       * Format: uuid
+       */
+      membership_id: string;
     };
     /** PageInput */
     PageInput: {
@@ -2505,6 +2649,13 @@ export interface components {
     PasswordResetRequestContract: {
       /** Email */
       email: string;
+    };
+    /** PendingCompanyView */
+    PendingCompanyView: {
+      /** Company Name */
+      company_name: string;
+      /** Logo Id */
+      logo_id: string | null;
     };
     /** ProjectInput */
     ProjectInput: {
@@ -2867,6 +3018,11 @@ export interface components {
     /** SignupInput */
     SignupInput: {
       /**
+       * Company Name
+       * @default
+       */
+      company_name: string;
+      /**
        * Email
        * Format: email
        */
@@ -2876,8 +3032,15 @@ export interface components {
        * @default
        */
       invitation_token: string;
+      /** Logo Id */
+      logo_id?: string | null;
       /** Name */
       name: string;
+      /**
+       * Signup Code
+       * @default
+       */
+      signup_code: string;
     };
     /** StewardshipInput */
     StewardshipInput: {
@@ -3067,6 +3230,41 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['IdentityImpersonationOperationResource'];
+        };
+      };
+    };
+  };
+  accounts_api_upload_logo: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /**
+           * File
+           * Format: binary
+           */
+          file: string;
+          /**
+           * Signup Code
+           * @default
+           */
+          signup_code?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LogoView'];
         };
       };
     };
@@ -4034,6 +4232,58 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['JobView'];
+        };
+      };
+    };
+  };
+  companies_api_company_logo: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        company_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LogoInput'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyView'];
+        };
+      };
+    };
+  };
+  companies_api_ownership_transfer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        company_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OwnershipInput'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyView'];
         };
       };
     };
@@ -5083,6 +5333,26 @@ export interface operations {
       };
     };
   };
+  accounts_api_company_signup: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanySignupView'];
+        };
+      };
+    };
+  };
   companies_api_invitation_accept: {
     parameters: {
       query?: never;
@@ -5125,6 +5395,28 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['InvitationPreview'];
+        };
+      };
+    };
+  };
+  accounts_api_download_logo: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        logo_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': string;
         };
       };
     };

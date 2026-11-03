@@ -1,16 +1,51 @@
-import { Eye, EyeOff } from 'lucide-react';
-import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Eye, EyeOff, Image as ImageIcon } from 'lucide-react';
+import { useEffect, useId, useRef, useState, type FormEvent, type InputHTMLAttributes, type ReactNode } from 'react';
 import { errorMessage } from './client';
+import { Button, FieldShell } from './kit';
+import { BrandMark } from './shell-chrome';
+import './experience/auth.css';
 
+/** Demo AuthHero: the brand statement beside every account screen. */
+function AuthHero() {
+  return (
+    <section className="auth-hero">
+      <div className="auth-brand">
+        <BrandMark />
+        <span>
+          Nelson <em>Electric</em>
+        </span>
+      </div>
+      <span className="eyebrow">Tool custody system</span>
+      <h1>Know where every tool went.</h1>
+      <p>One shared record for the people, yards, and handoffs that keep the job moving.</p>
+      <div className="auth-proof">
+        <span>
+          <strong>Shared</strong> custody record
+        </span>
+        <span>
+          <strong>Role-based</strong> views
+        </span>
+        <span>
+          <strong>Complete</strong> movement history
+        </span>
+      </div>
+    </section>
+  );
+}
+
+/** Demo AuthExperienceLayout: hero, then the panel holding this screen's task. */
 export function AuthLayout({
+  eyebrow,
   title,
   description,
   children,
+  footer,
 }: {
+  eyebrow: string;
   title: string;
   description: string;
   children: ReactNode;
+  footer?: ReactNode;
 }) {
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
@@ -18,25 +53,18 @@ export function AuthLayout({
     heading.current?.focus({ preventScroll: true });
   }, [title]);
   return (
-    <main className="auth-layout" id="main-content">
-      <header className="auth-header">
-        <Link to="/login" className="auth-brand">
-          <span className="auth-monogram" aria-hidden="true">
-            N
-          </span>
-          Nelson Electric
-        </Link>
-      </header>
-      <section className="auth-card" aria-labelledby="auth-title">
-        <div className="auth-inner">
-          <div className="auth-heading">
-            <h1 id="auth-title" ref={heading} tabIndex={-1}>
-              {title}
-            </h1>
-            <p>{description}</p>
-          </div>
-          {children}
+    <main className="auth-page" id="main-content">
+      <AuthHero />
+      <section className="auth-panel" aria-labelledby="auth-title">
+        <div className="panel-heading">
+          <span className="eyebrow">{eyebrow}</span>
+          <h2 id="auth-title" ref={heading} tabIndex={-1}>
+            {title}
+          </h2>
+          <p>{description}</p>
         </div>
+        <div className="auth-experience-content">{children}</div>
+        {footer && <div className="auth-experience-links">{footer}</div>}
       </section>
     </main>
   );
@@ -49,14 +77,14 @@ export function AccountForm({
   submit,
   label,
   pendingLabel,
-  secondary = false,
+  variant = 'primary',
   disabled = false,
 }: {
   children?: ReactNode;
   submit: (data: FormData) => Promise<unknown>;
   label: string;
   pendingLabel: string;
-  secondary?: boolean;
+  variant?: 'primary' | 'secondary' | 'ghost';
   disabled?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
@@ -84,21 +112,101 @@ export function AccountForm({
   }
   return (
     <form
-      className="form"
+      className="auth-form"
       onSubmit={(event) => void run(event)}
       aria-busy={busy}
       aria-describedby={error ? errorId : undefined}
     >
-      {children && <fieldset disabled={busy}>{children}</fieldset>}
+      {children && (
+        <fieldset className="auth-fieldset" disabled={busy}>
+          {children}
+        </fieldset>
+      )}
       {error && (
-        <p id={errorId} ref={alert} className="auth-error" role="alert" tabIndex={-1}>
+        <p id={errorId} ref={alert} className="form-error" role="alert" tabIndex={-1}>
           {error}
         </p>
       )}
-      <button className={secondary ? 'auth-secondary' : 'primary'} disabled={busy || disabled} type="submit">
+      <Button variant={variant} fullWidth disabled={busy || disabled} type="submit">
         {busy ? pendingLabel : label}
-      </button>
+      </Button>
     </form>
+  );
+}
+
+/** The kit field shell around an uncontrolled input, so account forms submit plain FormData. */
+export function AccountField({ label, ...props }: InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+  const id = useId();
+  return (
+    <FieldShell label={label} htmlFor={id}>
+      <input id={id} className="field-control" {...props} />
+    </FieldShell>
+  );
+}
+
+/** A logo already stored on the server (`id`), a newly chosen file, or nothing. */
+export type LogoChoice = { id?: string | null; file?: File };
+
+const LOGO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+/** Optional company logo with a preview; the form uploads `file` when it submits. */
+export function LogoField({ value, onChange }: { value: LogoChoice; onChange: (value: LogoChoice) => void }) {
+  const id = useId();
+  const input = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState('');
+  const [preview, setPreview] = useState('');
+  useEffect(() => {
+    if (!value.file) {
+      setPreview(value.id ? `/api/logos/${value.id}` : '');
+      return;
+    }
+    const url = URL.createObjectURL(value.file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [value]);
+  function choose(file: File | undefined) {
+    if (input.current) input.current.value = '';
+    if (!file) return;
+    if (!LOGO_TYPES.includes(file.type) || file.size > 2 * 1024 * 1024) {
+      setError('Choose a JPEG, PNG, or WebP logo under 2 MB.');
+      return;
+    }
+    setError('');
+    onChange({ file });
+  }
+  return (
+    <FieldShell label="Company logo" hint="Optional" htmlFor={id}>
+      <div className="auth-logo-field">
+        {preview ? (
+          <img className="auth-logo-preview" src={preview} alt="Company logo preview" />
+        ) : (
+          <span className="auth-logo-preview" aria-hidden="true">
+            <ImageIcon size={20} />
+          </span>
+        )}
+        <div className="auth-logo-actions">
+          <Button type="button" variant="secondary" onClick={() => input.current?.click()}>
+            {preview ? 'Change logo' : 'Choose logo'}
+          </Button>
+          {preview && (
+            <Button type="button" variant="ghost" onClick={() => onChange({})}>
+              Remove
+            </Button>
+          )}
+        </div>
+        <input
+          id={id}
+          ref={input}
+          type="file"
+          accept={LOGO_TYPES.join(',')}
+          hidden
+          onChange={(event) => choose(event.currentTarget.files?.[0])}
+        />
+      </div>
+      <small className="auth-hint" role={error ? 'alert' : undefined}>
+        {error || 'JPEG, PNG, or WebP, up to 2 MB.'}
+      </small>
+    </FieldShell>
   );
 }
 
@@ -116,11 +224,11 @@ export function PasswordInput({
   const [visible, setVisible] = useState(false);
   const id = useId();
   return (
-    <div className="field">
-      <label htmlFor={id}>{label}</label>
-      <div className="auth-password">
+    <FieldShell label={label} htmlFor={id}>
+      <div className="field-control-row">
         <input
           id={id}
+          className="field-control"
           name={name}
           type={visible ? 'text' : 'password'}
           autoComplete={newPassword ? 'new-password' : 'current-password'}
@@ -131,6 +239,7 @@ export function PasswordInput({
         />
         <button
           type="button"
+          className="auth-reveal"
           aria-label={`${visible ? 'Hide' : 'Show'} ${label.toLowerCase()}`}
           aria-pressed={visible}
           onClick={() => setVisible(!visible)}
@@ -143,7 +252,7 @@ export function PasswordInput({
           {hint}
         </small>
       )}
-    </div>
+    </FieldShell>
   );
 }
 
@@ -159,10 +268,6 @@ export function PasswordFields() {
       <PasswordInput label="Confirm password" name="confirm" newPassword />
     </>
   );
-}
-
-export function AccountFooter({ children }: { children: ReactNode }) {
-  return <div className="auth-footer">{children}</div>;
 }
 
 export function EmailDelivery({
@@ -185,7 +290,7 @@ export function EmailDelivery({
   }, [remaining]);
   return (
     <>
-      <div className="auth-message" role="status">
+      <div className="auth-notice" role="status">
         <p>
           {recovery ? (
             <>
@@ -206,7 +311,7 @@ export function EmailDelivery({
       </div>
       <p className="auth-help">No email yet? Check your spam folder, or request another link.</p>
       <AccountForm
-        secondary
+        variant="secondary"
         label={remaining ? `Resend email in ${remaining}s` : 'Resend email'}
         pendingLabel="Sending…"
         disabled={remaining > 0}
@@ -216,9 +321,9 @@ export function EmailDelivery({
           setRemaining(30);
         }}
       />
-      <button className="auth-text-button" onClick={changeEmail}>
+      <Button variant="ghost" fullWidth onClick={changeEmail}>
         Use a different email
-      </button>
+      </Button>
     </>
   );
 }

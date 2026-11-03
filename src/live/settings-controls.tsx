@@ -1,16 +1,43 @@
-import { api, errorMessage, type Model } from './client';
+import { saveLogo } from './auth-state';
+import { LogoField } from './auth-ui';
+import { api, type Model } from './client';
+import { ErrorState, LoadingState, SelectField, Switch } from './kit';
+import { useCompany, useSession } from './session';
+import { CommandError, CommandForm, SettingsCard } from './settings-command';
+import { useCommand } from './settings-command-state';
 import type { SettingsState } from './settings-state';
-import { Field, Form, Loading, Notice, Section, Select, text } from './ui';
+import { Field, text } from './ui';
+
+type ParticipationMode = Model<'ParticipationPolicyView'>['self_join_mode'];
+
+const PARTICIPATION_LABELS: Record<ParticipationMode, string> = {
+  direct: 'Employees decide directly',
+  approval_required: 'Manager approval required',
+  disabled: 'Managers assign only',
+};
+const PARTICIPATION_OPTIONS = (Object.keys(PARTICIPATION_LABELS) as ParticipationMode[]).map((value) => ({
+  value,
+  label: PARTICIPATION_LABELS[value],
+}));
+
+function timezoneOptions(current: string) {
+  const zones = typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : [];
+  return [...new Set([current, ...zones])]
+    .filter(Boolean)
+    .map((zone) => ({ value: zone, label: zone.replaceAll('_', ' ') }));
+}
 
 export function CompanyProfile({ state }: { state: Pick<SettingsState, 'c' | 'company' | 'refresh'> }) {
   const { c, company, refresh } = state;
   return (
-    <Section title="Company profile">
-      {company.isPending && <Loading />}
-      {company.error && <Notice error>{errorMessage(company.error)}</Notice>}
+    <SettingsCard eyebrow="Company profile">
+      {company.isError && (
+        <ErrorState message="Company details could not be refreshed." onRetry={() => void company.refetch()} />
+      )}
       {company.data &&
         (c.can('company.manage') ? (
-          <Form
+          <CommandForm
+            className=""
             label="Save company"
             submit={async (form) => {
               await api.POST('/api/companies/{company_id}/update', {
@@ -25,125 +52,156 @@ export function CompanyProfile({ state }: { state: Pick<SettingsState, 'c' | 'co
               await refresh();
             }}
           >
-            <Field label="Company name" name="name" defaultValue={company.data.name} required maxLength={200} />
-            <Field label="Address" name="address" defaultValue={company.data.address} maxLength={2000} />
-            <Field label="Timezone" name="timezone" defaultValue={company.data.timezone} required maxLength={64} />
-          </Form>
+            <div className="settings-fields">
+              <Field label="Company name" name="name" defaultValue={company.data.name} required maxLength={200} />
+              <Field label="Address" name="address" defaultValue={company.data.address} maxLength={2000} />
+              <SelectField
+                label="Timezone"
+                name="timezone"
+                required
+                defaultValue={company.data.timezone}
+                placeholder="Choose a timezone"
+                options={timezoneOptions(company.data.timezone)}
+              />
+            </div>
+            <CompanyLogo logoId={company.data.logo_id} />
+          </CommandForm>
         ) : (
-          <dl className="detail-facts">
+          <div className="admin-detail-list">
             <div>
-              <dt>Company name</dt>
-              <dd>{company.data.name}</dd>
+              <strong>Company name</strong>
+              <span>{company.data.name}</span>
             </div>
             <div>
-              <dt>Address</dt>
-              <dd>{company.data.address || 'Not recorded'}</dd>
+              <strong>Address</strong>
+              <span>{company.data.address || 'Not recorded'}</span>
             </div>
             <div>
-              <dt>Timezone</dt>
-              <dd>{company.data.timezone}</dd>
+              <strong>Timezone</strong>
+              <span>{company.data.timezone.replaceAll('_', ' ')}</span>
             </div>
-          </dl>
+          </div>
         ))}
-    </Section>
+    </SettingsCard>
   );
 }
 
-export function RegistrationSettings({ state }: { state: Pick<SettingsState, 'c' | 'tools'> }) {
-  const { c, tools } = state;
-  if (!c.can('tools.register') && !c.can('tools.manage_registration_policy')) return null;
+/** Saved as soon as it is chosen or removed, apart from the profile's revisioned fields. */
+function CompanyLogo({ logoId }: { logoId?: string | null }) {
+  const c = useCompany();
+  const command = useCommand();
+  const session = useSession();
   return (
-    <Section title="Employee tool uploads">
-      {tools.isPending && <Loading />}
-      {tools.error && <Notice error>{errorMessage(tools.error)}</Notice>}
+    <div className="settings-fields">
+      <LogoField
+        value={{ id: logoId }}
+        onChange={(choice) =>
+          void command.run(
+            async () => {
+              const logo_id = await saveLogo(choice);
+              await api.POST('/api/companies/{company_id}/logo', { params: { path: c.path }, body: { logo_id } });
+            },
+            () => void session.refresh(),
+          )
+        }
+      />
+      <CommandError error={command.error} />
+    </div>
+  );
+}
+
+export function RegistrationSettings({
+  state,
+}: {
+  state: Pick<SettingsState, 'c' | 'tools' | 'registration' | 'setRegistration'>;
+}) {
+  const { c, tools, registration } = state;
+  if (!c.can('tools.register') && !c.can('tools.manage_registration_policy')) return null;
+  const enabled = tools.data?.employee_tool_creation_enabled ?? false;
+  return (
+    <SettingsCard eyebrow="Employee tool uploads">
+      {tools.isPending && <LoadingState label="Loading upload rule…" />}
+      {tools.isError && (
+        <ErrorState message="The upload rule could not be loaded." onRetry={() => void tools.refetch()} />
+      )}
       {tools.data &&
         (c.can('tools.manage_registration_policy') ? (
-          <Form
-            label="Save registration rule"
-            submit={(form) =>
-              api.POST('/api/companies/{company_id}/tool-registration-policy', {
-                params: { path: c.path },
-                body: {
-                  expected_revision: tools.data.revision,
-                  employee_tool_creation_enabled: text(form, 'enabled') === 'true',
-                },
-              })
-            }
-          >
-            <Select
-              label="Can employees register tools and upload registration photos?"
-              name="enabled"
-              defaultValue={String(tools.data.employee_tool_creation_enabled)}
-            >
-              <option value="true">Yes, employees and managers</option>
-              <option value="false">No, managers only</option>
-            </Select>
-          </Form>
+          <>
+            <Switch
+              label="Employees can register tools"
+              description="When off, only equipment managers register tools and upload registration photos."
+              checked={registration.busy ? !enabled : enabled}
+              disabled={registration.busy || tools.isFetching}
+              onCheckedChange={state.setRegistration}
+            />
+            <CommandError error={registration.error} />
+          </>
         ) : (
-          <p>
-            {tools.data.employee_tool_creation_enabled
+          <p className="settings-muted">
+            {enabled
               ? 'Employees can register tools and upload photos.'
               : 'Equipment managers register tools and upload registration photos.'}
           </p>
         ))}
-    </Section>
+    </SettingsCard>
   );
 }
-
-const participationModes = {
-  direct: 'Employees decide directly',
-  approval_required: 'Manager approval required',
-  disabled: 'Managers assign only',
-};
 
 export function ParticipationSettings({ state }: { state: Pick<SettingsState, 'c' | 'jobs'> }) {
   const { c, jobs } = state;
   return (
-    <Section title="Job participation">
-      {jobs.isPending && <Loading />}
-      {jobs.error && <Notice error>{errorMessage(jobs.error)}</Notice>}
+    <SettingsCard eyebrow="Job participation">
+      {jobs.isPending && <LoadingState label="Loading job rules…" />}
+      {jobs.isError && <ErrorState message="Job rules could not be loaded." onRetry={() => void jobs.refetch()} />}
       {jobs.data &&
         (c.can('jobs.manage_policy') ? (
-          <Form
+          <CommandForm
+            className=""
             label="Save job rules"
             submit={(form) =>
               api.POST('/api/companies/{company_id}/job-participation-policy', {
                 params: { path: c.path },
                 body: {
                   expected_revision: jobs.data.revision,
-                  self_join_mode: text(form, 'join') as Model<'ParticipationPolicyView'>['self_join_mode'],
-                  self_leave_mode: text(form, 'leave') as Model<'ParticipationPolicyView'>['self_leave_mode'],
+                  self_join_mode: text(form, 'join') as ParticipationMode,
+                  self_leave_mode: text(form, 'leave') as ParticipationMode,
                 },
               })
             }
           >
-            {(['join', 'leave'] as const).map((intent) => (
-              <Select
-                key={intent}
-                label={`Employees ${intent === 'join' ? 'joining' : 'leaving'} jobs`}
-                name={intent}
-                defaultValue={jobs.data[`self_${intent}_mode`]}
-              >
-                {Object.entries(participationModes).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </Select>
-            ))}
-          </Form>
+            <div className="settings-fields">
+              <SelectField
+                label="Employees joining jobs"
+                name="join"
+                compact
+                searchable={false}
+                required
+                defaultValue={jobs.data.self_join_mode}
+                options={PARTICIPATION_OPTIONS}
+              />
+              <SelectField
+                label="Employees leaving jobs"
+                name="leave"
+                compact
+                searchable={false}
+                required
+                defaultValue={jobs.data.self_leave_mode}
+                options={PARTICIPATION_OPTIONS}
+              />
+            </div>
+          </CommandForm>
         ) : (
-          <dl className="detail-facts">
+          <div className="admin-detail-list">
             <div>
-              <dt>Employees joining jobs</dt>
-              <dd>{participationModes[jobs.data.self_join_mode]}</dd>
+              <strong>Employees joining jobs</strong>
+              <span>{PARTICIPATION_LABELS[jobs.data.self_join_mode]}</span>
             </div>
             <div>
-              <dt>Employees leaving jobs</dt>
-              <dd>{participationModes[jobs.data.self_leave_mode]}</dd>
+              <strong>Employees leaving jobs</strong>
+              <span>{PARTICIPATION_LABELS[jobs.data.self_leave_mode]}</span>
             </div>
-          </dl>
+          </div>
         ))}
-    </Section>
+    </SettingsCard>
   );
 }

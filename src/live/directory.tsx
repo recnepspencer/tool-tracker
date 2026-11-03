@@ -1,83 +1,130 @@
-import { ChevronDown } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { errorMessage } from './client';
-import { AssetPhoto } from './asset-photo';
-import { useDirectoryPageState } from './settings-state';
-import { Badge, Empty, Field, Loading, Notice } from './ui';
+import { useDirectoryState } from './directory-state';
+import { initials } from './format';
+import {
+  Avatar,
+  Button,
+  ChevronDownIcon,
+  ErrorState,
+  LoadingState,
+  PageHeading,
+  SelectField,
+  StatusBadge,
+  TextField,
+  ToolPhoto,
+} from './kit';
+import { photoSrc, statusLabel } from './tool-status';
 
+/** Demo `ForemenPage`. */
 export function DirectoryPage() {
-  const { c, search, setSearch, directory, job, setJob, jobs } = useDirectoryPageState();
+  const { c, search, setSearch, directory, job, setJob, jobs, needle, visibleTools, status, toolRoute } =
+    useDirectoryState();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const returnTo = { returnTo: location.pathname + location.search };
   return (
-    <div className="foremen-page">
-      <header className="page-heading">
-        <div>
-          <h1>Foremen</h1>
-          <p>See who has each tool and which jobs they’re working on.</p>
-        </div>
-        {c.can('jobs.assign') && (
-          <Link className="button" to="/app/jobs">
-            Manage assignments
-          </Link>
-        )}
-      </header>
+    <div className="page-content foremen-page">
+      <PageHeading
+        title="Foremen"
+        description="See who has each tool and which jobs they’re working on."
+        action={
+          c.can('jobs.assign') ? (
+            <Button variant="secondary" onClick={() => navigate('/app/jobs')}>
+              Manage assignments
+            </Button>
+          ) : undefined
+        }
+      />
       <div className="foremen-filters">
-        <Field
+        <TextField
           label="Search foremen, jobs, or tools"
           type="search"
+          compact
           value={search}
-          onChange={(event) => setSearch(event.target.value)}
+          onChange={setSearch}
+          placeholder="Search names, jobs, or tools"
         />
-        <div className="field">
-          <label htmlFor="directory-job">Filter by job</label>
-          <select id="directory-job" value={job} onChange={(event) => setJob(event.target.value)}>
-            <option value="">All jobs</option>
-            <option value="none">No current jobs</option>
-            {jobs.data?.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelectField
+          label="Filter by job"
+          compact
+          value={job || 'all'}
+          onChange={setJob}
+          options={[
+            { value: 'all', label: 'All jobs' },
+            { value: 'none', label: 'No current jobs' },
+            ...(jobs.data ?? []).map((item) => ({ value: item.id, label: item.name })),
+          ]}
+        />
       </div>
-      {(directory.isPending || jobs.isPending) && <Loading />}
-      {(directory.error || jobs.error) && <Notice error>{errorMessage(directory.error || jobs.error)}</Notice>}
-      {directory.data?.length === 0 && <Empty>No people match these filters.</Empty>}
+      {directory.isPending ? (
+        <LoadingState label="Loading foremen…" />
+      ) : directory.isError || jobs.isError ? (
+        <ErrorState
+          message={`Foremen could not be loaded. ${errorMessage(directory.error ?? jobs.error)}`}
+          onRetry={() => {
+            void directory.refetch();
+            void jobs.refetch();
+          }}
+        />
+      ) : null}
+      {directory.data?.length === 0 && (
+        <p className="jobs-muted">{search || job ? 'No foremen match these filters.' : 'No active foremen yet.'}</p>
+      )}
       <div className="foremen-list">
-        {directory.data?.map((person) => (
-          <details className="foreman-card" key={`${person.membership_id}:${search}`} open={search ? true : undefined}>
-            <summary>
-              <span className="session-avatar">{person.name.slice(0, 1)}</span>
-              <div className="foreman-copy">
-                <h2>
-                  {person.name}
-                  {person.membership_id === c.membership_id && <span className="foreman-self"> · You</span>}
-                </h2>
-                <p>{person.jobs.map((item) => item.name).join(' / ') || 'No current jobs'}</p>
-              </div>
-              <span className="foreman-count">
-                {person.tools.length} {person.tools.length === 1 ? 'tool' : 'tools'}
-              </span>
-              <ChevronDown className="foreman-chevron" aria-hidden="true" />
-            </summary>
-            <div className="foreman-tools">
-              {person.tools.length === 0 && <Empty>No tools in custody.</Empty>}
-              {person.tools.map((tool) => (
-                <div className="foreman-tool" key={tool.asset_id}>
-                  <AssetPhoto asset={tool} companyId={c.company_id} />
-                  <div className="foreman-tool-copy">
-                    <Link to={`/app/tools/${tool.asset_id}`}>{tool.name}</Link>
-                    <small>
-                      {tool.asset_tag} · {tool.manufacturer} · {tool.model_number}
-                      {tool.serial_number ? ` · ${tool.serial_number}` : ''}
-                    </small>
-                    <Badge>{tool.missing ? 'Missing' : tool.serviceability}</Badge>
-                  </div>
+        {directory.data?.map((person) => {
+          const tools = visibleTools(person);
+          return (
+            <details className="foreman-card" key={`${person.membership_id}:${needle}`} open={Boolean(needle)}>
+              <summary>
+                <Avatar tone="neutral" initials={initials(person.name)} />
+                <div className="foreman-copy">
+                  <h2>
+                    {person.name}
+                    {person.membership_id === c.membership_id && <span className="foreman-self"> · You</span>}
+                  </h2>
+                  <p>{person.jobs.length ? person.jobs.map((item) => item.name).join(' / ') : 'No current jobs'}</p>
                 </div>
-              ))}
-            </div>
-          </details>
-        ))}
+                <span className="foreman-count">
+                  {tools.length} {tools.length === 1 ? 'tool' : 'tools'}
+                </span>
+                <ChevronDownIcon className="foreman-chevron" />
+              </summary>
+              <div className="foreman-tools">
+                {!tools.length ? (
+                  <p className="jobs-muted">No tools in custody.</p>
+                ) : (
+                  tools.map((tool) => {
+                    const tone = status(person, tool);
+                    return (
+                      <div className="foreman-tool" key={tool.asset_id}>
+                        <ToolPhoto
+                          src={photoSrc(c.company_id, tool.registration_photo_id)}
+                          alt={tool.name}
+                          size="small"
+                        />
+                        <div className="foreman-tool-copy">
+                          <strong>
+                            <Link to={toolRoute(person, tool)} state={returnTo}>
+                              {tool.name}
+                            </Link>
+                          </strong>
+                          <small>
+                            {tool.manufacturer} · {tool.model_number} · {tool.asset_tag}
+                            {tool.serial_number ? ` · ${tool.serial_number}` : ''}
+                          </small>
+                          <div className="foreman-tool-status">
+                            <StatusBadge tone={tone}>{statusLabel[tone]}</StatusBadge>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </details>
+          );
+        })}
       </div>
     </div>
   );

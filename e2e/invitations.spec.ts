@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { command, emailLink, password, workspace } from './support';
+import { expect } from '@playwright/test';
+import { command, emailLink, password, signupCode, workspace, test } from './support';
 
 test('revoked links recover clearly and a replacement invitation joins the intended workspace', async ({
   page,
@@ -10,7 +10,12 @@ test('revoked links recover clearly and a replacement invitation joins the inten
   const teammate = await context.newPage();
   const email = `invitation-${crypto.randomUUID().slice(0, 10)}@example.com`;
   try {
-    await command(teammate.request, '/api/auth/signup', { email, name: 'New teammate' });
+    await command(teammate.request, '/api/auth/signup', {
+      email,
+      name: 'New teammate',
+      signup_code: signupCode(),
+      company_name: 'Teammate side company',
+    });
     const verification = new URL(await emailLink(email, '/verify-email'), 'http://localhost');
     await command(teammate.request, '/api/auth/verify-signup', {
       token: verification.searchParams.get('token'),
@@ -19,11 +24,11 @@ test('revoked links recover clearly and a replacement invitation joins the inten
     await page.goto('/app/people');
     const send = async () => {
       await page.getByRole('button', { name: 'Invite person', exact: true }).click();
-      const dialog = page.getByRole('dialog', { name: 'Invite a teammate', exact: true });
+      const dialog = page.getByRole('dialog', { name: 'Invite a person', exact: true });
       await dialog.getByLabel('Name', { exact: true }).fill('New teammate');
       await dialog.getByLabel('Email address', { exact: true }).fill(email);
-      await dialog.getByRole('button', { name: 'Send invitation', exact: true }).click();
-      const link = dialog.getByRole('link');
+      await dialog.getByRole('button', { name: 'Create invitation', exact: true }).click();
+      const link = dialog.getByRole('link', { name: 'View invitation', exact: true });
       await expect(link).toBeVisible();
       const url = await link.getAttribute('href');
       await page.keyboard.press('Escape');
@@ -31,10 +36,17 @@ test('revoked links recover clearly and a replacement invitation joins the inten
       return url!;
     };
     const first = await send();
-    const invitations = page.getByRole('region', { name: 'Invitations', exact: true });
-    const firstRow = invitations.getByRole('article').filter({ hasText: email });
-    await firstRow.getByRole('button', { name: 'Revoke invitation', exact: true }).click();
-    await expect(firstRow.getByText('Revoked', { exact: true })).toBeVisible();
+    // Open invitations are listed with the people; settled ones only under the Invited filter.
+    const invitations = page.getByRole('row').filter({ hasText: email });
+    await invitations.getByRole('button', { name: 'Revoke invitation for New teammate', exact: true }).click();
+    const confirm = page.getByRole('dialog', { name: 'Revoke invitation', exact: true });
+    await confirm.getByRole('button', { name: 'Revoke invitation', exact: true }).click();
+    await expect(confirm).toHaveCount(0);
+    await page
+      .getByRole('tablist', { name: 'People filter' })
+      .getByRole('tab', { name: 'Invited', exact: true })
+      .click();
+    await expect(invitations.getByText('Revoked', { exact: true })).toBeVisible();
     await teammate.goto(first);
     await expect(teammate.getByRole('heading', { name: 'Invitation unavailable', exact: true })).toBeVisible();
 

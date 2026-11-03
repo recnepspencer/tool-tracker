@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { chooseDestination, command, invitedMember, workspace } from './support';
+import { expect } from '@playwright/test';
+import { chooseDestination, command, invitedMember, workspace, chooseOption, test } from './support';
 
 for (const role of ['company_admin', 'equipment_manager', 'warehouse'])
   test(`${role} cancels a stranded proposal while retaining the ended holder's identity`, async ({ page, browser }) => {
@@ -38,8 +38,8 @@ for (const role of ['company_admin', 'equipment_manager', 'warehouse'])
       });
       await holder.goto(`/app/mine/${fixture.asset.id}?action=transfer`);
       await chooseDestination(holder, 'Person', 'Unavailable recipient');
-      await holder.getByRole('button', { name: 'Propose handoff' }).click();
-      await expect(holder.getByText(/This tool has a pending handoff/)).toBeVisible();
+      await holder.getByRole('button', { name: 'Send to Unavailable recipient', exact: true }).click();
+      await expect(holder.getByText('In transfer to Unavailable recipient.', { exact: false })).toBeVisible();
       const before = (await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}/custody`)).json()).items;
       await command(page.request, `${fixture.base}/people/${holderMember.id}/update`, {
         expected_revision: 1,
@@ -54,18 +54,23 @@ for (const role of ['company_admin', 'equipment_manager', 'warehouse'])
         roles: ['field_member'],
         reason: 'Recipient unavailable',
       });
-      await manager.goto('/app/operations');
+      // Person-to-person proposals are reached from the tool's pending-handoff notice.
+      await manager.goto(`/app/tools/${fixture.asset.id}`);
       await manager
-        .getByRole('region', { name: 'Handoffs', exact: true })
-        .getByRole('button', { name: 'Review handoff' })
+        .getByRole('region', { name: 'Pending handoff', exact: true })
+        .getByRole('link', { name: 'Review in queue', exact: true })
         .click();
-      const review = manager.getByRole('dialog', { name: 'Review handoff', exact: true });
-      await review.getByLabel('Decision').selectOption('void');
-      await expect(review.getByLabel('Note', { exact: true })).toHaveAttribute('required', '');
+      const review = manager.getByRole('dialog', { name: 'Review Hammer drill', exact: true });
+      await expect(review.getByText('Required to void', { exact: true })).toBeVisible();
+      // Voiding without a reason is refused before anything is sent.
+      await review.getByRole('button', { name: 'Void handoff', exact: true }).click();
+      await expect(review.getByRole('alert')).toHaveText(
+        'Add a decision note explaining why this handoff is being voided.',
+      );
       await review
-        .getByLabel('Note', { exact: true })
+        .getByLabel('Decision note', { exact: false })
         .fill('Cancelled stale proposal; physical custody has not changed');
-      await review.getByRole('button', { name: 'Confirm handoff decision' }).click();
+      await review.getByRole('button', { name: 'Void handoff', exact: true }).click();
       await expect(review).toHaveCount(0);
       expect(
         (await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}/custody`)).json()).items,
@@ -76,31 +81,38 @@ for (const role of ['company_admin', 'equipment_manager', 'warehouse'])
       await expect(custody.getByText(/Former employee/)).toBeVisible();
       await expect(manager.getByRole('button', { name: 'Transfer tool', exact: true })).toHaveCount(0);
       if (role === 'warehouse') {
-        await expect(manager.getByRole('button', { name: 'Open a reconciliation case', exact: true })).toHaveCount(0);
+        await expect(manager.getByRole('button', { name: 'Open reconciliation case', exact: true })).toHaveCount(0);
         return;
       }
-      await manager.getByRole('button', { name: 'Open a reconciliation case', exact: true }).click();
-      await manager
+      await manager.getByRole('button', { name: 'Open reconciliation case', exact: true }).click();
+      const opening = manager.getByRole('dialog', { name: 'Open a reconciliation case for Hammer drill', exact: true });
+      await expect(opening.getByRole('link', { name: 'View open cases', exact: true })).toHaveAttribute(
+        'href',
+        '/app/reconciliations',
+      );
+      await opening
         .getByLabel('Describe the discrepancy')
         .fill('Warehouse inventory confirms the ended employee returned this tool');
-      await manager.getByRole('button', { name: 'Open case', exact: true }).click();
-      await expect(
-        manager.getByRole('region', { name: 'Open a reconciliation case', exact: true }).getByRole('status'),
-      ).toBeVisible();
-      await manager.getByRole('link', { name: 'View open cases', exact: true }).click();
-      await manager.getByLabel('Findings and resolution').fill('Physical return verified with warehouse photo');
+      await opening.getByRole('button', { name: 'Open case', exact: true }).click();
+      await expect(opening).toHaveCount(0);
+      await manager.goto('/app/reconciliations');
       await manager
-        .getByLabel('Correct custody (photo required if changed)')
-        .selectOption(`warehouse:${fixture.warehouse.id}`);
-      await manager.getByRole('button', { name: 'Resolve case', exact: true }).click();
-      await expect(manager.getByRole('alert')).toContainText('photo evidence');
+        .getByRole('article', { name: 'Custody dispute case', exact: true })
+        .getByRole('button', { name: 'Resolve', exact: true })
+        .click();
+      const resolve = manager.getByRole('dialog', { name: 'Resolve Hammer drill', exact: true });
+      await resolve.getByLabel('Findings and resolution').fill('Physical return verified with warehouse photo');
+      await chooseOption(resolve, 'Correct custody', `warehouse:${fixture.warehouse.id}`);
+      await resolve.getByRole('button', { name: 'Resolve case', exact: true }).click();
+      await expect(resolve.getByRole('alert')).toContainText('photo evidence');
       await expect(manager.getByRole('button', { name: 'Load latest values', exact: true })).toHaveCount(0);
       expect(
         (await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}/custody`)).json()).items,
       ).toEqual(before);
-      await manager.getByLabel('Photo (optional, up to 8 MB)').setInputFiles('e2e/fixtures/hammer-drill.jpg');
-      await manager.getByRole('button', { name: 'Resolve case', exact: true }).click();
-      await expect(manager.getByText('No open cases.')).toBeVisible();
+      await resolve.locator('input[type="file"][name="photo"]').setInputFiles('e2e/fixtures/hammer-drill.jpg');
+      await resolve.getByRole('button', { name: 'Resolve case', exact: true }).click();
+      await expect(resolve).toHaveCount(0);
+      await expect(manager.getByText('No open reconciliation cases match this view.')).toBeVisible();
       const history = (await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}/custody`)).json())
         .items;
       expect(history).toHaveLength(3);
@@ -141,15 +153,16 @@ test('a source warehouse grant does not authorize another warehouse receipt', as
     await holder.goto(`/app/mine/${fixture.asset.id}?action=transfer`);
     await chooseDestination(holder, 'Warehouse', 'East warehouse');
     await holder.screenshot({ path: 'artifacts/parity-return-destination-mobile.png', fullPage: true });
-    await holder.getByRole('button', { name: 'Propose handoff' }).click();
-    await expect(holder.getByText(/This tool has a pending handoff/)).toBeVisible();
+    await holder.getByRole('button', { name: 'Send to East warehouse', exact: true }).click();
+    await expect(holder.getByText('In transfer to East warehouse.', { exact: false })).toBeVisible();
     const handoff = (await (await page.request.get(`${fixture.base}/handoffs`)).json()).items[0];
+    // A return to another warehouse is not in this manager's gate queue; its deep link offers no receipt.
     await manager.goto('/app/operations');
-    await manager
-      .getByRole('region', { name: 'Handoffs', exact: true })
-      .getByRole('button', { name: 'Review handoff' })
-      .click();
-    await expect(manager.getByLabel('Decision').getByRole('option', { name: /Accept/ })).toHaveCount(0);
+    await expect(manager.getByRole('button', { name: 'Review return for Hammer drill', exact: true })).toHaveCount(0);
+    await manager.goto(`/app/operations?review=handoff:${handoff.id}`);
+    const review = manager.getByRole('dialog', { name: 'Review Hammer drill', exact: true });
+    await expect(review).toBeVisible();
+    await expect(review.getByRole('button', { name: /^Accept/ })).toHaveCount(0);
     const csrf = await (await manager.request.get('/api/auth/csrf')).json();
     const denied = await manager.request.post(`${fixture.base}/handoffs/${handoff.id}/accept`, {
       data: { expected_revision: handoff.revision },
@@ -158,15 +171,17 @@ test('a source warehouse grant does not authorize another warehouse receipt', as
     expect(denied.status()).toBe(403);
     await page.goto('/app/warehouses');
     await page.getByRole('button', { name: 'East warehouse', exact: true }).click();
-    const authority = page.getByRole('region', { name: 'Management authority', exact: true });
-    await authority.getByLabel('Person').selectOption(reviewer.id);
-    await authority.getByRole('button', { name: 'Grant warehouse authority' }).click();
-    await expect(authority.getByRole('button', { name: "Revoke Warehouse reviewer's warehouse access" })).toBeVisible();
+    const authority = page
+      .getByRole('dialog', { name: 'Edit warehouse', exact: true })
+      .getByRole('group', { name: 'Managers', exact: true });
+    await chooseOption(authority, 'Manager', reviewer.id);
+    await authority.getByRole('button', { name: 'Add manager', exact: true }).click();
+    await expect(authority.getByRole('button', { name: 'Remove Warehouse reviewer', exact: true })).toBeVisible();
     await manager.reload();
-    await expect(manager.getByRole('dialog', { name: 'Review handoff', exact: true })).toBeVisible();
-    await manager.getByLabel('Decision').selectOption('accept');
-    await manager.getByRole('button', { name: 'Confirm handoff decision' }).click();
-    await expect(manager.getByText('No handoffs to review.')).toBeVisible();
+    await expect(review).toBeVisible();
+    await review.getByRole('button', { name: 'Accept return', exact: true }).click();
+    await expect(review).toHaveCount(0);
+    await expect(manager.getByRole('button', { name: 'Review return for Hammer drill', exact: true })).toHaveCount(0);
     expect(await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}`)).json()).toMatchObject({
       warehouse_id: east.id,
       responsible_warehouse_id: east.id,

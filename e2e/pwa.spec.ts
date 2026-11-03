@@ -1,9 +1,7 @@
-import { test, expect } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { appendFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { workspace } from './support';
-
-test.use({ actionTimeout: 15_000 });
+import { workspace, test } from './support';
 
 test('a real worker update preserves drafts until each tab accepts a reload', async ({ page, context }) => {
   const fixture = await workspace(page);
@@ -36,10 +34,11 @@ test('a real worker update preserves drafts until each tab accepts a reload', as
   await expect(otherTab.getByRole('button', { name: 'Update app', exact: true })).toBeVisible();
   await otherTab.getByRole('button', { name: 'Later', exact: true }).click();
   await otherTab.getByRole('button', { name: 'Expand Hammer drill, 2 tools', exact: true }).click();
-  await otherTab.getByRole('link', { name: /UNIT-001/ }).click();
-  await otherTab.getByRole('button', { name: 'Manage this tool', exact: true }).click();
-  const details = otherTab.getByRole('region', { name: 'Asset information', exact: true });
-  await details.getByLabel('Serial number', { exact: true }).fill('OTHER-TAB-DRAFT');
+  await otherTab.getByRole('button', { name: 'Open Hammer drill, UNIT-001', exact: true }).click();
+  const toolDetails = otherTab.getByRole('dialog', { name: 'Hammer drill details', exact: true });
+  await toolDetails.getByRole('button', { name: 'Edit', exact: true }).click();
+  const editor = otherTab.getByRole('dialog', { name: 'Edit Hammer drill', exact: true });
+  await editor.getByLabel('Serial number', { exact: true }).fill('OTHER-TAB-DRAFT');
   await expect(profile.getByLabel('Company name')).toHaveValue('Saved through the update');
   expect((await (await page.request.get(fixture.base)).json()).name).toBe(fixture.company.name);
   await page.screenshot({ path: 'artifacts/pwa-update-mobile.png', fullPage: true, animations: 'disabled' });
@@ -48,7 +47,9 @@ test('a real worker update preserves drafts until each tab accepts a reload', as
   await expect(profile.getByLabel('Company name')).toHaveValue('Saved through the update');
   expect(await page.evaluate(async () => Boolean((await navigator.serviceWorker.ready).waiting))).toBe(true);
   await profile.getByRole('button', { name: 'Save company', exact: true }).click();
-  await expect(profile.getByRole('status')).toBeVisible();
+  await expect
+    .poll(async () => (await (await page.request.get(fixture.base)).json()).name)
+    .toBe('Saved through the update');
   await page.reload();
   await expect(profile.getByLabel('Company name')).toHaveValue('Saved through the update');
   await expect(update).toBeVisible();
@@ -56,16 +57,20 @@ test('a real worker update preserves drafts until each tab accepts a reload', as
   await expect(profile.getByLabel('Company name')).toHaveValue('Saved through the update');
   await expect(update).toHaveCount(0);
   expect(await page.evaluate(async () => (await navigator.serviceWorker.ready).waiting === null)).toBe(true);
-  await expect(details.getByLabel('Serial number', { exact: true })).toHaveValue('OTHER-TAB-DRAFT');
-  await details.getByRole('button', { name: 'Save tool details', exact: true }).click();
-  await expect(details.getByRole('status')).toBeVisible();
+  await expect(editor.getByLabel('Serial number', { exact: true })).toHaveValue('OTHER-TAB-DRAFT');
+  await editor.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await expect(editor).toHaveCount(0);
   await otherTab.keyboard.press('Escape');
+  await expect(toolDetails).toHaveCount(0);
   const otherUpdate = otherTab.getByRole('button', { name: 'Update app', exact: true });
   await expect(otherUpdate).toBeVisible();
   await Promise.all([otherTab.waitForEvent('load'), otherUpdate.click()]);
-  await otherTab.goto(`/app/tools/${fixture.asset.id}?action=manage`);
-  await expect(details.getByLabel('Serial number', { exact: true })).toHaveValue('OTHER-TAB-DRAFT');
   await expect(otherUpdate).toHaveCount(0);
+  await otherTab.goto('/app/tools');
+  await otherTab.getByRole('button', { name: 'Expand Hammer drill, 2 tools', exact: true }).click();
+  await otherTab.getByRole('button', { name: 'Open Hammer drill, UNIT-001', exact: true }).click();
+  await toolDetails.getByRole('button', { name: 'Edit', exact: true }).click();
+  await expect(editor.getByLabel('Serial number', { exact: true })).toHaveValue('OTHER-TAB-DRAFT');
   const cached = await page.evaluate(async () =>
     (
       await Promise.all(

@@ -1,0 +1,134 @@
+.experience .header-account {
+  align-items: center;
+  display: flex;
+  gap: var(--space-10);
+  position: relative;
+}
+.experience .account-trigger {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  gap: var(--space-8);
+  padding: var(--space-3);
+}
+.experience .account-trigger:focus-visible {
+  outline: var(--focus-ring-width) solid var(--blue);
+  outline-offset: var(--focus-ring-offset);
+}
+.experience .header-name {
+  color: var(--ink-2);
+  font-size: var(--text-body);
+}
+.experience .account-sheet-backdrop {
+  background: transparent;
+  inset: 0;
+  padding: calc(var(--header-height-sm) + var(--space-8)) var(--pad-header-x) 0;
+  position: fixed;
+  z-index: var(--z-account);
+}
+.experience .account-sheet {
+  background: var(--card);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-card);
+  box-shadow: var(--elevation-account);
+  display: grid;
+  gap: var(--space-16);
+  margin-left: auto;
+  max-width: var(--space-320);
+  padding: var(--space-18);
+  width: min(var(--size-account-sheet), var(--space-320));
+}
+.experience .account-sheet-header {
+  align-items: flex-start;
+  display: flex;
+  justify-content: space-between;
+}
+.experience .account-sheet-identity {
+  align-items: center;
+  display: flex;
+  gap: var(--space-12);
+  min-width: 0;
+}
+.experience .account-sheet-identity > div {
+  min-width: 0;
+}
+.experience .account-sheet h2 {
+  font-size: var(--text-3xl);
+  margin: var(--space-5) 0 var(--space-3);
+}
+.experience .account-sheet p {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+.experience .account-sheet .icon-button svg {
+  height: var(--space-18);
+  width: var(--space-18);
+}
+.experience .account-sheet-facts {
+  border-bottom: var(--border-width) solid var(--border);
+  border-top: var(--border-width) solid var(--border);
+  display: grid;
+  gap: var(--space-12);
+  margin: 0;
+  padding: var(--space-14) 0;
+}
+.experience .account-sheet-facts div {
+  display: grid;
+  gap: var(--space-4);
+}
+.experience .account-sheet-facts dt {
+  color: var(--dim);
+  font: var(--font-mono-xs);
+  letter-spacing: var(--tracking-table);
+  text-transform: uppercase;
+}
+.experience .account-sheet-facts dd {
+  color: var(--ink-2);
+  font-size: var(--text-body);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.experience .account-sheet-action,
+.experience .account-sheet-sign-out {
+  align-items: center;
+  display: flex;
+  gap: var(--space-10);
+  justify-content: flex-start;
+  text-decoration: none;
+}
+.experience .account-sheet-action {
+  border-radius: var(--radius-field);
+  color: var(--ink-2);
+  min-height: var(--space-44);
+  padding: 0 var(--space-12);
+}
+.experience .account-sheet-action:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+.experience .account-sheet-action svg,
+.experience .account-sheet-sign-out svg {
+  color: var(--dim);
+  height: var(--space-18);
+  width: var(--space-18);
+}
+.experience .account-sheet .button {
+  width: 100%;
+}
+@media (max-width: 620px) {
+  .experience .header-account {
+    gap: var(--space-6);
+  }
+  .experience .sign-out-button {
+    font-size: var(--text-sm);
+    min-height: var(--space-36);
+    padding: 0 var(--space-9);
+  }
+  .experience .header-name {
+    display: none;
+  }
+}

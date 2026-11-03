@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { command, invitedMember, workspace } from './support';
+import { expect } from '@playwright/test';
+import { command, invitedMember, workspace, chooseOption, test } from './support';
 
 for (const role of ['company_admin', 'equipment_manager'])
   test(`${role} edits and archives catalog records without changing physical custody`, async ({ page, browser }) => {
@@ -10,14 +10,15 @@ for (const role of ['company_admin', 'equipment_manager'])
       if (actor !== page) await invitedMember(page, actor, fixture.base, role, 'Equipment reviewer');
       const before = (await (await page.request.get(`${fixture.base}/tools`)).json()).items;
       await actor.goto('/app/catalog');
-      const models = actor.getByRole('region', { name: 'Models', exact: true });
-      const model = models.locator('details');
-      await expect(model).toHaveCount(1);
-      await model.locator('summary').click();
-      await model.getByLabel('Tool name', { exact: true }).fill('Combi drill');
-      await model.getByLabel('Model number').fill('C100');
-      await model.getByRole('button', { name: 'Save model', exact: true }).click();
-      await expect(model.getByRole('status')).toBeVisible();
+      const modelStatus = actor.getByRole('tablist', { name: 'Model status', exact: true });
+      const modelDialog = actor.getByRole('dialog', { name: 'Edit model', exact: true });
+      await expect(actor.getByRole('button', { name: 'Edit Hammer drill', exact: true })).toHaveCount(1);
+      await actor.getByRole('button', { name: 'Edit Hammer drill', exact: true }).click();
+      await modelDialog.getByLabel('Tool name', { exact: true }).fill('Combi drill');
+      await modelDialog.getByLabel('Model number').fill('C100');
+      await modelDialog.getByRole('button', { name: 'Save model', exact: true }).click();
+      await expect(modelDialog).toHaveCount(0);
+      await expect(actor.getByRole('button', { name: 'Edit Combi drill', exact: true })).toBeVisible();
       const after = (await (await page.request.get(`${fixture.base}/tools`)).json()).items;
       expect(
         after.map(
@@ -39,45 +40,54 @@ for (const role of ['company_admin', 'equipment_manager'])
         ),
       );
       expect(after.map((asset: { name: string }) => asset.name)).toEqual(['Combi drill', 'Combi drill']);
-      await model.getByLabel('Archived', { exact: true }).check();
-      await model.getByRole('button', { name: 'Save model', exact: true }).click();
-      await expect(model).toHaveCount(0);
-      await actor.getByLabel('Show archived records').click();
-      await expect(actor.getByLabel('Show archived records')).toBeChecked();
-      await expect(model).toHaveCount(1);
-      await model.locator('summary').click();
-      await expect(model.getByLabel('Category', { exact: true })).toHaveValue(fixture.asset.category_id);
-      await model.getByLabel('Archived', { exact: true }).uncheck();
-      await model.getByRole('button', { name: 'Save model', exact: true }).click();
-      await expect(model).toHaveCount(0);
-      await actor.getByLabel('Show archived records').click();
-      await expect(actor.getByLabel('Show archived records')).not.toBeChecked();
-      const categories = actor.getByRole('region', { name: 'Categories', exact: true });
-      const category = categories.locator('details');
-      await expect(category).toHaveCount(1);
-      await category.locator('summary').click();
-      await category.getByLabel('Category name').fill('Historical drills');
-      await category.getByLabel('Archived', { exact: true }).check();
-      await category.getByRole('button', { name: 'Save category', exact: true }).click();
-      await expect(category).toHaveCount(0);
+      await actor.getByRole('button', { name: 'Edit Combi drill', exact: true }).click();
+      await modelDialog.getByRole('button', { name: 'Archive model', exact: true }).click();
+      await expect(modelDialog).toHaveCount(0);
+      await expect(actor.getByRole('button', { name: 'Edit Combi drill', exact: true })).toHaveCount(0);
+      await modelStatus.getByRole('tab', { name: 'Archived', exact: true }).click();
+      await expect(modelStatus.getByRole('tab', { name: 'Archived', exact: true })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      await expect(actor.getByRole('button', { name: 'Edit Combi drill', exact: true })).toHaveCount(1);
+      await actor.getByRole('button', { name: 'Edit Combi drill', exact: true }).click();
+      await expect(modelDialog.getByRole('combobox', { name: 'Category', exact: true })).toHaveText('Drills');
+      await expect(modelDialog.locator('input.field-select-proxy[name="category"]')).toHaveValue(
+        fixture.asset.category_id,
+      );
+      await modelDialog.getByRole('button', { name: 'Restore model', exact: true }).click();
+      await expect(modelDialog).toHaveCount(0);
+      await expect(actor.getByRole('button', { name: 'Edit Combi drill', exact: true })).toHaveCount(0);
+      await modelStatus.getByRole('tab', { name: 'Active', exact: true }).click();
+      await expect(modelStatus.getByRole('tab', { name: 'Active', exact: true })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      await expect(actor.getByRole('button', { name: 'Edit Combi drill', exact: true })).toHaveCount(1);
+      const categories = actor.getByRole('region', { name: 'Tool categories', exact: true });
+      await expect(categories.locator('.category-row')).toHaveCount(1);
+      await categories.getByRole('button', { name: 'Rename Drills', exact: true }).click();
+      await categories.getByRole('textbox', { name: 'Rename Drills', exact: true }).fill('Historical drills');
+      await categories.getByRole('button', { name: 'Save', exact: true }).click();
+      await categories.getByRole('button', { name: 'Archive Historical drills', exact: true }).click();
+      await expect(categories.getByText('Historical drills', { exact: true })).toHaveCount(0);
       await actor.goto('/app/tools/new');
       await actor.getByRole('button', { name: 'Continue without a photo' }).click();
-      await expect(
-        actor.getByLabel('Tool model').getByRole('option', { name: /Makita Combi drill.*category archived/ }),
-      ).toBeDisabled();
+      // Models in an archived category are not offered for registration.
+      await actor.getByRole('combobox', { name: 'Tool model', exact: true }).click();
+      await expect(actor.getByRole('listbox', { name: 'Tool model', exact: true }).getByRole('option')).toHaveCount(0);
+      await actor.keyboard.press('Escape');
       await expect(actor.getByText(/No models are currently eligible/)).toBeVisible();
-      await actor.goto('/app/catalog?archived=true');
-      await category.locator('summary').click();
-      await category.getByLabel('Archived', { exact: true }).uncheck();
-      await category.getByRole('button', { name: 'Save category', exact: true }).click();
-      await expect(category).toHaveCount(0);
+      await actor.goto('/app/catalog?categories=archived');
+      await categories.getByRole('button', { name: 'Restore Historical drills', exact: true }).click();
+      await expect(categories.getByText('Historical drills', { exact: true })).toHaveCount(0);
       await actor.goto('/app/tools/new');
       await actor.getByRole('button', { name: 'Continue without a photo' }).click();
-      await actor.getByLabel('Tool model').selectOption(fixture.asset.tool_model_id);
-      await actor.getByLabel('Starting warehouse').selectOption(fixture.warehouse.id);
-      await actor.getByLabel('Unique asset tag').fill('CATALOG-003');
-      await actor.getByRole('button', { name: 'Register tool', exact: true }).click();
-      await expect(actor.getByRole('link', { name: 'Open its custody record' })).toBeVisible();
+      await chooseOption(actor, 'Tool model', fixture.asset.tool_model_id);
+      await chooseOption(actor, 'Home warehouse', fixture.warehouse.id);
+      await actor.getByLabel('Asset tag', { exact: true }).fill('CATALOG-003');
+      await actor.getByRole('button', { name: 'Add tool', exact: true }).click();
+      await expect(actor.getByRole('dialog', { name: 'Combi drill details', exact: true })).toBeVisible();
       const created = (await (await actor.request.get(`${fixture.base}/tools?search=CATALOG-003`)).json()).items;
       expect(created).toHaveLength(1);
       expect(created[0]).toMatchObject({
@@ -101,13 +111,16 @@ test('warehouse grants show their subjects and remain revocable after employment
     const estimator = await invitedMember(page, estimatorPage, fixture.base, 'estimator', 'Estimator only');
     await page.goto('/app/warehouses');
     await page.getByRole('button', { name: 'Main warehouse', exact: true }).click();
-    const authority = page.getByRole('region', { name: 'Management authority', exact: true });
-    await expect(
-      authority.getByLabel('Person').getByRole('option', { name: 'Estimator only', exact: true }),
-    ).toHaveCount(0);
-    await authority.getByLabel('Person').selectOption(member.id);
-    await authority.getByRole('button', { name: 'Grant warehouse authority' }).click();
-    await expect(authority.getByRole('button', { name: "Revoke Warehouse lead's warehouse access" })).toBeVisible();
+    const authority = page
+      .getByRole('dialog', { name: 'Edit warehouse', exact: true })
+      .getByRole('group', { name: 'Managers', exact: true });
+    await authority.getByRole('combobox', { name: 'Manager', exact: true }).click();
+    const candidates = page.getByRole('listbox', { name: 'Manager', exact: true });
+    await expect(candidates.getByRole('option', { name: 'Warehouse lead' })).toBeVisible();
+    await expect(candidates.getByRole('option', { name: 'Estimator only' })).toHaveCount(0);
+    await candidates.locator(`[data-value="${member.id}"]`).click();
+    await authority.getByRole('button', { name: 'Add manager', exact: true }).click();
+    await expect(authority.getByRole('button', { name: 'Remove Warehouse lead', exact: true })).toBeVisible();
     await command(page.request, `${fixture.base}/people/${member.id}/update`, {
       expected_revision: member.revision,
       access_state: 'disabled',
@@ -117,8 +130,8 @@ test('warehouse grants show their subjects and remain revocable after employment
     });
     await page.reload();
     await expect(authority.getByText('Grant retained; equipment access is currently inactive.')).toBeVisible();
-    await authority.getByRole('button', { name: "Revoke Warehouse lead's warehouse access" }).click();
-    await expect(authority.getByText('No scoped managers.')).toBeVisible();
+    await authority.getByRole('button', { name: 'Remove Warehouse lead', exact: true }).click();
+    await expect(authority.getByText(/No warehouse managers yet/)).toBeVisible();
     const warehouses = (await (await page.request.get(`${fixture.base}/warehouses`)).json()).items;
     expect(warehouses[0].managers).toEqual([]);
     expect(

@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { BrowserRouter } from 'react-router-dom';
+import { AppearanceProvider } from './appearance';
 import { SessionProvider } from './session';
 export function AppProviders({ children }: { children: ReactNode }) {
   const [client] = useState(
@@ -15,7 +16,9 @@ export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={client}>
       <SessionProvider>
-        <BrowserRouter>{children}</BrowserRouter>
+        <AppearanceProvider>
+          <BrowserRouter>{children}</BrowserRouter>
+        </AppearanceProvider>
       </SessionProvider>
     </QueryClientProvider>
   );

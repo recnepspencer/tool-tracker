@@ -1,0 +1,9 @@
+/* Live-only: the access guide shows five company roles instead of the demo's three. */
+.experience .access-matrix .permission-matrix__row {
+  grid-template-columns: minmax(var(--space-220), 1.6fr) repeat(5, minmax(var(--space-64), 0.7fr));
+}
+@media (max-width: 620px) {
+  .experience .access-matrix .permission-matrix__row {
+    grid-template-columns: minmax(0, 1fr) repeat(5, var(--space-34));
+  }
+}

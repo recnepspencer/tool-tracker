@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { command, invitedMember, workspace } from './support';
+import { expect } from '@playwright/test';
+import { command, invitedMember, workspace, chooseOption, test } from './support';
 
 const roles = [
   { role: 'company_admin', company: true, catalog: true, work: true, tools: true },
@@ -14,7 +14,6 @@ for (const access of roles)
     page,
     browser,
   }) => {
-    test.setTimeout(150_000);
     const fixture = await workspace(page);
     await command(page.request, `${fixture.base}/tool-registration-policy`, {
       expected_revision: 1,
@@ -51,100 +50,97 @@ for (const access of roles)
         await expect(company.getByRole('textbox')).toHaveCount(0);
       }
       const categories = actor.getByRole('region', { name: 'Tool categories', exact: true });
+      const categoryStatus = categories.getByRole('combobox', { name: 'Category status', exact: true });
       await expect(categories).toHaveCount(access.catalog ? 1 : 0);
       if (access.catalog) {
         await categories.getByLabel('New category').fill('Measuring');
-        await categories.getByRole('button', { name: 'Create category', exact: true }).click();
+        await categories.getByRole('button', { name: 'Add category', exact: true }).click();
         await expect(categories.getByLabel('New category')).toHaveValue('');
-        const category = categories.locator('details').filter({ hasText: 'Measuring' });
-        await category.locator('summary').click();
-        await category.getByLabel('Category name').fill('Layout equipment');
-        await category.getByRole('button', { name: 'Save category', exact: true }).click();
-        await expect(category).toHaveCount(0);
-        const renamed = categories.locator('details').filter({ hasText: 'Layout equipment' });
-        await expect(renamed.locator('summary')).toHaveText('Layout equipment');
-        await renamed.getByLabel('Archived', { exact: true }).check();
-        await renamed.getByRole('button', { name: 'Save category', exact: true }).click();
-        await expect(renamed).toHaveCount(0);
-        await categories.getByLabel('Show archived categories').click();
-        await expect(categories.getByLabel('Show archived categories')).toBeChecked();
-        await expect(renamed.locator('summary')).toBeVisible();
-        await renamed.locator('summary').click();
-        await renamed.getByLabel('Archived', { exact: true }).uncheck();
-        await renamed.getByRole('button', { name: 'Save category', exact: true }).click();
-        await expect(renamed).toHaveCount(0);
+        await categories.getByRole('button', { name: 'Rename Measuring', exact: true }).click();
+        await categories.getByRole('textbox', { name: 'Rename Measuring', exact: true }).fill('Layout equipment');
+        await categories.getByRole('button', { name: 'Save', exact: true }).click();
+        await expect(categories.getByText('Measuring', { exact: true })).toHaveCount(0);
+        await expect(categories.getByText('Layout equipment', { exact: true })).toBeVisible();
+        await categories.getByRole('button', { name: 'Archive Layout equipment', exact: true }).click();
+        await expect(categories.getByText('Layout equipment', { exact: true })).toHaveCount(0);
+        await chooseOption(categories, 'Category status', 'archived');
+        await expect(categoryStatus).toHaveText('Archived categories');
+        await expect(categories.getByText('Layout equipment', { exact: true })).toBeVisible();
+        await categories.getByRole('button', { name: 'Restore Layout equipment', exact: true }).click();
+        await expect(categories.getByText('Layout equipment', { exact: true })).toHaveCount(0);
       }
       const jobs = actor.getByRole('region', { name: 'Jobs', exact: true });
+      const jobStatus = jobs.getByRole('combobox', { name: 'Job status', exact: true });
       await expect(jobs).toHaveCount(access.work ? 1 : 0);
       if (access.work) {
         await expect(
           jobs.getByRole('button', { name: /^(Request to join job|Join job|Leave job|Request to leave job)$/ }),
         ).toHaveCount(0);
+        await expect(jobs.getByRole('switch')).toHaveCount(0);
         await jobs.getByRole('button', { name: 'Add job', exact: true }).click();
         let dialog = actor.getByRole('dialog', { name: 'Add job', exact: true });
-        await dialog.getByLabel('Project', { exact: true }).selectOption(fixture.job.project_id);
+        await chooseOption(dialog, 'Project', fixture.job.project_id);
         await dialog.getByLabel('Job number').fill('SET-2');
         await dialog.getByLabel('Job name').fill('Settings job');
-        await dialog.getByRole('button', { name: 'Create job', exact: true }).click();
+        await dialog.getByRole('button', { name: 'Add job', exact: true }).click();
         await expect(dialog).toHaveCount(0);
         await jobs.getByRole('button', { name: 'Edit Settings job', exact: true }).click();
         dialog = actor.getByRole('dialog', { name: 'Edit job', exact: true });
         await dialog.getByLabel('Job name').fill('Settings electrical');
-        await dialog.getByRole('button', { name: 'Save job', exact: true }).click();
+        await dialog.getByRole('button', { name: 'Save', exact: true }).click();
         await expect(dialog).toHaveCount(0);
         await jobs.getByRole('button', { name: 'View people on Settings electrical', exact: true }).click();
-        const roster = actor.getByRole('dialog', { name: 'Job details', exact: true });
-        await expect(roster.getByText('No current assignments.')).toBeVisible();
+        const roster = actor.getByRole('dialog', { name: 'People on Settings electrical', exact: true });
+        await expect(roster.getByText('No one is on this job yet.')).toBeVisible();
         const owner = (await (await page.request.get('/api/me')).json()).memberships.find(
           (member: { company_id: string }) => member.company_id === fixture.company.id,
         );
         const assigning = roster.getByRole('region', { name: 'Assign a person', exact: true });
-        await assigning.getByLabel('Person', { exact: true }).selectOption(owner.membership_id);
-        await assigning.getByLabel('Responsibility').selectOption('foreman');
+        await chooseOption(assigning, 'Person', owner.membership_id);
+        await chooseOption(assigning, 'Responsibility', 'foreman');
         await assigning.getByLabel('Reason', { exact: true }).fill('Assigned from company settings');
-        await assigning.getByRole('button', { name: 'Save assignment', exact: true }).click();
+        await assigning.getByRole('button', { name: 'Assign', exact: true }).click();
         await expect(roster.getByRole('article', { name: 'Workspace Owner foreman', exact: true })).toBeVisible();
         await actor.keyboard.press('Escape');
+        await expect(roster).toHaveCount(0);
         await jobs.getByRole('button', { name: 'Archive Settings electrical', exact: true }).click();
         dialog = actor.getByRole('dialog', { name: 'Archive job', exact: true });
         await dialog.getByRole('button', { name: 'Archive job', exact: true }).click();
         await expect(dialog).toHaveCount(0);
-        await jobs.getByLabel('Show archived jobs').click();
-        await expect(jobs.getByLabel('Show archived jobs')).toBeChecked();
+        await chooseOption(jobs, 'Job status', 'archived');
+        await expect(jobStatus).toHaveText('Archived jobs');
         await expect(jobs.getByRole('article', { name: 'Settings electrical', exact: true })).toBeVisible();
         await actor.reload();
-        await expect(jobs.getByLabel('Show archived jobs')).toBeChecked();
-        if (access.catalog) await expect(categories.getByLabel('Show archived categories')).toBeChecked();
+        await expect(jobStatus).toHaveText('Archived jobs');
+        if (access.catalog) await expect(categoryStatus).toHaveText('Archived categories');
         await jobs.getByRole('button', { name: 'Restore Settings electrical', exact: true }).click();
-        dialog = actor.getByRole('dialog', { name: 'Restore job', exact: true });
-        await dialog.getByRole('button', { name: 'Restore job', exact: true }).click();
-        await expect(dialog).toHaveCount(0);
-        await jobs.getByLabel('Show archived jobs').click();
-        await expect(jobs.getByLabel('Show archived jobs')).not.toBeChecked();
+        await expect(jobs.getByRole('article', { name: 'Settings electrical', exact: true })).toHaveCount(0);
+        await chooseOption(jobs, 'Job status', 'active');
+        await expect(jobStatus).toHaveText('Active jobs');
         await expect(jobs.getByRole('button', { name: 'View people on Settings electrical', exact: true })).toHaveText(
           '0 people',
         );
-        if (access.catalog) await expect(categories.getByLabel('Show archived categories')).toBeChecked();
+        if (access.catalog) await expect(categoryStatus).toHaveText('Archived categories');
       }
       if (access.catalog) {
-        await categories.getByLabel('Show archived categories').click();
-        await expect(categories.getByLabel('Show archived categories')).not.toBeChecked();
+        await chooseOption(categories, 'Category status', 'active');
+        await expect(categoryStatus).toHaveText('Active categories');
         await expect(categories.getByText('Layout equipment', { exact: true })).toBeVisible();
         const active = (await (await page.request.get(`${fixture.base}/tool-categories`)).json()).items;
         expect(active.map((category: { name: string }) => category.name)).toEqual(['Drills', 'Layout equipment']);
       }
       const registration = actor.getByRole('region', { name: 'Employee tool uploads', exact: true });
-      await expect(actor.getByRole('button', { name: 'Save registration rule', exact: true })).toHaveCount(
-        access.tools ? 1 : 0,
-      );
+      const registrationSwitch = registration.getByRole('switch', { name: 'Employees can register tools' });
+      await expect(registrationSwitch).toHaveCount(access.tools ? 1 : 0);
+      const registrationPolicy = async () =>
+        (await (await page.request.get(`${fixture.base}/tool-registration-policy`)).json())
+          .employee_tool_creation_enabled;
       if (access.tools) {
-        await registration.getByRole('combobox').selectOption('false');
-        await registration.getByRole('button', { name: 'Save registration rule', exact: true }).click();
-        await expect(registration.getByRole('status')).toBeVisible();
-        expect(
-          (await (await page.request.get(`${fixture.base}/tool-registration-policy`)).json())
-            .employee_tool_creation_enabled,
-        ).toBe(false);
+        await expect(registrationSwitch).toHaveAttribute('aria-checked', 'true');
+        await registrationSwitch.click();
+        await expect(registrationSwitch).toHaveAttribute('aria-checked', 'false');
+        await expect(registrationSwitch).toBeEnabled();
+        await expect.poll(registrationPolicy).toBe(false);
       } else if (access.role === 'field_member') {
         await expect(
           registration.getByText('Employees can register tools and upload photos.', { exact: true }),
@@ -155,10 +151,15 @@ for (const access of roles)
         access.work ? 1 : 0,
       );
       if (access.work) {
-        await participation.getByLabel('Employees joining jobs').selectOption('approval_required');
-        await participation.getByLabel('Employees leaving jobs').selectOption('disabled');
+        await chooseOption(participation, 'Employees joining jobs', 'approval_required');
+        await chooseOption(participation, 'Employees leaving jobs', 'disabled');
         await participation.getByRole('button', { name: 'Save job rules', exact: true }).click();
-        await expect(participation.getByRole('status')).toBeVisible();
+        await expect
+          .poll(async () => {
+            const policy = await (await page.request.get(`${fixture.base}/job-participation-policy`)).json();
+            return [policy.self_join_mode, policy.self_leave_mode];
+          })
+          .toEqual(['approval_required', 'disabled']);
       } else {
         await expect(participation.getByText('Employees decide directly', { exact: true })).toBeVisible();
         await expect(participation.getByText('Manager approval required', { exact: true })).toBeVisible();
@@ -168,8 +169,11 @@ for (const access of roles)
       );
       await actor.reload();
       await expect(actor.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
-      if (access.tools) await expect(registration.getByRole('combobox')).toHaveValue('false');
-      if (access.work) await expect(participation.getByLabel('Employees leaving jobs')).toHaveValue('disabled');
+      if (access.tools) await expect(registrationSwitch).toHaveAttribute('aria-checked', 'false');
+      if (access.work)
+        await expect(participation.getByRole('combobox', { name: 'Employees leaving jobs', exact: true })).toHaveText(
+          'Managers assign only',
+        );
       if (access.company) await expect(company.getByLabel('Company name')).toHaveValue(fixture.company.name);
       else await expect(company.getByText(fixture.company.name, { exact: true })).toBeVisible();
       if (!access.work)

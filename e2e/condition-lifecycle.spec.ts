@@ -1,26 +1,80 @@
-import { test, expect, type Page } from '@playwright/test';
-import { chooseDestination, command, invitedMember, workspace } from './support';
+import { expect, type Locator, type Page } from '@playwright/test';
+import { chooseDestination, command, invitedMember, workspace, chooseOption, test } from './support';
 
+const photoFile = 'e2e/fixtures/hammer-drill.jpg';
+const reportsOf = (page: Page) => page.getByRole('region', { name: 'Open reports', exact: true });
+const timelineOf = (page: Page) => page.getByRole('region', { name: 'Timeline', exact: true });
+const entry = (scope: Locator, action: string) =>
+  scope.getByRole('listitem').filter({ has: scope.page().getByText(action, { exact: true }) });
+
+/** A photo thumbnail links to the full evidence photo; follow it and check it is private and fresh. */
+async function expectPhotoDownload(page: Page, scope: Locator, name: string) {
+  const link = scope.locator('a').filter({ has: page.getByRole('img', { name, exact: true }) });
+  const href = await link.getAttribute('href');
+  const download = await page.request.get(href!);
+  expect(download.status()).toBe(200);
+  expect(download.headers()['content-type']).toContain('image/jpeg');
+  expect(download.headers()['cache-control']).toContain('no-store');
+}
+
+/** Managers flag condition from the inventory drawer's "Mark damaged" / "Mark lost" dialogs. */
+async function flag(page: Page, kind: 'damage' | 'missing', description: string, photo = false) {
+  const action = kind === 'damage' ? 'Mark damaged' : 'Mark lost';
+  await page.getByRole('button', { name: action, exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: `${action}: Hammer drill`, exact: true });
+  await expect(dialog.getByRole('combobox', { name: 'Condition', exact: true })).toHaveText(
+    kind === 'damage' ? 'Damaged' : 'Lost',
+  );
+  await dialog.getByLabel('Evidence note').fill(description);
+  if (photo) await dialog.locator('input[type="file"][name="photo"]').setInputFiles(photoFile);
+  await dialog.getByRole('button', { name: action, exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(reportsOf(page).getByText(description, { exact: true })).toBeVisible();
+}
+
+/** Holders report from the field sheet's action panel. */
 async function report(page: Page, kind: 'damage' | 'missing', description: string, photo = false) {
   await page.getByRole('button', { name: kind === 'damage' ? 'Report damaged' : 'Report lost', exact: true }).click();
-  const form = page.getByRole('region', { name: 'Report a problem', exact: true });
+  const form = page.getByRole('form', { name: 'Action details', exact: true });
   await form.getByLabel('What happened?').fill(description);
-  if (photo) await form.getByLabel('Photo (optional, up to 8 MB)').setInputFiles('e2e/fixtures/hammer-drill.jpg');
-  await form.getByRole('button', { name: 'Submit report', exact: true }).click();
-  await expect(
-    page.getByRole('region', { name: 'Open reports', exact: true }).getByText(description, { exact: true }),
-  ).toBeVisible();
+  if (photo) await form.locator('input[type="file"][name="photo"]').setInputFiles(photoFile);
+  await form.getByRole('button', { name: kind === 'damage' ? 'Report damage' : 'Report loss', exact: true }).click();
+  await expect(form).toHaveCount(0);
+  await expect(reportsOf(page).getByText(description, { exact: true })).toBeVisible();
+}
+
+async function markFound(page: Page, note: string) {
+  await reportsOf(page).getByRole('button', { name: 'Mark found', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Mark Hammer drill found', exact: true });
+  await dialog.getByLabel('Where was it found?').fill(note);
+  await dialog.getByRole('button', { name: 'Mark found', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
 }
 
 async function repair(page: Page, condition: string, note: string, photo = false) {
-  const form = page.getByRole('region', { name: 'Record service', exact: true });
-  await form.getByLabel('Condition', { exact: true }).selectOption(condition);
-  await form.getByLabel('Work performed').fill(note);
-  if (photo) await form.getByLabel('Photo (optional, up to 8 MB)').setInputFiles('e2e/fixtures/hammer-drill.jpg');
-  await form.getByRole('button', { name: 'Save service record', exact: true }).click();
-  await expect(
-    page.getByRole('region', { name: 'Service history', exact: true }).getByText(note, { exact: true }),
-  ).toBeVisible();
+  await page.getByRole('button', { name: 'Record service', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Record service for Hammer drill', exact: true });
+  await chooseOption(dialog, 'Condition', condition);
+  await dialog.getByLabel('Work performed').fill(note);
+  if (photo) await dialog.locator('input[type="file"][name="photo"]').setInputFiles(photoFile);
+  await dialog.getByRole('button', { name: 'Save service record', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  // A serviceable result also closes the damage report with the same note.
+  await expect(timelineOf(page).getByText(note, { exact: true }).first()).toBeVisible();
+}
+
+async function changeLifecycle(page: Page, status: string, reason: string) {
+  const retired = await page.getByRole('button', { name: 'Reinstate or dispose', exact: true }).count();
+  await page.getByRole('button', { name: retired ? 'Reinstate or dispose' : 'Decommission tool', exact: true }).click();
+  const dialog = page.getByRole('dialog', {
+    name: `${retired ? 'Change lifecycle of' : 'Decommission'} Hammer drill`,
+    exact: true,
+  });
+  await chooseOption(dialog, 'Lifecycle', status);
+  await dialog.getByLabel('Reason or evidence note').fill(reason);
+  await dialog.getByRole('button', { name: retired ? 'Update lifecycle' : 'Decommission', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(timelineOf(page).getByText(reason, { exact: true })).toBeVisible();
 }
 
 for (const role of ['company_admin', 'equipment_manager', 'warehouse'])
@@ -28,7 +82,6 @@ for (const role of ['company_admin', 'equipment_manager', 'warehouse'])
     page,
     browser,
   }) => {
-    test.setTimeout(150_000);
     const fixture = await workspace(page);
     const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
     const actor = role === 'company_admin' ? page : await context.newPage();
@@ -53,45 +106,35 @@ for (const role of ['company_admin', 'equipment_manager', 'warehouse'])
         .items;
       const other = await (await page.request.get(`${fixture.base}/tools/${fixture.second.id}`)).json();
       await actor.goto(`/app/tools/${fixture.asset.id}`);
-      await report(actor, 'damage', 'Trigger broken during use', true);
-      await expect(actor.getByRole('button', { name: 'Report damaged', exact: true })).toHaveCount(0);
-      await report(actor, 'missing', 'Not located during stock check');
-      const reports = actor.getByRole('region', { name: 'Open reports', exact: true });
-      await expect(reports.getByRole('article')).toHaveCount(2);
-      await reports.getByLabel('Where was it found?').fill('Located in the returns cage');
-      await reports.getByRole('button', { name: 'Mark found', exact: true }).click();
-      await expect(reports.getByRole('article', { name: 'missing report', exact: true })).toHaveCount(0);
+      const reports = reportsOf(actor);
+      const timeline = timelineOf(actor);
+      await flag(actor, 'damage', 'Trigger broken during use', true);
+      await expect(actor.getByRole('button', { name: 'Mark damaged', exact: true })).toHaveCount(0);
+      await flag(actor, 'missing', 'Not located during stock check');
+      await expect(reports.getByRole('listitem')).toHaveCount(2);
+      await markFound(actor, 'Located in the returns cage');
+      await expect(reports.getByRole('listitem', { name: 'Reported lost', exact: true })).toHaveCount(0);
       let tool = await (await actor.request.get(`${fixture.base}/tools/${fixture.asset.id}`)).json();
       expect(tool).toMatchObject({ missing: false, serviceability: 'damaged' });
-      await actor.getByRole('button', { name: 'Manage this tool', exact: true }).click();
       await repair(actor, 'out_of_service', 'Waiting for a replacement trigger');
-      await expect(reports.getByRole('article', { name: 'damage report', exact: true })).toBeVisible();
+      await expect(reports.getByRole('listitem', { name: 'Reported damaged', exact: true })).toBeVisible();
       await repair(actor, 'serviceable', 'Replaced trigger and tested under load', true);
-      await expect(reports.getByText('No open reports.', { exact: true })).toBeVisible();
-      await reports.locator('summary').click();
-      await expect(reports.getByText('Located in the returns cage', { exact: true })).toBeVisible();
-      await expect(reports.getByText('Replaced trigger and tested under load', { exact: true })).toBeVisible();
-      await expect(reports.getByText(`Reported by ${actorName}`, { exact: false })).toHaveCount(2);
-      for (const label of ['Download report photo 1', 'Download service photo 1']) {
-        const href = await actor.getByRole('link', { name: label, exact: true }).getAttribute('href');
-        const download = await actor.request.get(href!);
-        expect(download.status()).toBe(200);
-        expect(download.headers()['content-type']).toContain('image/jpeg');
-        expect(download.headers()['cache-control']).toContain('no-store');
-      }
+      // Once every report is resolved the open-reports list goes away; the record stays in the timeline.
+      await expect(reports).toHaveCount(0);
+      await expect(entry(timeline, 'Marked found')).toContainText('Located in the returns cage');
+      await expect(entry(timeline, 'Restored to service')).toContainText('Replaced trigger and tested under load');
+      for (const action of ['Reported damaged', 'Reported lost'])
+        await expect(entry(timeline, action)).toContainText(actorName);
+      await expectPhotoDownload(actor, timeline, 'Reported damaged photo 1');
+      await expectPhotoDownload(actor, timeline, 'Restored to service photo 1');
       expect(
         (await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}/custody`)).json()).items,
       ).toEqual(custody);
-      const lifecycle = actor.getByRole('region', { name: 'Retirement & disposal', exact: true });
-      const history = actor.getByRole('region', { name: 'Retirement & disposal history', exact: true });
       for (const [status, reason] of [
         ['retired', 'Withdrawn pending inspection'],
         ['active', 'Inspection complete; returned to stock'],
       ]) {
-        await lifecycle.getByLabel('Inventory status').selectOption(status);
-        await lifecycle.getByLabel('Reason', { exact: true }).fill(reason);
-        await lifecycle.getByRole('button', { name: 'Update status', exact: true }).click();
-        await expect(history.getByText(reason, { exact: true })).toBeVisible();
+        await changeLifecycle(actor, status, reason);
         expect(
           (await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}/custody`)).json()).items,
         ).toEqual(custody);
@@ -101,17 +144,15 @@ for (const role of ['company_admin', 'equipment_manager', 'warehouse'])
         note: 'For the next shift',
       });
       await actor.reload();
-      await lifecycle.getByLabel('Inventory status').selectOption('disposed');
-      await lifecycle.getByLabel('Reason', { exact: true }).fill('Housing recycled; removed from inventory');
-      await lifecycle.getByRole('button', { name: 'Update status', exact: true }).click();
-      await expect(
-        actor.getByText('Disposal is permanent. This tool cannot be restored.', { exact: true }),
-      ).toBeVisible();
-      await expect(history.getByText('Housing recycled; removed from inventory', { exact: true })).toBeVisible();
-      await expect(history.getByText(`Changed by ${actorName}`, { exact: false })).toHaveCount(3);
-      await expect(actor.getByRole('button', { name: 'Save service record', exact: true })).toHaveCount(0);
+      await changeLifecycle(actor, 'disposed', 'Housing recycled; removed from inventory');
+      await expect(actor.getByText('Disposal is permanent', { exact: true })).toBeVisible();
+      await expect(actor.getByText('This tool cannot be restored.', { exact: false })).toBeVisible();
+      const lifecycleActions = ['Retired', 'Returned to active inventory', 'Disposed'];
+      for (const action of lifecycleActions) await expect(entry(timeline, action)).toContainText(actorName);
+      await expect(actor.getByRole('button', { name: 'Record service', exact: true })).toHaveCount(0);
+      await expect(actor.getByRole('button', { name: 'Decommission tool', exact: true })).toHaveCount(0);
       await actor.reload();
-      await expect(history.getByRole('article')).toHaveCount(3);
+      for (const action of lifecycleActions) await expect(entry(timeline, action)).toHaveCount(1);
       tool = await (await actor.request.get(`${fixture.base}/tools/${fixture.asset.id}`)).json();
       expect(tool).toMatchObject({
         lifecycle: 'disposed',
@@ -135,8 +176,8 @@ for (const role of ['company_admin', 'equipment_manager', 'warehouse'])
       if (role === 'warehouse') {
         await actor.setViewportSize({ width: 390, height: 844 });
         await expect(actor.getByRole('heading', { name: 'Hammer drill', exact: true })).toBeVisible();
-        await history.scrollIntoViewIfNeeded();
-        await expect(history.getByText('Housing recycled; removed from inventory', { exact: true })).toBeVisible();
+        await timeline.scrollIntoViewIfNeeded();
+        await expect(timeline.getByText('Housing recycled; removed from inventory', { exact: true })).toBeVisible();
         await actor.screenshot({ path: 'artifacts/tool-disposal-history-mobile.png', fullPage: true });
         expect(await actor.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       }
@@ -163,40 +204,47 @@ test('a field holder reports with photos and returns a damaged tool for repair w
     const custody = (await (await holder.request.get(`${fixture.base}/tools/${fixture.asset.id}/custody`)).json())
       .items;
     await holder.goto(`/app/mine/${fixture.asset.id}`);
-    await expect(holder.getByRole('button', { name: 'Manage this tool', exact: true })).toHaveCount(0);
+    const sheet = holder.getByRole('dialog', { name: 'Tool details', exact: true });
+    await expect(sheet.getByRole('heading', { name: 'Hammer drill', exact: true })).toBeVisible();
+    // Holders get the field sheet, without the inventory management commands.
+    for (const name of ['Edit', 'Record service', 'Decommission tool'])
+      await expect(holder.getByRole('button', { name, exact: true })).toHaveCount(0);
     await report(holder, 'damage', 'Trigger stopped working on site', true);
     await report(holder, 'missing', 'Misplaced during shift handover');
     await expect(holder.getByRole('button', { name: 'Mark found', exact: true })).toHaveCount(0);
     await page.goto(`/app/tools/${fixture.asset.id}`);
-    const reports = page.getByRole('region', { name: 'Open reports', exact: true });
-    await reports.getByLabel('Where was it found?').fill('Found in the locked site cabinet');
-    await reports.getByRole('button', { name: 'Mark found', exact: true }).click();
-    await expect(reports.getByRole('article', { name: 'missing report', exact: true })).toHaveCount(0);
+    const reports = reportsOf(page);
+    await markFound(page, 'Found in the locked site cabinet');
+    await expect(reports.getByRole('listitem', { name: 'Reported lost', exact: true })).toHaveCount(0);
     expect(
       (await (await holder.request.get(`${fixture.base}/tools/${fixture.asset.id}/custody`)).json()).items,
     ).toEqual(custody);
     await holder.reload();
     await holder.getByRole('button', { name: 'Transfer tool', exact: true }).click();
     await chooseDestination(holder, 'Warehouse', 'Main warehouse');
-    await holder.getByRole('button', { name: 'Propose handoff', exact: true }).click();
-    await expect(holder.getByText(/This tool has a pending handoff/)).toBeVisible();
+    await holder.getByRole('button', { name: 'Send to Main warehouse', exact: true }).click();
+    await expect(holder.getByText('In transfer to Main warehouse.', { exact: false })).toBeVisible();
     expect(
       (await (await holder.request.get(`${fixture.base}/tools/${fixture.asset.id}`)).json()).holder_membership_id,
     ).toBe(member.id);
     await page.goto('/app/operations');
-    await page.getByRole('button', { name: 'Review handoff', exact: true }).click();
-    await page.getByRole('button', { name: 'Confirm handoff decision', exact: true }).click();
-    await expect(page.getByText('No handoffs to review.')).toBeVisible();
-    await page.goto(`/app/tools/${fixture.asset.id}?action=manage`);
+    await page.getByRole('button', { name: 'Review return for Hammer drill', exact: true }).click();
+    const review = page.getByRole('dialog', { name: 'Review Hammer drill', exact: true });
+    await review.getByRole('button', { name: 'Accept return', exact: true }).click();
+    await expect(review).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Review return for Hammer drill', exact: true })).toHaveCount(0);
+    await page.goto(`/app/tools/${fixture.asset.id}`);
     await repair(page, 'serviceable', 'Replaced trigger and returned to stock', true);
     await holder.goto(`/app/checkout/${fixture.asset.id}`);
-    await holder.getByRole('region', { name: 'Open reports', exact: true }).locator('summary').click();
-    await expect(holder.getByText('Found in the locked site cabinet', { exact: true })).toBeVisible();
-    await expect(holder.getByText('Replaced trigger and returned to stock', { exact: true })).toHaveCount(2);
-    const service = holder.getByRole('region', { name: 'Service history', exact: true });
-    await expect(service.getByText('Recorded by Workspace Owner', { exact: false })).toBeVisible();
-    const photo = await service
-      .getByRole('link', { name: 'Download service photo 1', exact: true })
+    const timeline = timelineOf(holder);
+    await expect(reportsOf(holder)).toHaveCount(0);
+    await expect(entry(timeline, 'Marked found')).toContainText('Found in the locked site cabinet');
+    // The service note closes the damage report and is recorded as the repair.
+    await expect(timeline.getByText('Replaced trigger and returned to stock', { exact: true })).toHaveCount(2);
+    await expect(entry(timeline, 'Restored to service')).toContainText('Workspace Owner');
+    const photo = await timeline
+      .locator('a')
+      .filter({ has: holder.getByRole('img', { name: 'Restored to service photo 1', exact: true }) })
       .getAttribute('href');
     expect((await holder.request.get(photo!)).status()).toBe(200);
     const tool = await (await holder.request.get(`${fixture.base}/tools/${fixture.asset.id}`)).json();

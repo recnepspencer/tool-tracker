@@ -1,0 +1,28 @@
+/* Live-only: scoped warehouse grants listed inside the demo's admin-detail-list. */
+.experience .warehouse-manager {
+  align-items: center;
+  display: flex;
+  gap: var(--space-12);
+  justify-content: space-between;
+}
+.experience .warehouse-manager__person {
+  align-items: center;
+  display: flex;
+  gap: var(--space-10);
+  min-width: 0;
+}
+.experience .warehouse-manager__person > div {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.experience .warehouse-manager__person small {
+  color: var(--dim);
+  font: var(--font-mono-xs);
+}
+.experience .warehouse-manager__actions {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--space-8);
+}

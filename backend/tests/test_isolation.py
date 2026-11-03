@@ -56,7 +56,9 @@ def test_current_session_exposes_only_active_company_memberships(api_client, wor
         {
             "company_id": str(world.company.id),
             "company_name": world.company.name,
+            "company_logo_id": None,
             "membership_id": str(world.member.id),
+            "is_owner": False,
             "preferred_name": "Ray",
             "capabilities": [
                 "company.read",

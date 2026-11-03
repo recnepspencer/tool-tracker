@@ -60,6 +60,9 @@ def seed_review_scenarios(password):
         if created:
             CompanyRoleGrant.objects.create(membership=member, role_code=role)
         members[key] = member
+    if company.owner_id is None:
+        company.owner = members["admin"]
+        company.save(update_fields=["owner"])
     warehouses = {}
     for code, name in [("MAIN", "Main warehouse"), ("NORTH", "North warehouse")]:
         warehouse, created = Warehouse.objects.get_or_create(

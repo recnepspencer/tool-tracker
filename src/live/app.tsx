@@ -6,7 +6,8 @@ import { Shell } from './shell';
 import { CompanySetup, Invitation, Login, Recovery, ResetPassword, Signup, VerifyEmail } from './auth';
 import { PwaStatus } from './pwa';
 import { useCompany, useSession } from './session';
-import { Form, Loading, Notice } from './ui';
+import { AuthLayout } from './auth-ui';
+import { Button, ErrorState, LoadingState } from './kit';
 
 const ToolSurface = lazy(() => import('./field').then((m) => ({ default: m.ToolSurface })));
 const ToolSheet = lazy(() => import('./field').then((m) => ({ default: m.ToolSheet })));
@@ -25,16 +26,18 @@ const DirectoryPage = lazy(() => import('./directory').then((m) => ({ default: m
 function RequireAccount() {
   const { session, member, loading, error, refresh } = useSession();
   const location = useLocation();
-  if (loading) return <Loading />;
+  if (loading) return <LoadingState label="Opening your workspace…" />;
   if (error)
     return (
-      <main className="connection-error">
-        <h1>Can’t reach your workspace</h1>
-        <Notice error>Check your connection and try again. Your account has not been signed out.</Notice>
-        <Form label="Try again" submit={refresh}>
-          <></>
-        </Form>
-      </main>
+      <AuthLayout
+        eyebrow="Connection"
+        title="Can’t reach your workspace"
+        description="Check your connection and try again. Your account has not been signed out."
+      >
+        <Button fullWidth onClick={() => void refresh()}>
+          Try again
+        </Button>
+      </AuthLayout>
     );
   if (!session)
     return (
@@ -48,7 +51,7 @@ function Permit({ capabilities }: { capabilities: string[] }) {
   return capabilities.every(c.can) ? (
     <Outlet />
   ) : (
-    <Notice error>Your company permissions do not allow access to this page.</Notice>
+    <ErrorState message="Your company permissions do not allow access to this page." />
   );
 }
 function Home() {
@@ -94,6 +97,7 @@ export function App() {
                 <Route path=":assetId" element={<ToolSheet />} />
               </Route>
               <Route path="mine" element={<ToolSurface field="mine" />}>
+                <Route path="new" element={<RegisterTool />} />
                 <Route path=":assetId" element={<ToolSheet />} />
               </Route>
               <Route path="checkout" element={<ToolSurface field="checkout" />}>
@@ -125,10 +129,15 @@ export function App() {
         <Route
           path="*"
           element={
-            <main className="connection-error">
-              <h1>Page not found</h1>
-              <Link to="/app">Return to your workspace</Link>
-            </main>
+            <AuthLayout
+              eyebrow="Not found"
+              title="Page not found"
+              description="This address does not match a page in Nelson Electric."
+            >
+              <Link className="button button--primary button--full" to="/app">
+                Return to your workspace
+              </Link>
+            </AuthLayout>
           }
         />
       </Routes>

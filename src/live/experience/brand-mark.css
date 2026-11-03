@@ -1,0 +1,16 @@
+.experience .brand-mark {
+  align-items: center;
+  background: linear-gradient(160deg, var(--primary-from), var(--brand-mark-to));
+  color: var(--on-accent);
+  display: inline-flex;
+  font-weight: var(--weight-extrabold);
+  height: var(--space-30);
+  justify-content: center;
+  width: var(--space-30);
+}
+/* A company logo takes the mark's square without stretching. */
+.experience .brand-mark--logo {
+  background: var(--card);
+  border-radius: var(--radius-xs);
+  object-fit: contain;
+}

@@ -1,4 +1,5 @@
 import { usePwaState } from './pwa-state';
+import './experience/pwa.css';
 
 export function PwaStatus() {
   const { online, update, install, installError, installApp, updateApp, later, dismissInstall, dismissInstallError } =

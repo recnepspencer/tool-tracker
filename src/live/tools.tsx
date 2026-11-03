@@ -1,179 +1,168 @@
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { errorMessage } from './client';
-import { ToolHistory, ToolReports } from './tool-history';
-import { AssetPhoto } from './asset-photo';
-import { purchasePrice } from './asset-details';
-import { useToolDetailState } from './tools-state';
-import { ToolReport, ToolRequest, ToolTransfer } from './tool-actions';
-import { ToolManagement, ToolReconciliation } from './tool-management';
-import { Badge, date, human, Loading, Notice, Section } from './ui';
+import { errorMessage, type Model } from './client';
+import { Callout, cx, ErrorState, LoadingState, OverlayDialog, StatusBadge, ToolPhoto } from './kit';
+import { assetLabel, photoSrc, toolStatus } from './tool-status';
+import { CustodyTimeline, ToolReports } from './tool-history';
+import { ToolFacts, custodianName, custodyCaveat } from './tool-detail-facts';
+import { WorkerActionPanel, WorkerToolActions, WorkerToolNotices } from './tool-actions';
+import { ToolDrawerActions, ToolDrawerDialog } from './tool-management';
+import { toolPermissions, useToolDetailState, type ToolDetailState } from './tools-state';
+import './experience/tool-detail-live.css';
 
-export function ToolDetail() {
+/** Route-driven tool detail: the worker bottom sheet in field contexts, the inventory drawer in the control room. */
+export function ToolSheet() {
   const state = useToolDetailState();
-  const { c, tool, incidents, requests, action, setAction } = state;
-  if (tool.isPending) return <Loading />;
-  if (tool.error) return <Notice error>{errorMessage(tool.error)}</Notice>;
-  const t = tool.data;
-  const manages = c.can('tools.manage') || c.managed_warehouse_ids.includes(t.responsible_warehouse_id);
-  const canHandoff =
-    t.warehouse_id !== null && (c.can('tools.manage') || c.managed_warehouse_ids.includes(t.warehouse_id));
-  const holds = t.holder_membership_id === c.membership_id;
-  const transfer = (holds || canHandoff) && t.lifecycle === 'active' && !t.missing;
-  const report = (holds || manages) && t.lifecycle === 'active';
-  const damageOpen = incidents.data?.some((incident) => incident.kind === 'damage' && !incident.resolved_at);
-  const missingOpen = incidents.data?.some((incident) => incident.kind === 'missing' && !incident.resolved_at);
+  return createPortal(state.control ? <ToolDrawer state={state} /> : <WorkerToolSheet state={state} />, document.body);
+}
+
+/** The demo's WorkerToolDetailSheet. */
+function WorkerToolSheet({ state }: { state: ToolDetailState }) {
+  const { tool, action, close } = state;
   return (
-    <div className="tool-detail-content">
-      <header className="detail-hero">
-        <AssetPhoto asset={t} companyId={c.company_id} large />
+    <OverlayDialog
+      label="Tool details"
+      onClose={close}
+      backdropClassName="worker-sheet-backdrop"
+      panelClassName={cx('worker-bottom-sheet worker-detail-sheet', action && 'worker-detail-sheet--action')}
+    >
+      <span className="worker-sheet-handle" />
+      <div className="detail-sheet-header">
+        <span className="eyebrow">Tool details</span>
+        <button type="button" className="icon-button" aria-label="Close tool details" onClick={close}>
+          ×
+        </button>
+      </div>
+      {tool.isPending ? (
+        <LoadingState label="Loading tool details…" />
+      ) : tool.error ? (
+        <ErrorState message={errorMessage(tool.error)} onRetry={() => void tool.refetch()} />
+      ) : (
+        <WorkerToolContent state={state} asset={tool.data} />
+      )}
+    </OverlayDialog>
+  );
+}
+
+function WorkerToolContent({ state, asset: t }: { state: ToolDetailState; asset: Model<'AssetView'> }) {
+  const { c, action, setAction } = state;
+  const permissions = toolPermissions(state, t);
+  return (
+    <div className="detail-sheet-content worker-detail-content" data-overlay-scroll>
+      <div className="detail-hero">
+        <ToolPhoto
+          src={photoSrc(c.company_id, t.registration_photo_id)}
+          alt={`${t.name} product photo`}
+          size="large"
+          priority
+        />
         <div>
-          <span className="eyebrow">{t.asset_tag}</span>
-          <h1>{t.name}</h1>
+          <h2>{t.name}</h2>
           <p>
             {t.manufacturer} · {t.model_number}
           </p>
-          <div className="detail-statuses">
-            <Badge>{human(t.lifecycle)}</Badge>
-            <Badge>{human(t.serviceability)}</Badge>
-            {t.missing && <Badge>Missing</Badge>}
-          </div>
+          <StatusBadge tone={toolStatus(t)}>{assetLabel(t)}</StatusBadge>
         </div>
-      </header>
-      {t.lifecycle === 'disposed' && <Notice>Disposal is permanent. This tool cannot be restored.</Notice>}
+      </div>
+      <WorkerToolNotices state={state} asset={t} />
       {action ? (
-        <button className="text-button" onClick={() => setAction('')}>
-          ← Back to tool
-        </button>
+        <WorkerActionPanel state={state} asset={t} permissions={permissions} />
       ) : (
-        <section className="detail-actions" aria-label="Tool actions">
-          {c.can('tools.request') && (t.requestable || !!requests.data?.length) && (
-            <button className="primary" disabled={tool.isFetching} onClick={() => setAction('request')}>
-              {requests.data?.length ? 'Your request' : 'Request this tool'}
-            </button>
-          )}
-          {transfer && !t.pending_handoff_id && (
-            <button className="primary" disabled={tool.isFetching} onClick={() => setAction('transfer')}>
-              Transfer tool
-            </button>
-          )}
-          {report && (
-            <div className="detail-action-row">
-              {!damageOpen && (
-                <button
-                  disabled={tool.isFetching || incidents.isPending || incidents.isFetching}
-                  onClick={() => setAction('damage')}
-                >
-                  Report damaged
-                </button>
-              )}
-              {!missingOpen && (
-                <button
-                  disabled={tool.isFetching || incidents.isPending || incidents.isFetching}
-                  onClick={() => setAction('missing')}
-                >
-                  Report lost
-                </button>
-              )}
-            </div>
-          )}
-          {manages && (t.lifecycle !== 'disposed' || c.can('tools.manage')) && (
-            <button disabled={tool.isFetching} onClick={() => setAction('manage')}>
-              Manage this tool
-            </button>
-          )}
-          {c.can('reconciliation.manage') && (
-            <button onClick={() => setAction('reconcile')}>Open a reconciliation case</button>
-          )}
-        </section>
+        <WorkerToolActions state={state} asset={t} permissions={permissions} />
       )}
-      {t.pending_handoff_id && (
-        <Notice>
-          A handoff is pending. Custody stays with the current holder until receipt is accepted.{' '}
-          <Link to="/app/operations">Open queue</Link>
-        </Notice>
-      )}
-      {action === 'request' && <ToolRequest state={state} asset={t} />}
-      {action === 'transfer' &&
-        (transfer ? (
-          <ToolTransfer state={state} asset={t} />
-        ) : (
-          <Notice>You must be the holder or managing the source warehouse to propose this handoff.</Notice>
-        ))}
-      {(action === 'damage' || action === 'missing') &&
-        (report && (action === 'damage' ? damageOpen : missingOpen) ? (
-          <Notice>This problem is already reported. View the open report below.</Notice>
-        ) : report && incidents.isPending ? (
-          <Loading />
-        ) : report ? (
-          <ToolReport state={state} asset={t} />
-        ) : (
-          <Notice>Only the holder or responsible manager may report this tool.</Notice>
-        ))}
-      {action === 'manage' &&
-        (manages ? (
-          (t.lifecycle !== 'disposed' || c.can('tools.manage')) && <ToolManagement state={state} asset={t} />
-        ) : (
-          <Notice>You do not manage this tool.</Notice>
-        ))}
-      {action === 'reconcile' && c.can('reconciliation.manage') && <ToolReconciliation state={state} asset={t} />}
-      <Section title="Current custody">
-        <p className="large-value">{t.holder_name ?? t.warehouse_name ?? 'No current custodian'}</p>
-        {t.holder_ended_at ? (
-          <p className="muted">Former employee · accountability retained until receipt or an evidenced correction.</p>
-        ) : (
-          t.holder_access_state &&
-          t.holder_access_state !== 'active' && (
-            <p className="muted">Access {t.holder_access_state} · custody retained.</p>
-          )
-        )}
-        <dl className="detail-facts">
-          <div>
-            <dt>Unit</dt>
-            <dd>{t.asset_tag}</dd>
-          </div>
-          <div>
-            <dt>Category</dt>
-            <dd>{t.category_name}</dd>
-          </div>
-          <div>
-            <dt>Origin warehouse</dt>
-            <dd>{t.origin_warehouse_name}</dd>
-          </div>
-          <div>
-            <dt>Responsible warehouse</dt>
-            <dd>{t.responsible_warehouse_name}</dd>
-          </div>
-          <div>
-            <dt>Serial</dt>
-            <dd>{t.serial_number || 'Not recorded'}</dd>
-          </div>
-          <div>
-            <dt>Purchase price</dt>
-            <dd>{purchasePrice(t)}</dd>
-          </div>
-          <div>
-            <dt>Purchase date</dt>
-            <dd>{t.acquisition_date || 'Not recorded'}</dd>
-          </div>
-          <div>
-            <dt>Condition</dt>
-            <dd>
-              {human(t.serviceability)}
-              {t.missing && ' · Missing'}
-            </dd>
-          </div>
-          <div>
-            <dt>Last moved</dt>
-            <dd>{t.custody_started_at ? date(t.custody_started_at) : 'Not applicable'}</dd>
-          </div>
-        </dl>
-        {t.notes && <p className="asset-notes">{t.notes}</p>}
-        {t.registration_photo_id && (
-          <a href={`/api/companies/${c.company_id}/files/${t.registration_photo_id}`}>Download registration photo</a>
-        )}
-      </Section>
-      <ToolReports state={state} manages={manages} />
-      <ToolHistory state={state} />
+      <ToolFacts asset={t} companyId={c.company_id} className="detail-facts" />
+      <ToolReports state={state} manages={permissions.manages} onMarkFound={(id) => setAction(`found:${id}`)} />
+      <CustodyTimeline state={state} />
     </div>
+  );
+}
+
+/** The demo's InventoryToolDrawer, with each management command stacked over it as a dialog. */
+function ToolDrawer({ state }: { state: ToolDetailState }) {
+  const { tool, close } = state;
+  const t = tool.data;
+  return (
+    <>
+      <OverlayDialog
+        label={t ? `${t.name} details` : 'Tool details'}
+        onClose={close}
+        backdropClassName="inventory-drawer-backdrop"
+        panelClassName="inventory-drawer"
+        showCloseButton
+        closeLabel="Close tool details"
+      >
+        <header className="inventory-drawer__header">
+          <span>{t?.asset_tag ?? 'Tool details'}</span>
+        </header>
+        <div className="inventory-drawer__scroll" data-overlay-scroll>
+          {tool.isPending ? (
+            <LoadingState label="Loading tool details…" />
+          ) : tool.error ? (
+            <ErrorState message={errorMessage(tool.error)} onRetry={() => void tool.refetch()} />
+          ) : (
+            <DrawerContent state={state} asset={tool.data} />
+          )}
+        </div>
+      </OverlayDialog>
+      {t && <ToolDrawerDialog state={state} asset={t} permissions={toolPermissions(state, t)} />}
+    </>
+  );
+}
+
+function DrawerContent({ state, asset: t }: { state: ToolDetailState; asset: Model<'AssetView'> }) {
+  const { c, pendingHandoff, assetRequests, setAction } = state;
+  const permissions = toolPermissions(state, t);
+  const caveat = custodyCaveat(t);
+  const pendingRequest = assetRequests.data?.find((request) => request.status === 'pending');
+  return (
+    <>
+      <ToolPhoto
+        src={photoSrc(c.company_id, t.registration_photo_id)}
+        alt={`${t.name} product photo`}
+        size="large"
+        priority
+      />
+      <div className="inventory-drawer__identity">
+        <h2>{t.name}</h2>
+        <p>{[t.manufacturer, t.model_number, t.category_name].filter(Boolean).join(' · ')}</p>
+        <StatusBadge tone={toolStatus(t)}>{assetLabel(t)}</StatusBadge>
+      </div>
+
+      <section className="inventory-drawer__holder" aria-label="Current custody">
+        <span>{t.holder_membership_id ? 'Checked out to' : 'Warehouse custody'}</span>
+        <strong>{custodianName(t)}</strong>
+        {caveat && <small>{caveat}</small>}
+      </section>
+      {t.pending_handoff_id ? (
+        <section className="inventory-drawer__pending" aria-label="Pending handoff">
+          <strong>In transfer</strong>
+          <p>
+            {pendingHandoff
+              ? `Waiting for ${pendingHandoff.destination_name} to accept.`
+              : 'Custody stays with the current holder until receipt is accepted.'}
+          </p>
+          <Link to={`/app/operations?review=handoff:${t.pending_handoff_id}`}>Review in queue</Link>
+        </section>
+      ) : pendingRequest ? (
+        <section className="inventory-drawer__pending" aria-label="Pending request">
+          <strong>Checkout requested</strong>
+          <p>Requested by {pendingRequest.requester_name}. Awaiting warehouse release.</p>
+          <Link to={`/app/operations?review=request:${pendingRequest.id}`}>Review in queue</Link>
+        </section>
+      ) : null}
+      {t.lifecycle === 'disposed' && (
+        <Callout
+          tone="amber"
+          eyebrow="Disposed"
+          title="Disposal is permanent"
+          description="This tool cannot be restored. Its custody and audit history stay on record."
+        />
+      )}
+
+      <ToolDrawerActions state={state} asset={t} permissions={permissions} />
+      <ToolFacts asset={t} companyId={c.company_id} className="inventory-drawer__facts" custody={false} />
+      <ToolReports state={state} manages={permissions.manages} onMarkFound={(id) => setAction(`found:${id}`)} />
+      <CustodyTimeline state={state} />
+    </>
   );
 }

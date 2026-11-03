@@ -20,7 +20,9 @@ it('gets fresh CSRF authority for each mutation and keeps credentials in cookies
     .mockResolvedValueOnce(response({ csrf_token: 'rotated' }))
     .mockResolvedValueOnce(response({ message: 'ok' }));
   const { api } = await client(fetch);
-  await api.POST('/api/auth/signup', { body: { name: 'Person', email: 'person@example.com', invitation_token: '' } });
+  await api.POST('/api/auth/signup', {
+    body: { name: 'Person', email: 'person@example.com', invitation_token: '', signup_code: '', company_name: '' },
+  });
   await api.POST('/api/auth/sign-out');
   const first = fetch.mock.calls[1][0] as Request;
   const second = fetch.mock.calls[3][0] as Request;

@@ -56,6 +56,8 @@ def test_company_profile_permission_revision_and_validation(world, password_hash
         "address": "123 Main Street",
         "timezone": "America/Chicago",
         "revision": 2,
+        "logo_id": None,
+        "owner_id": None,
     }
     assert client.get(base).json() == data
     assert client.post(f"{base}/update", body, content_type="application/json").status_code == 409
