@@ -1,0 +1,53 @@
+name: Issue a named signup code
+
+# Set the SIGNUP_CODE repository secret to the code you want, run this, then delete the secret.
+# The repository is public, so the code never appears in inputs or logs.
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: Days until the code expires if nobody uses it
+        default: "30"
+        required: true
+      label:
+        description: A note to recognise the code by later
+        default: ""
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nelson-testing-deployment
+  cancel-in-progress: false
+
+jobs:
+  issue:
+    name: Issue the code on the testing server
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: testing
+    env:
+      DEPLOY_HOST: ${{ vars.TEST_DEPLOY_HOST }}
+    steps:
+      - name: Configure the pinned deployment connection
+        env:
+          DEPLOY_KEY: ${{ secrets.TEST_DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.TEST_DEPLOY_KNOWN_HOSTS }}
+        run: |
+          test -n "$DEPLOY_KEY" && test -n "$KNOWN_HOSTS"
+          [[ "$DEPLOY_HOST" =~ ^[0-9.]+$ ]]
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" | tr -d '\r' > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+      - name: Issue the code from the SIGNUP_CODE secret
+        env:
+          SIGNUP_CODE: ${{ secrets.SIGNUP_CODE }}
+          DAYS: ${{ inputs.days }}
+          LABEL: ${{ inputs.label }}
+        run: |
+          test -n "$SIGNUP_CODE" || { echo "Set the SIGNUP_CODE repository secret first."; exit 1; }
+          [[ "$DAYS" =~ ^[0-9]+$ ]]
+          printf '%s' "$SIGNUP_CODE" | ssh -o StrictHostKeyChecking=yes "nelson-deploy@$DEPLOY_HOST" \
+            "sudo bash /srv/nelson/current/deploy/signup-code.sh $DAYS $(printf '%q' "$LABEL")"

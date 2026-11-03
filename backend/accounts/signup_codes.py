@@ -32,6 +32,22 @@ def issue_codes(count, *, days, label=""):
     return codes
 
 
+def issue_named_code(code, *, days, label=""):
+    """Issue a code chosen by the operator. Case, spaces and dashes are ignored when it is typed."""
+    normalized = re.sub(r"[^A-Z0-9]", "", code.upper())
+    if not 6 <= len(normalized) <= 40:
+        raise ValueError("A named code needs 6 to 40 letters or digits.")
+    if SignupCode.objects.filter(code_digest=code_digest(code)).exists():
+        raise ValueError("That code has already been issued. Codes are never reused.")
+    SignupCode.objects.create(
+        id=uuid4(),
+        code_digest=code_digest(code),
+        label=label,
+        expires_at=timezone.now() + timedelta(days=days),
+    )
+    return code
+
+
 def available_code(code):
     """Lock an unclaimed, unexpired code, or explain why it cannot be used."""
     found = (

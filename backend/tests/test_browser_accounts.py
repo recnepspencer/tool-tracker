@@ -1,6 +1,6 @@
 import re
 from datetime import timedelta
-from io import BytesIO
+from io import BytesIO, StringIO
 from urllib.parse import parse_qs, urlparse
 from uuid import UUID, uuid4
 
@@ -8,6 +8,7 @@ import pytest
 from cleanforce_identity.models import PlatformUser
 from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.management import CommandError, call_command
 from django.test import Client
 from django.utils import timezone
 from PIL import Image
@@ -270,6 +271,23 @@ def test_signup_requires_a_live_single_use_code():
         post(other, "/api/auth/signup", {**body, "signup_code": expired}).json()["code"]
         == "invalid_signup_code"
     )
+
+
+def test_operator_can_name_a_code_once():
+    out = StringIO()
+    call_command("signup_codes", "create", "--code", "hepworth", "--label", "Hepworth", stdout=out)
+    assert "hepworth" not in out.getvalue().lower()
+    with pytest.raises(CommandError, match="already been issued"):
+        call_command("signup_codes", "create", "--code", "HEP-WORTH")
+    with pytest.raises(CommandError, match="6 to 40"):
+        call_command("signup_codes", "create", "--code", "abc")
+    client = browser()
+    token = signup(client, signup_code="Hepworth", company_name="Hepworth Electric")
+    assert_response(
+        post(client, "/api/auth/verify-signup", {"token": token, "password": PASSWORD}),
+        "/api/auth/verify-signup",
+    )
+    assert SignupCode.objects.get(label="Hepworth").claimed_by.email == "new@example.com"
 
 
 def test_signup_logo_carries_into_the_company():

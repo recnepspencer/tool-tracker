@@ -1,8 +1,10 @@
+import os
+
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
 from accounts.models import SignupCode
-from accounts.signup_codes import code_digest, issue_codes
+from accounts.signup_codes import code_digest, issue_codes, issue_named_code
 
 
 class Command(BaseCommand):
@@ -16,6 +18,11 @@ class Command(BaseCommand):
             "--days", type=int, default=30, help="Days until an unused code expires."
         )
         create.add_argument("--label", default="", help="A note to recognise the codes by later.")
+        create.add_argument(
+            "--code",
+            default=os.environ.get("SIGNUP_CODE", ""),
+            help="Issue one code with this exact name instead of random ones. Defaults to $SIGNUP_CODE.",
+        )
         actions.add_parser("list", help="Show issued codes and whether each was used.")
         revoke = actions.add_parser("revoke", help="Stop an unused code from working.")
         revoke.add_argument("code")
@@ -24,6 +31,13 @@ class Command(BaseCommand):
         if action == "create":
             if not 1 <= options["count"] <= 500 or not 1 <= options["days"] <= 365:
                 raise CommandError("Use --count from 1 to 500 and --days from 1 to 365.")
+            if options["code"]:
+                try:
+                    issue_named_code(options["code"], days=options["days"], label=options["label"])
+                except ValueError as error:
+                    raise CommandError(str(error)) from error
+                self.stdout.write(f"Issued the named code, valid for {options['days']} days.")
+                return
             # Codes are stored only as digests, so this is the one time they can be read.
             for code in issue_codes(options["count"], days=options["days"], label=options["label"]):
                 self.stdout.write(code)
