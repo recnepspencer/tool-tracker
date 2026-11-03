@@ -124,6 +124,11 @@ test('a signup code starts a company with its logo and hands ownership to a name
   await page.getByLabel('Work email', { exact: true }).fill(founder);
   await page.getByLabel('Company name', { exact: true }).fill(`Logo Company ${unique}`);
   await page.locator('input[type="file"]').setInputFiles('e2e/fixtures/hammer-drill.jpg');
+  // The logo is sized inside the square it is shown in before it is used.
+  const cropper = page.getByRole('group', { name: 'Adjust company logo' });
+  await cropper.getByRole('button', { name: 'Fill the square', exact: true }).click();
+  await cropper.getByRole('img', { name: /Logo position/ }).press('ArrowRight');
+  await cropper.getByRole('button', { name: 'Use logo', exact: true }).click();
   await expect(page.getByRole('img', { name: 'Company logo preview' })).toBeVisible();
   await page.getByRole('button', { name: 'Send verification link' }).click();
   await expect(page.getByRole('alert')).toHaveText('This signup code is invalid, expired, or already used.');
@@ -143,7 +148,9 @@ test('a signup code starts a company with its logo and hands ownership to a name
   await expect(page.getByRole('heading', { name: 'Queue', exact: true })).toBeVisible();
   const logo = page.locator('.wordmark img.brand-mark--logo');
   await expect(logo).toBeVisible();
-  expect(await logo.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
+  expect(await logo.evaluate((image: HTMLImageElement) => [image.naturalWidth, image.naturalHeight])).toEqual([
+    256, 256,
+  ]);
 
   const bossContext = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
   const bossPage = await bossContext.newPage();

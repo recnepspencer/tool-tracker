@@ -2,6 +2,7 @@ import { Eye, EyeOff, Image as ImageIcon } from 'lucide-react';
 import { useEffect, useId, useRef, useState, type FormEvent, type InputHTMLAttributes, type ReactNode } from 'react';
 import { errorMessage } from './client';
 import { Button, FieldShell } from './kit';
+import { LogoCropper } from './logo-cropper';
 import { BrandMark } from './shell-chrome';
 import './experience/auth.css';
 
@@ -149,12 +150,15 @@ export type LogoChoice = { id?: string | null; file?: File };
 
 const LOGO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-/** Optional company logo with a preview; the form uploads `file` when it submits. */
+/** Optional company logo, sized and cropped to its square slots; the form uploads `file` when it submits. */
 export function LogoField({ value, onChange }: { value: LogoChoice; onChange: (value: LogoChoice) => void }) {
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const [error, setError] = useState('');
   const [preview, setPreview] = useState('');
+  // The chosen file stays uncropped, so adjusting again starts from the full image.
+  const [original, setOriginal] = useState<File>();
+  const [editing, setEditing] = useState('');
   useEffect(() => {
     if (!value.file) {
       setPreview(value.id ? `/api/logos/${value.id}` : '');
@@ -164,47 +168,78 @@ export function LogoField({ value, onChange }: { value: LogoChoice; onChange: (v
     setPreview(url);
     return () => URL.revokeObjectURL(url);
   }, [value]);
+  useEffect(() => {
+    if (!editing.startsWith('blob:')) return;
+    return () => URL.revokeObjectURL(editing);
+  }, [editing]);
   function choose(file: File | undefined) {
     if (input.current) input.current.value = '';
     if (!file) return;
-    if (!LOGO_TYPES.includes(file.type) || file.size > 2 * 1024 * 1024) {
-      setError('Choose a JPEG, PNG, or WebP logo under 2 MB.');
+    if (!LOGO_TYPES.includes(file.type) || file.size > 10 * 1024 * 1024) {
+      setError('Choose a JPEG, PNG, or WebP logo under 10 MB.');
       return;
     }
     setError('');
-    onChange({ file });
+    setOriginal(file);
+    setEditing(URL.createObjectURL(file));
+  }
+  function adjust() {
+    setEditing(original ? URL.createObjectURL(original) : preview);
   }
   return (
     <FieldShell label="Company logo" hint="Optional" htmlFor={id}>
-      <div className="auth-logo-field">
-        {preview ? (
-          <img className="auth-logo-preview" src={preview} alt="Company logo preview" />
-        ) : (
-          <span className="auth-logo-preview" aria-hidden="true">
-            <ImageIcon size={20} />
-          </span>
-        )}
-        <div className="auth-logo-actions">
-          <Button type="button" variant="secondary" onClick={() => input.current?.click()}>
-            {preview ? 'Change logo' : 'Choose logo'}
-          </Button>
-          {preview && (
-            <Button type="button" variant="ghost" onClick={() => onChange({})}>
-              Remove
-            </Button>
-          )}
-        </div>
-        <input
-          id={id}
-          ref={input}
-          type="file"
-          accept={LOGO_TYPES.join(',')}
-          hidden
-          onChange={(event) => choose(event.currentTarget.files?.[0])}
+      {editing ? (
+        <LogoCropper
+          source={editing}
+          onCancel={() => setEditing('')}
+          onDone={(file) => {
+            setEditing('');
+            onChange({ file });
+          }}
         />
-      </div>
+      ) : (
+        <div className="auth-logo-field">
+          {preview ? (
+            <img className="auth-logo-preview" src={preview} alt="Company logo preview" />
+          ) : (
+            <span className="auth-logo-preview" aria-hidden="true">
+              <ImageIcon size={20} />
+            </span>
+          )}
+          <div className="auth-logo-actions">
+            <Button type="button" variant="secondary" onClick={() => input.current?.click()}>
+              {preview ? 'Change logo' : 'Choose logo'}
+            </Button>
+            {preview && (
+              <>
+                <Button type="button" variant="ghost" onClick={adjust}>
+                  Adjust
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setOriginal(undefined);
+                    onChange({});
+                  }}
+                >
+                  Remove
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      <input
+        id={id}
+        ref={input}
+        type="file"
+        accept={LOGO_TYPES.join(',')}
+        hidden
+        onChange={(event) => choose(event.currentTarget.files?.[0])}
+      />
       <small className="auth-hint" role={error ? 'alert' : undefined}>
-        {error || 'JPEG, PNG, or WebP, up to 2 MB.'}
+        {error || 'Shown as a square in the app header and on forms. JPEG, PNG, or WebP, up to 10 MB.'}
       </small>
     </FieldShell>
   );

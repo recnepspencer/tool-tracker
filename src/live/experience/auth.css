@@ -292,6 +292,77 @@
   object-fit: contain;
   width: var(--space-56);
 }
+.experience .logo-cropper {
+  display: grid;
+  gap: var(--space-14);
+}
+.experience .logo-cropper-stage {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-18);
+}
+.experience .logo-cropper-view {
+  display: block;
+  flex: none;
+  overflow: hidden;
+  position: relative;
+}
+.experience .logo-cropper-view img {
+  max-width: none;
+  pointer-events: none;
+  position: absolute;
+  user-select: none;
+}
+/* The editing square uses the header mark's proportions: corners a fifth of its width. */
+.experience .logo-cropper-frame {
+  background: var(--card);
+  border: var(--border-width) dashed var(--border);
+  border-radius: 20%;
+  cursor: grab;
+  display: block;
+  height: var(--space-200);
+  overflow: hidden;
+  touch-action: none;
+  width: var(--space-200);
+}
+.experience .logo-cropper-frame:active {
+  cursor: grabbing;
+}
+.experience .logo-cropper-frame:focus-visible {
+  outline: var(--focus-ring-width) solid var(--blue);
+  outline-offset: var(--focus-ring-offset);
+}
+.experience .logo-cropper-frame .logo-cropper-view {
+  height: 100%;
+  width: 100%;
+}
+.experience .logo-cropper-slots {
+  color: var(--dim);
+  display: flex;
+  font-size: var(--text-md);
+  gap: var(--space-18);
+}
+.experience .logo-cropper-slots > span {
+  align-items: center;
+  display: grid;
+  gap: var(--space-6);
+  justify-items: center;
+}
+.experience .logo-cropper-slots .brand-mark {
+  height: var(--space-30);
+  width: var(--space-30);
+}
+.experience .logo-cropper-size {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  gap: var(--space-12);
+}
+.experience .logo-cropper-size input {
+  accent-color: var(--blue);
+  flex: 1;
+}
 .experience .auth-logo-actions {
   display: flex;
   flex-wrap: wrap;
