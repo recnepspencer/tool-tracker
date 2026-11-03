@@ -132,7 +132,7 @@ export function App() {
             <AuthLayout
               eyebrow="Not found"
               title="Page not found"
-              description="This address does not match a page in Nelson Electric."
+              description="This address does not match a page in Tool Tracker."
             >
               <Link className="button button--primary button--full" to="/app">
                 Return to your workspace

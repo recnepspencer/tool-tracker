@@ -20,7 +20,7 @@ export function PwaStatus() {
       )}
       {install && (
         <div className="install-bar">
-          <button onClick={() => void installApp()}>Install Nelson Electric</button>
+          <button onClick={() => void installApp()}>Install Tool Tracker</button>
           <button aria-label="Dismiss install offer" onClick={dismissInstall}>
             ×
           </button>

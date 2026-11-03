@@ -6,12 +6,12 @@ import { initials } from './format';
 import type { ShellDestination } from './shell-state';
 import './experience/brand-mark.css';
 
-/** Demo BrandMark. */
-export function BrandMark({ logoId }: { logoId?: string | null }) {
+/** Demo BrandMark: the company's logo, or the first letter of its name (Tool Tracker's when signed out). */
+export function BrandMark({ logoId, name = 'Tool Tracker' }: { logoId?: string | null; name?: string }) {
   if (logoId) return <img className="brand-mark brand-mark--logo" src={`/api/logos/${logoId}`} alt="" />;
   return (
     <span className="brand-mark" aria-hidden="true">
-      N
+      {name.trim().charAt(0).toUpperCase() || 'T'}
     </span>
   );
 }

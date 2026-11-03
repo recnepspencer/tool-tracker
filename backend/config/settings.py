@@ -94,7 +94,7 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "1") == "1"
 EMAIL_TIMEOUT = 15
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Nelson Electric <noreply@localhost>")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Tool Tracker <noreply@localhost>")
 if DEBUG and os.getenv("NELSON_FAST_PASSWORD_HASHING") == "1":
     # Browser suites create many accounts; production-strength hashing would dominate their runtime.
     PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]

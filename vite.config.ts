@@ -14,8 +14,8 @@ export default defineConfig({
       includeAssets: ['icon-192.png', 'icon-512.png', 'apple-touch-icon.png'],
       manifest: {
         id: '/',
-        name: 'Nelson Electric — Tool custody',
-        short_name: 'Nelson',
+        name: 'Tool Tracker',
+        short_name: 'Tool Tracker',
         description: 'Tools, people, and every handoff.',
         theme_color: '#101822',
         background_color: '#f5f6f8',

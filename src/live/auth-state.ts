@@ -33,9 +33,11 @@ export async function saveLogo(choice: LogoChoice, signup_code = '') {
 
 type SignupDraft = { name: string; email: string; signup_code: string; company_name: string; logo_id: string | null };
 
+export type SignupPath = 'invited' | 'team' | 'company' | '';
+
 export function useSignupState() {
   const [search] = useSearchParams();
-  const [sent, setSent] = useState(false);
+  const [sentOn, setSentOn] = useState<SignupPath | null>(null);
   const [draft, setDraft] = useState<SignupDraft>({
     name: '',
     email: '',
@@ -48,6 +50,21 @@ export function useSignupState() {
   const next = safeNext(search.get('next'));
   // Invited people join an existing company; everyone else is starting one with a code.
   const invitation = next.startsWith('/invite/') ? new URL(next, window.location.origin).pathname.slice(8) : '';
+  // An invitation link decides the path; otherwise the visitor says whether they are joining or starting.
+  const as = search.get('as');
+  const path: SignupPath = invitation
+    ? 'invited'
+    : as === 'team' || as === 'company'
+      ? as
+      : search.get('code')
+        ? 'company'
+        : '';
+  // A "check your email" notice belongs to the path it was sent from.
+  const sent = sentOn === path;
+  const setSent = (value: boolean) => setSentOn(value ? path : null);
+  async function findInvitation(email: string) {
+    await api.POST('/api/auth/invitation-links', { body: { email } });
+  }
   async function send(values: SignupDraft) {
     await api.POST('/api/auth/signup', {
       body: invitation
@@ -56,7 +73,21 @@ export function useSignupState() {
     });
   }
 
-  return { sent, setSent, draft, setDraft, logo, setLogo, session, loading, next, invitation, send };
+  return {
+    sent,
+    setSent,
+    draft,
+    setDraft,
+    logo,
+    setLogo,
+    session,
+    loading,
+    next,
+    invitation,
+    path,
+    findInvitation,
+    send,
+  };
 }
 export function useVerifyEmailState() {
   const [search] = useSearchParams();

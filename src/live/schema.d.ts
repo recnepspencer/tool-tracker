@@ -40,6 +40,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/auth/invitation-links': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Resend Invitation Links */
+    post: operations['accounts_api_resend_invitation_links'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/auth/logos': {
     parameters: {
       query?: never;
@@ -2117,6 +2134,14 @@ export interface components {
        */
       role: 'field_member' | 'company_admin' | 'equipment_manager' | 'dispatcher' | 'estimator';
     };
+    /** InvitationLinkInput */
+    InvitationLinkInput: {
+      /**
+       * Email
+       * Format: email
+       */
+      email: string;
+    };
     /** InvitationPage */
     InvitationPage: {
       /** Items */
@@ -3230,6 +3255,30 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['IdentityImpersonationOperationResource'];
+        };
+      };
+    };
+  };
+  accounts_api_resend_invitation_links: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['InvitationLinkInput'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AccountMessage'];
         };
       };
     };

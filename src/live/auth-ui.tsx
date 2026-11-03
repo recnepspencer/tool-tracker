@@ -12,7 +12,7 @@ function AuthHero() {
       <div className="auth-brand">
         <BrandMark />
         <span>
-          Nelson <em>Electric</em>
+          Tool <em>Tracker</em>
         </span>
       </div>
       <span className="eyebrow">Tool custody system</span>
@@ -49,7 +49,7 @@ export function AuthLayout({
 }) {
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
-    document.title = `${title} · Nelson Electric`;
+    document.title = `${title} · Tool Tracker`;
     heading.current?.focus({ preventScroll: true });
   }, [title]);
   return (

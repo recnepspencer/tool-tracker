@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import { password, emailLink, chooseOption, invitedMember, ownedCompany, signupCode, test } from './support';
+import { password, command, emailLink, chooseOption, invitedMember, ownedCompany, signupCode, test } from './support';
 
 async function signup(page: Page, email: string, name: string, company?: string) {
   if (company) {
@@ -21,7 +21,7 @@ test('verified signup, company setup and an invitation accepted across accounts'
   const unique = crypto.randomUUID().slice(0, 8);
   const owner = `owner-${unique}@example.com`;
   const employee = `employee-${unique}@example.com`;
-  await page.goto('/signup');
+  await page.goto('/signup?as=company');
   await signup(page, owner, 'Company Owner', `Browser Company ${unique}`);
   await expect(page).toHaveURL(/company-setup/);
   // The details entered at signup carry over, and the claimed code needs no re-entry.
@@ -80,11 +80,44 @@ test('verified signup, company setup and an invitation accepted across accounts'
   await workerContext.close();
 });
 
+test('signup separates joining a team from starting a company', async ({ page, browser }) => {
+  const { base, company } = await ownedCompany(page);
+  const email = `rejoin-${crypto.randomUUID().slice(0, 8)}@example.com`;
+  const first = await command(page.request, `${base}/invitations`, {
+    email,
+    preferred_name: 'Rejoin Person',
+    role: 'field_member',
+  });
+  const visitorContext = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
+  const visitor = await visitorContext.newPage();
+  await visitor.goto('/signup');
+  await expect(visitor.getByRole('heading', { name: 'Create an account' })).toBeVisible();
+  await expect(visitor.getByText('Tool Tracker', { exact: true })).toBeVisible();
+  await expect(visitor).toHaveTitle('Create an account · Tool Tracker');
+  await visitor.getByRole('link', { name: /I’m starting a company/ }).click();
+  await expect(visitor.getByLabel('Signup code', { exact: true })).toBeVisible();
+  await visitor.getByRole('link', { name: 'Find your invitation', exact: true }).click();
+  await expect(visitor.getByRole('heading', { name: 'Find your invitation' })).toBeVisible();
+  await expect(visitor.getByLabel('Signup code', { exact: true })).toHaveCount(0);
+  await visitor.getByLabel('Work email', { exact: true }).fill(email);
+  await visitor.getByRole('button', { name: 'Email my invitation', exact: true }).click();
+  await expect(visitor.getByRole('status')).toContainText(email);
+  // The re-sent invitation carries a fresh link; the first one stops working.
+  await expect.poll(() => emailLink(email, '/invite/')).not.toBe(`/invite/${first.token}`);
+  await visitor.goto(await emailLink(email, '/invite/'));
+  await expect(visitor.getByText(company.name, { exact: true })).toBeVisible();
+  await visitor.getByRole('link', { name: 'Create an account', exact: true }).click();
+  await expect(visitor.getByRole('heading', { name: 'Create your account' })).toBeVisible();
+  await expect(visitor.getByLabel('Signup code', { exact: true })).toHaveCount(0);
+  await visitorContext.close();
+});
+
 test('a signup code starts a company with its logo and hands ownership to a named owner', async ({ page, browser }) => {
   const unique = crypto.randomUUID().slice(0, 8);
   const founder = `founder-${unique}@example.com`;
   const boss = `boss-${unique}@example.com`;
   await page.goto('/signup');
+  await page.getByRole('link', { name: /I’m starting a company/ }).click();
   await expect(page.getByRole('heading', { name: 'Set up your company' })).toBeVisible();
   await page.getByLabel('Signup code', { exact: true }).fill('ZZZZ-ZZZZ-ZZZZ');
   await page.getByLabel('Your name', { exact: true }).fill('Office Manager');
@@ -288,7 +321,7 @@ test('account links, resend, password validation, and recovery have actionable s
   const email = `account-states-${crypto.randomUUID().slice(0, 8)}@example.com`;
   await page.setViewportSize({ width: 390, height: 844 });
   await page.clock.install();
-  await page.goto('/signup');
+  await page.goto('/signup?as=company');
   await page.getByLabel('Signup code', { exact: true }).fill(signupCode());
   await page.getByLabel('Your name', { exact: true }).fill('Account Test');
   await page.getByLabel('Work email', { exact: true }).fill(email);

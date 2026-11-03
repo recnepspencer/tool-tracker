@@ -155,6 +155,36 @@ def test_invitation_email_signup_accept_and_replay(world):
     assert client.get(f"/api/invitations/{created['token']}/preview").status_code == 404
 
 
+def test_invitee_can_ask_for_their_link_again(world):
+    CompanyRoleGrant.objects.create(membership=world.member, role_code="company_admin")
+    admin = login_client(world.user)
+    created = post(
+        admin,
+        f"/api/companies/{world.company.pk}/invitations",
+        {"email": "invitee@example.com", "preferred_name": "Invitee", "role": "field_member"},
+    ).json()
+    client = browser()
+    sent = len(mail.outbox)
+    unknown = assert_response(
+        post(client, "/api/auth/invitation-links", {"email": "nobody@example.com"}),
+        "/api/auth/invitation-links",
+    )
+    assert len(mail.outbox) == sent
+    found = assert_response(
+        post(client, "/api/auth/invitation-links", {"email": "Invitee@Example.com"}),
+        "/api/auth/invitation-links",
+    )
+    # The answer never reveals whether an invitation exists.
+    assert found == unknown
+    assert mail.outbox[-1].to == ["invitee@example.com"]
+    token = re.search(r"/invite/([\w-]+)", mail.outbox[-1].body).group(1)
+    assert client.get(f"/api/invitations/{token}/preview").status_code == 200
+    assert client.get(f"/api/invitations/{created['token']}/preview").status_code == 404
+    MembershipInvitation.objects.update(revoked_at=timezone.now())
+    post(client, "/api/auth/invitation-links", {"email": "invitee@example.com"})
+    assert len(mail.outbox) == sent + 1
+
+
 def test_reset_real_email_single_use_and_session_revocation(world):
     existing = login_client(world.user)
     client = browser()

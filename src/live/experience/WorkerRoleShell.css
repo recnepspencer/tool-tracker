@@ -74,7 +74,12 @@
   color: var(--dim);
   font: var(--weight-medium) var(--text-xs) / var(--leading-none) var(--font-mono);
   letter-spacing: var(--tracking-nav);
+  min-width: 0;
+  overflow: hidden;
   text-decoration: none;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .experience .worker-scrim {

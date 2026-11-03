@@ -29,12 +29,25 @@
   align-items: center;
   display: flex;
   gap: var(--space-10);
+  min-width: 0;
 }
 .experience .mobile-nav-trigger {
   display: none;
 }
 .experience .mobile-wordmark-copy {
   display: none;
+}
+/* Company names vary in length; long ones end in an ellipsis instead of pushing the header. */
+.experience .wordmark,
+.experience .desktop-wordmark-copy,
+.experience .mobile-wordmark-copy {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.experience .mobile-wordmark-copy {
+  text-transform: uppercase;
 }
 .experience .wordmark em {
   color: var(--muted);

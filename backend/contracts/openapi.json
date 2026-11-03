@@ -2363,6 +2363,21 @@
         "title": "InvitationInput",
         "type": "object"
       },
+      "InvitationLinkInput": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "InvitationLinkInput",
+        "type": "object"
+      },
       "InvitationPage": {
         "properties": {
           "items": {
@@ -4955,7 +4970,7 @@
   },
   "info": {
     "description": "",
-    "title": "Nelson Electric API",
+    "title": "Tool Tracker API",
     "version": "0.1.0"
   },
   "openapi": "3.1.0",
@@ -5061,6 +5076,38 @@
         "tags": [
           "identity",
           "identity.impersonation"
+        ]
+      }
+    },
+    "/api/auth/invitation-links": {
+      "post": {
+        "operationId": "accounts_api_resend_invitation_links",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitationLinkInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountMessage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Resend Invitation Links",
+        "tags": [
+          "accounts"
         ]
       }
     },

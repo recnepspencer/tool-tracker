@@ -77,7 +77,7 @@ export function Shell() {
             <Menu aria-hidden="true" />
           </button>
           <Link className="worker-wordmark" to="/app">
-            NELSON ELECTRIC
+            {account.companyName}
           </Link>
         </header>
         {content}
@@ -100,12 +100,10 @@ export function Shell() {
           </button>
           <Link className="wordmark" to="/app">
             <span className="desktop-wordmark-mark">
-              <BrandMark logoId={account.logoId} />
+              <BrandMark logoId={account.logoId} name={account.companyName} />
             </span>
-            <span className="desktop-wordmark-copy">
-              Nelson <em>Electric</em>
-            </span>
-            <span className="mobile-wordmark-copy">NELSON ELECTRIC</span>
+            <span className="desktop-wordmark-copy">{account.companyName}</span>
+            <span className="mobile-wordmark-copy">{account.companyName}</span>
           </Link>
         </div>
         <div className="desktop-header-account">
@@ -127,7 +125,7 @@ export function Shell() {
             <ThemeToggle theme={shell.theme} onToggleTheme={shell.toggleTheme} />
           </div>
           <div className="side-nav-footer">
-            <span className="eyebrow">Nelson Electric</span>
+            <span className="eyebrow">Tool Tracker</span>
             <span>Tools · custody · activity</span>
           </div>
         </aside>

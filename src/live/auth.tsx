@@ -22,7 +22,7 @@ import {
   PasswordFields,
   PasswordInput,
 } from './auth-ui';
-import { ErrorState, LoadingState } from './kit';
+import { Button, ErrorState, LoadingState } from './kit';
 import { human, text } from './ui';
 
 const primaryLink = 'button button--primary button--full';
@@ -69,11 +69,107 @@ export function Login() {
   );
 }
 export function Signup() {
-  const { sent, setSent, draft, setDraft, logo, setLogo, session, loading, next, invitation, send } = useSignupState();
+  const state = useSignupState();
+  const { session, loading, next, path } = state;
   if (!loading && session) return <Navigate to={next} replace />;
+  if (path === 'team') return <FindInvitation {...state} />;
+  if (path === 'invited' || path === 'company') return <SignupForm {...state} />;
+  const signIn = (
+    <span>
+      Already have an account? <Link to={`/login?next=${encodeURIComponent(next)}`}>Sign in</Link>
+    </span>
+  );
   return (
     <AuthLayout
-      eyebrow={sent ? 'Verify your email' : 'New account'}
+      eyebrow="New account"
+      title="Create an account"
+      description="Are you joining a team that already uses Tool Tracker, or starting one for your company?"
+      footer={signIn}
+    >
+      <div className="auth-paths">
+        <Link className="auth-path" to={withPath(next, 'team')}>
+          <strong>I’m joining my team</strong>
+          <span>Your company admin invites you by email. We can send that link again.</span>
+        </Link>
+        <Link className="auth-path" to={withPath(next, 'company')}>
+          <strong>I’m starting a company</strong>
+          <span>Set up a new company with the signup code you were given.</span>
+        </Link>
+      </div>
+    </AuthLayout>
+  );
+}
+type SignupState = ReturnType<typeof useSignupState>;
+function withPath(next: string, path: 'team' | 'company') {
+  const params = new URLSearchParams({ as: path });
+  if (next !== '/app') params.set('next', next);
+  return `/signup?${params}`;
+}
+function FindInvitation({ sent, setSent, draft, setDraft, next, findInvitation }: SignupState) {
+  return (
+    <AuthLayout
+      eyebrow="Joining a team"
+      title={sent ? 'Check your email' : 'Find your invitation'}
+      description={
+        sent
+          ? 'Your invitation link creates your account.'
+          : 'People join a company through an invitation from its admin. Enter your work email and we’ll send any waiting invitation again.'
+      }
+      footer={
+        <>
+          <span>
+            Starting a company instead? <Link to={withPath(next, 'company')}>Use a signup code</Link>
+          </span>
+          <span>
+            Already have an account? <Link to={`/login?next=${encodeURIComponent(next)}`}>Sign in</Link>
+          </span>
+        </>
+      }
+    >
+      {sent ? (
+        <>
+          <div className="auth-notice" role="status">
+            <p>
+              If an invitation is waiting for <strong>{draft.email}</strong>, we sent its link again.
+            </p>
+            <p>Open the link to create your account and join your team.</p>
+          </div>
+          <p className="auth-help">
+            Nothing arrived? Check your spam folder, then ask your company admin to invite this address.
+          </p>
+          <Button variant="ghost" fullWidth onClick={() => setSent(false)}>
+            Use a different email
+          </Button>
+        </>
+      ) : (
+        <AccountForm
+          label="Email my invitation"
+          pendingLabel="Sending…"
+          submit={async (f) => {
+            const email = text(f, 'email');
+            await findInvitation(email);
+            setDraft({ ...draft, email });
+            setSent(true);
+          }}
+        >
+          <Field
+            label="Work email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            defaultValue={draft.email}
+          />
+        </AccountForm>
+      )}
+    </AuthLayout>
+  );
+}
+function SignupForm(state: SignupState) {
+  const { sent, setSent, draft, setDraft, logo, setLogo, next, invitation, send } = state;
+  return (
+    <AuthLayout
+      eyebrow={sent ? 'Verify your email' : invitation ? 'New account' : 'Starting a company'}
       title={sent ? 'Check your email' : invitation ? 'Create your account' : 'Set up your company'}
       description={
         sent
@@ -84,6 +180,11 @@ export function Signup() {
       }
       footer={
         <>
+          {!invitation && !sent && (
+            <span>
+              Joining your team? <Link to={withPath(next, 'team')}>Find your invitation</Link>
+            </span>
+          )}
           <span>
             Already have an account? <Link to={`/login?next=${encodeURIComponent(next)}`}>Sign in</Link>
           </span>
@@ -162,7 +263,7 @@ export function VerifyEmail() {
       eyebrow="Verify your email"
       title={invalid ? 'Verification link unavailable' : 'Choose your password'}
       description={
-        invalid ? 'This link is missing, expired, or already used.' : 'Finish creating your Nelson Electric account.'
+        invalid ? 'This link is missing, expired, or already used.' : 'Finish creating your Tool Tracker account.'
       }
       footer={
         invalid ? (

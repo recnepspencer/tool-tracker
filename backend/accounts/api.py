@@ -57,6 +57,10 @@ class SignupInput(CommandInput):
     logo_id: UUID | None = None
 
 
+class InvitationLinkInput(CommandInput):
+    email: EmailStr
+
+
 class VerifySignupInput(CommandInput):
     token: str = Field(min_length=20, max_length=200)
     password: str = Field(min_length=12, max_length=200)
@@ -185,12 +189,32 @@ def signup(request: HttpRequest, data: SignupInput):
                 query["invitation"] = data.invitation_token
             send_account_mail(
                 email,
-                "Verify your Nelson Electric account",
+                "Verify your Tool Tracker account",
                 f"Choose your password to finish creating your account:\n\n{app_url('verify-email', **query)}\n\nThis link expires in one hour. If you did not request this, ignore it.",
             )
     return {
         "message": "If this email can be registered, a verification link has been sent. Already registered? Sign in or reset your password."
     }
+
+
+@csrf_protect
+@transaction.atomic
+def resend_invitation_links(request: HttpRequest, data: InvitationLinkInput):
+    from companies.api import send_invitation_mail
+
+    pending = MembershipInvitation.objects.select_for_update().filter(
+        email__iexact=str(data.email),
+        accepted_at__isnull=True,
+        revoked_at__isnull=True,
+        expires_at__gt=timezone.now(),
+    )
+    # Only digests are stored, so a re-send issues a fresh link and retires the old one.
+    for invitation in pending.select_related("company"):
+        token = secrets.token_urlsafe(32)
+        invitation.token_digest = hashlib.sha256(token.encode()).hexdigest()
+        invitation.save(update_fields=["token_digest"])
+        send_invitation_mail(invitation, token)
+    return {"message": "If an invitation is waiting for that address, we have sent its link again."}
 
 
 @csrf_protect
@@ -297,6 +321,13 @@ define_http_endpoint(
 )
 define_http_endpoint(
     router, method="post", path="/auth/signup", endpoint=signup, response=AccountMessage
+)
+define_http_endpoint(
+    router,
+    method="post",
+    path="/auth/invitation-links",
+    endpoint=resend_invitation_links,
+    response=AccountMessage,
 )
 define_http_endpoint(
     router, method="post", path="/auth/verify-signup", endpoint=verify_signup, response=SessionView

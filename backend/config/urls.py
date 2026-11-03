@@ -15,7 +15,7 @@ from .api import router as session_router
 from .health import readiness
 from .read_api import router as read_router
 
-api = create_api(title="Nelson Electric API", version="0.1.0")
+api = create_api(title="Tool Tracker API", version="0.1.0")
 api.add_router("", identity_router)
 api.add_router("", accounts_router)
 api.add_router("", session_router)

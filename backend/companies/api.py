@@ -143,7 +143,7 @@ def send_invitation_mail(invitation, token):
     company = invitation.company.name
     if invitation.grants_ownership:
         subject = f"Take ownership of {company}"
-        body = f"You have been named the owner of {company} on Nelson Electric."
+        body = f"You have been named the owner of {company} on Tool Tracker."
     else:
         subject = f"Join {company}"
         body = f"You have been invited to {company}."

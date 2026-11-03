@@ -100,7 +100,7 @@ test('the install-event boundary handles dismissal, appinstalled and prompt fail
       window.dispatchEvent(event);
       return event.defaultPrevented;
     }, reject);
-  const install = page.getByRole('button', { name: 'Install Nelson Electric', exact: true });
+  const install = page.getByRole('button', { name: 'Install Tool Tracker', exact: true });
   expect(await offer()).toBe(true);
   await expect(install).toBeVisible();
   await page.getByRole('button', { name: 'Dismiss install offer', exact: true }).click();

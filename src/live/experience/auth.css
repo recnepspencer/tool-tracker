@@ -237,6 +237,33 @@
   color: var(--ink);
   overflow-wrap: anywhere;
 }
+.experience .auth-paths {
+  display: grid;
+  gap: var(--space-10);
+}
+.experience .auth-path {
+  background: var(--card);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-card);
+  color: var(--muted);
+  display: grid;
+  gap: var(--space-4);
+  line-height: var(--leading-prose);
+  padding: var(--space-18);
+  text-decoration: none;
+}
+.experience .auth-path strong {
+  color: var(--ink);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+}
+.experience .auth-path:hover {
+  border-color: var(--blue-border-strong);
+}
+.experience .auth-path:focus-visible {
+  outline: var(--focus-ring-width) solid var(--blue);
+  outline-offset: var(--focus-ring-offset);
+}
 .experience .auth-workspaces {
   display: grid;
   gap: var(--space-10);
