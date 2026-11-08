@@ -136,7 +136,7 @@ def test_invitation_needs_its_own_address(world, monkeypatch):
 def test_untrusted_or_unknown_answers_sign_no_one_in(monkeypatch, claims, reason):
     client = browser()
     state, nonce = start(client)
-    answer(monkeypatch, **google(nonce, **claims))
+    answer(monkeypatch, **{**google(nonce), **claims})
     assert finish(client, state)["Location"] == f"/login?sso={reason}"
     assert client.get("/api/me").status_code == 401
     assert not PlatformUser.objects.exists()
