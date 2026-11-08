@@ -64,7 +64,8 @@ ln -sfn "$release" "$root/current.next"
 mv -Tf "$root/current.next" "$root/current"
 mv "$root/shared/candidate.env" "$root/shared/release.env"
 systemctl reload nginx
-here=(--resolve "$domain:443:127.0.0.1")
+# A reload returns before the new workers (and certificate) take over, so retry briefly.
+here=(--resolve "$domain:443:127.0.0.1" --retry 5 --retry-delay 1 --retry-all-errors)
 curl --fail --silent --show-error "${here[@]}" "https://$domain/healthz"
 [[ $(curl --fail --silent --show-error "${here[@]}" "https://$domain/__release") == "$sha" ]]
 systemctl enable --now nelson-maintenance.timer
