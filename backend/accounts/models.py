@@ -36,3 +36,18 @@ class AuthenticationWindow(models.Model):
     key = models.CharField(max_length=64, primary_key=True)
     attempts = models.PositiveIntegerField(default=0)
     expires_at = models.DateTimeField(db_index=True)
+
+
+class ExternalLogin(models.Model):
+    """A Google or Microsoft account that signs in as this person."""
+
+    provider = models.CharField(max_length=20)
+    # The provider's stable account ID; email addresses can change hands, these do not.
+    subject = models.CharField(max_length=255)
+    user = models.ForeignKey("cleanforce_identity.PlatformUser", on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["provider", "subject"], name="one_user_per_login")
+        ]

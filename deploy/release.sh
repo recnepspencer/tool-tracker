@@ -4,11 +4,28 @@ set -euo pipefail
 [[ $EUID == 0 ]] || { echo 'Run through sudo.' >&2; exit 1; }
 sha=${1:?Pass the full release commit}
 [[ $sha =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid release commit.' >&2; exit 1; }
+domain=${2:?Pass the public domain}
+[[ $domain =~ ^[a-z0-9.-]+$ ]] || { echo 'Invalid domain.' >&2; exit 1; }
 root=/srv/nelson
 incoming="$root/incoming/$sha"
 release="$root/releases/$sha"
 exec 9>"$root/deployment.lock"
 flock -n 9 || { echo 'A deployment is already running.' >&2; exit 1; }
+# shellcheck disable=SC1091
+source "$root/shared/app.env"
+# The domain overrides the address-based settings in app.env. CI sends the mail and
+# sign-in keys on stdin; an empty answer clears them.
+(
+    umask 077
+    {
+        printf 'NELSON_APP_URL=https://%s\n' "$domain"
+        printf 'DJANGO_ALLOWED_HOSTS=%s,%s,localhost,127.0.0.1\n' "$domain" "$PUBLIC_IP"
+        tr -d '\r'
+    } > "$root/shared/integrations.env"
+)
+# Cloudflare passes the challenge through on port 80, which already serves the webroot.
+/opt/certbot/bin/certbot certonly --non-interactive --agree-tos --register-unsafely-without-email \
+    --webroot --webroot-path /var/www/acme -d "$domain" --cert-name nelson-domain --keep-until-expiring
 cd "$incoming"
 sha256sum --check SHA256SUMS
 docker load --input image.tar.gz
@@ -21,8 +38,6 @@ docker cp "$container:/app/web/." "$release/web/"
 docker rm "$container" >/dev/null
 trap - EXIT
 printf '%s\n' "$sha" > "$release/release.txt"
-# shellcheck disable=SC1091
-source "$root/shared/app.env"
 if [[ -f $root/current/deploy/compose.yaml ]]; then
     old=(docker compose --env-file "$root/shared/app.env" --env-file "$root/shared/release.env" -f "$root/current/deploy/compose.yaml")
     "${old[@]}" stop api worker
@@ -39,17 +54,18 @@ if [[ ! -f $root/shared/seeded ]]; then
 fi
 "${compose[@]}" up -d --wait --wait-timeout 90 api
 "${compose[@]}" up -d --no-deps worker
-export PUBLIC_IP
-# envsubst receives the variable name; Nginx's own $variables remain untouched.
+export PUBLIC_IP PUBLIC_DOMAIN=$domain
+# envsubst receives the variable names; Nginx's own $variables remain untouched.
 # shellcheck disable=SC2016
-envsubst '${PUBLIC_IP}' < "$release/deploy/test-nginx.conf" > /etc/nginx/sites-available/nelson-test
+envsubst '${PUBLIC_IP} ${PUBLIC_DOMAIN}' < "$release/deploy/test-nginx.conf" > /etc/nginx/sites-available/nelson-test
 nginx -t
 cp -r "$release/web/assets/." "$root/shared/assets/"
 ln -sfn "$release" "$root/current.next"
 mv -Tf "$root/current.next" "$root/current"
 mv "$root/shared/candidate.env" "$root/shared/release.env"
 systemctl reload nginx
-curl --fail --silent --show-error "https://$PUBLIC_IP/healthz"
-[[ $(curl --fail --silent --show-error "https://$PUBLIC_IP/__release") == "$sha" ]]
+here=(--resolve "$domain:443:127.0.0.1")
+curl --fail --silent --show-error "${here[@]}" "https://$domain/healthz"
+[[ $(curl --fail --silent --show-error "${here[@]}" "https://$domain/__release") == "$sha" ]]
 systemctl enable --now nelson-maintenance.timer
-echo "Release $sha is live at https://$PUBLIC_IP"
+echo "Release $sha is live at https://$domain"

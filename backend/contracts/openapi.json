@@ -3879,6 +3879,98 @@
         "title": "ProjectView",
         "type": "object"
       },
+      "ProviderList": {
+        "properties": {
+          "providers": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Providers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "providers"
+        ],
+        "title": "ProviderList",
+        "type": "object"
+      },
+      "ProviderRedirect": {
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "ProviderRedirect",
+        "type": "object"
+      },
+      "ProviderStartInput": {
+        "additionalProperties": false,
+        "properties": {
+          "company_name": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Company Name",
+            "type": "string"
+          },
+          "invitation_token": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Invitation Token",
+            "type": "string"
+          },
+          "logo_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Id"
+          },
+          "next": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Next",
+            "type": "string"
+          },
+          "provider": {
+            "enum": [
+              "google",
+              "microsoft"
+            ],
+            "title": "Provider",
+            "type": "string"
+          },
+          "return_to": {
+            "default": "/login",
+            "enum": [
+              "/login",
+              "/signup"
+            ],
+            "title": "Return To",
+            "type": "string"
+          },
+          "signup_code": {
+            "default": "",
+            "maxLength": 40,
+            "title": "Signup Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider"
+        ],
+        "title": "ProviderStartInput",
+        "type": "object"
+      },
       "ReasonInput": {
         "additionalProperties": false,
         "properties": {
@@ -5264,6 +5356,60 @@
         "tags": [
           "identity",
           "identity"
+        ]
+      }
+    },
+    "/api/auth/providers": {
+      "get": {
+        "operationId": "accounts_sign_in_providers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderList"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Providers",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/auth/providers/start": {
+      "post": {
+        "operationId": "accounts_sign_in_start",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderStartInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderRedirect"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Start",
+        "tags": [
+          "accounts"
         ]
       }
     },

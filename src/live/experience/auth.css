@@ -397,3 +397,28 @@
   display: flex;
   gap: var(--space-10);
 }
+/* Google and Microsoft sign-in, offered after the form's own button. */
+.experience .auth-divider {
+  align-items: center;
+  color: var(--dim);
+  display: flex;
+  font-size: var(--text-md);
+  gap: var(--space-12);
+}
+.experience .auth-divider::before,
+.experience .auth-divider::after {
+  border-top: var(--border-width) solid var(--border);
+  content: '';
+  flex: 1;
+}
+.experience .auth-provider {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-10);
+  justify-content: center;
+}
+.experience .auth-provider-mark {
+  flex: none;
+  height: var(--space-18);
+  width: var(--space-18);
+}

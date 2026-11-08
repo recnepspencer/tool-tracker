@@ -23,6 +23,7 @@ import {
   PasswordInput,
 } from './auth-ui';
 import { Button, ErrorState, LoadingState } from './kit';
+import { chosenProvider, ProviderButtons, ProviderFailure, startProvider } from './sign-in-providers';
 import { human, text } from './ui';
 
 const primaryLink = 'button button--primary button--full';
@@ -51,10 +52,14 @@ export function Login() {
       }
     >
       {error && <ErrorState message="Unable to check your session. Check your connection and try again." />}
+      <ProviderFailure />
       <AccountForm
         label="Sign in"
         pendingLabel="Signing in…"
+        alternatives={<ProviderButtons />}
         submit={async (f) => {
+          const provider = chosenProvider(f);
+          if (provider) return startProvider({ provider, return_to: '/login', next });
           await api.POST('/api/auth/sign-in', {
             body: { email: text(f, 'email'), password: String(f.get('password')) },
           });
@@ -192,13 +197,28 @@ function SignupForm(state: SignupState) {
         </>
       }
     >
+      {!sent && <ProviderFailure />}
       {sent ? (
         <EmailDelivery email={draft.email} resend={() => send(draft)} changeEmail={() => setSent(false)} />
       ) : (
         <AccountForm
           label="Send verification link"
           pendingLabel="Sending verification…"
+          alternatives={<ProviderButtons />}
           submit={async (f) => {
+            const provider = chosenProvider(f);
+            if (provider && invitation)
+              return startProvider({ provider, return_to: '/signup', next, invitation_token: invitation });
+            if (provider) {
+              const signup_code = text(f, 'signup_code');
+              return startProvider({
+                provider,
+                return_to: '/signup',
+                signup_code,
+                company_name: text(f, 'company_name'),
+                logo_id: await saveLogo(logo, signup_code),
+              });
+            }
             const values = { ...draft, name: text(f, 'name'), email: text(f, 'email') };
             if (!invitation) {
               values.signup_code = text(f, 'signup_code');

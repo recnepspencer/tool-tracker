@@ -76,8 +76,11 @@ export function AccountForm({
   pendingLabel,
   variant = 'primary',
   disabled = false,
+  alternatives,
 }: {
   children?: ReactNode;
+  /** Other ways to submit, after the main button, so Enter still presses the main one. */
+  alternatives?: ReactNode;
   submit: (data: FormData) => Promise<unknown>;
   label: string;
   pendingLabel: string;
@@ -99,7 +102,8 @@ export function AccountForm({
     setBusy(true);
     setError('');
     try {
-      await submit(new FormData(event.currentTarget));
+      // The submitter carries which button was pressed (a sign-in provider, say).
+      await submit(new FormData(event.currentTarget, (event.nativeEvent as SubmitEvent).submitter));
     } catch (cause) {
       setError(errorMessage(cause));
     } finally {
@@ -127,6 +131,11 @@ export function AccountForm({
       <Button variant={variant} fullWidth disabled={busy || disabled} type="submit">
         {busy ? pendingLabel : label}
       </Button>
+      {alternatives && (
+        <fieldset className="auth-fieldset" disabled={busy || disabled}>
+          {alternatives}
+        </fieldset>
+      )}
     </form>
   );
 }

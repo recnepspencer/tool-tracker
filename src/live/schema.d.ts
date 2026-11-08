@@ -142,6 +142,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/auth/providers': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Providers */
+    get: operations['accounts_sign_in_providers'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/auth/providers/start': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Start */
+    post: operations['accounts_sign_in_start'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/auth/reauth/cancel': {
     parameters: {
       query?: never;
@@ -2733,6 +2767,52 @@ export interface components {
       /** Revision */
       revision: number;
     };
+    /** ProviderList */
+    ProviderList: {
+      /** Providers */
+      providers: string[];
+    };
+    /** ProviderRedirect */
+    ProviderRedirect: {
+      /** Url */
+      url: string;
+    };
+    /** ProviderStartInput */
+    ProviderStartInput: {
+      /**
+       * Company Name
+       * @default
+       */
+      company_name: string;
+      /**
+       * Invitation Token
+       * @default
+       */
+      invitation_token: string;
+      /** Logo Id */
+      logo_id?: string | null;
+      /**
+       * Next
+       * @default
+       */
+      next: string;
+      /**
+       * Provider
+       * @enum {string}
+       */
+      provider: 'google' | 'microsoft';
+      /**
+       * Return To
+       * @default /login
+       * @enum {string}
+       */
+      return_to: '/login' | '/signup';
+      /**
+       * Signup Code
+       * @default
+       */
+      signup_code: string;
+    };
     /** ReasonInput */
     ReasonInput: {
       /** Expected Revision */
@@ -3402,6 +3482,50 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['PasswordResetDispatchProjection'];
+        };
+      };
+    };
+  };
+  accounts_sign_in_providers: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProviderList'];
+        };
+      };
+    };
+  };
+  accounts_sign_in_start: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProviderStartInput'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProviderRedirect'];
         };
       };
     };
