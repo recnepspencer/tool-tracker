@@ -164,6 +164,43 @@
   text-transform: none;
 }
 
+/* Secondary lines under a row's title: who, where, when. Words in the body font, never code. */
+.experience
+  :is(
+    .admin-table td > span:not(.lifecycle-pill, .status-badge),
+    .admin-table td > a + span,
+    .worker-activity-row time,
+    .worker-activity-tags time,
+    .capability-pill,
+    .admin-detail-list > div span,
+    .flagged-row__identity,
+    .flagged-row__custody span,
+    .inventory-pending-label,
+    .queue-item__route,
+    .queue-item__time,
+    .operations-queue-group__heading span,
+    .catalog-availability,
+    .catalog-card-meta,
+    .pending-handoff small,
+    .page-heading-status,
+    .warehouse-manager__person small,
+    .worker-section-count
+  ) {
+  font: var(--weight-regular) var(--text-md) / var(--leading-snug) var(--font-sans);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.experience .admin-table td > a + span,
+.experience .admin-table td > span:not(.lifecycle-pill, .status-badge) {
+  color: var(--muted);
+}
+/* A status inside a table cell keeps the shared tinted-text shape. */
+.experience .admin-table td > :is(.lifecycle-pill, .status-badge) {
+  display: inline-flex;
+  font: var(--weight-medium) var(--text-md) / var(--leading-snug) var(--font-sans);
+  margin-top: 0;
+}
+
 /* Field labels read as words, in the body font. */
 .experience .field-label,
 .experience .field-hint {
