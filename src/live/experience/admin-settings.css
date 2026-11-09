@@ -27,53 +27,8 @@
 .experience .settings-muted {
   color: var(--muted);
 }
-.experience .category-create {
-  align-items: end;
-  display: flex;
-  gap: var(--space-10);
-  margin-bottom: var(--space-12);
-}
-.experience .category-create > :first-child {
-  flex: 1;
-}
-.experience .category-list {
-  display: grid;
-}
-.experience .category-row {
-  align-items: center;
-  border-top: var(--border-width) solid var(--border);
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-8);
-  justify-content: space-between;
-  padding: var(--space-10) 0;
-}
-.experience .category-row > div:first-child {
-  display: grid;
-  gap: var(--space-4);
-  min-width: 12rem;
-}
-.experience .category-row small {
-  color: var(--dim);
-  font: var(--font-mono-xs);
-}
 @media (max-width: 44rem) {
-  .experience .category-create {
-    align-items: stretch;
-    flex-direction: column;
-  }
   .experience .settings-card {
     padding: var(--space-16);
-  }
-  .experience .category-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
-  }
-  .experience .category-row > div:first-child {
-    min-width: 0;
-  }
-  .experience .category-row .button {
-    min-height: var(--space-34);
-    padding-inline: var(--space-9);
   }
 }

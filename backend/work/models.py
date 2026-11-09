@@ -7,40 +7,16 @@ from companies.base import CompanyRecord
 from companies.constraints import ScopedForeignKey
 
 
-class Project(CompanyRecord):
-    number = models.CharField(max_length=50)
-    name = models.CharField(max_length=200)
-    lifecycle = models.CharField(max_length=16, default="active")
-    revision = models.PositiveIntegerField(default=1)
-
-    class Meta(CompanyRecord.Meta):
-        constraints = [
-            *CompanyRecord.Meta.constraints,
-            models.UniqueConstraint(fields=["company", "number"], name="project_number_unique"),
-            models.CheckConstraint(
-                condition=Q(lifecycle__in=["prospective", "active", "closed", "cancelled"]),
-                name="project_lifecycle_valid",
-            ),
-        ]
-
-
 class Job(CompanyRecord):
-    project = models.ForeignKey(Project, on_delete=models.PROTECT)
     number = models.CharField(max_length=50)
     name = models.CharField(max_length=200)
-    status = models.CharField(max_length=16, default="active")
     archived_at = models.DateTimeField(null=True)
     revision = models.PositiveIntegerField(default=1)
 
     class Meta(CompanyRecord.Meta):
         constraints = [
             *CompanyRecord.Meta.constraints,
-            ScopedForeignKey(field="project", name="job_project_company"),
             models.UniqueConstraint(fields=["company", "number"], name="job_number_unique"),
-            models.CheckConstraint(
-                condition=Q(status__in=["planned", "active", "on_hold", "completed", "cancelled"]),
-                name="job_status_valid",
-            ),
         ]
 
 

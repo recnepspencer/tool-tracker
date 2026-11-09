@@ -97,7 +97,7 @@ for (const item of cases)
           }
           if (url === '/app/jobs') {
             await expect(actor.getByRole('button', { name: 'Add job', exact: true })).toHaveCount(item.work ? 1 : 0);
-            const roster = actor.getByRole('button', { name: 'View people on Library wiring', exact: true });
+            const roster = actor.getByRole('button', { name: 'Open Library wiring', exact: true });
             if (heading === 'My jobs') {
               // The field "My jobs" list is a set of participation switches without a roster.
               await expect(actor.getByRole('switch', { name: 'Library wiring', exact: true })).toBeVisible();

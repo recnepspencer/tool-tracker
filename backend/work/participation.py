@@ -18,7 +18,7 @@ def lock_job(company_id, job_id):
 
 
 def join_issue(job):
-    if job.archived_at or job.status not in {"planned", "active"}:
+    if job.archived_at:
         return "This job is not accepting assignments.", "job_not_joinable"
     return None
 

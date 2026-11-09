@@ -1,11 +1,7 @@
-import { Plus } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { errorMessage, type Model } from './client';
-import { JobDialogs, ProjectList } from './job-dialogs';
+import { ArchiveJobDialog, JobDialog } from './job-dialogs';
 import { JobParticipation, ParticipationDialog } from './job-participation';
 import { JobRequests } from './job-requests';
-import { JobRoster } from './job-roster';
-import { jobStatusLabel } from './jobs-labels';
 import {
   useJobsPageState,
   useParticipation,
@@ -13,49 +9,27 @@ import {
   type JobsState,
   type ParticipationState,
 } from './jobs-state';
-import { Button, ErrorState, LoadingState, PageHeading, SelectField, SurfaceCard, TextField } from './kit';
+import { Button, DirectoryToolbar, ErrorState, LoadingState, PageHeading, SurfaceCard, TextField } from './kit';
 
-export function JobsPage({ embedded = false }: { embedded?: boolean }) {
+type JobTab = 'active' | 'archived';
+
+const JOB_TABS: { value: JobTab; label: string }[] = [
+  { value: 'active', label: 'Active' },
+  { value: 'archived', label: 'Archived' },
+];
+
+export function JobsPage() {
   const state = useJobsPageState();
   const participation = useParticipation();
-  const review = useRequestReview();
-  const { c, variant, selected, select } = state;
-  const overlays = (
+  return (
     <>
-      {selected && <JobRoster state={state} job={selected} onClose={() => select('')} />}
-      <JobDialogs state={state} />
+      {state.variant === 'switches' ? (
+        <MyJobs state={state} participation={participation} />
+      ) : (
+        <JobDirectory state={state} participation={participation} />
+      )}
       <ParticipationDialog participation={participation} />
     </>
-  );
-  if (embedded)
-    return (
-      <>
-        <JobManager state={state} participation={participation} embedded />
-        {overlays}
-      </>
-    );
-  if (variant === 'switches')
-    return (
-      <>
-        <MyJobs state={state} participation={participation} />
-        {overlays}
-      </>
-    );
-  return (
-    <div className="page-content jobs-page">
-      <PageHeading
-        title="Jobs"
-        description={
-          c.can('jobs.manage') ? 'Manage jobs, people and their responsibilities.' : 'View jobs and assigned people.'
-        }
-      />
-      <div className="settings-grid">
-        <JobManager state={state} participation={participation} />
-        {c.can('jobs.assign') && <JobRequests state={state} review={review} />}
-        {c.can('jobs.manage') && <ProjectList state={state} />}
-      </div>
-      {overlays}
-    </div>
   );
 }
 
@@ -101,7 +75,7 @@ function MyJobs({ state, participation }: { state: JobsState; participation: Par
       ) : queries.some((query) => query.isPending) ? (
         <LoadingState label="Loading your jobs…" />
       ) : !all.length ? (
-        <p className="jobs-muted">No active jobs yet. An administrator can add them in Settings.</p>
+        <p className="jobs-muted">No active jobs yet. An administrator can add them on the Jobs page.</p>
       ) : !shown.length ? (
         <p className="jobs-muted">No jobs match your search.</p>
       ) : (
@@ -115,162 +89,108 @@ function MyJobs({ state, participation }: { state: JobsState; participation: Par
   );
 }
 
-/** Demo `JobManager` card. */
-function JobManager({
-  state,
-  participation,
-  embedded = false,
-}: {
-  state: JobsState;
-  participation: ParticipationState;
-  embedded?: boolean;
-}) {
-  const { c, jobs, visible, assignments, policy, search, setSearch, archived, setArchived, open, restore } = state;
+/** Jobs as the Warehouses page lays them out: search, Active or Archived, and one dialog per job. */
+function JobDirectory({ state, participation }: { state: JobsState; participation: ParticipationState }) {
+  const review = useRequestReview();
+  const { c, jobs, visible = [], archived, selected, creating } = state;
   const manages = c.can('jobs.manage');
-  const headingId = embedded ? 'settings-jobs-heading' : 'jobs-manager-heading';
-  const loadError = [assignments.error, policy.error].find(Boolean);
+  if (jobs.isPending && !jobs.data) return <LoadingState label="Loading jobs…" />;
+  if (!jobs.data)
+    return (
+      <ErrorState
+        message={`Jobs could not be loaded. ${errorMessage(jobs.error)}`}
+        onRetry={() => void jobs.refetch()}
+      />
+    );
   return (
-    <section className="surface-card settings-card jobs-manager" aria-labelledby={headingId}>
-      <div className="settings-card-heading">
-        <h2 id={headingId}>Jobs</h2>
-        {manages && (
-          <Button onClick={() => open('new-job')}>
-            <Plus aria-hidden="true" /> Add job
-          </Button>
-        )}
-      </div>
-      <p className="jobs-muted">
-        {policy.data?.self_join_mode === 'disabled'
-          ? 'Managers assign people to jobs. Archive completed jobs to keep their history.'
-          : 'Foremen choose their own jobs. Archive completed jobs to keep their history.'}
-      </p>
-      <TextField
-        label="Search jobs"
-        type="search"
-        compact
-        value={search}
-        onChange={setSearch}
-        placeholder="Search jobs"
+    <div className="page-content">
+      <PageHeading
+        title="Jobs"
+        description={
+          manages
+            ? 'Add jobs, see who is on them, and archive them when the work is done.'
+            : 'Jobs and the people on them.'
+        }
+        action={manages ? <Button onClick={() => state.select('new')}>Add job</Button> : undefined}
       />
-      <SelectField
-        label="Job status"
-        value={archived ? 'archived' : 'active'}
-        onChange={(value) => setArchived(value === 'archived')}
-        searchable={false}
-        compact
-        options={[
-          { value: 'active', label: 'Active jobs' },
-          { value: 'archived', label: 'Archived jobs' },
-        ]}
+      {jobs.isError && <ErrorState message="Jobs could not be refreshed." onRetry={() => void jobs.refetch()} />}
+      {c.can('jobs.assign') && <JobRequests state={state} review={review} />}
+      <DirectoryToolbar<JobTab>
+        searchLabel="Search jobs"
+        searchPlaceholder="Search jobs…"
+        search={state.search}
+        onSearchChange={state.setSearch}
+        filterLabel="Job status"
+        filters={JOB_TABS}
+        activeFilter={archived ? 'archived' : 'active'}
+        onFilterChange={(value) => state.setArchived(value === 'archived')}
       />
-      {loadError && (
-        <p className="form-error" role="alert">
-          {errorMessage(loadError)}
-        </p>
-      )}
-      {jobs.isPending ? (
-        <LoadingState label="Loading jobs…" />
-      ) : jobs.isError ? (
-        <ErrorState
-          message={`Jobs could not be loaded. ${errorMessage(jobs.error)}`}
-          onRetry={() => void jobs.refetch()}
-        />
-      ) : (
-        <div className="jobs-list">
-          {!visible?.length && (
-            <p className="jobs-muted">
-              {search
-                ? 'No jobs match your search.'
-                : archived
-                  ? 'No archived jobs.'
-                  : manages
-                    ? 'No active jobs. Add a job to get started.'
-                    : 'No active jobs yet.'}
-            </p>
-          )}
-          {visible?.map((job) => (
-            <JobRow key={job.id} job={job} state={state} participation={participation} embedded={embedded} />
-          ))}
+      <SurfaceCard className="admin-table-card">
+        <div className="admin-table-wrap">
+          <table className="admin-table admin-table--responsive directory-table">
+            <thead>
+              <tr>
+                <th>Job</th>
+                <th>Status</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((job) => (
+                <tr key={job.id}>
+                  <td data-label="Job">
+                    <button className="admin-record-button" type="button" onClick={() => state.select(job.id)}>
+                      {job.name}
+                    </button>
+                    <span>{jobSummary(state, job)}</span>
+                  </td>
+                  <td className="directory-table__status" data-label="Status">
+                    {job.archived_at ? (
+                      <span className="lifecycle-pill lifecycle-pill--removed">Archived</span>
+                    ) : (
+                      <span className="lifecycle-pill lifecycle-pill--active">Active</span>
+                    )}
+                  </td>
+                  <td className="directory-table__actions" data-label="Actions">
+                    <Button variant="ghost" onClick={() => state.select(job.id)} aria-label={`Open ${job.name}`}>
+                      Open
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+        {!visible.length && (
+          <p className="admin-empty">
+            {jobs.data.length
+              ? 'No jobs match this search.'
+              : archived
+                ? 'No archived jobs.'
+                : manages
+                  ? 'No jobs yet. Add one to start assigning people.'
+                  : 'No active jobs yet.'}
+          </p>
+        )}
+      </SurfaceCard>
+      {manages && creating && <JobDialog state={state} participation={participation} />}
+      {selected && !state.confirmingArchive && (
+        <JobDialog key={selected.id} job={selected} state={state} participation={participation} />
       )}
-      {restore.error && (
-        <p className="form-error" role="alert">
-          {errorMessage(restore.error)}
-        </p>
-      )}
-      {participation.direct.error && (
-        <p className="form-error" role="alert">
-          {errorMessage(participation.direct.error)}
-        </p>
-      )}
-      <span className="sr-only" role="status">
-        {participation.saved}
-      </span>
-      {embedded && (
-        <Link className="text-link" to="/app/jobs">
-          All jobs, projects & requests
-        </Link>
-      )}
-    </section>
+      {selected && state.confirmingArchive && <ArchiveJobDialog job={selected} state={state} />}
+    </div>
   );
 }
 
-function JobRow({
-  job,
-  state,
-  participation,
-  embedded,
-}: {
-  job: Model<'JobView'>;
-  state: JobsState;
-  participation: ParticipationState;
-  embedded: boolean;
-}) {
-  const { c, currentFor, participationFor, select, open, restore } = state;
-  const current = currentFor(job.id);
-  const { own, pending } = participationFor(job);
-  const manages = c.can('jobs.manage');
-  // The row's participation switch has no visible label, so the details say where you stand.
-  const details = [
+/** The job number, how many people are on it, and where you stand on it. */
+function jobSummary(state: JobsState, job: Model<'JobView'>) {
+  const people = state.currentFor(job.id).length;
+  const { own, pending } = state.participationFor(job);
+  return [
     job.number,
-    job.project_name,
-    job.status === 'active' ? '' : jobStatusLabel[job.status],
-    pending ? 'Request pending' : !embedded && own ? "You're on this job" : '',
+    job.archived_at ? '' : `${people} ${people === 1 ? 'person' : 'people'}`,
+    pending ? 'Request pending' : own ? "You're on this job" : '',
   ]
     .filter(Boolean)
     .join(' · ');
-  return (
-    <article className="job-row" aria-label={job.name}>
-      <div className="job-row-copy">
-        <strong>{job.name}</strong>
-        <small>{details}</small>
-        <button
-          className="job-members-link"
-          type="button"
-          onClick={() => select(job.id)}
-          aria-label={`View people on ${job.name}`}
-        >
-          {job.archived_at ? 'View history' : `${current.length} ${current.length === 1 ? 'person' : 'people'}`}
-        </button>
-      </div>
-      <div className="job-row-actions">
-        {!embedded && <JobParticipation state={state} participation={participation} job={job} compact />}
-        {manages && (
-          <>
-            <Button variant="ghost" onClick={() => open(`edit-job:${job.id}`)} aria-label={`Edit ${job.name}`}>
-              Edit
-            </Button>
-            <Button
-              variant="secondary"
-              disabled={restore.isPending}
-              aria-label={`${job.archived_at ? 'Restore' : 'Archive'} ${job.name}`}
-              onClick={() => (job.archived_at ? restore.mutate(job) : open(`archive:${job.id}`))}
-            >
-              {job.archived_at ? 'Restore' : 'Archive'}
-            </Button>
-          </>
-        )}
-      </div>
-    </article>
-  );
 }

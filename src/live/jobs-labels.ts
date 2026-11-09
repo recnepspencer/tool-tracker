@@ -1,20 +1,5 @@
 import type { Model } from './client';
 
-export const jobStatusLabel: Record<Model<'JobView'>['status'], string> = {
-  planned: 'Planned',
-  active: 'Active',
-  on_hold: 'On hold',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
-};
-
-export const projectLifecycleLabel: Record<Model<'ProjectView'>['lifecycle'], string> = {
-  prospective: 'Prospective',
-  active: 'Active',
-  closed: 'Closed',
-  cancelled: 'Cancelled',
-};
-
 export const responsibilityLabel: Record<Model<'AssignmentView'>['responsibility'], string> = {
   crew: 'Crew',
   foreman: 'Foreman',

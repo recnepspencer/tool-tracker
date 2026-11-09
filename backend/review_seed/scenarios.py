@@ -21,7 +21,7 @@ from equipment.models import (
     Warehouse,
     WarehouseRoleGrant,
 )
-from work.models import Job, JobAssignment, JobAssignmentPolicy, JobParticipationRequest, Project
+from work.models import Job, JobAssignment, JobAssignmentPolicy, JobParticipationRequest
 
 
 def review_id(name):
@@ -218,24 +218,18 @@ def seed_review_scenarios(password):
                     request_key=review_id(f"handoff-key/{tag}"),
                     note="Approved; awaiting actual receipt",
                 )
-    project, _ = Project.objects.get_or_create(
-        id=review_id("project"),
-        defaults={"company": company, "number": "P-100", "name": "Riverside campus"},
-    )
     jobs = {}
-    for number, name, status, archived in [
-        ("J-100", "Electrical rough-in", "active", False),
-        ("J-200", "Finish electrical", "active", False),
-        ("J-OLD", "Completed service call", "completed", True),
+    for number, name, archived in [
+        ("J-100", "Electrical rough-in", False),
+        ("J-200", "Finish electrical", False),
+        ("J-OLD", "Completed service call", True),
     ]:
         job, created = Job.objects.get_or_create(
             id=review_id(f"job/{number}"),
             defaults={
                 "company": company,
-                "project": project,
                 "number": number,
                 "name": name,
-                "status": status,
                 "archived_at": now if archived else None,
             },
         )

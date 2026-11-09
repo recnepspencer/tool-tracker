@@ -7,7 +7,7 @@ from companies.models import Company
 from tests.conftest import login_client
 from tests.factories import member_in
 from tests.http_contract import assert_response
-from work.models import Job, JobAssignment, JobAssignmentPolicy, Project
+from work.models import Job, JobAssignment, JobAssignmentPolicy
 
 
 @pytest.fixture
@@ -15,8 +15,7 @@ def crew(db, password_hash):
     company = Company.objects.create(name="Job-only tests")
     worker = member_in(company, password_hash)
     admin = member_in(company, password_hash, "company_admin")
-    project = Project.objects.create(company=company, number="P1", name="Campus")
-    job = Job.objects.create(company=company, project=project, number="J1", name="Rough-in")
+    job = Job.objects.create(company=company, number="J1", name="Rough-in")
     policy = JobAssignmentPolicy.objects.create(
         company=company, self_join_mode="direct", self_leave_mode="approval_required"
     )
@@ -26,7 +25,6 @@ def crew(db, password_hash):
         admin=admin,
         client=login_client(worker.user),
         manager=login_client(admin.user),
-        project=project,
         job=job,
         policy=policy,
         base=f"/api/companies/{company.pk}",
@@ -129,7 +127,7 @@ def test_admin_assignment_bypasses_disabled_self_service_and_archive_preserves_h
         {
             "expected_revision": crew.job.revision,
             "name": "Renamed job",
-            "status": "active",
+            "number": "J1",
             "archived": True,
         },
         content_type="application/json",
@@ -147,7 +145,7 @@ def test_admin_assignment_bypasses_disabled_self_service_and_archive_preserves_h
         {
             "expected_revision": archived.json()["revision"],
             "name": "Renamed job",
-            "status": "active",
+            "number": "J1",
             "archived": False,
         },
         content_type="application/json",
@@ -196,9 +194,7 @@ def test_participation_retry_is_bound_to_payload_and_allows_multiple_jobs(crew):
         ).status_code
         == 409
     )
-    another = Job.objects.create(
-        company=crew.company, project=crew.project, number="J2", name="Same name is allowed"
-    )
+    another = Job.objects.create(company=crew.company, number="J2", name="Same name is allowed")
     crew.job = another
     assert participate(crew, intent="join").status_code == 201
     assert (

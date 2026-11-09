@@ -6,14 +6,18 @@ import { useCompany } from './session';
 import { useCommand } from './settings-command-state';
 
 type ToolModel = Model<'ModelView'>;
+type Category = Model<'CategoryView'>;
 
 export function useCatalogPageState() {
   const c = useCompany();
   const { params, update } = useListLocation();
+  // Models and categories are separate views; each keeps its own search and status in the URL.
+  const view: 'models' | 'categories' = params.get('view') === 'categories' ? 'categories' : 'models';
   const archived = params.get('archived') === 'true';
   const search = params.get('search') ?? '';
-  const categoryArchived = params.get('categories') === 'archived';
+  const category = params.get('category') ?? '';
   const modelParam = params.get('model') ?? '';
+  const categoryParam = params.get('edit-category') ?? '';
   const categories = useCategoryOptions();
   const archive = useCommand();
   const models = useQuery({
@@ -29,18 +33,46 @@ export function useCatalogPageState() {
   const term = search.trim().toLocaleLowerCase();
   const rows = (models.data ?? []).filter(
     (model) =>
-      !term ||
-      [model.name, model.manufacturer, model.model_number, categoryName(model.category_id)].some((value) =>
-        value.toLocaleLowerCase().includes(term),
-      ),
+      (!category || model.category_id === category) &&
+      (!term ||
+        [model.name, model.manufacturer, model.model_number, categoryName(model.category_id)].some((value) =>
+          value.toLocaleLowerCase().includes(term),
+        )),
+  );
+  const categoryRows = (categories.data ?? []).filter(
+    (item) => Boolean(item.archived_at) === archived && (!term || item.name.toLocaleLowerCase().includes(term)),
   );
   const select = (id: string) => {
     archive.reset();
     update('model', id);
   };
+  const selectCategory = (id: string) => {
+    archive.reset();
+    update('edit-category', id);
+  };
 
   return {
     c,
+    view,
+    setView: (value: 'models' | 'categories') => {
+      for (const key of ['search', 'archived', 'category', 'model', 'edit-category']) update(key, '');
+      update('view', value === 'categories' ? 'categories' : '');
+    },
+    category,
+    setCategory: (value: string) => update('category', value === 'all' ? '' : value),
+    categoryRows,
+    creatingCategory: categoryParam === 'new',
+    selectedCategory: categories.data?.find((item) => item.id === categoryParam),
+    selectCategory,
+    setCategoryArchived: (item: Category, value: boolean) =>
+      void archive.run(
+        () =>
+          api.POST('/api/companies/{company_id}/tool-categories/{category_id}/update', {
+            params: { path: { ...c.path, category_id: item.id } },
+            body: { expected_revision: item.revision, name: item.name, archived: value },
+          }),
+        () => update('edit-category', ''),
+      ),
     archived,
     setArchived: (value: boolean) => update('archived', value ? 'true' : ''),
     search,
@@ -48,8 +80,6 @@ export function useCatalogPageState() {
     categories,
     categoryOptions: categories.data ?? [],
     categoryName,
-    categoryArchived,
-    setCategoryArchived: (value: boolean) => update('categories', value ? 'archived' : ''),
     models,
     rows,
     creating: modelParam === 'new',

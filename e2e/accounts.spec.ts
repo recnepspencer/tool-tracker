@@ -194,10 +194,14 @@ test('a new company builds its inventory through public screens and a worker rec
   await expect(warehouseDialog).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Main warehouse', exact: true })).toBeVisible();
   await page.goto('/app/catalog');
-  const categories = page.getByRole('region', { name: 'Tool categories', exact: true });
-  await categories.getByLabel('New category').fill('Drills');
-  await categories.getByRole('button', { name: 'Add category', exact: true }).click();
-  await expect(categories.getByText('Drills', { exact: true })).toBeVisible();
+  await page.getByRole('tab', { name: 'Categories', exact: true }).click();
+  await page.getByRole('button', { name: 'Add category', exact: true }).click();
+  const categoryDialog = page.getByRole('dialog', { name: 'Add category', exact: true });
+  await categoryDialog.getByLabel('Category name', { exact: true }).fill('Drills');
+  await categoryDialog.getByRole('button', { name: 'Add category', exact: true }).click();
+  await expect(categoryDialog).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Drills', exact: true })).toBeVisible();
+  await page.getByRole('tab', { name: 'Models', exact: true }).click();
   await page.getByRole('button', { name: 'Add model', exact: true }).click();
   const modelDialog = page.getByRole('dialog', { name: 'Create model', exact: true });
   await chooseOption(modelDialog, 'Category', { label: 'Drills' });

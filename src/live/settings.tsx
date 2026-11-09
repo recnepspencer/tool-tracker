@@ -1,6 +1,3 @@
-import { Link } from 'react-router-dom';
-import { CategoryManager } from './category-manager';
-import { JobsPage } from './jobs';
 import { ErrorState, LoadingState, PageHeading } from './kit';
 import { CompanyProfile, ParticipationSettings, RegistrationSettings } from './settings-controls';
 import { useSettingsPageState } from './settings-state';
@@ -17,23 +14,10 @@ export function SettingsPage() {
       <PageHeading
         eyebrow={admin ? 'Admin view · Settings' : 'Company workspace · Settings'}
         title="Settings"
-        description="Manage company details, jobs, tool categories, and team rules."
+        description="Company details and the rules your team works by."
       />
       <div className="settings-grid">
         <CompanyProfile state={state} />
-        {c.can('jobs.manage') && <JobsPage embedded />}
-        {c.can('catalog.manage') && (
-          <CategoryManager
-            categories={state.categories}
-            archived={state.categoryArchived}
-            onArchivedChange={state.setCategoryArchived}
-            footer={
-              <Link className="text-link" to="/app/catalog">
-                Manage tool models
-              </Link>
-            }
-          />
-        )}
         <RegistrationSettings state={state} />
         <ParticipationSettings state={state} />
       </div>

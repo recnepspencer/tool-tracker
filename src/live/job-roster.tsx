@@ -4,11 +4,11 @@ import { formatRange } from './format';
 import { JobForm } from './job-form';
 import { options, responsibilityLabel } from './jobs-labels';
 import type { JobsState } from './jobs-state';
-import { Button, ErrorState, LoadingState, OverlayDialog, SelectField } from './kit';
+import { Button, ErrorState, LoadingState, SelectField } from './kit';
 import { Field, text } from './ui';
 
-/** Demo job roster `OverlayDialog`, with the live assignment history and assign form. */
-export function JobRoster({
+/** The people on a job, their assignment history and the assign form, inside the job's dialog. */
+export function JobPeople({
   state,
   job,
   onClose,
@@ -18,19 +18,12 @@ export function JobRoster({
   onClose: () => void;
 }) {
   const { c, roster, history, setHistory, people, ending, setEnding } = state;
-  const assignable = !job.archived_at && ['planned', 'active'].includes(job.status);
+  const assignable = !job.archived_at;
+  const heading = `people-${job.id}`;
   const assignHeading = `assign-${job.id}`;
   return (
-    <OverlayDialog
-      label={`People on ${job.name}`}
-      onClose={onClose}
-      showCloseButton
-      panelClassName="admin-dialog job-dialog"
-    >
-      <h2>{job.name}</h2>
-      <p className="jobs-muted">
-        {job.number} · {job.project_name}
-      </p>
+    <section className="job-people" aria-labelledby={heading}>
+      <h3 id={heading}>People</h3>
       <SelectField
         label="Assignments"
         compact
@@ -156,9 +149,7 @@ export function JobRoster({
           </JobForm>
         </section>
       )}
-      {!assignable && (
-        <p className="jobs-muted">This job is closed or archived. Its assignment history remains available.</p>
-      )}
-    </OverlayDialog>
+      {!assignable && <p className="jobs-muted">This job is archived. Its assignment history remains available.</p>}
+    </section>
   );
 }

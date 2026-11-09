@@ -254,4 +254,9 @@
     grid-column: 2;
     grid-row: 2;
   }
+  /* Without an eyebrow the title row is the first row. */
+  .experience .page-heading--with-action.page-heading--without-eyebrow h1,
+  .experience .page-heading--with-action.page-heading--without-eyebrow .page-heading-action {
+    grid-row: 1;
+  }
 }

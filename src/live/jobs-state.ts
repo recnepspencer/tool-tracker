@@ -4,6 +4,7 @@ import { api, requestKey, result, type Model } from './client';
 import { collect, usePeople } from './data';
 import { useListLocation } from './list-location';
 import { useCompany } from './session';
+import { useCommand } from './settings-command-state';
 
 type Job = Model<'JobView'>;
 type Assignment = Model<'AssignmentView'>;
@@ -12,9 +13,8 @@ type Request = Model<'ParticipationView'>;
 export function useJobsPageState() {
   const c = useCompany();
   const location = useListLocation();
-  const cache = useQueryClient();
   // Field members get the demo's "My jobs" switch list. Anyone who manages or
-  // assigns work, or can only read jobs, gets the job manager card.
+  // assigns work, or can only read jobs, gets the job directory.
   const variant: 'switches' | 'manager' =
     c.can('jobs.participate') && !c.can('jobs.manage') && !c.can('jobs.assign') ? 'switches' : 'manager';
   const search = location.params.get('search') ?? '';
@@ -22,8 +22,9 @@ export function useJobsPageState() {
   const history = location.params.get('history') === 'true';
   const completed = location.params.get('completed') === 'true';
   const selectedId = location.params.get('job') ?? '';
-  const dialog = location.params.get('dialog') ?? '';
   const [ending, setEnding] = useState<Assignment | null>(null);
+  const [confirmingArchive, setConfirmingArchive] = useState(false);
+  const archive = useCommand();
   const people = usePeople({ enabled: c.can('jobs.assign') });
   const jobs = useQuery({
     queryKey: [c.company_id, 'jobs', archived],
@@ -32,18 +33,6 @@ export function useJobsPageState() {
         api
           .GET('/api/companies/{company_id}/jobs', {
             params: { path: c.path, query: { offset, archived } },
-          })
-          .then(result),
-      ),
-  });
-  const projects = useQuery({
-    queryKey: [c.company_id, 'projects'],
-    enabled: variant === 'manager',
-    queryFn: () =>
-      collect((offset) =>
-        api
-          .GET('/api/companies/{company_id}/projects', {
-            params: { path: c.path, query: { offset } },
           })
           .then(result),
       ),
@@ -87,15 +76,6 @@ export function useJobsPageState() {
           .then(result),
       ),
   });
-  // Restore runs straight from the row, as in the demo; archive asks first.
-  const restore = useMutation({
-    mutationFn: (job: Job) =>
-      api.POST('/api/companies/{company_id}/jobs/{job_id}/update', {
-        params: { path: { ...c.path, job_id: job.id } },
-        body: { expected_revision: job.revision, name: job.name, status: job.status, archived: false },
-      }),
-    onSuccess: () => cache.invalidateQueries({ queryKey: [c.company_id] }),
-  });
   const selected = jobs.data?.find((job) => job.id === selectedId);
   const currentFor = (id: string) => assignments.data?.filter((assignment) => assignment.job_id === id) ?? [];
   const participationFor = (job: Job) => {
@@ -105,7 +85,7 @@ export function useJobsPageState() {
         request.job_id === job.id && request.membership_id === c.membership_id && request.status === 'pending',
     );
     const mode = own ? policy.data?.self_leave_mode : policy.data?.self_join_mode;
-    const open = !job.archived_at && (!!own || ['active', 'planned'].includes(job.status));
+    const open = !job.archived_at;
     const ready = c.can('jobs.participate') && !!mode && !!assignments.data && !!requests.data;
     return { own, pending, mode, open, ready };
   };
@@ -116,24 +96,20 @@ export function useJobsPageState() {
     archived,
     history,
     completed,
-    dialog,
     selected,
+    creating: selectedId === 'new',
     jobs,
-    projects,
     policy,
     people,
     assignments,
     requests,
-    restore,
     ending,
     setEnding,
     currentFor,
     participationFor,
     roster: history ? roster : { ...assignments, data: currentFor(selectedId) },
     visible: jobs.data?.filter((job) =>
-      `${job.number} ${job.name} ${job.project_name} ${job.project_number}`
-        .toLowerCase()
-        .includes(search.trim().toLowerCase()),
+      `${job.number} ${job.name}`.toLowerCase().includes(search.trim().toLowerCase()),
     ),
     setSearch: (value: string) => location.update('search', value),
     setArchived: (value: boolean) => location.update('archived', value ? 'true' : ''),
@@ -141,12 +117,30 @@ export function useJobsPageState() {
     setCompleted: (value: boolean) => location.update('completed', value ? 'true' : ''),
     select: (id: string) => {
       setEnding(null);
+      setConfirmingArchive(false);
+      archive.reset();
       location.update('job', id);
     },
-    open: (value: string) => {
-      restore.reset();
-      location.update('dialog', value);
+    confirmingArchive,
+    archive,
+    startArchive: () => {
+      archive.reset();
+      setConfirmingArchive(true);
     },
+    cancelArchive: () => setConfirmingArchive(false),
+    // Archiving takes everyone off the job, so it asks first; restoring does not.
+    setJobArchived: (job: Job, value: boolean) =>
+      void archive.run(
+        () =>
+          api.POST('/api/companies/{company_id}/jobs/{job_id}/update', {
+            params: { path: { ...c.path, job_id: job.id } },
+            body: { expected_revision: job.revision, number: job.number, name: job.name, archived: value },
+          }),
+        () => {
+          setConfirmingArchive(false);
+          location.update('job', '');
+        },
+      ),
   };
 }
 export type JobsState = ReturnType<typeof useJobsPageState>;

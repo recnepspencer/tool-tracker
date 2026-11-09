@@ -791,41 +791,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/companies/{company_id}/projects': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Projects List */
-    get: operations['work_api_projects_list'];
-    put?: never;
-    /** Project Create */
-    post: operations['work_api_project_create'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/companies/{company_id}/projects/{project_id}/update': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Project Update */
-    post: operations['work_api_project_update'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/api/companies/{company_id}/reconciliations': {
     parameters: {
       query?: never;
@@ -2230,17 +2195,6 @@ export interface components {
       name: string;
       /** Number */
       number: string;
-      /**
-       * Project Id
-       * Format: uuid
-       */
-      project_id: string;
-      /**
-       * Status
-       * @default active
-       * @enum {string}
-       */
-      status: 'planned' | 'active' | 'on_hold' | 'completed' | 'cancelled';
     };
     /** JobPage */
     JobPage: {
@@ -2260,11 +2214,8 @@ export interface components {
       expected_revision: number;
       /** Name */
       name: string;
-      /**
-       * Status
-       * @enum {string}
-       */
-      status: 'planned' | 'active' | 'on_hold' | 'completed' | 'cancelled';
+      /** Number */
+      number: string;
     };
     /** JobView */
     JobView: {
@@ -2279,22 +2230,8 @@ export interface components {
       name: string;
       /** Number */
       number: string;
-      /**
-       * Project Id
-       * Format: uuid
-       */
-      project_id: string;
-      /** Project Name */
-      project_name: string;
-      /** Project Number */
-      project_number: string;
       /** Revision */
       revision: number;
-      /**
-       * Status
-       * @enum {string}
-       */
-      status: 'planned' | 'active' | 'on_hold' | 'completed' | 'cancelled';
     };
     /** LifecycleInput */
     LifecycleInput: {
@@ -2715,57 +2652,6 @@ export interface components {
       company_name: string;
       /** Logo Id */
       logo_id: string | null;
-    };
-    /** ProjectInput */
-    ProjectInput: {
-      /**
-       * Lifecycle
-       * @default active
-       * @enum {string}
-       */
-      lifecycle: 'prospective' | 'active' | 'closed' | 'cancelled';
-      /** Name */
-      name: string;
-      /** Number */
-      number: string;
-    };
-    /** ProjectPage */
-    ProjectPage: {
-      /** Items */
-      items: components['schemas']['ProjectView'][];
-      /** Next Offset */
-      next_offset: number | null;
-    };
-    /** ProjectUpdate */
-    ProjectUpdate: {
-      /** Expected Revision */
-      expected_revision: number;
-      /**
-       * Lifecycle
-       * @enum {string}
-       */
-      lifecycle: 'prospective' | 'active' | 'closed' | 'cancelled';
-      /** Name */
-      name: string;
-    };
-    /** ProjectView */
-    ProjectView: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /**
-       * Lifecycle
-       * @enum {string}
-       */
-      lifecycle: 'prospective' | 'active' | 'closed' | 'cancelled';
-      /** Name */
-      name: string;
-      /** Number */
-      number: string;
-      /** Revision */
-      revision: number;
     };
     /** ProviderList */
     ProviderList: {
@@ -4533,84 +4419,6 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['CapabilityView'][];
-        };
-      };
-    };
-  };
-  work_api_projects_list: {
-    parameters: {
-      query?: {
-        limit?: number;
-        offset?: number;
-      };
-      header?: never;
-      path: {
-        company_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProjectPage'];
-        };
-      };
-    };
-  };
-  work_api_project_create: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        company_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ProjectInput'];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProjectView'];
-        };
-      };
-    };
-  };
-  work_api_project_update: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        company_id: string;
-        project_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ProjectUpdate'];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProjectView'];
         };
       };
     };

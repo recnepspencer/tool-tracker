@@ -150,7 +150,7 @@ test('offboarding closes jobs, keeps named custody and reinstates the same emplo
       end_reason: 'Employment ended with tool accountability retained',
     });
     await page.goto(`/app/jobs?job=${fixture.job.id}&history=true`);
-    const roster = page.getByRole('dialog', { name: 'People on Library wiring', exact: true });
+    const roster = page.getByRole('dialog', { name: 'Library wiring', exact: true });
     await expect(roster.getByRole('combobox', { name: 'Assignments', exact: true })).toHaveText('Assignment history');
     await expect(roster.getByRole('article', { name: 'Returning employee foreman', exact: true })).toBeVisible();
     await page.screenshot({ path: 'artifacts/jobs-rehired-history.png', fullPage: true });

@@ -91,10 +91,9 @@ export async function ownedCompany(page: Page) {
 // A company with one warehouse, job and two units of the same tool model.
 export async function workspace(page: Page) {
   const { company, base } = await ownedCompany(page);
-  const [warehouse, category, project] = await Promise.all([
+  const [warehouse, category] = await Promise.all([
     command(page.request, `${base}/warehouses`, { code: 'MAIN', name: 'Main warehouse' }),
     command(page.request, `${base}/tool-categories`, { name: 'Drills' }),
-    command(page.request, `${base}/projects`, { number: 'P1', name: 'Library' }),
   ]);
   const [model, job] = await Promise.all([
     command(page.request, `${base}/tool-models`, {
@@ -103,7 +102,7 @@ export async function workspace(page: Page) {
       manufacturer: 'Makita',
       model_number: 'XPH14',
     }),
-    command(page.request, `${base}/jobs`, { project_id: project.id, number: 'J1', name: 'Library wiring' }),
+    command(page.request, `${base}/jobs`, { number: 'J1', name: 'Library wiring' }),
   ]);
   // Sequential so UNIT-001 is the older record wherever lists order by creation.
   const asset = await command(page.request, `${base}/tools`, {

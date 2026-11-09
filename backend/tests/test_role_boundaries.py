@@ -15,7 +15,7 @@ from equipment.models import (
 )
 from tests.conftest import login_client
 from tests.factories import member_in
-from work.models import Job, Project
+from work.models import Job
 
 ROLES = ["company_admin", "equipment_manager", "dispatcher", "estimator", "field_member"]
 
@@ -35,7 +35,6 @@ def test_public_read_surfaces_and_write_boundaries(world, password_hash, role):
         "/warehouses": True,
         "/activity": True,
         "/tool-registration-policy": True,
-        "/projects": True,
         "/jobs": True,
         "/assignments": True,
         "/job-participation-policy": True,
@@ -80,8 +79,8 @@ def test_public_read_surfaces_and_write_boundaries(world, password_hash, role):
     assert MembershipInvitation.objects.filter(company=world.company).exists() == (
         role == "company_admin"
     )
-    command("/projects", {"number": "P1", "name": "Project"}, work)
-    assert Project.objects.filter(company=world.company).exists() == work
+    command("/jobs", {"number": "J1", "name": "Job"}, work)
+    assert Job.objects.filter(company=world.company).exists() == work
     ToolRegistrationPolicy.objects.create(
         company=world.company, employee_tool_creation_enabled=True
     )
@@ -135,8 +134,7 @@ def test_combined_roles_and_job_responsibilities_do_not_create_warehouse_authori
 
     actor = member_in(world.company, password_hash, "dispatcher")
     CompanyRoleGrant.objects.create(membership=actor.member, role_code="field_member")
-    project = Project.objects.create(company=world.company, number="P1", name="Project")
-    job = Job.objects.create(company=world.company, project=project, number="J1", name="Job")
+    job = Job.objects.create(company=world.company, number="J1", name="Job")
     JobAssignment.objects.create(
         company=world.company,
         job=job,

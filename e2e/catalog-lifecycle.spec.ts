@@ -64,13 +64,19 @@ for (const role of ['company_admin', 'equipment_manager'])
         'true',
       );
       await expect(actor.getByRole('button', { name: 'Edit Combi drill', exact: true })).toHaveCount(1);
-      const categories = actor.getByRole('region', { name: 'Tool categories', exact: true });
-      await expect(categories.locator('.category-row')).toHaveCount(1);
-      await categories.getByRole('button', { name: 'Rename Drills', exact: true }).click();
-      await categories.getByRole('textbox', { name: 'Rename Drills', exact: true }).fill('Historical drills');
-      await categories.getByRole('button', { name: 'Save', exact: true }).click();
-      await categories.getByRole('button', { name: 'Archive Historical drills', exact: true }).click();
-      await expect(categories.getByText('Historical drills', { exact: true })).toHaveCount(0);
+      await actor.getByRole('tab', { name: 'Categories', exact: true }).click();
+      await expect(actor).toHaveURL(/view=categories/);
+      await actor.getByRole('button', { name: 'Edit Drills', exact: true }).click();
+      const categoryDialog = actor.getByRole('dialog', { name: 'Drills', exact: true });
+      await categoryDialog.getByLabel('Category name', { exact: true }).fill('Historical drills');
+      await categoryDialog.getByRole('button', { name: 'Save category', exact: true }).click();
+      await expect(categoryDialog).toHaveCount(0);
+      await actor.getByRole('button', { name: 'Edit Historical drills', exact: true }).click();
+      await actor
+        .getByRole('dialog', { name: 'Historical drills', exact: true })
+        .getByRole('button', { name: 'Archive category', exact: true })
+        .click();
+      await expect(actor.getByRole('button', { name: 'Edit Historical drills', exact: true })).toHaveCount(0);
       await actor.goto('/app/tools/new');
       await actor.getByRole('button', { name: 'Continue without a photo' }).click();
       // Models in an archived category are not offered for registration.
@@ -78,9 +84,13 @@ for (const role of ['company_admin', 'equipment_manager'])
       await expect(actor.getByRole('listbox', { name: 'Tool model', exact: true }).getByRole('option')).toHaveCount(0);
       await actor.keyboard.press('Escape');
       await expect(actor.getByText(/No models are currently eligible/)).toBeVisible();
-      await actor.goto('/app/catalog?categories=archived');
-      await categories.getByRole('button', { name: 'Restore Historical drills', exact: true }).click();
-      await expect(categories.getByText('Historical drills', { exact: true })).toHaveCount(0);
+      await actor.goto('/app/catalog?view=categories&archived=true');
+      await actor.getByRole('button', { name: 'Edit Historical drills', exact: true }).click();
+      await actor
+        .getByRole('dialog', { name: 'Historical drills', exact: true })
+        .getByRole('button', { name: 'Restore category', exact: true })
+        .click();
+      await expect(actor.getByRole('button', { name: 'Edit Historical drills', exact: true })).toHaveCount(0);
       await actor.goto('/app/tools/new');
       await actor.getByRole('button', { name: 'Continue without a photo' }).click();
       await chooseOption(actor, 'Tool model', fixture.asset.tool_model_id);

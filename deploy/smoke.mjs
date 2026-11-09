@@ -25,6 +25,13 @@ async function ensure(path, body, match) {
   const rows = (await (await page.request.get(path)).json()).items;
   return rows.find(match) ?? command(page.request, path, body);
 }
+// The app's select fields are listboxes, as e2e/support.ts `chooseOption` drives them.
+async function choose(label, value) {
+  await page.getByRole('combobox', { name: label, exact: true }).click();
+  const listbox = page.getByRole('listbox', { name: label, exact: true });
+  await listbox.locator(`[role="option"][data-value="${value}"]`).click();
+  await expect(listbox).toBeHidden();
+}
 async function emailLink(email, prefix) {
   let link;
   await expect
@@ -120,12 +127,14 @@ try {
   let asset = (await (await page.request.get(`${base}/tools?search=PIPELINE-PHOTO-001`)).json()).items[0];
   if (!asset) {
     await page.goto('/app/tools/new');
-    await page.getByLabel('Tool photo (up to 8 MB)').setInputFiles('e2e/fixtures/hammer-drill.jpg');
-    await page.getByLabel('Tool model').selectOption(model.id);
-    await page.getByLabel('Starting warehouse').selectOption(warehouse.id);
-    await page.getByLabel('Unique asset tag').fill('PIPELINE-PHOTO-001');
-    await page.getByRole('button', { name: 'Register tool', exact: true }).click();
-    await expect(page.getByRole('link', { name: 'Open its custody record' })).toBeVisible();
+    const wizard = page.getByRole('dialog', { name: 'Add a tool', exact: true });
+    await page.getByLabel('Choose a tool photo', { exact: true }).setInputFiles('e2e/fixtures/hammer-drill.jpg');
+    await expect(wizard.getByRole('img', { name: 'Selected tool', exact: true })).toBeVisible();
+    await choose('Tool model', model.id);
+    await choose('Home warehouse', warehouse.id);
+    await page.getByLabel('Asset tag', { exact: true }).fill('PIPELINE-PHOTO-001');
+    await page.getByRole('button', { name: 'Add tool', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: 'Deployment photo check details', exact: true })).toBeVisible();
     asset = (await (await page.request.get(`${base}/tools?search=PIPELINE-PHOTO-001`)).json()).items[0];
   }
   assert(asset.registration_photo_id, 'Registration must retain the uploaded photo.');

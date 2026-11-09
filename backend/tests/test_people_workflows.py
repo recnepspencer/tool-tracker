@@ -205,11 +205,10 @@ def test_foreign_membership_cannot_be_changed(people, password_hash):
 
 def test_employment_end_closes_jobs_but_retains_tool_accountability(world, password_hash):
     from equipment.models import CustodyPeriod
-    from work.models import Job, JobAssignment, Project
+    from work.models import Job, JobAssignment
 
     admin = member_in(world.company, password_hash, "company_admin")
-    project = Project.objects.create(company=world.company, number="P1", name="Project")
-    job = Job.objects.create(company=world.company, project=project, number="J1", name="Job")
+    job = Job.objects.create(company=world.company, number="J1", name="Job")
     assignment = JobAssignment.objects.create(
         company=world.company,
         job=job,

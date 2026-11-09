@@ -2526,27 +2526,9 @@
             "minLength": 1,
             "title": "Number",
             "type": "string"
-          },
-          "project_id": {
-            "format": "uuid",
-            "title": "Project Id",
-            "type": "string"
-          },
-          "status": {
-            "default": "active",
-            "enum": [
-              "planned",
-              "active",
-              "on_hold",
-              "completed",
-              "cancelled"
-            ],
-            "title": "Status",
-            "type": "string"
           }
         },
         "required": [
-          "project_id",
           "number",
           "name"
         ],
@@ -2600,22 +2582,17 @@
             "title": "Name",
             "type": "string"
           },
-          "status": {
-            "enum": [
-              "planned",
-              "active",
-              "on_hold",
-              "completed",
-              "cancelled"
-            ],
-            "title": "Status",
+          "number": {
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Number",
             "type": "string"
           }
         },
         "required": [
           "expected_revision",
-          "name",
-          "status"
+          "number",
+          "name"
         ],
         "title": "JobUpdate",
         "type": "object"
@@ -2647,45 +2624,17 @@
             "title": "Number",
             "type": "string"
           },
-          "project_id": {
-            "format": "uuid",
-            "title": "Project Id",
-            "type": "string"
-          },
-          "project_name": {
-            "title": "Project Name",
-            "type": "string"
-          },
-          "project_number": {
-            "title": "Project Number",
-            "type": "string"
-          },
           "revision": {
             "title": "Revision",
             "type": "integer"
-          },
-          "status": {
-            "enum": [
-              "planned",
-              "active",
-              "on_hold",
-              "completed",
-              "cancelled"
-            ],
-            "title": "Status",
-            "type": "string"
           }
         },
         "required": [
           "id",
-          "project_id",
           "number",
           "name",
-          "status",
           "archived_at",
-          "revision",
-          "project_name",
-          "project_number"
+          "revision"
         ],
         "title": "JobView",
         "type": "object"
@@ -3742,141 +3691,6 @@
           "logo_id"
         ],
         "title": "PendingCompanyView",
-        "type": "object"
-      },
-      "ProjectInput": {
-        "additionalProperties": false,
-        "properties": {
-          "lifecycle": {
-            "default": "active",
-            "enum": [
-              "prospective",
-              "active",
-              "closed",
-              "cancelled"
-            ],
-            "title": "Lifecycle",
-            "type": "string"
-          },
-          "name": {
-            "maxLength": 200,
-            "minLength": 1,
-            "title": "Name",
-            "type": "string"
-          },
-          "number": {
-            "maxLength": 50,
-            "minLength": 1,
-            "title": "Number",
-            "type": "string"
-          }
-        },
-        "required": [
-          "number",
-          "name"
-        ],
-        "title": "ProjectInput",
-        "type": "object"
-      },
-      "ProjectPage": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/ProjectView"
-            },
-            "title": "Items",
-            "type": "array"
-          },
-          "next_offset": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Next Offset"
-          }
-        },
-        "required": [
-          "items",
-          "next_offset"
-        ],
-        "title": "ProjectPage",
-        "type": "object"
-      },
-      "ProjectUpdate": {
-        "additionalProperties": false,
-        "properties": {
-          "expected_revision": {
-            "minimum": 1,
-            "title": "Expected Revision",
-            "type": "integer"
-          },
-          "lifecycle": {
-            "enum": [
-              "prospective",
-              "active",
-              "closed",
-              "cancelled"
-            ],
-            "title": "Lifecycle",
-            "type": "string"
-          },
-          "name": {
-            "maxLength": 200,
-            "minLength": 1,
-            "title": "Name",
-            "type": "string"
-          }
-        },
-        "required": [
-          "expected_revision",
-          "name",
-          "lifecycle"
-        ],
-        "title": "ProjectUpdate",
-        "type": "object"
-      },
-      "ProjectView": {
-        "properties": {
-          "id": {
-            "format": "uuid",
-            "title": "Id",
-            "type": "string"
-          },
-          "lifecycle": {
-            "enum": [
-              "prospective",
-              "active",
-              "closed",
-              "cancelled"
-            ],
-            "title": "Lifecycle",
-            "type": "string"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "number": {
-            "title": "Number",
-            "type": "string"
-          },
-          "revision": {
-            "title": "Revision",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "id",
-          "number",
-          "name",
-          "lifecycle",
-          "revision"
-        ],
-        "title": "ProjectView",
         "type": "object"
       },
       "ProviderList": {
@@ -7455,156 +7269,6 @@
         "summary": "Permission Matrix",
         "tags": [
           "company and people"
-        ]
-      }
-    },
-    "/api/companies/{company_id}/projects": {
-      "get": {
-        "operationId": "work_api_projects_list",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "company_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Company Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 50,
-              "maximum": 100,
-              "minimum": 1,
-              "title": "Limit",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "offset",
-            "required": false,
-            "schema": {
-              "default": 0,
-              "minimum": 0,
-              "title": "Offset",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProjectPage"
-                }
-              }
-            },
-            "description": "OK"
-          }
-        },
-        "summary": "Projects List",
-        "tags": [
-          "work"
-        ]
-      },
-      "post": {
-        "operationId": "work_api_project_create",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "company_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Company Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProjectInput"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProjectView"
-                }
-              }
-            },
-            "description": "OK"
-          }
-        },
-        "summary": "Project Create",
-        "tags": [
-          "work"
-        ]
-      }
-    },
-    "/api/companies/{company_id}/projects/{project_id}/update": {
-      "post": {
-        "operationId": "work_api_project_update",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "company_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Company Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProjectUpdate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProjectView"
-                }
-              }
-            },
-            "description": "OK"
-          }
-        },
-        "summary": "Project Update",
-        "tags": [
-          "work"
         ]
       }
     },

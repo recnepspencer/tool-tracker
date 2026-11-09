@@ -24,7 +24,7 @@ export const CAPABILITY_COPY: Record<string, { label: string; description: strin
   'jobs.read': { label: 'View jobs', description: 'See jobs and who is assigned' },
   'jobs.participate': { label: 'Join jobs', description: 'Join or leave jobs under the job rules' },
   'jobs.assign': { label: 'Assign people', description: 'Assign people to jobs' },
-  'jobs.manage': { label: 'Manage jobs', description: 'Create, edit, and archive jobs and projects' },
+  'jobs.manage': { label: 'Manage jobs', description: 'Create, edit, and archive jobs' },
   'jobs.manage_policy': { label: 'Set job rules', description: 'Choose how employees join and leave jobs' },
   'people.manage': { label: 'Administer people', description: 'Invite, suspend, and remove members' },
   'company.manage': { label: 'Manage company', description: 'Edit company details' },

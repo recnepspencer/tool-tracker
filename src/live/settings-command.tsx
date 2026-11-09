@@ -15,7 +15,6 @@ export function CommandForm({
   variant = 'primary',
   onCancel,
   className = 'admin-form',
-  errorAfter = false,
   noValidate,
   children,
 }: {
@@ -26,8 +25,6 @@ export function CommandForm({
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
   onCancel?: () => void;
   className?: string;
-  /** Render the error below the form, for inline rows such as `category-create`. */
-  errorAfter?: boolean;
   noValidate?: boolean;
   children: ReactNode;
 }) {
@@ -69,7 +66,7 @@ export function CommandForm({
         noValidate={noValidate}
       >
         {children}
-        {!errorAfter && feedback}
+        {feedback}
         {onCancel ? (
           <div className="dialog-actions">
             <Button type="button" variant="ghost" onClick={onCancel}>
@@ -81,7 +78,6 @@ export function CommandForm({
           submitButton
         )}
       </form>
-      {errorAfter && feedback}
     </FormDraftContext.Provider>
   );
 }

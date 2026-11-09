@@ -2,7 +2,7 @@ import { expect, type Browser, type Page } from '@playwright/test';
 import { command, invitedMember, workspace, chooseOption, test } from './support';
 
 for (const role of ['company_admin', 'dispatcher'])
-  test(`${role} manages project, roster responsibilities, archive and restore`, async ({ page, browser }) => {
+  test(`${role} adds a job, manages its people, archives and restores it`, async ({ page, browser }) => {
     const fixture = await workspace(page);
     const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
     const workerContext = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
@@ -14,96 +14,76 @@ for (const role of ['company_admin', 'dispatcher'])
       const custodyBefore = (await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}/custody`)).json())
         .items;
       await actor.goto('/app/jobs');
-      await actor.getByRole('button', { name: 'Add project', exact: true }).click();
-      let dialog = actor.getByRole('dialog', { name: 'Add project', exact: true });
-      await dialog.getByLabel('Project number').fill('P2');
-      await dialog.getByLabel('Project name').fill('Riverside');
-      await dialog.getByRole('button', { name: 'Add project', exact: true }).click();
-      await expect(dialog).toHaveCount(0);
       await actor.getByRole('button', { name: 'Add job', exact: true }).click();
-      dialog = actor.getByRole('dialog', { name: 'Add job', exact: true });
-      await chooseOption(dialog, 'Project', { label: 'Riverside' });
+      let dialog = actor.getByRole('dialog', { name: 'Add job', exact: true });
       await dialog.getByLabel('Job number').fill('J2');
       await dialog.getByLabel('Job name').fill('Riverside lighting');
       await dialog.getByRole('button', { name: 'Add job', exact: true }).click();
       await expect(dialog).toHaveCount(0);
-      await actor.getByRole('button', { name: 'Edit Riverside lighting', exact: true }).click();
-      dialog = actor.getByRole('dialog', { name: 'Edit job', exact: true });
+      await actor.getByRole('button', { name: 'Open Riverside lighting', exact: true }).click();
+      dialog = actor.getByRole('dialog', { name: 'Riverside lighting', exact: true });
       await dialog.getByLabel('Job name').fill('Riverside electrical');
-      await dialog.getByRole('button', { name: 'Save', exact: true }).click();
+      await dialog.getByRole('button', { name: 'Save job', exact: true }).click();
       await expect(dialog).toHaveCount(0);
       await actor.getByLabel('Search jobs').fill('Riverside electrical');
       await expect(actor).toHaveURL(/search=Riverside/);
       await actor.reload();
       await expect(actor.getByLabel('Search jobs')).toHaveValue('Riverside electrical');
-      await actor.getByRole('button', { name: 'View people on Riverside electrical', exact: true }).click();
-      const roster = actor.getByRole('dialog', { name: 'People on Riverside electrical', exact: true });
-      const assigning = roster.getByRole('region', { name: 'Assign a person', exact: true });
+      const open = actor.getByRole('button', { name: 'Open Riverside electrical', exact: true });
+      await open.click();
+      const job = actor.getByRole('dialog', { name: 'Riverside electrical', exact: true });
+      const people = job.getByRole('region', { name: 'People', exact: true });
+      const assigning = job.getByRole('region', { name: 'Assign a person', exact: true });
       const assign = async (responsibility: string, reason: string) => {
         await chooseOption(assigning, 'Person', member.id);
         await chooseOption(assigning, 'Responsibility', responsibility);
         await assigning.getByLabel('Reason', { exact: true }).fill(reason);
         await assigning.getByRole('button', { name: 'Assign', exact: true }).click();
         await expect(
-          roster.getByRole('article', { name: `Crew operator ${responsibility}`, exact: true }),
+          people.getByRole('article', { name: `Crew operator ${responsibility}`, exact: true }),
         ).toBeVisible();
       };
       for (const responsibility of ['crew', 'foreman', 'supervisor']) {
         await assign(responsibility, `Appointed as ${responsibility}`);
         // Changing responsibility closes the previous assignment, so only one stays current.
-        await expect(roster.getByRole('article')).toHaveCount(1);
+        await expect(people.getByRole('article')).toHaveCount(1);
       }
-      const supervisor = roster.getByRole('article', { name: 'Crew operator supervisor', exact: true });
+      const supervisor = people.getByRole('article', { name: 'Crew operator supervisor', exact: true });
       await supervisor.getByRole('button', { name: 'End Crew operator’s assignment', exact: true }).click();
       await supervisor.getByLabel('Reason', { exact: true }).fill('Supervisor work completed');
       await supervisor.getByRole('button', { name: 'End assignment', exact: true }).click();
-      await expect(roster.getByText('No one is on this job yet.')).toBeVisible();
+      await expect(people.getByText('No one is on this job yet.')).toBeVisible();
       await assign('crew', 'Crew work continues');
-      await chooseOption(roster, 'Assignments', 'history');
-      await expect(roster.getByRole('combobox', { name: 'Assignments', exact: true })).toHaveText('Assignment history');
-      await expect(roster.getByRole('article')).toHaveCount(4);
-      await expect(roster.getByText(/Supervisor work completed/)).toBeVisible();
+      await chooseOption(people, 'Assignments', 'history');
+      await expect(people.getByRole('combobox', { name: 'Assignments', exact: true })).toHaveText('Assignment history');
+      await expect(people.getByRole('article')).toHaveCount(4);
+      await expect(people.getByText(/Supervisor work completed/)).toBeVisible();
       await actor.screenshot({ path: `artifacts/jobs-roster-${role}.png`, fullPage: true });
       await actor.keyboard.press('Escape');
-      await expect(roster).toHaveCount(0);
-      await expect(
-        actor.getByRole('button', { name: 'View people on Riverside electrical', exact: true }),
-      ).toBeFocused();
-      const projectEdit = async (status: string) => {
-        await actor.getByRole('button', { name: 'Edit project Riverside', exact: true }).click();
-        const form = actor.getByRole('dialog', { name: 'Edit project', exact: true });
-        await chooseOption(form, 'Project status', status);
-        await form.getByRole('button', { name: 'Save', exact: true }).click();
-        return form;
-      };
-      dialog = await projectEdit('closed');
-      await expect(dialog.getByRole('alert')).toContainText('active jobs');
-      await expect(dialog.getByRole('button', { name: 'Load latest values' })).toHaveCount(0);
-      await actor.keyboard.press('Escape');
-      await actor.getByRole('button', { name: 'Archive Riverside electrical', exact: true }).click();
+      await expect(job).toHaveCount(0);
+      await expect(open).toBeFocused();
+
+      // Archiving asks first, then takes everyone off the job.
+      await open.click();
+      await job.getByRole('button', { name: 'Archive job', exact: true }).click();
       dialog = actor.getByRole('dialog', { name: 'Archive job', exact: true });
-      await expect(dialog.getByText(/Tool custody|tool custody/)).toBeVisible();
+      await expect(dialog.getByText(/tool custody/)).toBeVisible();
       await dialog.getByRole('button', { name: 'Archive job', exact: true }).click();
       await expect(dialog).toHaveCount(0);
-      await expect(actor.getByText('No jobs match your search.')).toBeVisible();
-      await expect(await projectEdit('closed')).toHaveCount(0);
-      const jobStatus = actor.getByRole('combobox', { name: 'Job status', exact: true });
-      await chooseOption(actor, 'Job status', 'archived');
-      await expect(jobStatus).toHaveText('Archived jobs');
-      // Restore runs straight from the row; a closed project refuses it with an inline error.
-      await actor.getByRole('button', { name: 'Restore Riverside electrical', exact: true }).click();
-      await expect(actor.getByRole('alert')).toContainText('Reopen the project');
-      await expect(await projectEdit('active')).toHaveCount(0);
-      await actor.getByRole('button', { name: 'Restore Riverside electrical', exact: true }).click();
-      await expect(actor.getByRole('button', { name: 'Restore Riverside electrical', exact: true })).toHaveCount(0);
-      await expect(actor.getByRole('alert')).toHaveCount(0);
-      await chooseOption(actor, 'Job status', 'active');
-      await expect(jobStatus).toHaveText('Active jobs');
-      await actor.getByRole('button', { name: 'View people on Riverside electrical', exact: true }).click();
-      await chooseOption(roster, 'Assignments', 'current');
-      await expect(roster.getByText('No one is on this job yet.')).toBeVisible();
-      await chooseOption(roster, 'Assignments', 'history');
-      await expect(roster.getByRole('article')).toHaveCount(4);
+      await expect(actor.getByText('No jobs match this search.')).toBeVisible();
+      expect((await (await page.request.get(`${fixture.base}/assignments`)).json()).items).toEqual([]);
+      const status = actor.getByRole('tablist', { name: 'Job status', exact: true });
+      await status.getByRole('tab', { name: 'Archived', exact: true }).click();
+      await expect(status.getByRole('tab', { name: 'Archived', exact: true })).toHaveAttribute('aria-selected', 'true');
+      await open.click();
+      await job.getByRole('button', { name: 'Restore job', exact: true }).click();
+      await expect(job).toHaveCount(0);
+      await expect(open).toHaveCount(0);
+      await status.getByRole('tab', { name: 'Active', exact: true }).click();
+      await open.click();
+      await expect(people.getByText('No one is on this job yet.')).toBeVisible();
+      await chooseOption(people, 'Assignments', 'history');
+      await expect(people.getByRole('article')).toHaveCount(4);
       expect(
         (await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}/custody`)).json()).items,
       ).toEqual(custodyBefore);
@@ -129,9 +109,13 @@ for (const role of ['company_admin', 'equipment_manager', 'field_member'])
       });
       const before = (await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}/custody`)).json()).items;
       await actor.goto('/app/jobs');
-      // Managers see the switch on the job row; field members get the "My jobs" switch list.
-      const membership = actor.getByRole('switch', { name: 'Library wiring', exact: true });
-      const onJob = actor.getByText(/^On this job$|You're on this job$/);
+      // Managers find the switch on the job's page; field members get the "My jobs" switch list.
+      if (role === 'company_admin')
+        await actor.getByRole('button', { name: 'Open Library wiring', exact: true }).click();
+      const scope =
+        role === 'company_admin' ? actor.getByRole('dialog', { name: 'Library wiring', exact: true }) : actor;
+      const membership = scope.getByRole('switch', { name: 'Library wiring', exact: true });
+      const onJob = scope.getByText(/^On this job$/);
       if (role === 'company_admin')
         await actor.route(
           `**${fixture.base}/jobs/${fixture.job.id}/participation`,
@@ -344,8 +328,8 @@ for (const role of ['company_admin', 'dispatcher']) {
       await request('Leave');
       await decision(worker, memberName, 'withdraw', 'Leave withdrawn by employee');
       await request('Leave');
-      await reviewer.getByRole('button', { name: 'View people on Library wiring', exact: true }).click();
-      const roster = reviewer.getByRole('dialog', { name: 'People on Library wiring', exact: true });
+      await reviewer.getByRole('button', { name: 'Open Library wiring', exact: true }).click();
+      const roster = reviewer.getByRole('dialog', { name: 'Library wiring', exact: true });
       const assigning = roster.getByRole('region', { name: 'Assign a person', exact: true });
       await chooseOption(assigning, 'Person', member.id);
       await chooseOption(assigning, 'Responsibility', 'foreman');
