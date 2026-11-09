@@ -5,6 +5,8 @@ import './Field.css';
 export interface FieldShellProps {
   label: string;
   hint?: string;
+  /** A small link on the label row, such as "Forgot password?"; it never changes the field's height. */
+  action?: ReactNode;
   htmlFor: string;
   hideLabel?: boolean;
   focused?: boolean;
@@ -18,6 +20,7 @@ export interface FieldShellProps {
 export function Field({
   label,
   hint,
+  action,
   htmlFor,
   hideLabel = false,
   focused = false,
@@ -44,6 +47,7 @@ export function Field({
         </label>
         {hint ? <span className="field-hint">{hint}</span> : null}
       </div>
+      {action ? <div className="field-action">{action}</div> : null}
       {children}
     </div>
   );

@@ -32,23 +32,18 @@ export function Login() {
   const { navigate, session, loading, refresh, error, next } = useLoginState();
   if (loading)
     return (
-      <AuthLayout eyebrow="Welcome back" title="Signing in" description="Checking your session.">
+      <AuthLayout title="Signing in" description="Checking your session.">
         <LoadingState label="Checking your session…" />
       </AuthLayout>
     );
   if (session) return <Navigate to={next} replace />;
   return (
     <AuthLayout
-      eyebrow="Welcome back"
       title="Sign in"
-      description="Use your work email to continue."
       footer={
-        <>
-          <Link to={`/forgot-password?next=${encodeURIComponent(next)}`}>Forgot password?</Link>
-          <span>
-            Don’t have an account? <Link to={`/signup?next=${encodeURIComponent(next)}`}>Create an account</Link>
-          </span>
-        </>
+        <span>
+          New to Tool Tracker? <Link to={`/signup?next=${encodeURIComponent(next)}`}>Create an account</Link>
+        </span>
       }
     >
       {error && <ErrorState message="Unable to check your session. Check your connection and try again." />}
@@ -68,7 +63,11 @@ export function Login() {
         }}
       >
         <Field label="Email address" name="email" type="email" autoComplete="username" required />
-        <PasswordInput label="Password" name="password" />
+        <PasswordInput
+          label="Password"
+          name="password"
+          action={<Link to={`/forgot-password?next=${encodeURIComponent(next)}`}>Forgot password?</Link>}
+        />
       </AccountForm>
     </AuthLayout>
   );
@@ -86,7 +85,6 @@ export function Signup() {
   );
   return (
     <AuthLayout
-      eyebrow="New account"
       title="Create an account"
       description="Are you joining a team that already uses Tool Tracker, or starting one for your company?"
       footer={signIn}
@@ -113,7 +111,6 @@ function withPath(next: string, path: 'team' | 'company') {
 function FindInvitation({ sent, setSent, draft, setDraft, next, findInvitation }: SignupState) {
   return (
     <AuthLayout
-      eyebrow="Joining a team"
       title={sent ? 'Check your email' : 'Find your invitation'}
       description={
         sent
@@ -174,7 +171,6 @@ function SignupForm(state: SignupState) {
   const { sent, setSent, draft, setDraft, logo, setLogo, next, invitation, send } = state;
   return (
     <AuthLayout
-      eyebrow={sent ? 'Verify your email' : invitation ? 'New account' : 'Starting a company'}
       title={sent ? 'Check your email' : invitation ? 'Create your account' : 'Set up your company'}
       description={
         sent
@@ -280,7 +276,6 @@ export function VerifyEmail() {
   const { search, refresh, navigate, invalid, setInvalid, invite, next, signupUrl } = useVerifyEmailState();
   return (
     <AuthLayout
-      eyebrow="Verify your email"
       title={invalid ? 'Verification link unavailable' : 'Choose your password'}
       description={
         invalid ? 'This link is missing, expired, or already used.' : 'Finish creating your Tool Tracker account.'
@@ -329,7 +324,6 @@ export function Recovery() {
   const { sent, setSent, email, setEmail, next, send } = useRecoveryState();
   return (
     <AuthLayout
-      eyebrow="Account recovery"
       title={sent ? 'Check your email' : 'Reset your password'}
       description={
         sent ? 'Follow the link to get back to your account.' : 'Enter your work email to receive a reset link.'
@@ -359,7 +353,6 @@ export function ResetPassword() {
   const { done, setDone, refresh, email, token, missing, recoveryUrl } = useResetPasswordState();
   return (
     <AuthLayout
-      eyebrow="Account recovery"
       title={done ? 'Password updated' : missing ? 'Reset link unavailable' : 'Set a new password'}
       description={
         done
@@ -438,7 +431,7 @@ export function CompanySetup() {
   const pending = signup?.pending;
   if (loading)
     return (
-      <AuthLayout eyebrow="Workspace setup" title="Your workspace" description="Checking your account.">
+      <AuthLayout title="Your workspace" description="Checking your account.">
         <LoadingState label="Checking your account…" />
       </AuthLayout>
     );
@@ -447,7 +440,6 @@ export function CompanySetup() {
     return <Navigate to="/app" replace />;
   return (
     <AuthLayout
-      eyebrow="Workspace setup"
       title="Your company workspace"
       description={
         pending
@@ -575,11 +567,7 @@ export function Invitation() {
   } = useInvitationState();
   if (accepted)
     return (
-      <AuthLayout
-        eyebrow="Invitation"
-        title="Invitation accepted"
-        description={`Your access to ${accepted.name} is ready.`}
-      >
+      <AuthLayout title="Invitation accepted" description={`Your access to ${accepted.name} is ready.`}>
         <AccountForm
           label="Open workspace"
           pendingLabel="Opening workspace…"
@@ -595,7 +583,6 @@ export function Invitation() {
     );
   return (
     <AuthLayout
-      eyebrow="Invitation"
       title={unavailable ? 'Invitation unavailable' : data?.owner ? 'Take ownership' : 'Join your team'}
       description={
         unavailable
