@@ -1,34 +1,44 @@
 .experience .admin-settings-page {
   max-width: calc(var(--space-760) + (var(--pad-page-x) * 2));
 }
-.experience .settings-grid {
-  display: grid;
-  gap: var(--space-14);
-  grid-template-columns: 1fr;
+.experience .admin-settings-page > .page-section {
   max-width: var(--space-720);
 }
+/* A settings section is its title, then one group of rows, then its save button: no card around it. */
 .experience .settings-card {
-  padding: var(--space-20);
-}
-.experience .settings-card--danger {
-  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
-}
-.experience .settings-card-heading {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: var(--space-12);
-}
-.experience .settings-fields {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
   display: grid;
-  gap: var(--space-9);
-  margin-bottom: var(--space-12);
+  gap: var(--gap-group);
+  padding: 0;
+}
+.experience .settings-card form {
+  display: grid;
+  gap: var(--gap-group);
+}
+.experience .settings-card form > .button {
+  justify-self: start;
+}
+/* A lone switch or a read-only list is a group of its own. */
+.experience .settings-card > .switch,
+.experience .settings-card > .admin-detail-list {
+  justify-self: stretch;
+  width: auto;
+  background: var(--group-bg);
+  border: 0;
+  border-radius: var(--radius-group);
+  margin-top: 0;
+  padding: var(--space-12) var(--space-16);
 }
 .experience .settings-muted {
   color: var(--muted);
+  margin: 0;
 }
-@media (max-width: 44rem) {
-  .experience .settings-card {
-    padding: var(--space-16);
+@media (max-width: 620px) {
+  .experience .settings-card > .switch,
+  .experience .settings-card > .admin-detail-list {
+    border-radius: 0;
+    margin-inline: calc(var(--space-16) * -1);
   }
 }

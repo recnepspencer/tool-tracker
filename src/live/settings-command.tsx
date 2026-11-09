@@ -1,6 +1,6 @@
-import { useId, useRef, type ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { useCommandForm } from './command-state';
-import { Button, FormDraftContext, cx } from './kit';
+import { Button, FormDraftContext, Section, SurfaceCard, cx } from './kit';
 
 /**
  * A FormData command form in the demo's admin markup: fields, an inline
@@ -82,26 +82,22 @@ export function CommandForm({
   );
 }
 
-/** The demo's `settings-card`: a surface card named by its eyebrow heading. */
+/** One group of settings: a titled section of the page whose controls sit in a single card. */
 export function SettingsCard({
-  eyebrow,
+  title,
+  description,
   className,
   children,
 }: {
-  eyebrow: string;
+  title: string;
+  description: string;
   className?: string;
   children: ReactNode;
 }) {
-  const id = useId();
   return (
-    <section className={cx('surface-card settings-card', className)} aria-labelledby={id}>
-      <div className="settings-card-heading">
-        <span className="eyebrow" id={id}>
-          {eyebrow}
-        </span>
-      </div>
-      {children}
-    </section>
+    <Section title={title} description={description}>
+      <SurfaceCard className={cx('settings-card', className)}>{children}</SurfaceCard>
+    </Section>
   );
 }
 

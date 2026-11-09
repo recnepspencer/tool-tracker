@@ -40,9 +40,9 @@
   padding: 0 var(--space-12);
 }
 .experience .install-bar button:first-child {
-  background: linear-gradient(180deg, var(--primary-from), var(--primary-to));
+  background: var(--accent-fill);
   border-color: transparent;
-  color: var(--on-accent);
+  color: var(--on-accent-fill);
 }
 .experience .install-bar button[aria-label] {
   border-color: transparent;

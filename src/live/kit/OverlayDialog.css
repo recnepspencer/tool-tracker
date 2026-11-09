@@ -40,3 +40,46 @@
   height: var(--space-18);
   width: var(--space-18);
 }
+
+.overlay-close__back {
+  display: none;
+}
+@media (max-width: 620px) {
+  /* Records open as full pages on phones; the attribute outranks each panel's own sheet styles. */
+  .experience .overlay-panel.overlay-panel--page[role='dialog'] {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    height: 100dvh;
+    inset: 0;
+    margin: 0;
+    max-height: 100dvh;
+    max-width: 100vw;
+    overflow-y: auto;
+    padding-top: calc(env(safe-area-inset-top) + var(--space-64));
+    position: fixed;
+    width: 100vw;
+  }
+  /* A page that brings its own header needs no room for the back arrow. */
+  .experience .overlay-panel.overlay-panel--page[role='dialog']:not(:has(> .overlay-close)) {
+    padding-top: env(safe-area-inset-top);
+  }
+  .experience .overlay-panel--page .worker-sheet-handle {
+    display: none;
+  }
+  .experience .overlay-panel--page > .overlay-close {
+    background: none;
+    border: 0;
+    left: var(--space-8);
+    right: auto;
+    top: calc(env(safe-area-inset-top) + var(--space-10));
+  }
+  .experience .overlay-panel--page > .overlay-close .overlay-close__x {
+    display: none;
+  }
+  .experience .overlay-panel--page > .overlay-close .overlay-close__back {
+    display: block;
+    height: var(--space-24);
+    width: var(--space-24);
+  }
+}

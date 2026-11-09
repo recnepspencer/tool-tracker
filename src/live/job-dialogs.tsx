@@ -1,4 +1,4 @@
-import { api, type Model } from './client';
+import { api, errorMessage, type Model } from './client';
 import { JobParticipation } from './job-participation';
 import { JobPeople } from './job-roster';
 import type { JobsState, ParticipationState } from './jobs-state';
@@ -22,9 +22,14 @@ export function JobDialog({
   const manages = c.can('jobs.manage');
   const close = () => state.select('');
   return (
-    <OverlayDialog label={job ? job.name : 'Add job'} onClose={close} panelClassName="admin-dialog" showCloseButton>
+    <OverlayDialog
+      label={job ? job.name : 'Add job'}
+      onClose={close}
+      panelClassName="admin-dialog"
+      showCloseButton
+      page={!!job}
+    >
       <div className="dialog-heading">
-        <span className="eyebrow">Jobs</span>
         <h2>{job ? (manages ? 'Edit job' : job.name) : 'Add a job'}</h2>
         {job && <p>{job.number}</p>}
       </div>
@@ -55,6 +60,11 @@ export function JobDialog({
         </CommandForm>
       )}
       {job && <JobParticipation state={state} participation={participation} job={job} />}
+      {job && participation.direct.error && (
+        <p className="form-error" role="alert">
+          {errorMessage(participation.direct.error)}
+        </p>
+      )}
       {job && <JobPeople state={state} job={job} onClose={close} />}
       {job && manages && (
         <div className="admin-danger-zone">

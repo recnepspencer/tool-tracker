@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import { cx } from './cx';
 import './Field.css';
 
@@ -30,13 +30,26 @@ export function Field({
   className,
   children,
 }: FieldShellProps) {
+  // The whole box is the target: a press on its padding or label row reaches the control.
+  // Portalled children (a select's popover) bubble here too, so only presses inside the box count.
+  function reachControl(event: MouseEvent<HTMLDivElement>) {
+    const target = event.target as Element;
+    if (!event.currentTarget.contains(target) || target.closest('a, button, input, select, textarea, label')) return;
+    const control = document.getElementById(htmlFor);
+    if (!control) return;
+    event.preventDefault();
+    if (control instanceof HTMLButtonElement) control.click();
+    else control.focus();
+  }
   return (
     <div
+      onMouseDown={reachControl}
       className={cx(
         'field',
         focused && 'field--focused',
         disabled && 'field--disabled',
         compact && 'field--compact',
+        hideLabel && 'field--bare',
         search && 'field--search',
         className,
       )}

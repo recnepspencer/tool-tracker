@@ -4,7 +4,24 @@ import type { ActivityRow, AuditKindFilter } from './activity-state';
 import { initials } from './format';
 import { SurfaceCard } from './kit';
 
-const groupFormat = new Intl.DateTimeFormat(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+const groupFormat = new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+const relativeDay = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+
+/** "Today", "Yesterday", then the date, as a phone's lists label their days. */
+function dayLabel(value: string | Date) {
+  const day = new Date(value);
+  const today = new Date();
+  const days = Math.round(
+    (new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime() -
+      new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime()) /
+      86_400_000,
+  );
+  if (days === 0 || days === 1) {
+    const label = relativeDay.format(-days, 'day');
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+  return groupFormat.format(day);
+}
 const timeFormat = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
 
 const kindChips: ReadonlyArray<readonly [AuditKindFilter, string]> = [
@@ -59,7 +76,7 @@ export function AuditLog({ rows }: { rows: ActivityRow[] }) {
   const location = useLocation();
   const groups = groupByDay(
     rows.map((row) => ({ ...row, occurred_at: row.occurredAt })),
-    (value) => groupFormat.format(new Date(value)),
+    dayLabel,
   );
   return (
     <SurfaceCard className="audit-card">

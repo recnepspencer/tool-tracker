@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, result } from './client';
-import { Button, OverlayDialog, TextField } from './kit';
+import { Button, FieldGroup, OverlayDialog, TextField } from './kit';
 import { ROLES, ROLE_LABELS, type RoleCode } from './people-roles';
 import { useCompany } from './session';
 import { CommandForm } from './settings-command';
@@ -66,15 +66,17 @@ export function InvitePersonDialog({ onClose }: { onClose(): void }) {
             setCreated({ name, token: invitation.token });
           }}
         >
-          <Field label="Name" name="name" required maxLength={120} />
-          <Field label="Email address" name="email" type="email" placeholder="name@company.com" required />
-          <Select label="Role" name="role" defaultValue="field_member" searchable={false}>
-            {ROLES.map((role) => (
-              <option key={role} value={role}>
-                {ROLE_LABELS[role]}
-              </option>
-            ))}
-          </Select>
+          <FieldGroup>
+            <Field label="Name" name="name" required maxLength={120} />
+            <Field label="Email address" name="email" type="email" placeholder="name@company.com" required />
+            <Select label="Role" name="role" defaultValue="field_member" searchable={false}>
+              {ROLES.map((role) => (
+                <option key={role} value={role}>
+                  {ROLE_LABELS[role]}
+                </option>
+              ))}
+            </Select>
+          </FieldGroup>
         </CommandForm>
       )}
     </OverlayDialog>

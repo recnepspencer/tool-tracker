@@ -138,7 +138,8 @@
   cursor: pointer;
   display: inline-flex;
   flex: none;
-  height: var(--space-32);
+  /* 24px tall: the smallest comfortable target that stays clear of a link on the label row. */
+  height: var(--space-24);
   justify-content: center;
   width: var(--space-32);
 }
@@ -199,12 +200,6 @@
 .experience .auth-workspaces {
   display: grid;
   gap: var(--space-10);
-}
-.experience .auth-panel a.button {
-  align-items: center;
-  display: inline-flex;
-  justify-content: center;
-  text-decoration: none;
 }
 .experience .auth-logo-field {
   align-items: center;

@@ -1,7 +1,7 @@
 import { errorMessage, type Model } from './client';
 import { ArchiveJobDialog, JobDialog } from './job-dialogs';
 import { JobParticipation, ParticipationDialog } from './job-participation';
-import { JobRequests } from './job-requests';
+import { JobRequests, RequestHistoryLink } from './job-requests';
 import {
   useJobsPageState,
   useParticipation,
@@ -9,14 +9,17 @@ import {
   type JobsState,
   type ParticipationState,
 } from './jobs-state';
-import { Button, DirectoryToolbar, ErrorState, LoadingState, PageHeading, SurfaceCard, TextField } from './kit';
-
-type JobTab = 'active' | 'archived';
-
-const JOB_TABS: { value: JobTab; label: string }[] = [
-  { value: 'active', label: 'Active' },
-  { value: 'archived', label: 'Archived' },
-];
+import {
+  ArchivableList,
+  Button,
+  DirectoryToolbar,
+  ErrorState,
+  LoadingState,
+  PageHeading,
+  RecordList,
+  SurfaceCard,
+  TextField,
+} from './kit';
 
 export function JobsPage() {
   const state = useJobsPageState();
@@ -89,7 +92,7 @@ function MyJobs({ state, participation }: { state: JobsState; participation: Par
   );
 }
 
-/** Jobs as the Warehouses page lays them out: search, Active or Archived, and one dialog per job. */
+/** Jobs as the Warehouses page lays them out: search, one row per job, and archived jobs one tap away. */
 function JobDirectory({ state, participation }: { state: JobsState; participation: ParticipationState }) {
   const review = useRequestReview();
   const { c, jobs, visible = [], archived, selected, creating } = state;
@@ -112,67 +115,38 @@ function JobDirectory({ state, participation }: { state: JobsState; participatio
             : 'Jobs and the people on them.'
         }
         action={manages ? <Button onClick={() => state.select('new')}>Add job</Button> : undefined}
-      />
+      >
+        {c.can('jobs.assign') && <RequestHistoryLink state={state} />}
+      </PageHeading>
       {jobs.isError && <ErrorState message="Jobs could not be refreshed." onRetry={() => void jobs.refetch()} />}
       {c.can('jobs.assign') && <JobRequests state={state} review={review} />}
-      <DirectoryToolbar<JobTab>
+      <DirectoryToolbar
         searchLabel="Search jobs"
         searchPlaceholder="Search jobs…"
         search={state.search}
         onSearchChange={state.setSearch}
-        filterLabel="Job status"
-        filters={JOB_TABS}
-        activeFilter={archived ? 'archived' : 'active'}
-        onFilterChange={(value) => state.setArchived(value === 'archived')}
       />
-      <SurfaceCard className="admin-table-card">
-        <div className="admin-table-wrap">
-          <table className="admin-table admin-table--responsive directory-table">
-            <thead>
-              <tr>
-                <th>Job</th>
-                <th>Status</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map((job) => (
-                <tr key={job.id}>
-                  <td data-label="Job">
-                    <button className="admin-record-button" type="button" onClick={() => state.select(job.id)}>
-                      {job.name}
-                    </button>
-                    <span>{jobSummary(state, job)}</span>
-                  </td>
-                  <td className="directory-table__status" data-label="Status">
-                    {job.archived_at ? (
-                      <span className="lifecycle-pill lifecycle-pill--removed">Archived</span>
-                    ) : (
-                      <span className="lifecycle-pill lifecycle-pill--active">Active</span>
-                    )}
-                  </td>
-                  <td className="directory-table__actions" data-label="Actions">
-                    <Button variant="ghost" onClick={() => state.select(job.id)} aria-label={`Open ${job.name}`}>
-                      Open
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {!visible.length && (
-          <p className="admin-empty">
-            {jobs.data.length
+      <ArchivableList archived={archived} noun="jobs" onArchivedChange={state.setArchived}>
+        <RecordList
+          label={archived ? 'Archived jobs' : 'Jobs'}
+          items={visible.map((job) => ({
+            id: job.id,
+            title: job.name,
+            detail: jobSummary(state, job),
+            label: `Open ${job.name}`,
+          }))}
+          empty={
+            jobs.data.length
               ? 'No jobs match this search.'
               : archived
                 ? 'No archived jobs.'
                 : manages
                   ? 'No jobs yet. Add one to start assigning people.'
-                  : 'No active jobs yet.'}
-          </p>
-        )}
-      </SurfaceCard>
+                  : 'No active jobs yet.'
+          }
+          onSelect={state.select}
+        />
+      </ArchivableList>
       {manages && creating && <JobDialog state={state} participation={participation} />}
       {selected && !state.confirmingArchive && (
         <JobDialog key={selected.id} job={selected} state={state} participation={participation} />

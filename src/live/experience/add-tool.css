@@ -393,13 +393,10 @@
   z-index: var(--z-4);
 }
 .experience .worker-primary-button {
-  background: linear-gradient(180deg, var(--primary-from), var(--primary-to));
+  background: var(--accent-fill);
   border: 0;
-  border-radius: var(--space-999);
-  box-shadow:
-    0 0 var(--space-40) var(--blue-glow-cta),
-    inset 0 var(--space-1) 0 var(--white-highlight);
-  color: var(--on-accent);
+  border-radius: var(--radius-button);
+  color: var(--on-accent-fill);
   cursor: pointer;
   font: 500 var(--space-16)/1 var(--font-sans);
   height: var(--space-56);

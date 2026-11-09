@@ -72,14 +72,13 @@ for (const role of ['company_admin', 'dispatcher'])
       await expect(dialog).toHaveCount(0);
       await expect(actor.getByText('No jobs match this search.')).toBeVisible();
       expect((await (await page.request.get(`${fixture.base}/assignments`)).json()).items).toEqual([]);
-      const status = actor.getByRole('tablist', { name: 'Job status', exact: true });
-      await status.getByRole('tab', { name: 'Archived', exact: true }).click();
-      await expect(status.getByRole('tab', { name: 'Archived', exact: true })).toHaveAttribute('aria-selected', 'true');
+      await actor.getByRole('button', { name: 'Show archived jobs', exact: true }).click();
+      await expect(actor).toHaveURL(/archived=true/);
       await open.click();
       await job.getByRole('button', { name: 'Restore job', exact: true }).click();
       await expect(job).toHaveCount(0);
       await expect(open).toHaveCount(0);
-      await status.getByRole('tab', { name: 'Active', exact: true }).click();
+      await actor.getByRole('button', { name: 'Show active jobs', exact: true }).click();
       await open.click();
       await expect(people.getByText('No one is on this job yet.')).toBeVisible();
       await chooseOption(people, 'Assignments', 'history');
@@ -179,7 +178,8 @@ async function decision(actor: Page, member: string, action: 'approve' | 'reject
   await dialog.getByLabel('Decision note').fill(note);
   await dialog.getByRole('button', { name: action === 'approve' ? 'Approve' : 'Reject', exact: true }).click();
   await expect(dialog).toHaveCount(0);
-  await expect(section.getByText('No one is waiting on a decision.')).toBeVisible();
+  // The requests box only shows while someone is waiting.
+  await expect(section).toHaveCount(0);
 }
 
 test('field job controls follow independent joining and leaving rules', async ({ page, browser }) => {
@@ -269,9 +269,8 @@ async function participationScenario(page: Page, browser: Browser, role: string)
     await reviewer.goto('/app/jobs');
   };
   const history = async () => {
-    const filter = reviewer.getByRole('tablist', { name: 'Request filter', exact: true });
-    await filter.getByRole('tab', { name: /^History/ }).click();
-    await expect(filter.getByRole('tab', { name: /^History/ })).toHaveAttribute('aria-selected', 'true');
+    await reviewer.getByRole('button', { name: 'Request history', exact: true }).click();
+    await expect(reviewer.getByRole('heading', { name: 'Request history', exact: true })).toBeVisible();
   };
   return {
     fixture,

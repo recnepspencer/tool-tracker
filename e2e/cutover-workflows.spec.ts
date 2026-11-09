@@ -77,7 +77,7 @@ test('company profile and warehouse dialogs persist changes and recover stale dr
   await create.getByLabel('Address', { exact: true }).fill('77 East Road');
   await create.getByRole('button', { name: 'Save warehouse', exact: true }).click();
   await expect(create).toHaveCount(0);
-  await page.getByRole('button', { name: 'East warehouse', exact: true }).click();
+  await page.getByRole('button', { name: 'Open East warehouse', exact: true }).click();
   const warehouse = page.getByRole('dialog', { name: 'Edit warehouse', exact: true });
   await expect(warehouse).toBeVisible();
   await expect(warehouse.getByLabel('Address', { exact: true })).toHaveValue('77 East Road');
@@ -85,7 +85,6 @@ test('company profile and warehouse dialogs persist changes and recover stale dr
   // Archiving is its own confirmation step rather than a checkbox in the edit form.
   await warehouse.getByRole('button', { name: 'Archive warehouse', exact: true }).click();
   const confirm = page.getByRole('dialog', { name: 'Archive warehouse', exact: true });
-  const statusTabs = page.getByRole('tablist', { name: 'Warehouse status', exact: true });
   let releaseRead!: () => void;
   let readStarted!: () => void;
   const slowRead = new Promise<void>((resolve) => {
@@ -94,8 +93,9 @@ test('company profile and warehouse dialogs persist changes and recover stale dr
   const started = new Promise<void>((resolve) => {
     readStarted = resolve;
   });
+  // Archiving refreshes the warehouse list this page is showing.
   await page.route(
-    `**${fixture.base}/tool-registration-policy`,
+    (url) => url.pathname === `${fixture.base}/warehouses`,
     async (route) => {
       const response = await route.fetch();
       readStarted();
@@ -112,22 +112,18 @@ test('company profile and warehouse dialogs persist changes and recover stale dr
     // Saving and closing must finish before a slow background read; the next
     // user's navigation must not be replaced by a delayed close callback.
     await expect(page).toHaveURL(/\/app\/warehouses$/);
-    await statusTabs.getByRole('tab', { name: 'Archived', exact: true }).click();
-    await expect(statusTabs.getByRole('tab', { name: 'Archived', exact: true })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
+    await page.getByRole('button', { name: 'Show archived warehouses', exact: true }).click();
+    await expect(page.getByText('Archived warehouses', { exact: true })).toBeVisible();
   } finally {
     releaseRead();
   }
-  await page.getByRole('button', { name: 'East warehouse', exact: true }).click();
+  await page.getByRole('button', { name: 'Open East warehouse', exact: true }).click();
   await warehouse.getByRole('button', { name: 'Restore warehouse', exact: true }).click();
   await expect(warehouse).toHaveCount(0);
   await expect(page.getByText('No archived warehouses.', { exact: true })).toBeVisible();
-  await statusTabs.getByRole('tab', { name: 'Active', exact: true }).click();
-  await expect(statusTabs.getByRole('tab', { name: 'Active', exact: true })).toHaveAttribute('aria-selected', 'true');
-  await expect(page.getByRole('button', { name: 'East warehouse', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Main warehouse', exact: true }).click();
+  await page.getByRole('button', { name: 'Show active warehouses', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Open East warehouse', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Open Main warehouse', exact: true }).click();
   await warehouse.getByRole('button', { name: 'Archive warehouse', exact: true }).click();
   await confirm.getByRole('button', { name: 'Archive warehouse', exact: true }).click();
   await expect(confirm.getByRole('alert')).toContainText('Resolve warehouse custody');
@@ -141,7 +137,7 @@ test('company profile and warehouse dialogs persist changes and recover stale dr
 test('closing a saving sheet does not navigate back when its committed response arrives', async ({ page }) => {
   const fixture = await workspace(page);
   await page.goto('/app/warehouses');
-  await page.getByRole('button', { name: 'Main warehouse', exact: true }).click();
+  await page.getByRole('button', { name: 'Open Main warehouse', exact: true }).click();
   const sheet = page.getByRole('dialog', { name: 'Edit warehouse', exact: true });
   await sheet.getByLabel('Name', { exact: true }).fill('Updated main warehouse');
   let releaseResponse!: () => void;

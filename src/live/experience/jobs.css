@@ -60,7 +60,6 @@
 }
 .experience .job-selection {
   display: grid;
-  margin-top: var(--space-16);
   padding: var(--space-8) var(--space-16);
 }
 .experience .job-selection > .switch {
@@ -75,7 +74,6 @@
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   align-items: end;
   gap: var(--space-12);
-  margin-bottom: var(--space-16);
 }
 .experience .foremen-list {
   display: grid;

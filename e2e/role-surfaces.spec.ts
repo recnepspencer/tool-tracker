@@ -90,7 +90,7 @@ for (const item of cases)
           await expect(actor.getByText('Loading…', { exact: true })).toHaveCount(0);
           await expect(actor.getByRole('alert')).toHaveCount(0);
           if (url === '/app/warehouses' && !item.people) {
-            await actor.getByRole('button', { name: 'Main warehouse', exact: true }).click();
+            await actor.getByRole('button', { name: 'Open Main warehouse', exact: true }).click();
             const warehouse = actor.getByRole('dialog', { name: 'Edit warehouse', exact: true });
             await expect(warehouse).toBeVisible();
             await expect(warehouse.getByRole('group', { name: 'Managers', exact: true })).toHaveCount(0);
@@ -121,30 +121,34 @@ for (const item of cases)
       }
       await actor.setViewportSize({ width: 390, height: 844 });
       await actor.goto('/app');
-      // /app redirects to the role's home once the session loads; that navigation closes an open drawer.
+      // /app redirects to the role's home once the session loads; that navigation closes an open sheet.
       await expect(actor.getByRole('heading', { level: 1, name: item.home, exact: true })).toBeVisible();
-      await actor.getByRole('button', { name: 'Open navigation', exact: true }).click();
-      const nav = actor.getByRole('dialog', { name: 'Navigation' });
-      await expect(nav).toBeVisible();
-      await expect(nav.getByRole('link', { name: 'People', exact: true })).toHaveCount(item.people ? 1 : 0);
-      await expect(nav.getByRole('link', { name: 'Warehouses', exact: true })).toHaveCount(item.catalog ? 1 : 0);
-      const appearance = nav.getByRole('switch', { name: 'Appearance', exact: true });
+      const tabs = actor.getByRole('navigation', { name: 'Main', exact: true });
+      await expect(tabs).toBeVisible();
+      // Menu, the last tab, names every page the role can reach, and holds the account.
+      const menuTab = tabs.getByRole('button', { name: 'Menu', exact: true });
+      const menu = actor.getByRole('dialog', { name: 'Menu', exact: true });
+      await menuTab.click();
+      const pages = menu.getByRole('navigation', { name: 'Pages', exact: true });
+      await expect(pages.getByRole('link', { name: 'People', exact: true })).toHaveCount(item.people ? 1 : 0);
+      await expect(pages.getByRole('link', { name: 'Warehouses', exact: true })).toHaveCount(item.catalog ? 1 : 0);
+      const appearance = actor.getByRole('switch', { name: 'Appearance', exact: true });
       await expect(appearance).not.toBeChecked();
       await appearance.click();
       await expect(appearance).toBeChecked();
       await expect(actor.locator('.experience')).toHaveAttribute('data-theme', 'light');
       await actor.keyboard.press('Escape');
-      await expect(nav).toHaveCount(0);
+      await expect(menu).toHaveCount(0);
       await actor.reload();
       await expect(actor.locator('.experience')).toHaveAttribute('data-theme', 'light');
       await expect(actor.locator('.experience')).toHaveCSS('background-color', 'rgb(244, 247, 251)');
       await expect(actor.getByRole('heading', { level: 1, name: item.home, exact: true })).toBeVisible();
-      await actor.getByRole('button', { name: 'Open navigation', exact: true }).click();
+      await menuTab.click();
       await expect(appearance).toBeChecked();
       await appearance.click();
       await expect(appearance).not.toBeChecked();
       await actor.keyboard.press('Escape');
-      await expect(nav).toHaveCount(0);
+      await expect(menu).toHaveCount(0);
       await actor.reload();
       await expect(actor.locator('.experience')).toHaveAttribute('data-theme', 'dark');
       await expect(actor.locator('.experience')).toHaveCSS('background-color', 'rgb(6, 8, 12)');

@@ -11,6 +11,7 @@ import {
 import { formatStamp } from './format';
 import { ResolveCaseDialog } from './reconciliation-dialog';
 import { caseKindLabels, useReconciliationsPage, type CaseFilter } from './reconciliation-state';
+import { BackLink } from './related-links';
 import { assetLabel, photoSrc, toolStatus } from './tool-status';
 
 const filters: { value: CaseFilter; label: string }[] = [
@@ -28,8 +29,8 @@ export function ReconciliationsPage() {
     return <ErrorState message="Reconciliation cases could not be loaded." onRetry={() => void page.cases.refetch()} />;
   return (
     <div className="page-content admin-operations-page">
+      <BackLink to="/app/operations">Queue</BackLink>
       <PageHeading
-        eyebrow="Warehouse operations"
         title="Reconciliation"
         description="Resolve custody discrepancies with a reasoned record. Open a case from an individual tool."
       />

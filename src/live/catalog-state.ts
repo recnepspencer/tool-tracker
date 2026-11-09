@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { api, result, type Model } from './client';
 import { collect } from './data';
 import { useListLocation } from './list-location';
@@ -20,6 +21,31 @@ export function useCatalogPageState() {
   const categoryParam = params.get('edit-category') ?? '';
   const categories = useCategoryOptions();
   const archive = useCommand();
+  // Archiving happens at once; the toast offers to put it back with the revision the server returned.
+  const [undo, setUndo] = useState<{ id: number; message: string; revert(): Promise<unknown> } | null>(null);
+  const offerUndo = (message: string, revert: () => Promise<unknown>) =>
+    setUndo((current) => ({ id: (current?.id ?? 0) + 1, message, revert }));
+  const saveModel = (model: ToolModel, value: boolean) =>
+    api
+      .POST('/api/companies/{company_id}/tool-models/{model_id}/update', {
+        params: { path: { ...c.path, model_id: model.id } },
+        body: {
+          expected_revision: model.revision,
+          category_id: model.category_id,
+          name: model.name,
+          manufacturer: model.manufacturer,
+          model_number: model.model_number,
+          archived: value,
+        },
+      })
+      .then(result);
+  const saveCategory = (item: Category, value: boolean) =>
+    api
+      .POST('/api/companies/{company_id}/tool-categories/{category_id}/update', {
+        params: { path: { ...c.path, category_id: item.id } },
+        body: { expected_revision: item.revision, name: item.name, archived: value },
+      })
+      .then(result);
   const models = useQuery({
     queryKey: [c.company_id, 'models', archived],
     queryFn: () =>
@@ -66,11 +92,10 @@ export function useCatalogPageState() {
     selectCategory,
     setCategoryArchived: (item: Category, value: boolean) =>
       void archive.run(
-        () =>
-          api.POST('/api/companies/{company_id}/tool-categories/{category_id}/update', {
-            params: { path: { ...c.path, category_id: item.id } },
-            body: { expected_revision: item.revision, name: item.name, archived: value },
-          }),
+        async () => {
+          const saved = await saveCategory(item, value);
+          offerUndo(`${item.name} ${value ? 'archived' : 'restored'}.`, () => saveCategory(saved, !value));
+        },
         () => update('edit-category', ''),
       ),
     archived,
@@ -88,20 +113,19 @@ export function useCatalogPageState() {
     archive,
     setModelArchived: (model: ToolModel, value: boolean) =>
       void archive.run(
-        () =>
-          api.POST('/api/companies/{company_id}/tool-models/{model_id}/update', {
-            params: { path: { ...c.path, model_id: model.id } },
-            body: {
-              expected_revision: model.revision,
-              category_id: model.category_id,
-              name: model.name,
-              manufacturer: model.manufacturer,
-              model_number: model.model_number,
-              archived: value,
-            },
-          }),
+        async () => {
+          const saved = await saveModel(model, value);
+          offerUndo(`${model.name} ${value ? 'archived' : 'restored'}.`, () => saveModel(saved, !value));
+        },
         () => update('model', ''),
       ),
+    undo,
+    dismissUndo: () => setUndo(null),
+    runUndo: () => {
+      if (!undo) return;
+      setUndo(null);
+      void archive.run(undo.revert);
+    },
   };
 }
 export type CatalogPageState = ReturnType<typeof useCatalogPageState>;

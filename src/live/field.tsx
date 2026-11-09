@@ -1,4 +1,5 @@
 import { Link, Outlet } from 'react-router-dom';
+import { Plus } from 'lucide-react';
 import { ToolCatalogCard } from './checkout-card';
 import { CatalogFilters } from './checkout-filters';
 import { useCheckout, useMyTools } from './field-state';
@@ -7,11 +8,13 @@ import { ErrorState, LoadingState, SearchField } from './kit';
 import { ToolRow } from './my-tools-row';
 import { PendingGroup } from './pending-card';
 import { PendingHandoffReviewSheet } from './pending-review';
+import { useRegistrationPolicy } from './registration-policy';
 
 const CATALOG_PRIORITY_IMAGE_COUNT = 4;
 
 export function MyToolsPage() {
   const { c, tools, pending, transferStatus, openTool, startTransfer } = useMyTools();
+  const { canRegister } = useRegistrationPolicy();
   if (tools.isPending) return <LoadingState label="Loading your tools…" />;
   if (tools.error || !tools.data)
     return <ErrorState message="Your tools could not be loaded." onRetry={() => void tools.refetch()} />;
@@ -61,6 +64,12 @@ export function MyToolsPage() {
       <Link className="worker-checkout-pill" to="/app/checkout" aria-label="Browse checkout catalog">
         Need something else? Browse checkout
       </Link>
+      {canRegister && (
+        <Link className="button button--primary floating-action" to="/app/mine/new">
+          <Plus aria-hidden="true" />
+          Add tool
+        </Link>
+      )}
       {pending.reviewing && (
         <PendingHandoffReviewSheet key={pending.reviewing.key} item={pending.reviewing} onClose={pending.closeReview} />
       )}

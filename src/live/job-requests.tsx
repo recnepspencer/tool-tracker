@@ -3,73 +3,79 @@ import { errorMessage, type Model } from './client';
 import { formatStamp, initials } from './format';
 import { requestStatusLabel } from './jobs-labels';
 import type { JobsState, RequestReviewState } from './jobs-state';
-import { Avatar, Button, ErrorState, LoadingState, OverlayDialog, SurfaceCard, TextAreaField } from './kit';
+import { Avatar, Button, ErrorState, LoadingState, OverlayDialog, Section, SurfaceCard, TextAreaField } from './kit';
 
 type Request = Model<'ParticipationView'>;
 
-/** Participation requests as the demo warehouse queue: tabs, a queue card and `queue-item` rows. */
+/** Decided requests stay one tap away, with the page's other links under its heading. */
+export function RequestHistoryLink({ state }: { state: Pick<JobsState, 'completed' | 'setCompleted'> }) {
+  const { completed, setCompleted } = state;
+  return (
+    <div className="related-links">
+      <button type="button" className="related-link" onClick={() => setCompleted(!completed)}>
+        {completed ? 'Hide request history' : 'Request history'}
+        <ChevronRight aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Requests to join or leave a job, as their own section above the jobs. The section appears only
+ * while someone is waiting or the history is open.
+ */
 export function JobRequests({
   state,
   review,
 }: {
-  state: Pick<JobsState, 'c' | 'requests' | 'completed' | 'setCompleted'>;
+  state: Pick<JobsState, 'c' | 'requests' | 'completed'>;
   review: RequestReviewState;
 }) {
-  const { c, requests, completed, setCompleted } = state;
+  const { c, requests, completed } = state;
   const busy = review.decide.isPending;
+  const waiting = !completed && requests.data?.length;
+  const shown = completed || waiting || requests.isError || review.decide.isError;
   return (
-    <section aria-label="Participation requests">
-      <div className="operations-tabs" role="tablist" aria-label="Request filter">
-        {(
-          [
-            [false, 'Pending'],
-            [true, 'History'],
-          ] as const
-        ).map(([value, label]) => (
-          <button
-            key={label}
-            type="button"
-            role="tab"
-            aria-selected={completed === value}
-            className={completed === value ? 'operations-tab operations-tab--active' : 'operations-tab'}
-            onClick={() => setCompleted(value)}
-          >
-            {label}
-            {completed === value && <span>{requests.data ? requests.data.length : '—'}</span>}
-          </button>
-        ))}
-      </div>
-      {review.decide.isError && !review.review && (
-        <p className="form-error" role="alert">
-          {errorMessage(review.decide.error)}
-        </p>
-      )}
-      <SurfaceCard className="queue-card">
-        {requests.isPending ? (
-          <LoadingState label="Loading participation requests…" />
-        ) : requests.isError ? (
-          <ErrorState
-            message={`Participation requests could not be loaded. ${errorMessage(requests.error)}`}
-            onRetry={() => void requests.refetch()}
-          />
-        ) : requests.data.length ? (
-          <section className="operations-queue-group">
-            <div className="operations-queue-group__heading">
-              <h2>{completed ? 'Participation history' : 'Participation requests'}</h2>
-              <span>{requests.data.length}</span>
-            </div>
-            <div className="queue-list">
-              {requests.data.map((request) => (
-                <RequestItem key={request.id} request={request} c={c} busy={busy} review={review} />
-              ))}
-            </div>
-          </section>
-        ) : (
-          <p className="admin-empty">{completed ? 'No participation history.' : 'No one is waiting on a decision.'}</p>
-        )}
-      </SurfaceCard>
+    <>
+      {shown ? (
+        <Section title="Participation requests">
+          {review.decide.isError && !review.review && (
+            <p className="form-error" role="alert">
+              {errorMessage(review.decide.error)}
+            </p>
+          )}
+          <SurfaceCard className="queue-card">
+            {requests.isPending ? (
+              <LoadingState label="Loading participation requests…" />
+            ) : requests.isError ? (
+              <ErrorState
+                message={`Participation requests could not be loaded. ${errorMessage(requests.error)}`}
+                onRetry={() => void requests.refetch()}
+              />
+            ) : (
+              <section className="operations-queue-group">
+                <div className="operations-queue-group__heading">
+                  <h3>{completed ? 'Request history' : 'Waiting for a decision'}</h3>
+                  <span>{requests.data.length}</span>
+                </div>
+                {requests.data.length ? (
+                  <div className="queue-list">
+                    {requests.data.map((request) => (
+                      <RequestItem key={request.id} request={request} c={c} busy={busy} review={review} />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="admin-empty">
+                    {completed ? 'No decided requests yet.' : 'No one is waiting on a decision.'}
+                  </p>
+                )}
+              </section>
+            )}
+          </SurfaceCard>
+        </Section>
+      ) : null}
       {review.review && <RequestReviewDialog review={review} />}
-    </section>
+    </>
   );
 }
 

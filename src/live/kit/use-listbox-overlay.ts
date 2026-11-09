@@ -13,18 +13,22 @@ export function useListboxOverlay(
     const update = () => {
       const anchor = anchorRef.current?.getBoundingClientRect();
       if (!anchor) return;
-      const maxHeight = readTokenPx('--listbox-max-height');
       const minWidth = readTokenPx('--listbox-min-width');
       const gap = readTokenPx('--listbox-gap');
       const pad = readTokenPx('--listbox-viewport-pad');
-      const listHeight = Math.min(maxHeight, listRef.current?.offsetHeight ?? maxHeight);
-      const spaceBelow = window.innerHeight - anchor.bottom - pad;
-      const placeAbove = spaceBelow < listHeight && anchor.top > spaceBelow;
+      // A long list is taller than the token height, so place it by the height it actually has.
+      const listHeight = listRef.current?.offsetHeight ?? readTokenPx('--listbox-max-height');
+      const spaceBelow = window.innerHeight - anchor.bottom - gap - pad;
+      const spaceAbove = anchor.top - gap - pad;
+      const placeAbove = spaceBelow < listHeight && spaceAbove > spaceBelow;
+      // The popover never runs past the window: it shrinks to the room on its side and its list scrolls.
+      const room = Math.max(0, placeAbove ? spaceAbove : spaceBelow);
       setStyle({
         position: 'fixed',
         left: anchor.left,
         width: Math.max(anchor.width, minWidth),
-        top: placeAbove ? Math.max(pad, anchor.top - listHeight - gap) : anchor.bottom + gap,
+        maxHeight: room,
+        top: placeAbove ? anchor.top - gap - Math.min(listHeight, room) : anchor.bottom + gap,
       });
     };
     update();

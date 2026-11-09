@@ -24,6 +24,7 @@ function WorkerToolSheet({ state }: { state: ToolDetailState }) {
       label="Tool details"
       onClose={close}
       backdropClassName="worker-sheet-backdrop"
+      page
       panelClassName={cx('worker-bottom-sheet worker-detail-sheet', action && 'worker-detail-sheet--action')}
     >
       <span className="worker-sheet-handle" />

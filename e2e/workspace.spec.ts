@@ -220,7 +220,7 @@ test('worker participation needs approval and suspended access is revoked', asyn
     await page.goto('/app/jobs');
     const requests = page.getByRole('region', { name: 'Participation requests' });
     await requests.getByRole('button', { name: 'Approve Crew Member’s request', exact: true }).click();
-    await expect(requests.getByText('No one is waiting on a decision.')).toBeVisible();
+    await expect(requests).toHaveCount(0);
     await worker.reload();
     await expect(membership).toBeChecked();
     // Leaving is direct under this policy.

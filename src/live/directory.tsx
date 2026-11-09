@@ -47,6 +47,7 @@ export function DirectoryPage() {
         />
         <SelectField
           label="Filter by job"
+          hideLabel
           compact
           value={job || 'all'}
           onChange={setJob}

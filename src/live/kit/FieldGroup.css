@@ -1,0 +1,80 @@
+.experience :is(.field-group, .settings-fields) {
+  background: var(--group-bg);
+  border-radius: var(--radius-group);
+  display: grid;
+  gap: 0;
+  min-width: 0;
+}
+/* Hairlines start where the labels start. */
+.experience :is(.field-group, .settings-fields) > * + * {
+  background: linear-gradient(var(--border), var(--border)) var(--space-16) 0 / 100% var(--border-width) no-repeat;
+}
+/* A two-up grid inside a group stacks into rows like everything else. */
+.experience :is(.field-group, .settings-fields) > .operations-form-grid {
+  display: contents;
+}
+.experience :is(.field-group, .settings-fields) .field:not(.field--search) {
+  align-items: center;
+  background-color: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  column-gap: var(--space-16);
+  grid-template-columns: minmax(var(--space-108), 38%) minmax(0, 1fr);
+  min-height: var(--space-48);
+  padding: var(--space-12) var(--space-16);
+}
+.experience :is(.field-group, .settings-fields) .field-head {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: var(--space-2);
+  grid-column: 1;
+  grid-row: 1;
+}
+.experience :is(.field-group, .settings-fields) .field-label {
+  color: var(--ink);
+  font: var(--weight-regular) var(--text-base) / var(--leading-snug) var(--font-sans);
+}
+.experience :is(.field-group, .settings-fields) .field-head + *,
+.experience :is(.field-group, .settings-fields) .field-action + * {
+  grid-column: 2;
+  grid-row: 1;
+}
+.experience :is(.field-group, .settings-fields) .field:not(:has(textarea)) .field-control {
+  text-align: right;
+}
+.experience :is(.field-group, .settings-fields) .field--select .field-select-trigger {
+  justify-content: flex-end;
+}
+.experience :is(.field-group, .settings-fields) .field-select-trigger__value {
+  text-align: right;
+}
+.experience :is(.field-group, .settings-fields) .field--select .field-control-row,
+.experience :is(.field-group, .settings-fields) .field--select .field-select-trigger {
+  padding-right: var(--space-20);
+}
+/* Notes stack: the label above, the text below, both full width. */
+.experience :is(.field-group, .settings-fields) .field:has(textarea) {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: var(--space-8);
+}
+.experience :is(.field-group, .settings-fields) .field:has(textarea) .field-head + * {
+  grid-column: 1;
+  grid-row: 2;
+}
+/* A switch in a group is one more row. */
+.experience :is(.field-group, .settings-fields) > .switch {
+  background-color: transparent;
+  border: 0;
+  border-radius: 0;
+  min-height: var(--space-48);
+  padding: var(--space-12) var(--space-16);
+  width: 100%;
+}
+/* On a phone page a group runs edge to edge; in a sheet it keeps the sheet's margin. */
+@media (max-width: 620px) {
+  .experience .page-content :is(.field-group, .settings-fields) {
+    border-radius: 0;
+    margin-inline: calc(var(--space-16) * -1);
+  }
+}

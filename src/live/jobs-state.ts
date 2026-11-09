@@ -119,6 +119,8 @@ export function useJobsPageState() {
       setEnding(null);
       setConfirmingArchive(false);
       archive.reset();
+      // Each job opens on its current people, not the history the last one was showing.
+      location.update('history', '');
       location.update('job', id);
     },
     confirmingArchive,

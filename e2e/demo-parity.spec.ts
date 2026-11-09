@@ -127,23 +127,10 @@ test('field layout follows the demo with real photographed custody and review sh
     await worker.keyboard.press('Escape');
     await expect(worker).toHaveURL(/\/checkout\?view=list$/);
     await expect(requestable).toBeFocused();
-    // The control-room list now has twelve destinations; at a desktop height they all fit without scrolling.
+    // The admin sidebar has eight destinations; reviews hang off Queue and Settings sits in the account menu.
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('/app/tools');
-    for (const name of [
-      'Queue',
-      'Inventory',
-      'Damaged & lost',
-      'Reconciliation',
-      'People',
-      'Foremen',
-      'Jobs',
-      'Warehouses',
-      'Catalog',
-      'Access',
-      'Activity',
-      'Settings',
-    ]) {
+    for (const name of ['Queue', 'Inventory', 'Jobs', 'People', 'Foremen', 'Warehouses', 'Catalog', 'Activity']) {
       await expect(page.getByRole('link', { name, exact: true })).toBeVisible();
       await expect(page.getByRole('link', { name, exact: true })).toBeInViewport({ ratio: 1 });
     }

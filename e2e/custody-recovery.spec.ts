@@ -170,7 +170,7 @@ test('a source warehouse grant does not authorize another warehouse receipt', as
     });
     expect(denied.status()).toBe(403);
     await page.goto('/app/warehouses');
-    await page.getByRole('button', { name: 'East warehouse', exact: true }).click();
+    await page.getByRole('button', { name: 'Open East warehouse', exact: true }).click();
     const authority = page
       .getByRole('dialog', { name: 'Edit warehouse', exact: true })
       .getByRole('group', { name: 'Managers', exact: true });

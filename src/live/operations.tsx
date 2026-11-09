@@ -3,6 +3,8 @@ import { ErrorState, LoadingState, PageHeading, SearchField, SelectField, Surfac
 import { useOperationsPageState, useQueueDecision, type QueueFilter, type QueueItem } from './operations-state';
 import { QueueGroup } from './queue-list';
 import { RequestReviewDialog } from './queue-review';
+import { RelatedLinks } from './related-links';
+import { useCompany } from './session';
 
 export { ReconciliationsPage } from './reconciliation-page';
 
@@ -16,6 +18,7 @@ const filters: ReadonlyArray<readonly [QueueFilter, string]> = [
 export function OperationsPage() {
   const queue = useOperationsPageState();
   const quick = useQueueDecision();
+  const c = useCompany();
   if (!queue.loaded && !queue.error) return <LoadingState label="Loading warehouse queue…" />;
   if (!queue.loaded) return <ErrorState message="The warehouse queue could not be loaded." onRetry={queue.retry} />;
   const resolve = (item: QueueItem, decision: 'approve' | 'decline') => {
@@ -34,11 +37,15 @@ export function OperationsPage() {
   };
   return (
     <div className="page-content admin-operations-page">
-      <PageHeading
-        eyebrow="Warehouse operations"
-        title="Queue"
-        description="Review requests and returns at the gate before custody changes."
-      />
+      <PageHeading title="Queue" description="Review requests and returns at the gate before custody changes.">
+        <RelatedLinks
+          label="Other reviews"
+          links={[
+            { to: '/app/flagged', label: 'Damaged & lost' },
+            ...(c.can('reconciliation.manage') ? [{ to: '/app/reconciliations', label: 'Reconciliation' }] : []),
+          ]}
+        />
+      </PageHeading>
       <div className="operations-toolbar">
         <div className="operations-tabs" role="tablist" aria-label="Queue filter">
           {filters.map(([value, label]) => (
@@ -93,7 +100,7 @@ export function OperationsPage() {
       </div>
       {queue.error && <ErrorState message="The queue could not be refreshed." onRetry={queue.retry} />}
       {!queue.review && quick.error && (
-        <p className="form-error operations-inline-error" role="alert">
+        <p className="form-error" role="alert">
           {quick.error}
         </p>
       )}

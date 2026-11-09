@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Share } from 'lucide-react';
 import { AuditKindChips, AuditLog } from './activity-audit';
 import { ActivityFilters, ActivityGroups } from './activity-feed';
 import { exportAuditLog } from './activity-presentation';
@@ -57,7 +58,6 @@ function AuditLogPage({ state }: { state: ActivityState }) {
   return (
     <div className="page-content admin-activity-page">
       <PageHeading
-        eyebrow="Admin view · Governance"
         title="Audit log"
         description={
           company
@@ -65,8 +65,9 @@ function AuditLogPage({ state }: { state: ActivityState }) {
             : 'Your own changes to tools, custody, and team assignments.'
         }
         action={
-          <Button variant="secondary" disabled={!rows.length} onClick={() => exportAuditLog(rows)}>
-            Export log
+          <Button variant="ghost" disabled={!rows.length} onClick={() => exportAuditLog(rows)}>
+            <Share aria-hidden="true" />
+            Export
           </Button>
         }
       />

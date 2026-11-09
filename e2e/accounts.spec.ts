@@ -192,7 +192,7 @@ test('a new company builds its inventory through public screens and a worker rec
   await warehouseDialog.getByLabel('Name', { exact: true }).fill('Main warehouse');
   await warehouseDialog.getByRole('button', { name: 'Save warehouse', exact: true }).click();
   await expect(warehouseDialog).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Main warehouse', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Open Main warehouse', exact: true })).toBeVisible();
   await page.goto('/app/catalog');
   await page.getByRole('tab', { name: 'Categories', exact: true }).click();
   await page.getByRole('button', { name: 'Add category', exact: true }).click();
@@ -200,7 +200,7 @@ test('a new company builds its inventory through public screens and a worker rec
   await categoryDialog.getByLabel('Category name', { exact: true }).fill('Drills');
   await categoryDialog.getByRole('button', { name: 'Add category', exact: true }).click();
   await expect(categoryDialog).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Drills', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Edit Drills', exact: true })).toBeVisible();
   await page.getByRole('tab', { name: 'Models', exact: true }).click();
   await page.getByRole('button', { name: 'Add model', exact: true }).click();
   const modelDialog = page.getByRole('dialog', { name: 'Create model', exact: true });
@@ -289,8 +289,7 @@ test('a member recovers their password, signs in with it and signs out', async (
   await expect(worker.getByRole('heading', { name: 'My tools', exact: true })).toBeVisible();
   const credentials = await worker.evaluate(() => ({ local: { ...localStorage }, session: { ...sessionStorage } }));
   expect(JSON.stringify(credentials)).not.toContain(password);
-  await worker.getByRole('button', { name: 'Open navigation' }).click();
-  await worker.getByRole('button', { name: 'Open account for Field Employee', exact: true }).click();
+  await worker.getByRole('button', { name: 'Menu', exact: true }).click();
   await worker.getByRole('button', { name: 'Sign out', exact: true }).click();
   await expect(worker.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible();
   await worker.goto('/app/tools');

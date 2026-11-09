@@ -5,6 +5,7 @@ import { PersonDrawer } from './people-drawer';
 import { InvitePersonDialog } from './people-invite';
 import { LIFECYCLE_LABELS, LIFECYCLE_PILL, ROLE_LABELS, memberLifecycle, memberRoles } from './people-roles';
 import { usePeoplePageState, type InvitationState, type PeopleFilter } from './people-state';
+import { RelatedLinks } from './related-links';
 import { CommandError } from './settings-command';
 
 const INVITATION_LABELS: Record<InvitationState, string> = {
@@ -37,11 +38,12 @@ export function PeoplePage() {
   return (
     <div className="page-content people-page">
       <PageHeading
-        eyebrow="Admin view · People"
         title="People"
         description="Manage access, responsibility, and the history attached to every member."
         action={manages ? <Button onClick={() => state.invite(true)}>Invite person</Button> : undefined}
-      />
+      >
+        <RelatedLinks label="Related" links={[{ to: '/app/access', label: 'What each role can do' }]} />
+      </PageHeading>
       {people.isError && (
         <ErrorState message="The people directory could not be refreshed." onRetry={() => void people.refetch()} />
       )}

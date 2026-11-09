@@ -22,12 +22,8 @@ test('workspace changes leave old details behind and a revoked workspace does no
     await expect(toolSheet).toBeVisible();
     await actor.keyboard.press('Escape');
     await expect(toolSheet).toHaveCount(0);
-    await actor.getByRole('button', { name: 'Open navigation', exact: true }).click();
-    await actor
-      .getByRole('dialog', { name: 'Worker navigation', exact: true })
-      .getByRole('button', { name: 'Open account for Cross-company employee', exact: true })
-      .click();
-    const sheet = actor.getByRole('dialog', { name: 'Cross-company employee', exact: true });
+    await actor.getByRole('button', { name: 'Menu', exact: true }).click();
+    const sheet = actor.getByRole('dialog', { name: 'Menu', exact: true });
     await sheet.getByRole('button', { name: 'Refresh access', exact: true }).click();
     await sheet.getByRole('combobox', { name: 'Workspace', exact: true }).click();
     await expect(
@@ -35,7 +31,7 @@ test('workspace changes leave old details behind and a revoked workspace does no
         .getByRole('listbox', { name: 'Workspace', exact: true })
         .getByRole('option', { name: 'Recovery workspace', exact: true }),
     ).toBeVisible();
-    // The workspace sheet opens beneath the account sheet (z-index), so choose it by keyboard.
+    // The workspace sheet opens over the Menu; choose it by keyboard as a screen reader would.
     const recovery = actor
       .getByRole('listbox', { name: 'Workspace', exact: true })
       .locator(`[data-value="${second.id}"]`);

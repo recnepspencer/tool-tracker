@@ -1,10 +1,11 @@
 import type { Model } from './client';
+import { FieldGroup } from './kit';
 import { Field, TextArea, text } from './ui';
 
 /** Unit-level purchase and serial fields, form-owned, in the demo's field shells. */
 export function AssetDetailsFields({ asset }: { asset?: Model<'AssetView'> }) {
   return (
-    <>
+    <FieldGroup>
       <Field label="Serial number" name="serial" defaultValue={asset?.serial_number ?? ''} maxLength={120} />
       <div className="operations-form-grid">
         <Field
@@ -35,7 +36,7 @@ export function AssetDetailsFields({ asset }: { asset?: Model<'AssetView'> }) {
         maxLength={4000}
         rows={3}
       />
-    </>
+    </FieldGroup>
   );
 }
 

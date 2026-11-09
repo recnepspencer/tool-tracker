@@ -41,6 +41,7 @@ export function PersonDrawer({
       onClose={onClose}
       panelClassName="admin-drawer admin-drawer--person"
       showCloseButton
+      page
     >
       <div className="dialog-heading">
         <span className="eyebrow">Person record</span>

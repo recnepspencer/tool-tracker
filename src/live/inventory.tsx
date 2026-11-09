@@ -46,11 +46,7 @@ function WarehouseInventoryPage() {
         description={`${view.rows.length} of ${view.activeTotal} ${view.activeTotal === 1 ? 'tool' : 'tools'} · ${view.warehouseLabel}`}
         action={
           view.canRegister ? (
-            <Link
-              className="button button--primary operations-add-button"
-              to="/app/tools/new"
-              state={{ returnTo: view.returnTo }}
-            >
+            <Link className="button button--primary" to="/app/tools/new" state={{ returnTo: view.returnTo }}>
               <Plus aria-hidden="true" />
               Add tool
             </Link>

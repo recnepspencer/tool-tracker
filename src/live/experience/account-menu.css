@@ -94,11 +94,8 @@
 }
 .experience .account-sheet-action,
 .experience .account-sheet-sign-out {
-  align-items: center;
-  display: flex;
   gap: var(--space-10);
   justify-content: flex-start;
-  text-decoration: none;
 }
 .experience .account-sheet-action {
   border-radius: var(--radius-field);

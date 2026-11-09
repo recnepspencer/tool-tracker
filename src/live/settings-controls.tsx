@@ -30,7 +30,7 @@ function timezoneOptions(current: string) {
 export function CompanyProfile({ state }: { state: Pick<SettingsState, 'c' | 'company' | 'refresh'> }) {
   const { c, company, refresh } = state;
   return (
-    <SettingsCard eyebrow="Company profile">
+    <SettingsCard title="Company profile" description="How your company appears to everyone in this workspace.">
       {company.isError && (
         <ErrorState message="Company details could not be refreshed." onRetry={() => void company.refetch()} />
       )}
@@ -119,7 +119,7 @@ export function RegistrationSettings({
   if (!c.can('tools.register') && !c.can('tools.manage_registration_policy')) return null;
   const enabled = tools.data?.employee_tool_creation_enabled ?? false;
   return (
-    <SettingsCard eyebrow="Employee tool uploads">
+    <SettingsCard title="Employee tool uploads" description="Who can add tools to the inventory.">
       {tools.isPending && <LoadingState label="Loading upload rule…" />}
       {tools.isError && (
         <ErrorState message="The upload rule could not be loaded." onRetry={() => void tools.refetch()} />
@@ -150,7 +150,7 @@ export function RegistrationSettings({
 export function ParticipationSettings({ state }: { state: Pick<SettingsState, 'c' | 'jobs'> }) {
   const { c, jobs } = state;
   return (
-    <SettingsCard eyebrow="Job participation">
+    <SettingsCard title="Job participation" description="Whether employees can join or leave jobs on their own.">
       {jobs.isPending && <LoadingState label="Loading job rules…" />}
       {jobs.isError && <ErrorState message="Job rules could not be loaded." onRetry={() => void jobs.refetch()} />}
       {jobs.data &&

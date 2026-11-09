@@ -10,7 +10,9 @@ for (const role of ['company_admin', 'equipment_manager'])
       if (actor !== page) await invitedMember(page, actor, fixture.base, role, 'Equipment reviewer');
       const before = (await (await page.request.get(`${fixture.base}/tools`)).json()).items;
       await actor.goto('/app/catalog');
-      const modelStatus = actor.getByRole('tablist', { name: 'Model status', exact: true });
+      const showArchived = actor.getByRole('button', { name: 'Show archived models', exact: true });
+      const showActive = actor.getByRole('button', { name: 'Show active models', exact: true });
+      const undo = actor.getByRole('status').getByRole('button', { name: 'Undo', exact: true });
       const modelDialog = actor.getByRole('dialog', { name: 'Edit model', exact: true });
       await expect(actor.getByRole('button', { name: 'Edit Hammer drill', exact: true })).toHaveCount(1);
       await actor.getByRole('button', { name: 'Edit Hammer drill', exact: true }).click();
@@ -41,14 +43,19 @@ for (const role of ['company_admin', 'equipment_manager'])
       );
       expect(after.map((asset: { name: string }) => asset.name)).toEqual(['Combi drill', 'Combi drill']);
       await actor.getByRole('button', { name: 'Edit Combi drill', exact: true }).click();
+      // Archiving happens at once and can be taken back from the message that follows.
       await modelDialog.getByRole('button', { name: 'Archive model', exact: true }).click();
       await expect(modelDialog).toHaveCount(0);
       await expect(actor.getByRole('button', { name: 'Edit Combi drill', exact: true })).toHaveCount(0);
-      await modelStatus.getByRole('tab', { name: 'Archived', exact: true }).click();
-      await expect(modelStatus.getByRole('tab', { name: 'Archived', exact: true })).toHaveAttribute(
-        'aria-selected',
-        'true',
-      );
+      await expect(actor.getByRole('status').getByText('Combi drill archived.')).toBeVisible();
+      await undo.click();
+      await expect(actor.getByRole('button', { name: 'Edit Combi drill', exact: true })).toHaveCount(1);
+      await expect(undo).toHaveCount(0);
+      await actor.getByRole('button', { name: 'Edit Combi drill', exact: true }).click();
+      await modelDialog.getByRole('button', { name: 'Archive model', exact: true }).click();
+      await expect(actor.getByRole('button', { name: 'Edit Combi drill', exact: true })).toHaveCount(0);
+      await showArchived.click();
+      await expect(actor).toHaveURL(/archived=true/);
       await expect(actor.getByRole('button', { name: 'Edit Combi drill', exact: true })).toHaveCount(1);
       await actor.getByRole('button', { name: 'Edit Combi drill', exact: true }).click();
       await expect(modelDialog.getByRole('combobox', { name: 'Category', exact: true })).toHaveText('Drills');
@@ -58,11 +65,8 @@ for (const role of ['company_admin', 'equipment_manager'])
       await modelDialog.getByRole('button', { name: 'Restore model', exact: true }).click();
       await expect(modelDialog).toHaveCount(0);
       await expect(actor.getByRole('button', { name: 'Edit Combi drill', exact: true })).toHaveCount(0);
-      await modelStatus.getByRole('tab', { name: 'Active', exact: true }).click();
-      await expect(modelStatus.getByRole('tab', { name: 'Active', exact: true })).toHaveAttribute(
-        'aria-selected',
-        'true',
-      );
+      await showActive.click();
+      await expect(showArchived).toBeVisible();
       await expect(actor.getByRole('button', { name: 'Edit Combi drill', exact: true })).toHaveCount(1);
       await actor.getByRole('tab', { name: 'Categories', exact: true }).click();
       await expect(actor).toHaveURL(/view=categories/);
@@ -120,7 +124,7 @@ test('warehouse grants show their subjects and remain revocable after employment
     // A separate cookie context is unnecessary here: the subject is not logged into the owner page.
     const estimator = await invitedMember(page, estimatorPage, fixture.base, 'estimator', 'Estimator only');
     await page.goto('/app/warehouses');
-    await page.getByRole('button', { name: 'Main warehouse', exact: true }).click();
+    await page.getByRole('button', { name: 'Open Main warehouse', exact: true }).click();
     const authority = page
       .getByRole('dialog', { name: 'Edit warehouse', exact: true })
       .getByRole('group', { name: 'Managers', exact: true });

@@ -1,26 +1,23 @@
 import { useCatalogPageState, type CatalogPageState } from './catalog-state';
 import { api, type Model } from './client';
 import {
+  ArchivableList,
   Button,
   DirectoryToolbar,
   ErrorState,
+  FieldGroup,
   LoadingState,
   OverlayDialog,
   PageHeading,
+  RecordList,
   SelectField,
-  SurfaceCard,
+  UndoToast,
 } from './kit';
 import { CommandError, CommandForm } from './settings-command';
 import { Field, text } from './ui';
 
 type ToolModel = Model<'ModelView'>;
 type Category = Model<'CategoryView'>;
-type StatusTab = 'active' | 'archived';
-
-const STATUS_TABS: { value: StatusTab; label: string }[] = [
-  { value: 'active', label: 'Active' },
-  { value: 'archived', label: 'Archived' },
-];
 
 export function CatalogPage() {
   const state = useCatalogPageState();
@@ -33,7 +30,6 @@ export function CatalogPage() {
   return (
     <div className="page-content">
       <PageHeading
-        eyebrow="Admin view · Catalog"
         title="Catalog"
         description="Models describe a kind of tool. Categories group models."
         action={
@@ -44,7 +40,7 @@ export function CatalogPage() {
           ) : undefined
         }
       />
-      <div className="operations-tabs" role="tablist" aria-label="Catalog">
+      <div className="operations-tabs segmented" role="tablist" aria-label="Catalog">
         {(['models', 'categories'] as const).map((value) => (
           <button
             key={value}
@@ -59,6 +55,15 @@ export function CatalogPage() {
         ))}
       </div>
       {categoriesView ? <CategoryDirectory state={state} /> : <ModelDirectory state={state} />}
+      {!state.selected && !state.selectedCategory && <CommandError error={state.archive.error} />}
+      {state.undo && (
+        <UndoToast
+          key={state.undo.id}
+          message={state.undo.message}
+          onUndo={state.runUndo}
+          onDismiss={state.dismissUndo}
+        />
+      )}
     </div>
   );
 }
@@ -77,15 +82,11 @@ function ModelDirectory({ state }: { state: CatalogPageState }) {
       {models.isError && (
         <ErrorState message="The tool catalog could not be refreshed." onRetry={() => void models.refetch()} />
       )}
-      <DirectoryToolbar<StatusTab>
+      <DirectoryToolbar
         searchLabel="Search models"
         searchPlaceholder="Search models…"
         search={state.search}
         onSearchChange={state.setSearch}
-        filterLabel="Model status"
-        filters={STATUS_TABS}
-        activeFilter={archived ? 'archived' : 'active'}
-        onFilterChange={(value) => state.setArchived(value === 'archived')}
         trailing={
           <SelectField
             compact
@@ -98,62 +99,26 @@ function ModelDirectory({ state }: { state: CatalogPageState }) {
           />
         }
       />
-      <SurfaceCard className="admin-table-card">
-        <div className="admin-table-wrap">
-          <table className="admin-table admin-table--responsive directory-table">
-            <thead>
-              <tr>
-                <th>Model</th>
-                <th>Category</th>
-                <th>Status</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((model) => (
-                <tr key={model.id}>
-                  <td data-label="Model">
-                    <button className="admin-record-button" type="button" onClick={() => state.select(model.id)}>
-                      {model.name}
-                    </button>
-                    <span>
-                      {model.manufacturer} · {model.model_number}
-                    </span>
-                  </td>
-                  <td className="directory-table__mobile-hide" data-label="Category">
-                    {state.categoryName(model.category_id) || '—'}
-                  </td>
-                  <td className="directory-table__status" data-label="Status">
-                    {model.archived_at ? (
-                      <span className="lifecycle-pill lifecycle-pill--removed">Archived</span>
-                    ) : (
-                      <span className="lifecycle-pill lifecycle-pill--active">Active</span>
-                    )}
-                  </td>
-                  <td className="directory-table__actions" data-label="Actions">
-                    <Button
-                      variant="ghost"
-                      onClick={() => state.select(model.id)}
-                      aria-label={`${manages ? 'Edit' : 'Open'} ${model.name}`}
-                    >
-                      {manages ? 'Edit' : 'Open'}
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {!rows.length && (
-          <p className="admin-empty">
-            {models.data?.length
+      <ArchivableList archived={archived} noun="models" onArchivedChange={state.setArchived}>
+        <RecordList
+          label={archived ? 'Archived models' : 'Models'}
+          items={rows.map((model) => ({
+            id: model.id,
+            title: model.name,
+            detail: `${model.manufacturer} · ${model.model_number}`,
+            meta: state.categoryName(model.category_id),
+            label: `${manages ? 'Edit' : 'Open'} ${model.name}`,
+          }))}
+          empty={
+            models.data?.length
               ? 'No models match this search.'
               : archived
                 ? 'No archived models.'
-                : 'No tool models yet.'}
-          </p>
-        )}
-      </SurfaceCard>
+                : 'No tool models yet.'
+          }
+          onSelect={state.select}
+        />
+      </ArchivableList>
       {manages && state.creating && <ModelDialog state={state} />}
       {selected && <ModelDialog key={selected.id} model={selected} state={state} />}
     </>
@@ -168,69 +133,30 @@ function CategoryDirectory({ state }: { state: CatalogPageState }) {
     return <ErrorState message="Tool categories could not be loaded." onRetry={() => void categories.refetch()} />;
   return (
     <>
-      <DirectoryToolbar<StatusTab>
+      <DirectoryToolbar
         searchLabel="Search categories"
         searchPlaceholder="Search categories…"
         search={state.search}
         onSearchChange={state.setSearch}
-        filterLabel="Category status"
-        filters={STATUS_TABS}
-        activeFilter={archived ? 'archived' : 'active'}
-        onFilterChange={(value) => state.setArchived(value === 'archived')}
       />
-      <SurfaceCard className="admin-table-card">
-        <div className="admin-table-wrap">
-          <table className="admin-table admin-table--responsive directory-table">
-            <thead>
-              <tr>
-                <th>Category</th>
-                <th>Status</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {categoryRows.map((category) => (
-                <tr key={category.id}>
-                  <td data-label="Category">
-                    <button
-                      className="admin-record-button"
-                      type="button"
-                      onClick={() => state.selectCategory(category.id)}
-                    >
-                      {category.name}
-                    </button>
-                  </td>
-                  <td className="directory-table__status" data-label="Status">
-                    {category.archived_at ? (
-                      <span className="lifecycle-pill lifecycle-pill--removed">Archived</span>
-                    ) : (
-                      <span className="lifecycle-pill lifecycle-pill--active">Active</span>
-                    )}
-                  </td>
-                  <td className="directory-table__actions" data-label="Actions">
-                    <Button
-                      variant="ghost"
-                      onClick={() => state.selectCategory(category.id)}
-                      aria-label={`${manages ? 'Edit' : 'Open'} ${category.name}`}
-                    >
-                      {manages ? 'Edit' : 'Open'}
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {!categoryRows.length && (
-          <p className="admin-empty">
-            {state.search
+      <ArchivableList archived={archived} noun="categories" onArchivedChange={state.setArchived}>
+        <RecordList
+          label={archived ? 'Archived categories' : 'Categories'}
+          items={categoryRows.map((category) => ({
+            id: category.id,
+            title: category.name,
+            label: `${manages ? 'Edit' : 'Open'} ${category.name}`,
+          }))}
+          empty={
+            state.search
               ? 'No categories match this search.'
               : archived
                 ? 'No archived categories.'
-                : 'No categories yet. Add one to group your models.'}
-          </p>
-        )}
-      </SurfaceCard>
+                : 'No categories yet. Add one to group your models.'
+          }
+          onSelect={state.selectCategory}
+        />
+      </ArchivableList>
       {manages && state.creatingCategory && <CategoryDialog state={state} />}
       {selectedCategory && <CategoryDialog key={selectedCategory.id} category={selectedCategory} state={state} />}
     </>
@@ -273,14 +199,16 @@ function CategoryDialog({ category, state }: { category?: Category; state: Catal
                 })
           }
         >
-          <Field
-            label="Category name"
-            name="name"
-            defaultValue={category?.name}
-            placeholder="e.g. Safety"
-            required
-            maxLength={120}
-          />
+          <FieldGroup>
+            <Field
+              label="Category name"
+              name="name"
+              defaultValue={category?.name}
+              placeholder="e.g. Safety"
+              required
+              maxLength={120}
+            />
+          </FieldGroup>
         </CommandForm>
       )}
       {category && manages && (
@@ -349,18 +277,26 @@ function ModelDialog({ model, state }: { model?: ToolModel; state: CatalogPageSt
               : api.POST('/api/companies/{company_id}/tool-models', { params: { path: c.path }, body: fields });
           }}
         >
-          <SelectField
-            label="Category"
-            name="category"
-            required
-            defaultValue={model?.category_id}
-            placeholder="Choose a category"
-            emptyMessage="No active categories. Add one on the Categories tab."
-            options={categories}
-          />
-          <Field label="Tool name" name="name" defaultValue={model?.name} required maxLength={200} />
-          <Field label="Manufacturer" name="manufacturer" defaultValue={model?.manufacturer} required maxLength={120} />
-          <Field label="Model number" name="number" defaultValue={model?.model_number} required maxLength={120} />
+          <FieldGroup>
+            <SelectField
+              label="Category"
+              name="category"
+              required
+              defaultValue={model?.category_id}
+              placeholder="Choose a category"
+              emptyMessage="No active categories. Add one on the Categories tab."
+              options={categories}
+            />
+            <Field label="Tool name" name="name" defaultValue={model?.name} required maxLength={200} />
+            <Field
+              label="Manufacturer"
+              name="manufacturer"
+              defaultValue={model?.manufacturer}
+              required
+              maxLength={120}
+            />
+            <Field label="Model number" name="number" defaultValue={model?.model_number} required maxLength={120} />
+          </FieldGroup>
         </CommandForm>
       ) : (
         model && (

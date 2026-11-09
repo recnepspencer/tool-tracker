@@ -2,8 +2,21 @@ import { Check, Minus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { capabilityRows, LOCKED_RULES } from './access-capabilities';
 import { api, type Model } from './client';
-import { Button, DirectoryToolbar, ErrorState, LoadingState, OverlayDialog, PageHeading, SurfaceCard } from './kit';
+import {
+  ArchivableList,
+  Button,
+  DirectoryToolbar,
+  ErrorState,
+  FieldGroup,
+  LoadingState,
+  OverlayDialog,
+  PageHeading,
+  RecordList,
+  Section,
+  SurfaceCard,
+} from './kit';
 import { ROLE_LABELS, ROLE_SHORT, ROLES } from './people-roles';
+import { BackLink } from './related-links';
 import { CommandError, CommandForm } from './settings-command';
 import { Field, text } from './ui';
 import { WarehouseAuthority } from './warehouse-authority';
@@ -11,20 +24,11 @@ import { useAccessDirectory, useWarehouseDirectory, type WarehouseDirectory } fr
 import './experience/access-matrix.css';
 
 type Warehouse = Model<'WarehouseView'>;
-type WarehouseTab = 'active' | 'archived';
-
-const WAREHOUSE_TABS: { value: WarehouseTab; label: string }[] = [
-  { value: 'active', label: 'Active' },
-  { value: 'archived', label: 'Archived' },
-];
 
 function managerSummary(warehouse: Warehouse) {
-  if (!warehouse.managers.length) return { name: 'Equipment managers', detail: 'Company-wide' };
+  if (!warehouse.managers.length) return 'Equipment managers';
   const [first, ...rest] = warehouse.managers;
-  return {
-    name: rest.length ? `${first.name} +${rest.length}` : first.name,
-    detail: rest.length ? `${warehouse.managers.length} warehouse managers` : 'Warehouse manager',
-  };
+  return rest.length ? `${first.name} +${rest.length}` : first.name;
 }
 
 export function WarehousesPage() {
@@ -39,7 +43,6 @@ export function WarehousesPage() {
   return (
     <div className="page-content">
       <PageHeading
-        eyebrow="Admin view · Warehouses"
         title="Warehouses"
         description="Manage custody locations and the people responsible for them."
         action={manages ? <Button onClick={() => state.select('new')}>Add warehouse</Button> : undefined}
@@ -53,91 +56,37 @@ export function WarehousesPage() {
       {state.assets.isError && (
         <ErrorState message="Custody counts could not be loaded." onRetry={() => void state.assets.refetch()} />
       )}
-      <DirectoryToolbar<WarehouseTab>
+      <DirectoryToolbar
         searchLabel="Search warehouses"
         searchPlaceholder="Search warehouses…"
         search={state.search}
         onSearchChange={state.setSearch}
-        filterLabel="Warehouse status"
-        filters={WAREHOUSE_TABS}
-        activeFilter={archived ? 'archived' : 'active'}
-        onFilterChange={(value) => state.setArchived(value === 'archived')}
       />
-      <SurfaceCard className="admin-table-card">
-        <div className="admin-table-wrap">
-          <table className="admin-table admin-table--responsive directory-table warehouses-table">
-            <thead>
-              <tr>
-                <th>Warehouse</th>
-                <th>Manager</th>
-                <th>Status</th>
-                <th>Custody</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((warehouse) => {
-                const manager = managerSummary(warehouse);
-                const custody = state.custody(warehouse.id);
-                const counts = custody ? `${custody.stock} in stock · ${custody.out} checked out` : '';
-                return (
-                  <tr key={warehouse.id}>
-                    <td data-label="Warehouse">
-                      <button className="admin-record-button" type="button" onClick={() => state.select(warehouse.id)}>
-                        {warehouse.name}
-                      </button>
-                      <span>{[warehouse.code, warehouse.address].filter(Boolean).join(' · ')}</span>
-                      <span className="warehouses-table__mobile-meta">
-                        {manager.name}
-                        {counts ? ` · ${counts}` : ''}
-                      </span>
-                    </td>
-                    <td className="directory-table__mobile-hide" data-label="Manager">
-                      {manager.name}
-                      <span>{manager.detail}</span>
-                    </td>
-                    <td className="directory-table__status" data-label="Status">
-                      {warehouse.archived_at ? (
-                        <span className="lifecycle-pill lifecycle-pill--removed">Archived</span>
-                      ) : (
-                        <span className="lifecycle-pill lifecycle-pill--active">Active</span>
-                      )}
-                    </td>
-                    <td className="directory-table__mobile-hide" data-label="Custody">
-                      {custody ? (
-                        <>
-                          {custody.stock} in stock
-                          <span>{custody.out} checked out</span>
-                        </>
-                      ) : (
-                        '—'
-                      )}
-                    </td>
-                    <td className="directory-table__actions" data-label="Actions">
-                      <Button
-                        variant="ghost"
-                        onClick={() => state.select(warehouse.id)}
-                        aria-label={`Open ${warehouse.name}`}
-                      >
-                        Open
-                      </Button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        {!rows.length && (
-          <p className="admin-empty">
-            {warehouses.data.length
+      <ArchivableList archived={archived} noun="warehouses" onArchivedChange={state.setArchived}>
+        <RecordList
+          label={archived ? 'Archived warehouses' : 'Warehouses'}
+          items={rows.map((warehouse) => {
+            const custody = state.custody(warehouse.id);
+            return {
+              id: warehouse.id,
+              title: warehouse.name,
+              detail: [warehouse.code, warehouse.address].filter(Boolean).join(' · '),
+              meta: [managerSummary(warehouse), custody && `${custody.stock} in stock · ${custody.out} out`]
+                .filter(Boolean)
+                .join(' · '),
+              label: `Open ${warehouse.name}`,
+            };
+          })}
+          empty={
+            warehouses.data.length
               ? 'No warehouses match this search.'
               : archived
                 ? 'No archived warehouses.'
-                : 'No warehouses are configured.'}
-          </p>
-        )}
-      </SurfaceCard>
+                : 'No warehouses are configured.'
+          }
+          onSelect={state.select}
+        />
+      </ArchivableList>
       {manages && creating && <WarehouseDialog state={state} />}
       {selected && !state.confirmingArchive && <WarehouseDialog key={selected.id} warehouse={selected} state={state} />}
       {selected && state.confirmingArchive && <ArchiveWarehouseDialog warehouse={selected} state={state} />}
@@ -155,6 +104,7 @@ function WarehouseDialog({ warehouse, state }: { warehouse?: Warehouse; state: W
       onClose={close}
       panelClassName="admin-dialog"
       showCloseButton
+      page={!!warehouse}
     >
       <div className="dialog-heading">
         <span className="eyebrow">Warehouses</span>
@@ -183,9 +133,11 @@ function WarehouseDialog({ warehouse, state }: { warehouse?: Warehouse; state: W
                 })
           }
         >
-          {!warehouse && <Field label="Code" name="code" required maxLength={40} />}
-          <Field label="Name" name="name" defaultValue={warehouse?.name} required maxLength={200} />
-          <Field label="Address" name="address" defaultValue={warehouse?.address} maxLength={2000} />
+          <FieldGroup>
+            {!warehouse && <Field label="Code" name="code" required maxLength={40} />}
+            <Field label="Name" name="name" defaultValue={warehouse?.name} required maxLength={200} />
+            <Field label="Address" name="address" defaultValue={warehouse?.address} maxLength={2000} />
+          </FieldGroup>
         </CommandForm>
       )}
       {warehouse && !manages && (
@@ -265,74 +217,67 @@ export function AccessPage() {
   const rows = capabilityRows(roles.flatMap((role) => role.capabilities));
   return (
     <div className="page-content">
+      <BackLink to="/app/people">People</BackLink>
       <PageHeading
-        eyebrow="Admin view · Permissions"
         title="Access guide"
         description="See what each role can do in this workspace. Access changes are managed from People."
-        action={
-          <Link className="button button--secondary" to="/app/people">
-            Manage people
-          </Link>
-        }
       />
       {access.isError && (
         <ErrorState message="The permission matrix could not be refreshed." onRetry={() => void access.refetch()} />
       )}
-      <SurfaceCard className="permission-matrix-card">
-        <div className="permission-matrix access-matrix" role="table" aria-label="Role access matrix">
-          <div className="permission-matrix__row permission-matrix__header" role="row">
-            <span role="columnheader">Capability</span>
-            {roles.map((role) => (
-              <span role="columnheader" title={label(role.role)} key={role.role}>
-                <span className="permission-role-full">{label(role.role)}</span>
-                <span className="permission-role-short" aria-hidden="true">
-                  {short(role.role)}
+      <Section title="What each role can do">
+        <SurfaceCard className="permission-matrix-card">
+          <div className="permission-matrix access-matrix" role="table" aria-label="Role access matrix">
+            <div className="permission-matrix__row permission-matrix__header" role="row">
+              <span role="columnheader">Capability</span>
+              {roles.map((role) => (
+                <span role="columnheader" title={label(role.role)} key={role.role}>
+                  <span className="permission-role-full">{label(role.role)}</span>
+                  <span className="permission-role-short" aria-hidden="true">
+                    {short(role.role)}
+                  </span>
                 </span>
-              </span>
+              ))}
+            </div>
+            {rows.map((row) => (
+              <div className="permission-matrix__row" role="row" key={row.capability}>
+                <span role="rowheader">
+                  <strong>{row.label}</strong>
+                  {row.description && <small>{row.description}</small>}
+                </span>
+                {roles.map((role) => {
+                  const granted = role.capabilities.includes(row.capability);
+                  return (
+                    <span
+                      className={granted ? 'permission-cell permission-cell--granted' : 'permission-cell'}
+                      role="cell"
+                      aria-label={`${label(role.role)}: ${granted ? 'Allowed' : 'Not allowed'}`}
+                      key={role.role}
+                    >
+                      {granted ? <Check aria-hidden="true" /> : <Minus aria-hidden="true" />}
+                    </span>
+                  );
+                })}
+              </div>
             ))}
           </div>
-          {rows.map((row) => (
-            <div className="permission-matrix__row" role="row" key={row.capability}>
-              <span role="rowheader">
-                <strong>{row.label}</strong>
-                {row.description && <small>{row.description}</small>}
-              </span>
-              {roles.map((role) => {
-                const granted = role.capabilities.includes(row.capability);
-                return (
-                  <span
-                    className={granted ? 'permission-cell permission-cell--granted' : 'permission-cell'}
-                    role="cell"
-                    aria-label={`${label(role.role)}: ${granted ? 'Allowed' : 'Not allowed'}`}
-                    key={role.role}
-                  >
-                    {granted ? <Check aria-hidden="true" /> : <Minus aria-hidden="true" />}
-                  </span>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      </SurfaceCard>
-      <p className="permission-legend">
-        {roles.map((role) => `${short(role.role)} · ${label(role.role)}`).join('   ')}
-      </p>
-      <SurfaceCard className="permission-rules-card">
-        <div className="permission-rules-heading">
-          <div>
-            <span className="eyebrow">Structural policy</span>
-            <h2>Locked rules</h2>
-          </div>
-        </div>
-        <ul className="permission-rules-list" aria-label="Locked structural rules">
-          {LOCKED_RULES.map((rule) => (
-            <li key={rule.id}>
-              <strong>{rule.label}</strong>
-              <p>{rule.description}</p>
-            </li>
-          ))}
-        </ul>
-      </SurfaceCard>
+        </SurfaceCard>
+        <p className="permission-legend">
+          {roles.map((role) => `${short(role.role)} · ${label(role.role)}`).join('   ')}
+        </p>
+      </Section>
+      <Section title="Locked rules" description="These hold for every role and can't be changed.">
+        <SurfaceCard className="permission-rules-card">
+          <ul className="permission-rules-list" aria-label="Locked structural rules">
+            {LOCKED_RULES.map((rule) => (
+              <li key={rule.id}>
+                <strong>{rule.label}</strong>
+                <p>{rule.description}</p>
+              </li>
+            ))}
+          </ul>
+        </SurfaceCard>
+      </Section>
     </div>
   );
 }

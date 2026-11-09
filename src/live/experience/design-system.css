@@ -1,0 +1,331 @@
+/* The shared parts of the design system, loaded last so every page picks them up.
+   Actions are rounded rectangles (kit Button), filters are pills, statuses are tinted text, and on a
+   phone a list or form is one full-width group of rows rather than a card inside the page margin. */
+
+/* Chips filter a list. The chosen one fills with ink, so it never reads as a button or a status. */
+.experience
+  :is(
+    .directory-toolbar__filter,
+    .activity-kind-chip,
+    .worker-filter-chip,
+    .operations-tabs:not(.segmented) .operations-tab
+  ) {
+  align-items: center;
+  background: var(--chip-bg);
+  border: 0;
+  border-radius: var(--radius-pill);
+  color: var(--ink-2);
+  display: inline-flex;
+  font: var(--weight-medium) var(--text-body) / var(--leading-none) var(--font-sans);
+  gap: var(--space-6);
+  min-height: var(--space-32);
+  padding: 0 var(--space-12);
+}
+.experience
+  :is(
+    .directory-toolbar__filter,
+    .activity-kind-chip,
+    .worker-filter-chip,
+    .operations-tabs:not(.segmented) .operations-tab
+  ):hover {
+  background: var(--neutral-fill-hover);
+  color: var(--ink);
+}
+.experience
+  :is(
+    .directory-toolbar__filter--active,
+    .activity-kind-chip--active,
+    .worker-filter-chip--active,
+    .activity-filters button.activity-filter--active,
+    .operations-tabs:not(.segmented) .operations-tab--active
+  ),
+.experience
+  :is(
+    .directory-toolbar__filter--active,
+    .activity-kind-chip--active,
+    .worker-filter-chip--active,
+    .activity-filters button.activity-filter--active,
+    .operations-tabs:not(.segmented) .operations-tab--active
+  ):hover {
+  background: var(--chip-on-bg);
+  color: var(--chip-on-ink);
+}
+.experience .operations-tabs:not(.segmented) .operations-tab span {
+  color: inherit;
+  opacity: 0.7;
+}
+
+/* A segmented control switches between two or three views of one page. */
+.experience .segmented {
+  background: var(--chip-bg);
+  border-radius: var(--radius-sm);
+  display: flex;
+  gap: 0;
+  padding: var(--space-2);
+}
+.experience .segmented > * {
+  background: transparent;
+  border: 0;
+  border-radius: calc(var(--radius-sm) - var(--space-2));
+  color: var(--ink-2);
+  cursor: pointer;
+  flex: 1 1 0;
+  font: var(--weight-medium) var(--text-body) / var(--leading-none) var(--font-sans);
+  justify-content: center;
+  min-height: var(--space-32);
+  padding: 0 var(--space-12);
+}
+.experience .segmented > [aria-selected='true'] {
+  background: var(--neutral-fill-hover);
+  color: var(--ink);
+}
+
+/* Statuses are tinted text in the body font, never shaped like something to tap. */
+.experience .status-badge,
+.experience .lifecycle-pill {
+  border: 0;
+  border-radius: var(--radius-xs);
+  font: var(--weight-medium) var(--text-md) / var(--leading-snug) var(--font-sans);
+  letter-spacing: 0;
+  padding: var(--space-2) var(--space-8);
+  text-transform: none;
+}
+.experience .status-badge--retired {
+  background: var(--chip-bg);
+}
+
+/* An empty list is a sentence, not a box. */
+.experience .admin-empty,
+.experience .async-state--empty,
+.experience .activity-empty,
+.experience .catalog-empty {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  padding: var(--space-32) var(--space-16);
+  text-align: center;
+}
+.experience .surface-card:has(> .admin-empty:only-child) {
+  background: none;
+  border: 0;
+}
+
+/* Labels are words in the body font, never uppercase code; only serial numbers keep the mono face.
+   Section and group labels are 13px, small tags and table headings 12px. */
+.experience
+  :is(
+    .eyebrow,
+    .role-label,
+    .worker-eyebrow,
+    .worker-form-label,
+    .worker-pending-group > h2,
+    .worker-activity-day,
+    .worker-filter-group > span,
+    .flagged-list__header,
+    .permission-matrix__header,
+    .worker-add-step-label,
+    .worker-camera-label,
+    .worker-transfer-label,
+    .worker-form-card-heading > span
+  ) {
+  color: var(--muted);
+  font: var(--weight-medium) var(--text-body) / var(--leading-snug) var(--font-sans);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.experience
+  :is(
+    .section-count,
+    .worker-activity-tag,
+    .worker-activity-unread,
+    .inventory-table th,
+    .admin-table th,
+    .account-facts dt,
+    .account-sheet-facts dt,
+    .detail-facts dt,
+    .inventory-drawer__facts dt,
+    .inventory-drawer__holder span,
+    .admin-meta-kind,
+    .permission-lock,
+    .side-nav-link small,
+    .worker-upload-chip,
+    .worker-form-card-heading small,
+    .custody-photo-optional,
+    .custody-photo-picker__optional,
+    .worker-pending-review-tag,
+    .worker-pending-review-status,
+    .worker-tool-status,
+    .worker-tool-meta
+  ),
+.experience .admin-table--responsive td::before {
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Field labels read as words, in the body font. */
+.experience .field-label,
+.experience .field-hint {
+  font: var(--weight-medium) var(--text-md) / var(--leading-none) var(--font-sans);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.experience .field-hint {
+  font-weight: var(--weight-regular);
+}
+
+/* Page titles are one size everywhere: 28px, the top of the type scale. */
+.experience .worker-screen-heading h1 {
+  font: var(--weight-semibold) var(--text-8xl) / var(--leading-snug) var(--font-sans);
+  letter-spacing: var(--tracking-display);
+}
+
+/* A field crew's tools and activity are one list of rows, not a stack of cards. */
+.experience :is(.worker-tool-list, .activity-feed) {
+  background: var(--group-bg);
+  border: 0;
+  border-radius: var(--radius-group);
+  gap: 0;
+  overflow: hidden;
+}
+.experience .worker-tool-list > .worker-tool-row {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: var(--space-12) var(--space-16);
+  transform: none;
+}
+.experience .worker-tool-list > .worker-tool-row:hover {
+  background: var(--neutral-fill);
+  box-shadow: none;
+  transform: none;
+}
+.experience .worker-tool-list > :is(.worker-tool-row--damaged, .worker-tool-row--lost) {
+  background: var(--amber-wash);
+}
+.experience .activity-feed .worker-activity-row {
+  border-bottom: 0;
+}
+.experience .worker-tool-list > * + *,
+.experience .activity-feed > * + * {
+  box-shadow: inset 0 var(--border-width) 0 var(--border);
+}
+.experience .worker-tool-list > * + *:hover,
+.experience .activity-feed > * + *:hover {
+  box-shadow: inset 0 var(--border-width) 0 var(--border);
+}
+
+@media (max-width: 620px) {
+  .experience :is(.worker-tool-list, .activity-feed) {
+    border-radius: 0;
+    margin-inline: calc(var(--worker-pad-x) * -1);
+  }
+  /* A list or form on a phone runs edge to edge: one surface, hairlines between rows, and the
+     page's 16px margin used once, inside the rows, instead of again around a card. */
+  .experience
+    .page-content
+    :is(.surface-card, .foreman-card, .account-card):not(:is(.surface-card, .foreman-card, .account-card) *):not(
+      .audit-card,
+      .settings-card,
+      :has(> .admin-empty:only-child)
+    ) {
+    background: var(--group-bg);
+    border-left: 0;
+    border-radius: 0;
+    border-right: 0;
+    margin-inline: calc(var(--space-16) * -1);
+  }
+  /* Rows divide with a hairline that starts where the text starts, as in iOS lists. */
+  .experience .record-list > li + li {
+    background: linear-gradient(var(--border), var(--border)) var(--space-16) 0 / calc(100% - var(--space-16))
+      var(--border-width) no-repeat;
+    border-top: 0;
+  }
+}
+
+/* Bottom sheets share one shape: a grey surface with rounded top corners and nothing below. */
+.experience .worker-bottom-sheet {
+  background: var(--sheet-bg);
+  border: 0;
+  border-radius: var(--radius-group) var(--radius-group) 0 0;
+}
+
+@media (max-width: 620px) {
+  /* On a phone a dialog rises from the bottom as a sheet instead of floating in the middle. */
+  .experience .overlay-panel.admin-dialog {
+    background: var(--sheet-bg);
+    border: 0;
+    border-radius: var(--radius-group) var(--radius-group) 0 0;
+    bottom: 0;
+    left: 0;
+    max-height: calc(100dvh - env(safe-area-inset-top) - var(--space-12));
+    max-width: none;
+    padding: var(--space-20) var(--space-16) calc(env(safe-area-inset-bottom) + var(--space-24));
+    position: fixed;
+    right: 0;
+  }
+  /* An edit sheet keeps Cancel and Save in its top bar, in reach however long the form is. The form's
+     own box steps aside so its action row can sit first in the sheet and stick while the rest scrolls.
+     A destructive confirmation keeps its stacked buttons at the bottom instead. */
+  .experience
+    .overlay-panel.admin-dialog[role='dialog']:has(> form > .dialog-actions):not(
+      :has(> form > .dialog-actions .button--danger)
+    ) {
+    align-content: start;
+    display: grid;
+    gap: var(--space-14);
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: 0;
+  }
+  .experience
+    .overlay-panel.overlay-panel--page.admin-dialog[role='dialog']:has(> form > .dialog-actions):not(
+      :has(> form > .dialog-actions .button--danger)
+    ) {
+    padding-top: env(safe-area-inset-top);
+  }
+  .experience .admin-dialog:has(> form > .dialog-actions):not(:has(> form > .dialog-actions .button--danger)) > form {
+    display: contents;
+  }
+  .experience
+    .admin-dialog:has(> form > .dialog-actions):not(:has(> form > .dialog-actions .button--danger))
+    > .overlay-close {
+    display: none;
+  }
+  .experience
+    .admin-dialog:has(> form > .dialog-actions):not(:has(> form > .dialog-actions .button--danger))
+    .dialog-heading {
+    margin-bottom: 0;
+    padding-right: 0;
+  }
+  .experience .admin-dialog > form > .dialog-actions:not(:has(.button--danger)) {
+    align-items: center;
+    background: var(--sheet-bg);
+    display: flex;
+    grid-row: 1;
+    justify-content: space-between;
+    margin: 0 calc(var(--space-16) * -1);
+    min-height: var(--space-52);
+    padding: var(--space-4) var(--space-8);
+    position: sticky;
+    top: 0;
+    z-index: var(--z-2);
+  }
+  .experience .admin-dialog > form > .dialog-actions:not(:has(.button--danger)) > .button {
+    background: none;
+    border: 0;
+    box-shadow: none;
+    color: var(--accent-text);
+    font-size: var(--text-base);
+    min-height: var(--space-44);
+    padding-inline: var(--space-8);
+    width: auto;
+  }
+  .experience .admin-dialog > form > .dialog-actions:not(:has(.button--danger)) > .button[type='submit'] {
+    font-weight: var(--weight-semibold);
+  }
+  .experience .admin-dialog > form > .dialog-actions:not(:has(.button--danger)) > .button:disabled {
+    color: var(--dim);
+  }
+}

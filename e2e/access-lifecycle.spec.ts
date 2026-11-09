@@ -43,8 +43,10 @@ test('an open equipment page loses revoked controls and gains combined roles thr
     expect(
       (await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}`)).json()).serial_number,
     ).toBeNull();
-    await actor.getByRole('button', { name: 'Open navigation', exact: true }).click();
-    await actor.getByRole('dialog', { name: 'Navigation' }).getByRole('link', { name: 'Jobs', exact: true }).click();
+    await actor
+      .getByRole('navigation', { name: 'Main', exact: true })
+      .getByRole('link', { name: 'Jobs', exact: true })
+      .click();
     await expect(actor.getByRole('heading', { name: 'Jobs', exact: true, level: 1 })).toBeVisible();
     await expect(actor.getByRole('button', { name: 'Add job', exact: true })).toHaveCount(0);
     await command(page.request, `${fixture.base}/people/${member.id}/update`, {
@@ -53,18 +55,14 @@ test('an open equipment page loses revoked controls and gains combined roles thr
       roles: ['dispatcher', 'field_member'],
       reason: 'Coordinate work and carry tools',
     });
-    // Refresh access lives in the account sheet opened from the navigation drawer's profile.
-    await actor.getByRole('button', { name: 'Open navigation', exact: true }).click();
-    await actor
-      .getByRole('dialog', { name: 'Navigation' })
-      .getByRole('button', { name: 'Open account for Changing operator', exact: true })
-      .click();
-    const account = actor.getByRole('dialog', { name: 'Changing operator', exact: true });
+    // Refresh access lives in the tab bar's Menu.
+    await actor.getByRole('button', { name: 'Menu', exact: true }).click();
+    const account = actor.getByRole('dialog', { name: 'Menu', exact: true });
     await account.getByRole('button', { name: 'Refresh access', exact: true }).click();
-    // The refreshed roles move the open page into the control room.
+    // The refreshed roles move the open page into the admin layout.
     await expect(
       actor
-        .getByRole('navigation', { name: 'Control room destinations', exact: true })
+        .getByRole('navigation', { name: 'Main navigation', exact: true })
         .getByRole('link', { name: 'Inventory', exact: true }),
     ).toBeVisible();
     await expect(account.getByRole('button', { name: 'Refresh access', exact: true })).toBeEnabled();
@@ -265,15 +263,9 @@ test('company rules changed mid-draft refresh disabled participation and registr
     expect((await (await page.request.get(`${fixture.base}/tools?search=DENIED-NEW-UNIT`)).json()).items).toEqual([]);
     await actor.keyboard.press('Escape');
     await expect(actor.getByRole('dialog', { name: 'Add a tool', exact: true })).toHaveCount(0);
-    await expect(actor.getByRole('link', { name: 'Add a tool', exact: true })).toHaveCount(0);
-    await actor.getByRole('button', { name: 'Open navigation', exact: true }).click();
-    await expect(
-      actor.getByRole('dialog', { name: 'Navigation' }).getByRole('link', { name: 'My tools' }),
-    ).toBeVisible();
-    await expect(
-      actor.getByRole('dialog', { name: 'Navigation' }).getByRole('link', { name: 'Add a tool', exact: true }),
-    ).toHaveCount(0);
-    await actor.keyboard.press('Escape');
+    await actor.goto('/app/mine');
+    await expect(actor.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'My tools' })).toBeVisible();
+    await expect(actor.getByRole('link', { name: 'Add tool', exact: true })).toHaveCount(0);
     await page.goto('/app/tools');
     await expect(page.getByRole('link', { name: 'Add tool', exact: true })).toBeVisible();
     await command(page.request, `${fixture.base}/tool-registration-policy`, {
@@ -281,10 +273,7 @@ test('company rules changed mid-draft refresh disabled participation and registr
       employee_tool_creation_enabled: true,
     });
     await actor.reload();
-    await actor.getByRole('button', { name: 'Open navigation', exact: true }).click();
-    const addTool = actor
-      .getByRole('dialog', { name: 'Navigation' })
-      .getByRole('link', { name: 'Add a tool', exact: true });
+    const addTool = actor.getByRole('link', { name: 'Add tool', exact: true });
     await expect(addTool).toBeVisible();
     await addTool.click();
     await expect(actor.getByRole('button', { name: 'Continue without a photo' })).toBeVisible();
@@ -307,9 +296,8 @@ test('cross-tab sign-out clears private data and sign-in restores the filtered d
     await first.goto('/app/mine');
     await second.goto('/app/tools?search=UNIT-001');
     await expect(second.getByRole('button', { name: 'Open Hammer drill, UNIT-001', exact: true })).toBeVisible();
-    // Sign out lives in the account sheet opened from the navigation drawer's profile.
-    await first.getByRole('button', { name: 'Open navigation', exact: true }).click();
-    await first.getByRole('button', { name: 'Open account for Shared session operator', exact: true }).click();
+    // Sign out lives in the tab bar's Menu.
+    await first.getByRole('button', { name: 'Menu', exact: true }).click();
     await first.getByRole('button', { name: 'Sign out', exact: true }).click();
     await expect(second.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible();
     await expect(second.getByText('UNIT-001', { exact: false })).toHaveCount(0);
@@ -349,13 +337,12 @@ test('password recovery revokes a different browser session on its next private 
     await reset.getByRole('button', { name: 'Update password', exact: true }).click();
     await expect(reset.getByText('Your password has been updated.', { exact: false })).toBeVisible();
     expect((await worker.request.get(`${fixture.base}/jobs`)).status()).toBe(401);
-    if (await worker.getByRole('button', { name: 'Open navigation', exact: true }).count()) {
-      await worker.getByRole('button', { name: 'Open navigation', exact: true }).click();
-      await worker
-        .getByRole('dialog', { name: 'Navigation' })
-        .getByRole('link', { name: 'Activity', exact: true })
-        .click();
-    }
+    // Activity lives in the Menu; opening it is the session's next private read.
+    await worker.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Menu', exact: true }).click();
+    await worker
+      .getByRole('dialog', { name: 'Menu', exact: true })
+      .getByRole('link', { name: 'Activity', exact: true })
+      .click();
     await expect(worker.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible();
     await expect(worker.getByRole('button', { name: /UNIT-001/ })).toHaveCount(0);
     await worker.getByLabel('Email address', { exact: true }).fill(email);
