@@ -82,8 +82,12 @@ jobs:
           (cd "$release" && sha256sum image.tar.gz deploy/*.* > SHA256SUMS && tar -czf ../release.tgz image.tar.gz deploy SHA256SUMS)
           ssh -o StrictHostKeyChecking=yes "nelson-deploy@$DEPLOY_HOST" "mkdir -p /srv/nelson/incoming/$GITHUB_SHA"
           scp -o StrictHostKeyChecking=yes "$RUNNER_TEMP/release.tgz" "nelson-deploy@$DEPLOY_HOST:/srv/nelson/incoming/$GITHUB_SHA/release.tgz"
+          # A one-time code the server issues only if the browser check's account is missing.
+          DEPLOYMENT_CHECK_CODE=$(openssl rand -hex 12 | tr a-f A-F)
+          echo "::add-mask::$DEPLOYMENT_CHECK_CODE"
+          echo "TEST_SIGNUP_CODE=$DEPLOYMENT_CHECK_CODE" >> "$GITHUB_ENV"
           # Keys travel on stdin, so they never reach a command line or the release bundle.
-          for name in BREVO_API_KEY DEFAULT_FROM_EMAIL GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET MICROSOFT_CLIENT_ID MICROSOFT_CLIENT_SECRET; do
+          for name in BREVO_API_KEY DEFAULT_FROM_EMAIL GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET MICROSOFT_CLIENT_ID MICROSOFT_CLIENT_SECRET DEPLOYMENT_CHECK_CODE; do
             if [[ -n ${!name} ]]; then printf '%s=%s\n' "$name" "${!name}"; fi
           done | ssh -o StrictHostKeyChecking=yes "nelson-deploy@$DEPLOY_HOST" \
             "cd /srv/nelson/incoming/$GITHUB_SHA && tar -xzf release.tgz && sudo bash deploy/release.sh $GITHUB_SHA $DEPLOY_DOMAIN $RESET"

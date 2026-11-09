@@ -16,13 +16,17 @@ flock -n 9 || { echo 'A deployment is already running.' >&2; exit 1; }
 # shellcheck disable=SC1091
 source "$root/shared/app.env"
 # The domain overrides the address-based settings in app.env. CI sends the mail and
-# sign-in keys on stdin; an empty answer clears them.
+# sign-in keys on stdin; an empty answer clears them. The browser check's signup code
+# arrives the same way but stays out of the app's environment.
+incoming=$(tr -d '\r')
+check_code=$(sed -n 's/^DEPLOYMENT_CHECK_CODE=//p' <<<"$incoming")
+[[ -z $check_code || $check_code =~ ^[A-Z0-9]{24}$ ]] || { echo 'Invalid check code.' >&2; exit 1; }
 (
     umask 077
     {
         printf 'NELSON_APP_URL=https://%s\n' "$domain"
         printf 'DJANGO_ALLOWED_HOSTS=%s,%s,localhost,127.0.0.1\n' "$domain" "$PUBLIC_IP"
-        tr -d '\r'
+        grep -v '^DEPLOYMENT_CHECK_CODE=' <<<"$incoming" || true
     } > "$root/shared/integrations.env"
 )
 # Cloudflare passes the challenge through on port 80, which already serves the webroot.
@@ -64,6 +68,12 @@ compose=(docker compose --env-file "$root/shared/app.env" --env-file "$root/shar
 if [[ ! -f $root/shared/seeded ]]; then
     "${compose[@]}" run --rm --no-deps api python manage.py seed_review_data
     touch "$root/shared/seeded"
+fi
+# The browser check signs up its own company when its account is missing (after a reset, say).
+if [[ -n $check_code ]] && "${compose[@]}" run --rm --no-deps api python manage.py shell -c \
+    "from cleanforce_identity.models import PlatformUser; raise SystemExit(PlatformUser.objects.filter(email='deployment-checks@example.com').exists())"; then
+    "${compose[@]}" run --rm --no-deps -e "SIGNUP_CODE=$check_code" api \
+        python manage.py signup_codes create --days 1 --label 'Deployment checks'
 fi
 "${compose[@]}" up -d --wait --wait-timeout 90 api
 "${compose[@]}" up -d --no-deps worker
