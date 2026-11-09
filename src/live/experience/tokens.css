@@ -33,8 +33,10 @@
   --primary-from: #ffffff;
   --primary-to: #d5deea;
   --photo-matte: #eef0f2;
+  --auth-hero-deep: #0c1725;
   --switch-knob-fill: var(--ink);
 
+  --blue-border-faint: color-mix(in srgb, var(--blue) 20%, transparent);
   --blue-border-muted: color-mix(in srgb, var(--blue) 24%, transparent);
   --blue-border: color-mix(in srgb, var(--blue) 35%, transparent);
   --blue-border-strong: color-mix(in srgb, var(--blue) 40%, transparent);
@@ -367,6 +369,11 @@
   --worker-content-max: var(--space-900);
   --text-hero: clamp(32px, 5vw, 54px);
   --gradient-mid: 58%;
+  --gradient-hero: 62%;
+  --gradient-orb: 35%;
+  --hero-spot-x: 20%;
+  --hero-spot-y: 25%;
+  --hero-orb-top: 15%;
 
   --elevation-focus: 0 0 0 var(--focus-halo-width) var(--blue-bg);
   --elevation-overlay: 0 var(--space-22) var(--space-50) var(--shadow);
@@ -412,4 +419,5 @@
   --scrim: rgba(29, 53, 79, 0.4);
   --switch-knob-fill: #ffffff;
   --photo-matte: #e8eef6;
+  --auth-hero-deep: #d9e4f2;
 }

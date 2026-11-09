@@ -2,20 +2,12 @@ import { usePwaState } from './pwa-state';
 import './experience/pwa.css';
 
 export function PwaStatus() {
-  const { online, update, install, installError, installApp, updateApp, later, dismissInstall, dismissInstallError } =
-    usePwaState();
+  const { online, install, installError, installApp, dismissInstall, dismissInstallError } = usePwaState();
   return (
     <>
       {!online && (
         <div className="status-bar" role="status">
           You’re offline. Reconnect to load records or save changes.
-        </div>
-      )}
-      {update && (
-        <div className="status-bar">
-          An update is ready. Finish any unsaved changes first.{' '}
-          <button onClick={() => void updateApp()}>Update app</button>
-          <button onClick={later}>Later</button>
         </div>
       )}
       {install && (
