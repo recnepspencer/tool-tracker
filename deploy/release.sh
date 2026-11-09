@@ -18,15 +18,15 @@ source "$root/shared/app.env"
 # The domain overrides the address-based settings in app.env. CI sends the mail and
 # sign-in keys on stdin; an empty answer clears them. The browser check's signup code
 # arrives the same way but stays out of the app's environment.
-incoming=$(tr -d '\r')
-check_code=$(sed -n 's/^DEPLOYMENT_CHECK_CODE=//p' <<<"$incoming")
+keys=$(tr -d '\r')
+check_code=$(sed -n 's/^DEPLOYMENT_CHECK_CODE=//p' <<<"$keys")
 [[ -z $check_code || $check_code =~ ^[A-Z0-9]{24}$ ]] || { echo 'Invalid check code.' >&2; exit 1; }
 (
     umask 077
     {
         printf 'NELSON_APP_URL=https://%s\n' "$domain"
         printf 'DJANGO_ALLOWED_HOSTS=%s,%s,localhost,127.0.0.1\n' "$domain" "$PUBLIC_IP"
-        grep -v '^DEPLOYMENT_CHECK_CODE=' <<<"$incoming" || true
+        grep -v '^DEPLOYMENT_CHECK_CODE=' <<<"$keys" || true
     } > "$root/shared/integrations.env"
 )
 # Cloudflare passes the challenge through on port 80, which already serves the webroot.
