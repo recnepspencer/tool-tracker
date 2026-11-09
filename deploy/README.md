@@ -70,6 +70,8 @@ bash current/deploy/backup.sh
 systemctl list-timers 'nelson-*'
 ```
 
+To start the testing server over, run "Deploy testing environment" by hand with "reset_database" ticked. It backs up the database and photos, empties both, reseeds the review data and verifies the release as usual.
+
 New companies need a single-use signup code. On the host, `docker compose ... exec api python manage.py signup_codes create --count 5` prints random codes, and `--code <name>` issues one code you choose. Without SSH, set the `SIGNUP_CODE` repository secret, run the "Issue a named signup code" workflow, then delete the secret.
 
 For test email, tunnel port 8025 through SSH (`ssh -N -L 127.0.0.1:8025:127.0.0.1:8025 <administrator>@<ip>`) and open `http://127.0.0.1:8025`. Account links point to the public HTTPS app. The private inbox does not deliver messages to real recipients.

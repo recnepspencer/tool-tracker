@@ -6,6 +6,8 @@ sha=${1:?Pass the full release commit}
 [[ $sha =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid release commit.' >&2; exit 1; }
 domain=${2:?Pass the public domain}
 [[ $domain =~ ^[a-z0-9.-]+$ ]] || { echo 'Invalid domain.' >&2; exit 1; }
+reset=${3:-}
+[[ -z $reset || $reset == reset ]] || { echo 'The third argument can only be "reset".' >&2; exit 1; }
 root=/srv/nelson
 incoming="$root/incoming/$sha"
 release="$root/releases/$sha"
@@ -42,6 +44,17 @@ if [[ -f $root/current/deploy/compose.yaml ]]; then
     old=(docker compose --env-file "$root/shared/app.env" --env-file "$root/shared/release.env" -f "$root/current/deploy/compose.yaml")
     "${old[@]}" stop api worker
     bash "$root/current/deploy/backup.sh"
+    # A reset starts again from an empty database and photo store; the backup above keeps both.
+    # PostgreSQL recreates its database when it next starts on the empty data directory.
+    if [[ $reset == reset ]]; then
+        "${old[@]}" stop db
+        find "$root/shared/postgres" "$root/shared/media" -mindepth 1 -delete
+        rm -f "$root/shared/seeded"
+        echo 'Reset the database and photos.'
+    fi
+elif [[ $reset == reset ]]; then
+    echo 'There is no release to reset yet.' >&2
+    exit 1
 fi
 printf 'RELEASE_SHA=%s\n' "$sha" > "$root/shared/candidate.env"
 compose=(docker compose --env-file "$root/shared/app.env" --env-file "$root/shared/candidate.env" -f "$release/deploy/compose.yaml")

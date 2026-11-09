@@ -4,6 +4,11 @@ on:
   push:
     branches: [main, codex/tool-tracker-api]
   workflow_dispatch:
+    inputs:
+      reset_database:
+        description: Erase every account, company and photo, then reseed the review data (a backup is kept)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -68,6 +73,7 @@ jobs:
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           MICROSOFT_CLIENT_ID: ${{ vars.MICROSOFT_CLIENT_ID }}
           MICROSOFT_CLIENT_SECRET: ${{ secrets.MICROSOFT_CLIENT_SECRET }}
+          RESET: ${{ inputs.reset_database && 'reset' || '' }}
         run: |
           release="$RUNNER_TEMP/release"
           mkdir -p "$release"
@@ -80,7 +86,7 @@ jobs:
           for name in BREVO_API_KEY DEFAULT_FROM_EMAIL GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET MICROSOFT_CLIENT_ID MICROSOFT_CLIENT_SECRET; do
             if [[ -n ${!name} ]]; then printf '%s=%s\n' "$name" "${!name}"; fi
           done | ssh -o StrictHostKeyChecking=yes "nelson-deploy@$DEPLOY_HOST" \
-            "cd /srv/nelson/incoming/$GITHUB_SHA && tar -xzf release.tgz && sudo bash deploy/release.sh $GITHUB_SHA $DEPLOY_DOMAIN"
+            "cd /srv/nelson/incoming/$GITHUB_SHA && tar -xzf release.tgz && sudo bash deploy/release.sh $GITHUB_SHA $DEPLOY_DOMAIN $RESET"
       - uses: actions/setup-node@v4
         with:
           node-version: 24
