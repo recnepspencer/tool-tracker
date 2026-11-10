@@ -280,7 +280,10 @@ test('registration attaches a real photo served through authorized download', as
 
 test('an admin can tell the tools they hold from the ones they can take', async ({ page }) => {
   const fixture = await workspace(page);
-  const me = (await (await page.request.get('/api/me')).json()).memberships[0];
+  // The shared owner belongs to many companies; take the membership in this one.
+  const me = (await (await page.request.get('/api/me')).json()).memberships.find((membership: { company_id: string }) =>
+    fixture.base.endsWith(membership.company_id),
+  );
   const handoff = await command(page.request, `${fixture.base}/tools/${fixture.asset.id}/handoffs`, {
     expected_revision: fixture.asset.revision,
     request_key: crypto.randomUUID(),
