@@ -39,8 +39,9 @@ test('an open equipment page loses revoked controls and regains them through rea
     await metadata.getByRole('button', { name: 'Save changes', exact: true }).click();
     await expect(metadata).toHaveCount(0);
     // The tool's drawer stays open behind the closed dialog; close it to reach the tab bar.
-    await actor.keyboard.press('Escape');
-    await expect(actor.getByRole('dialog', { name: 'Hammer drill details', exact: true })).toHaveCount(0);
+    const drawer = actor.getByRole('dialog', { name: 'Hammer drill details', exact: true });
+    await drawer.getByRole('button', { name: 'Close tool details', exact: true }).click();
+    await expect(drawer).toHaveCount(0);
     await expect(actor.getByRole('link', { name: 'Inventory', exact: true })).toHaveCount(0);
     expect((await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}`)).json()).serial_number).toBe(
       'UNIT-001',
