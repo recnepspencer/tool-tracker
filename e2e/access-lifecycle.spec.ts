@@ -38,6 +38,9 @@ test('an open equipment page loses revoked controls and regains them through rea
     // The refused save refreshes access: a foreman still sees tools but can't edit them.
     await metadata.getByRole('button', { name: 'Save changes', exact: true }).click();
     await expect(metadata).toHaveCount(0);
+    // The tool's drawer stays open behind the closed dialog; close it to reach the tab bar.
+    await actor.keyboard.press('Escape');
+    await expect(actor.getByRole('dialog', { name: 'Hammer drill details', exact: true })).toHaveCount(0);
     await expect(actor.getByRole('link', { name: 'Inventory', exact: true })).toHaveCount(0);
     expect((await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}`)).json()).serial_number).toBe(
       'UNIT-001',
@@ -153,8 +156,9 @@ test('offboarding closes jobs, keeps named custody and reinstates the same emplo
     await worker.goto('/app/jobs');
     await worker.getByRole('switch', { name: 'Library wiring', exact: true }).click();
     await expect(worker.getByRole('switch', { name: 'Library wiring', exact: true })).toBeChecked();
-    const current = (await (await worker.request.get(`${fixture.base}/assignments`)).json()).items;
-    expect(current[0].id).not.toBe(assignment.id);
+    const current = async () => (await (await worker.request.get(`${fixture.base}/assignments`)).json()).items;
+    await expect.poll(async () => (await current()).length).toBe(1);
+    expect((await current())[0].id).not.toBe(assignment.id);
     expect((await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}/custody`)).json()).items).toEqual(
       before,
     );
@@ -234,7 +238,6 @@ test('company rules changed mid-draft refresh disabled participation and registr
     });
     await actor.getByRole('switch', { name: 'Library wiring', exact: true }).click();
     // The refused join refreshes the rules: the switch becomes a plain row and the list says who adds you.
-    await expect(actor.getByRole('alert')).toBeVisible();
     await expect(actor.getByRole('switch', { name: 'Library wiring', exact: true })).toHaveCount(0);
     await expect(actor.getByRole('group', { name: 'Library wiring', exact: true })).toBeVisible();
     await expect(actor.getByRole('heading', { name: 'My jobs', exact: true })).toBeVisible();

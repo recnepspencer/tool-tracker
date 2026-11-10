@@ -97,7 +97,9 @@ function FlaggedRow({ row, companyId, returnTo }: { row: FlaggedRowModel; compan
         <ToolPhoto src={photoSrc(companyId, asset.registration_photo_id)} alt="" size="small" priority />
         <div className="flagged-row__body">
           <h2>{asset.name}</h2>
-          <span className="flagged-row__identity">{asset.category_name}</span>
+          <span className="flagged-row__identity">
+            {asset.serial_number ? `${asset.category_name} · ${asset.serial_number}` : asset.category_name}
+          </span>
           {latest && (
             <>
               <span className="flagged-row__identity">

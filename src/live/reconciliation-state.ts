@@ -141,7 +141,12 @@ export function useCaseResolution(
         description: holds('warehouse', warehouse.id) ? 'Warehouse · records say it’s here' : 'Warehouse',
       })),
   ];
+  // The command form keeps the submit from when editing began, so the choices are read from the form.
   async function resolve(form: FormData) {
+    const outcome = text(form, 'outcome') as CaseOutcome;
+    const keep = text(form, 'keep_asset_id');
+    const destination = text(form, 'destination');
+    const moves = outcome === 'found' || outcome === 'move_custody';
     const base = {
       expected_revision: item.revision,
       outcome,

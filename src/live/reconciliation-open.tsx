@@ -62,8 +62,9 @@ export function OpenCaseDialog({ asset, onClose }: { asset: Asset; onClose(): vo
           api.POST('/api/companies/{company_id}/tools/{asset_id}/reconciliations', {
             params: { path: { ...c.path, asset_id: asset.id } },
             body: {
-              kind,
-              duplicate_of_id: duplicateKind ? duplicate : null,
+              // Read from the form: the command form keeps the submit from when editing began.
+              kind: text(form, 'kind') as CaseKind,
+              duplicate_of_id: text(form, 'kind') === 'duplicate_asset' ? text(form, 'duplicate_of_id') : null,
               narrative: text(form, 'narrative'),
             },
           })

@@ -149,6 +149,8 @@ export function ResolveCaseDialog({
         submit={resolve}
       >
         <div className="operations-form reconciliation-form">
+          <input type="hidden" name="outcome" value={outcome} />
+          {outcome === 'merge' && <input type="hidden" name="keep_asset_id" value={keep} />}
           {options.length > 1 ? (
             <div className="reconciliation-choice">
               <OutcomeChoice options={options} value={outcome} onChange={setOutcome} />

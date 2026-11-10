@@ -68,7 +68,7 @@ export function InvitePersonDialog({ onClose }: { onClose(): void }) {
           <FieldGroup>
             <Field label="Name" name="name" required maxLength={120} />
             <Field label="Email address" name="email" type="email" placeholder="name@company.com" required />
-            <Select label="Role" name="role" defaultValue="field_member" searchable={false}>
+            <Select label="Role" name="role" defaultValue="foreman" searchable={false}>
               {ROLES.map((role) => (
                 <option key={role} value={role}>
                   {ROLE_LABELS[role]}

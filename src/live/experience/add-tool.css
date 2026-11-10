@@ -137,6 +137,12 @@
 .experience .worker-optional-toggle--open .worker-optional-chevron {
   transform: rotate(180deg);
 }
+/* A block of its own, so its tap padding sits below the toggle instead of over it. */
+.experience .worker-details-scroll > .text-button {
+  display: block;
+  margin-top: var(--space-8);
+  width: fit-content;
+}
 .experience .worker-optional-fields {
   animation: worker-rise-in var(--duration-380) var(--ease-out) both;
   margin-top: var(--space-9);

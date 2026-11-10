@@ -113,6 +113,7 @@ def activity(
             | Q(metadata__reason__icontains=text)
             | Q(metadata__note__icontains=text)
             | Q(metadata__tool_name__icontains=text)
+            | Q(metadata__serial_number__icontains=text)
         )
     result = paginate(query.order_by("-occurred_at", "id"), page.limit, page.offset)
     names = dict(

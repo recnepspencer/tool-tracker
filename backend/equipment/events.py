@@ -5,6 +5,7 @@ def asset_event_metadata(asset, **details):
     return {
         "asset_id": str(asset.pk),
         "tool_name": asset.tool_model.name,
+        "serial_number": asset.serial_number or "",
         "warehouse_id": str(asset.responsible_warehouse_id),
         **details,
     }

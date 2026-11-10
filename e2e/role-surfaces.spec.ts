@@ -106,8 +106,8 @@ for (const item of cases)
             await expect(actor.getByRole('button', { name: 'Add job', exact: true })).toHaveCount(item.manage ? 1 : 0);
             const roster = actor.getByRole('button', { name: 'Open Library wiring', exact: true });
             if (heading === 'My jobs') {
-              // The field "My jobs" list is a set of participation switches without a roster.
-              await expect(actor.getByRole('switch', { name: 'Library wiring', exact: true })).toBeVisible();
+              // The field "My jobs" list has no roster; without self-join each job is a plain row.
+              await expect(actor.getByRole('group', { name: 'Library wiring', exact: true })).toBeVisible();
               await expect(roster).toHaveCount(0);
             } else {
               await roster.click();

@@ -260,6 +260,8 @@ test('registration attaches a real photo served through authorized download', as
   await expect(wizard.getByRole('img', { name: 'Selected tool', exact: true })).toBeVisible();
   await chooseOption(page, 'Tool model', model.id);
   await chooseOption(page, 'Home warehouse', fixture.warehouse.id);
+  await wizard.getByRole('button', { name: 'More details', exact: true }).click();
+  await wizard.getByLabel('Serial number', { exact: true }).fill('PHOTO-003');
   await page.getByRole('button', { name: 'Add tool', exact: true }).click();
   // The new tool's record opens on its own after registration.
   const photo = details(page).getByRole('link', { name: 'View photo', exact: true });
