@@ -316,7 +316,9 @@ test('an admin can tell the tools they hold from the ones they can take', async 
     .click();
   await expect(page.getByRole('heading', { name: 'Browse tools', exact: true })).toBeVisible();
   await page.goto('/app/checkout?availability=all');
-  await page.getByRole('button', { name: 'Close filters', exact: true }).click();
+  const filters = page.getByRole('dialog', { name: 'Catalog filters', exact: true });
+  await filters.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(filters).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Open Hammer drill', exact: true })).toContainText(
     '1 available · 1 with you',
   );
