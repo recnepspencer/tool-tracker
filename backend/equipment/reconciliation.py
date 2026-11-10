@@ -243,7 +243,7 @@ def _merge(identity, member, case, asset, other, data):
             removed,
             merged_into_id=str(kept.pk),
             merged_into=_describe(kept),
-            carried_over=carried,
+            carried_over=", ".join(carried),
         ),
     )
     return kept

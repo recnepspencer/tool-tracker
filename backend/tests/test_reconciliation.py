@@ -169,7 +169,10 @@ def test_merge_keeps_one_record_and_retires_the_other(world, client, base, setti
     audit = PlatformAuditEventRecord.objects.get(event_key="equipment.reconciliation.merged")
     assert audit.metadata["asset_id"] == str(removed.pk)
     assert audit.metadata["merged_into_id"] == str(kept.pk)
-    assert sorted(audit.metadata["carried_over"]) == ["registration_photo", "serial_number"]
+    assert sorted(audit.metadata["carried_over"].split(", ")) == [
+        "registration_photo",
+        "serial_number",
+    ]
 
 
 def test_merge_refuses_units_with_a_pending_handoff_or_request(world, client, base):

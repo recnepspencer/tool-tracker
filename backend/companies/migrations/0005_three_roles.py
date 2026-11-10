@@ -31,6 +31,9 @@ def three_roles(apps, schema_editor):
             live[grant.membership_id] = grant
         else:
             Grant.objects.filter(pk=grant.pk).update(revoked_at=now)
+    # Fire the deferred integrity triggers now; PostgreSQL refuses to build the
+    # unique index below while they are still pending in this transaction.
+    schema_editor.execute("SET CONSTRAINTS ALL IMMEDIATE")
 
 
 class Migration(migrations.Migration):

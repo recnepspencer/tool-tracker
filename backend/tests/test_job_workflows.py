@@ -2,6 +2,7 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
+from backend_platform.jobs import run_pending_jobs
 from backend_platform.models import PlatformAuditEventRecord
 from django.utils import timezone
 
@@ -387,6 +388,8 @@ def test_managers_set_everyone_on_a_job_in_one_save(crew, password_hash):
     )
     ended = JobAssignment.objects.get(membership=second.member)
     assert ended.ends_at is not None and ended.end_reason == "Crew swap"
+    # Audit events are written by the background job that drains the outbox.
+    run_pending_jobs(limit=100)
     events = PlatformAuditEventRecord.objects.filter(
         event_key__in=["work.assignment.created", "work.assignment.ended"]
     )
