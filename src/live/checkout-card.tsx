@@ -18,6 +18,7 @@ export function ToolCatalogCard({
 }) {
   const statusParts = [
     item.availableCount ? `${item.availableCount} available` : null,
+    item.withYouCount ? `${item.withYouCount} with you` : null,
     item.checkedOutCount ? `${item.checkedOutCount} checked out` : null,
     item.attentionCount ? `${item.attentionCount} needs attention` : null,
     item.lostCount ? `${item.lostCount} lost` : null,

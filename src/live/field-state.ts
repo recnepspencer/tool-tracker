@@ -76,7 +76,7 @@ export function useCheckout() {
   return {
     c,
     tools,
-    items: catalogItems(all, filters),
+    items: catalogItems(all, filters, c.membership_id),
     warehouses: catalogWarehouses(all),
     categories: catalogCategories(all),
     filters,

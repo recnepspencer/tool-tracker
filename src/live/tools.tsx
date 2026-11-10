@@ -2,7 +2,7 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { errorMessage, type Model } from './client';
 import { Callout, cx, ErrorState, LoadingState, OverlayDialog, StatusBadge, ToolPhoto } from './kit';
-import { assetLabel, photoSrc, toolStatus } from './tool-status';
+import { photoSrc, viewerStatus } from './tool-status';
 import { CustodyTimeline, ToolReports } from './tool-history';
 import { ToolFacts, custodianName, custodyCaveat } from './tool-detail-facts';
 import { WorkerActionPanel, WorkerToolActions, WorkerToolNotices } from './tool-actions';
@@ -62,7 +62,7 @@ function WorkerToolContent({ state, asset: t }: { state: ToolDetailState; asset:
           <p>
             {t.manufacturer} · {t.model_number}
           </p>
-          <StatusBadge tone={toolStatus(t)}>{assetLabel(t)}</StatusBadge>
+          <ViewerStatusBadge asset={t} membershipId={c.membership_id} />
         </div>
       </div>
       <WorkerToolNotices state={state} asset={t} />
@@ -110,6 +110,11 @@ function ToolDrawer({ state }: { state: ToolDetailState }) {
   );
 }
 
+function ViewerStatusBadge({ asset, membershipId }: { asset: Model<'AssetView'>; membershipId: string }) {
+  const status = viewerStatus(asset, membershipId);
+  return <StatusBadge tone={status.tone}>{status.label}</StatusBadge>;
+}
+
 function DrawerContent({ state, asset: t }: { state: ToolDetailState; asset: Model<'AssetView'> }) {
   const { c, pendingHandoff, assetRequests, setAction } = state;
   const permissions = toolPermissions(state, t);
@@ -126,12 +131,12 @@ function DrawerContent({ state, asset: t }: { state: ToolDetailState; asset: Mod
       <div className="inventory-drawer__identity">
         <h2>{t.name}</h2>
         <p>{[t.manufacturer, t.model_number, t.category_name].filter(Boolean).join(' · ')}</p>
-        <StatusBadge tone={toolStatus(t)}>{assetLabel(t)}</StatusBadge>
+        <ViewerStatusBadge asset={t} membershipId={c.membership_id} />
       </div>
 
       <section className="inventory-drawer__holder" aria-label="Current custody">
         <span>{t.holder_membership_id ? 'Checked out to' : 'Warehouse custody'}</span>
-        <strong>{custodianName(t)}</strong>
+        <strong>{t.holder_membership_id === c.membership_id ? 'You' : custodianName(t)}</strong>
         {caveat && <small>{caveat}</small>}
       </section>
       {t.pending_handoff_id ? (

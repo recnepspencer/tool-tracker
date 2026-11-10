@@ -3,7 +3,13 @@ import { Plus } from 'lucide-react';
 import { AddToolLink } from './add-tool-photo';
 import type { Model } from './client';
 import { FlaggedToolsPage } from './flagged-tools';
-import { inventoryHolder, lastMoved, useInventoryView, type InventoryGroup } from './inventory-state';
+import {
+  inventoryHolder,
+  lastMoved,
+  useInventoryView,
+  type InventoryGroup,
+  type InventoryShow,
+} from './inventory-state';
 import {
   ChevronDownIcon,
   ErrorState,
@@ -15,9 +21,11 @@ import {
   SurfaceCard,
   ToolPhoto,
 } from './kit';
-import { assetLabel, photoSrc, toolStatus } from './tool-status';
+import { photoSrc, viewerStatus } from './tool-status';
 
 type Asset = Model<'AssetView'>;
+
+const showLabels: Record<InventoryShow, string> = { all: 'All tools', available: 'Available', mine: 'With you' };
 
 const activate = (action: () => void) => (event: KeyboardEvent) => {
   if (event.key === 'Enter' || event.key === ' ') {
@@ -53,6 +61,20 @@ function WarehouseInventoryPage() {
         }
       />
       <div className="operations-toolbar operations-toolbar--inventory">
+        <div className="segmented inventory-views" role="tablist" aria-label="Show">
+          {(Object.keys(showLabels) as InventoryShow[]).map((value) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={view.show === value}
+              onClick={() => view.show !== value && view.setShow(value)}
+            >
+              {showLabels[value]}
+              <span className="inventory-views__count">{view.counts[value]}</span>
+            </button>
+          ))}
+        </div>
         <div className="operations-filters operations-filters--compact">
           <SearchField
             compact
@@ -97,6 +119,7 @@ function WarehouseInventoryPage() {
                         key={item.id}
                         item={item}
                         companyId={view.c.company_id}
+                        membershipId={view.c.membership_id}
                         onOpen={() => view.open(item.id)}
                       />
                     );
@@ -112,6 +135,7 @@ function WarehouseInventoryPage() {
                               item={item}
                               nested
                               companyId={view.c.company_id}
+                              membershipId={view.c.membership_id}
                               onOpen={() => view.open(item.id)}
                             />
                           ))
@@ -123,7 +147,9 @@ function WarehouseInventoryPage() {
             </table>
           </div>
         ) : (
-          <p className="admin-empty">No tools match this inventory view.</p>
+          <p className="admin-empty">
+            {view.show === 'mine' ? 'You are not holding any tools.' : 'No tools match this inventory view.'}
+          </p>
         )}
       </SurfaceCard>
     </div>
@@ -173,15 +199,18 @@ function InventoryGroupRow({
 function InventoryRow({
   item,
   companyId,
+  membershipId,
   nested = false,
   onOpen,
 }: {
   item: Asset;
   companyId: string;
+  membershipId: string;
   nested?: boolean;
   onOpen(): void;
 }) {
-  const holder = inventoryHolder(item);
+  const holder = inventoryHolder(item, membershipId);
+  const status = viewerStatus(item, membershipId);
   const moved = lastMoved(item);
   return (
     <tr
@@ -206,7 +235,7 @@ function InventoryRow({
       </td>
       <td>{holder}</td>
       <td>
-        <StatusBadge tone={toolStatus(item)}>{assetLabel(item)}</StatusBadge>
+        <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
         {item.pending_handoff_id && <span className="inventory-pending-label">In transfer</span>}
       </td>
       <td>{item.responsible_warehouse_name}</td>

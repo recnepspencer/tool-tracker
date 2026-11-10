@@ -277,3 +277,44 @@ test('registration attaches a real photo served through authorized download', as
   }
   expect((await (await page.request.get(`${fixture.base}/tools?search=PHOTO-003`)).json()).items).toHaveLength(1);
 });
+
+test('an admin can tell the tools they hold from the ones they can take', async ({ page }) => {
+  const fixture = await workspace(page);
+  const me = (await (await page.request.get('/api/me')).json()).memberships[0];
+  const handoff = await command(page.request, `${fixture.base}/tools/${fixture.asset.id}/handoffs`, {
+    expected_revision: fixture.asset.revision,
+    request_key: crypto.randomUUID(),
+    destination_membership_id: me.membership_id,
+  });
+  await command(page.request, `${fixture.base}/handoffs/${handoff.id}/accept`, { expected_revision: handoff.revision });
+  await page.reload();
+  const group = page.getByRole('button', { name: 'Expand Hammer drill, 2 tools' });
+  await expect(group).toContainText('1 available · 1 with you');
+  const views = page.getByRole('tablist', { name: 'Show', exact: true });
+  await expect(views.getByRole('tab')).toHaveText(['All tools2', 'Available1', 'With you1']);
+  // "With you" is its own view, and the tool says so, rather than the same "Checked out" as a coworker's.
+  await views.getByRole('tab', { name: /^With you/ }).click();
+  await expect(page).toHaveURL(/show=mine/);
+  await expect(unitRow(page, 'UNIT-002')).toHaveCount(0);
+  await expect(unitRow(page, 'UNIT-001')).toContainText('With you');
+  await expect(unitRow(page, 'UNIT-001').getByRole('cell', { name: 'You', exact: true })).toBeVisible();
+  await views.getByRole('tab', { name: /^Available/ }).click();
+  await expect(unitRow(page, 'UNIT-001')).toHaveCount(0);
+  await expect(unitRow(page, 'UNIT-002')).toContainText('Available');
+  await views.getByRole('tab', { name: /^With you/ }).click();
+  await unitRow(page, 'UNIT-001').click();
+  const custody = details(page).getByRole('region', { name: 'Current custody', exact: true });
+  await expect(custody.getByText('You', { exact: true })).toBeVisible();
+  await page.goBack();
+  // Admins browse what they can take from Checkout, like everyone else.
+  await page
+    .getByRole('navigation', { name: 'Main navigation', exact: true })
+    .getByRole('link', { name: 'Checkout' })
+    .click();
+  await expect(page.getByRole('heading', { name: 'Browse tools', exact: true })).toBeVisible();
+  await page.goto('/app/checkout?availability=all');
+  await page.getByRole('button', { name: 'Close filters', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Open Hammer drill', exact: true })).toContainText(
+    '1 available · 1 with you',
+  );
+});

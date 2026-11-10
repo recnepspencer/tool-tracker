@@ -13,6 +13,11 @@
   border-color: var(--green-border);
   color: var(--green);
 }
+.status-badge--with-you {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: var(--on-accent-fill);
+}
 .status-badge--checked-out {
   background: var(--blue-bg);
   border-color: var(--blue-border-muted);

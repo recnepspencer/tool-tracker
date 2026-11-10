@@ -47,7 +47,22 @@
   padding-inline: var(--space-12);
 }
 .experience .operations-toolbar--inventory {
-  justify-content: flex-end;
+  align-items: center;
+}
+/* What the viewer can take and what they hold, one tap away, each with its count. */
+.experience .inventory-views {
+  flex: 0 1 var(--space-420);
+  min-width: 0;
+}
+.experience .inventory-views > button {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-6);
+  white-space: nowrap;
+}
+.experience .inventory-views__count {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 .experience .flagged-list {
   display: grid;

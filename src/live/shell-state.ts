@@ -45,8 +45,10 @@ export function useShellDestinations() {
           also: ['/app/flagged', '/app/reconciliations'],
         },
         { label: 'Inventory', path: '/app/tools', icon: Boxes, enabled: c.can('tools.read') },
-        // Managers and admins carry tools too, so they keep the same view of what they hold.
+        // Managers and admins carry tools too: My tools is what they hold, Checkout what they can
+        // take. Inventory stays the company's record of every tool.
         { label: 'My tools', path: '/app/mine', icon: Wrench, enabled: c.can('tools.read') },
+        { label: 'Checkout', path: '/app/checkout', icon: PackageCheck, enabled: c.can('tools.read') },
         {
           label: c.can('jobs.manage') ? 'Jobs' : 'My jobs',
           path: '/app/jobs',

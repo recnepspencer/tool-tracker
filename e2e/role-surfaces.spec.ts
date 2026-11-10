@@ -14,6 +14,7 @@ const cases = [
       'Queue',
       'Inventory',
       'My tools',
+      'Checkout',
       'Jobs',
       'People',
       'Foremen',
@@ -28,7 +29,18 @@ const cases = [
     manage: true,
     people: false,
     home: 'Queue',
-    pages: ['Queue', 'Inventory', 'My tools', 'Jobs', 'Foremen', 'Warehouses', 'Catalog', 'Activity', 'Settings'],
+    pages: [
+      'Queue',
+      'Inventory',
+      'My tools',
+      'Checkout',
+      'Jobs',
+      'Foremen',
+      'Warehouses',
+      'Catalog',
+      'Activity',
+      'Settings',
+    ],
   },
   {
     role: 'foreman',
@@ -44,7 +56,7 @@ const cases = [
     manage: false,
     people: false,
     home: 'Queue',
-    pages: ['Queue', 'Inventory', 'My tools', 'My jobs', 'Foremen', 'Activity'],
+    pages: ['Queue', 'Inventory', 'My tools', 'Checkout', 'My jobs', 'Foremen', 'Activity'],
   },
 ];
 
