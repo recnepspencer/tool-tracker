@@ -148,7 +148,9 @@ try {
   await anonymous.close();
   await expect
     .poll(
-      async () => (await (await page.request.get(`${base}/activity?search=${encodeURIComponent(asset.name)}`)).json()).items.length,
+      async () =>
+        (await (await page.request.get(`${base}/activity?search=${encodeURIComponent(asset.name)}`)).json()).items
+          .length,
       { timeout: 30_000, message: 'The deployed audit worker must materialize the registration.' },
     )
     .toBeGreaterThan(0);
@@ -201,7 +203,12 @@ try {
 
   await page.goto('/app/tools');
   await expect(page.getByRole('heading', { name: 'Inventory', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: `Open ${asset.name}, ${asset.serial_number}`, exact: true })).toBeVisible();
+  // Inventory groups tools of one model, and the persistent check company can hold more than one.
+  const row = page.getByRole('button', { name: `Open ${asset.name}, ${asset.serial_number}`, exact: true });
+  const group = page.getByRole('button', { name: new RegExp(`^Expand ${asset.name}, \\d+ tools$`) });
+  await expect(row.or(group)).toBeVisible();
+  if (await group.isVisible()) await group.click();
+  await expect(row).toBeVisible();
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
   });
