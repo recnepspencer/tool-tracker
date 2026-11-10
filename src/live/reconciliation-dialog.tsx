@@ -1,12 +1,99 @@
-import { api, type Model } from './client';
-import { OverlayDialog, SelectField } from './kit';
-import { caseKindLabels } from './reconciliation-state';
+import type { Model } from './client';
+import { FieldGroup, OverlayDialog, SelectField, ToolPhoto, cx } from './kit';
 import { CustodyEvidenceFields } from './photos';
-import { useStagedPhoto } from './photo-state';
+import {
+  caseKindLabels,
+  caseProblem,
+  recordIdentity,
+  useCaseResolution,
+  type CaseOutcome,
+  type CaseRecord,
+} from './reconciliation-state';
 import { useCompany } from './session';
-import { Form, text } from './ui';
+import { CommandForm } from './tool-detail-form';
+import { formatDate } from './format';
+import { photoSrc } from './tool-status';
+import './reconciliation.css';
 
-/** Resolve one reconciliation case with a reasoned note and, optionally, corrected custody. */
+type Case = Model<'ReconciliationView'>;
+
+/** A choice of two or three, drawn as the kit's segmented control. */
+function OutcomeChoice({
+  options,
+  value,
+  onChange,
+}: {
+  options: { value: CaseOutcome; label: string }[];
+  value: CaseOutcome;
+  onChange(value: CaseOutcome): void;
+}) {
+  return (
+    <div className="segmented reconciliation-outcomes" role="radiogroup" aria-label="Outcome">
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          role="radio"
+          aria-checked={option.value === value}
+          onClick={() => onChange(option.value)}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** The two records of a duplicate side by side; the person picks the one to keep. */
+function RecordComparison({
+  records,
+  keep,
+  onKeep,
+}: {
+  records: [CaseRecord, CaseRecord];
+  keep: string;
+  onKeep(id: string): void;
+}) {
+  const c = useCompany();
+  return (
+    <div className="reconciliation-compare" role="radiogroup" aria-label="Record to keep">
+      {records.map((record) => {
+        const kept = record.id === keep;
+        return (
+          <button
+            key={record.id}
+            type="button"
+            role="radio"
+            aria-checked={kept}
+            aria-label={`Keep ${record.name}, ${recordIdentity(record)}`}
+            className={cx('reconciliation-record', kept && 'reconciliation-record--kept')}
+            onClick={() => onKeep(record.id)}
+          >
+            <ToolPhoto src={photoSrc(c.company_id, record.registration_photo_id)} alt="" size="card" />
+            <span className="reconciliation-record__verdict">{kept ? 'Keep' : 'Retire'}</span>
+            <strong>{record.name}</strong>
+            <dl>
+              <div>
+                <dt>Serial</dt>
+                <dd>{record.serial_number ?? 'None'}</dd>
+              </div>
+              <div>
+                <dt>Holder</dt>
+                <dd>{record.holder_name ?? 'No one'}</dd>
+              </div>
+              <div>
+                <dt>Registered</dt>
+                <dd>{formatDate(record.registered_at)}</dd>
+              </div>
+            </dl>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Settle one reconciliation case: pick what happened, then fill in only what that needs. */
 export function ResolveCaseDialog({
   item,
   asset,
@@ -14,78 +101,100 @@ export function ResolveCaseDialog({
   warehouses,
   onClose,
 }: {
-  item: Model<'ReconciliationView'>;
-  asset: Model<'AssetView'>;
+  item: Case;
+  asset?: Model<'AssetView'>;
   people: Model<'MemberView'>[];
   warehouses: Model<'WarehouseView'>[];
   onClose(): void;
 }) {
-  const c = useCompany();
-  const photo = useStagedPhoto(c.company_id, 'reconciliation', item.revision);
+  const {
+    options,
+    outcome,
+    setOutcome,
+    chosen,
+    other,
+    keep,
+    setKeep,
+    destination,
+    setDestination,
+    moves,
+    destinations,
+    photo,
+    resolve,
+  } = useCaseResolution(item, asset, people, warehouses);
   return (
     <OverlayDialog
-      label={`Resolve ${asset.name}`}
+      label={`Resolve ${item.record.name}`}
       onClose={onClose}
       panelClassName="admin-dialog operations-dialog"
       showCloseButton
     >
       <div className="dialog-heading">
-        <span className="eyebrow">{caseKindLabels[item.kind]}</span>
-        <h2>{asset.name}</h2>
-        <p>
-          {asset.asset_tag} · {asset.holder_name ?? asset.warehouse_name ?? 'No current custodian'}
-        </p>
-        {item.narrative && <p className="queue-item__note">“{item.narrative}”</p>}
+        <h2>
+          {caseKindLabels[item.kind]}: {item.record.name}
+        </h2>
+        <p>{caseProblem(item)}</p>
+        {item.narrative && <p className="reconciliation-narrative">“{item.narrative}”</p>}
       </div>
-      <Form
+      <CommandForm
         label="Resolve case"
-        successMessage={null}
+        submitLabel={chosen.submit}
+        submitVariant={outcome === 'write_off' ? 'danger' : 'primary'}
+        disabled={moves && !destination}
+        onCancel={onClose}
         onDone={() => {
           photo.clear();
           onClose();
         }}
-        submit={async (f) => {
-          const [kind, id] = text(f, 'destination').split(':');
-          await api.POST('/api/companies/{company_id}/reconciliations/{case_id}/resolve', {
-            params: { path: { ...c.path, case_id: item.id } },
-            body: {
-              expected_revision: item.revision,
-              expected_asset_revision: asset.revision,
-              note: text(f, 'note'),
-              destination_membership_id: kind === 'person' ? id : null,
-              destination_warehouse_id: kind === 'warehouse' ? id : null,
-              photo_id: await photo.upload(f),
-            },
-          });
-        }}
+        submit={resolve}
       >
-        <SelectField
-          name="destination"
-          label="Correct custody"
-          hint="A photo is required when custody changes"
-          defaultValue=""
-          options={[
-            { value: '', label: 'Keep current custody' },
-            ...people.map((person) => ({
-              value: `person:${person.id}`,
-              label: person.preferred_name,
-              description: 'Person',
-            })),
-            ...warehouses.map((warehouse) => ({
-              value: `warehouse:${warehouse.id}`,
-              label: warehouse.name,
-              description: 'Warehouse',
-            })),
-          ]}
-        />
-        <CustodyEvidenceFields
-          context="review"
-          noteName="note"
-          noteLabel="Findings and resolution"
-          notePlaceholder="What you found and how custody was settled"
-          noteRequired
-        />
-      </Form>
+        <div className="operations-form reconciliation-form">
+          {options.length > 1 ? (
+            <div className="reconciliation-choice">
+              <OutcomeChoice options={options} value={outcome} onChange={setOutcome} />
+              <p className="reconciliation-choice__hint">{chosen.description}</p>
+            </div>
+          ) : (
+            <p className="reconciliation-choice__hint">{chosen.description}</p>
+          )}
+          {outcome === 'merge' && other && (
+            <RecordComparison records={[item.record, other]} keep={keep} onKeep={setKeep} />
+          )}
+          {outcome === 'merge' && (
+            <p className="reconciliation-choice__hint">
+              A serial number or photo the kept record lacks is copied over from the retired one.
+            </p>
+          )}
+          {moves && (
+            <FieldGroup>
+              <SelectField
+                label={outcome === 'found' ? 'Where is it now?' : 'Who has it now?'}
+                name="destination"
+                value={destination}
+                onChange={setDestination}
+                options={destinations}
+                placeholder="Choose a person or warehouse"
+                emptyMessage="No matching people or warehouses"
+                searchable
+                required
+              />
+            </FieldGroup>
+          )}
+          {outcome === 'write_off' && (
+            <p className="reconciliation-warning" role="note">
+              This can’t be undone. {item.record.name} is marked disposed and leaves inventory, and open requests for it
+              are declined.
+            </p>
+          )}
+          <CustodyEvidenceFields
+            context="review"
+            noteName="note"
+            noteLabel="Note"
+            notePlaceholder="What you found"
+            showPhoto={outcome !== 'not_duplicate' && outcome !== 'records_correct'}
+          />
+        </div>
+      </CommandForm>
     </OverlayDialog>
   );
 }

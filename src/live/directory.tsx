@@ -27,7 +27,6 @@ export function DirectoryPage() {
     <div className="page-content foremen-page">
       <PageHeading
         title="Foremen"
-        description="See who has each tool and which jobs they’re working on."
         action={
           c.can('jobs.assign') ? (
             <Button variant="secondary" onClick={() => navigate('/app/jobs')}>
@@ -111,7 +110,7 @@ export function DirectoryPage() {
                             </Link>
                           </strong>
                           <small>
-                            {tool.manufacturer} · {tool.model_number} · {tool.asset_tag}
+                            {tool.manufacturer} · {tool.model_number}
                             {tool.serial_number ? ` · ${tool.serial_number}` : ''}
                           </small>
                           <div className="foreman-tool-status">

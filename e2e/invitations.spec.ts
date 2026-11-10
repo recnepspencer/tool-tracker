@@ -55,7 +55,7 @@ test('revoked links recover clearly and a replacement invitation joins the inten
     const stale = await command(page.request, `${fixture.base}/invitations`, {
       email,
       preferred_name: 'New teammate',
-      role: 'field_member',
+      role: 'foreman',
     });
     await teammate.goto(`/invite/${stale.token}`);
     await expect(teammate.getByRole('button', { name: 'Accept invitation', exact: true })).toBeVisible();

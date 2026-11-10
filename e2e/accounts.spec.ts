@@ -86,7 +86,7 @@ test('signup separates joining a team from starting a company', async ({ page, b
   const first = await command(page.request, `${base}/invitations`, {
     email,
     preferred_name: 'Rejoin Person',
-    role: 'field_member',
+    role: 'foreman',
   });
   const visitorContext = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
   const visitor = await visitorContext.newPage();
@@ -157,20 +157,20 @@ test('a signup code starts a company with its logo and hands ownership to a name
   const bossPage = await bossContext.newPage();
   await bossPage.goto(await emailLink(boss, '/invite/'));
   await expect(bossPage.getByRole('heading', { name: 'Take ownership' })).toBeVisible();
-  await expect(bossPage.getByText('Owner · Company admin', { exact: true })).toBeVisible();
+  await expect(bossPage.getByText('Owner · Admin', { exact: true })).toBeVisible();
   await bossPage.getByRole('link', { name: 'Create an account', exact: true }).click();
   await signup(bossPage, boss, 'Company Boss');
   await bossPage.getByRole('button', { name: 'Accept invitation' }).click();
   await bossPage.getByRole('button', { name: 'Open workspace', exact: true }).click();
   await bossPage.getByRole('link', { name: 'People', exact: true }).click();
   const founderRow = bossPage.getByRole('row').filter({ hasText: 'Office Manager' });
-  await expect(bossPage.getByRole('row').filter({ hasText: 'Company Boss' })).toContainText('Owner, Company admin');
+  await expect(bossPage.getByRole('row').filter({ hasText: 'Company Boss' })).toContainText('Owner, Admin');
   await founderRow.getByRole('button', { name: 'Open Office Manager' }).click();
   const drawer = bossPage.getByRole('dialog', { name: 'Person details for Office Manager' });
   await drawer.getByRole('button', { name: 'Make Office Manager the owner' }).click();
   await drawer.getByRole('button', { name: 'Make owner', exact: true }).click();
   await expect(drawer.getByRole('button', { name: 'Make owner', exact: true })).toHaveCount(0);
-  await expect(founderRow).toContainText('Owner, Company admin');
+  await expect(founderRow).toContainText('Owner, Admin');
   await bossContext.close();
 });
 
@@ -184,11 +184,10 @@ test('a new company builds its inventory through public screens and a worker rec
     viewport: { width: 390, height: 844 },
   });
   const worker = await workerContext.newPage();
-  await invitedMember(page, worker, base, 'field_member', 'Field Employee');
+  await invitedMember(page, worker, base, 'foreman', 'Field Employee');
   await page.goto('/app/warehouses');
   await page.getByRole('button', { name: 'Add warehouse', exact: true }).click();
   const warehouseDialog = page.getByRole('dialog', { name: 'Create warehouse', exact: true });
-  await warehouseDialog.getByLabel('Code', { exact: true }).fill('MAIN');
   await warehouseDialog.getByLabel('Name', { exact: true }).fill('Main warehouse');
   await warehouseDialog.getByRole('button', { name: 'Save warehouse', exact: true }).click();
   await expect(warehouseDialog).toHaveCount(0);
@@ -212,10 +211,8 @@ test('a new company builds its inventory through public screens and a worker rec
   await expect(modelDialog).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Edit Hammer drill', exact: true })).toBeVisible();
   await page.goto('/app/tools/new');
-  await page.getByRole('button', { name: 'Continue without a photo' }).click();
   await chooseOption(page, 'Tool model', { label: 'Makita Hammer drill' });
   await chooseOption(page, 'Home warehouse', { label: 'Main warehouse' });
-  await page.getByLabel('Asset tag', { exact: true }).fill('TEST-001');
   await page.getByRole('button', { name: 'Add tool', exact: true }).click();
   // The wizard closes onto the new tool's record.
   await expect(page.getByRole('dialog', { name: 'Hammer drill details', exact: true })).toBeVisible();
@@ -230,11 +227,16 @@ test('a new company builds its inventory through public screens and a worker rec
   await page.getByRole('button', { name: 'Review request for Hammer drill', exact: true }).click();
   await page
     .getByRole('dialog', { name: 'Review Hammer drill', exact: true })
-    .getByRole('button', { name: 'Release to worker', exact: true })
+    .getByRole('button', { name: 'Release', exact: true })
     .click();
   await expect(page.getByRole('dialog', { name: 'Review Hammer drill', exact: true })).toHaveCount(0);
-  await expect(page.getByText('Released · awaiting pickup', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Release for Hammer drill', exact: true })).toHaveCount(0);
+  // Released, the tool waits on the worker: it moves from Needs you to Waiting on others.
+  await expect(
+    page
+      .getByRole('region', { name: 'Waiting on others', exact: true })
+      .getByText('Waiting for Field Employee to pick up'),
+  ).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Release request for Hammer drill', exact: true })).toHaveCount(0);
   // The released tool waits in the worker's own pending list until they accept custody.
   await worker.goto('/app/mine');
   await worker
@@ -247,14 +249,12 @@ test('a new company builds its inventory through public screens and a worker rec
   await expect(receipt).toHaveCount(0);
   await expect(worker.getByRole('article', { name: 'Hammer drill pending handoff', exact: true })).toHaveCount(0);
   await page.reload();
-  await expect(page.getByRole('button', { name: 'Review request for Hammer drill', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Review pickup for Hammer drill', exact: true })).toHaveCount(0);
   await page.goto(`/app/tools/${toolId}`);
   await expect(
     page.getByRole('region', { name: 'Current custody', exact: true }).getByText('Field Employee', { exact: true }),
   ).toBeVisible();
-  await expect(
-    worker.getByRole('button', { name: 'Open details for Hammer drill unit TEST-001', exact: true }),
-  ).toBeVisible();
+  await expect(worker.getByRole('button', { name: 'Open details for Hammer drill', exact: true })).toBeVisible();
   await worker.screenshot({ path: 'artifacts/real-app-mobile.png', fullPage: true });
   await workerContext.close();
 });
@@ -266,7 +266,7 @@ test('a member recovers their password, signs in with it and signs out', async (
     viewport: { width: 390, height: 844 },
   });
   const worker = await workerContext.newPage();
-  const { email: employee } = await invitedMember(page, worker, base, 'field_member', 'Field Employee');
+  const { email: employee } = await invitedMember(page, worker, base, 'foreman', 'Field Employee');
   await worker.goto('/forgot-password');
   await worker.getByLabel('Email address', { exact: true }).fill(employee);
   await worker.getByRole('button', { name: 'Send reset link' }).click();

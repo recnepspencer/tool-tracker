@@ -154,19 +154,46 @@
   justify-content: space-between;
 }
 .experience .page-heading h1 {
-  font-size: var(--text-8xl);
+  font-size: var(--text-5xl);
   letter-spacing: var(--tracking-display);
   line-height: var(--leading-snug);
-  margin: var(--space-7) 0 var(--space-8);
-}
-.experience .page-heading--without-eyebrow h1 {
-  margin-top: 0;
-}
-.experience .page-heading p {
-  color: var(--muted);
-  line-height: var(--leading-prose);
   margin: 0;
-  max-width: var(--space-620);
+}
+.experience .page-heading-title {
+  align-items: center;
+  display: flex;
+  gap: var(--space-4);
+}
+.experience .page-heading-info {
+  align-items: center;
+  border-radius: var(--radius-pill);
+  color: var(--muted);
+  display: inline-flex;
+  height: var(--space-36);
+  justify-content: center;
+  width: var(--space-36);
+}
+.experience .page-heading-info:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+.experience .page-heading-info svg {
+  height: var(--space-18);
+  width: var(--space-18);
+}
+.experience .role-guide {
+  display: grid;
+  gap: var(--space-12);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.experience .role-guide li {
+  display: grid;
+  gap: var(--space-2);
+}
+.experience .role-guide span {
+  color: var(--muted);
 }
 .experience .page-heading-status {
   border: var(--border-width) solid var(--border);
@@ -340,32 +367,20 @@
   .experience .page-heading--with-action {
     align-items: center;
     display: grid;
-    /* The description belongs to the title, so it sits as close as it would without the action. */
     gap: var(--space-8) var(--space-16);
     grid-template-columns: minmax(0, 1fr) auto;
   }
   .experience .page-heading--with-action > div:first-child {
     display: contents;
   }
-  .experience .page-heading--with-action .eyebrow,
-  .experience .page-heading--with-action p,
   .experience .page-heading--with-action .related-links {
     grid-column: 1 / -1;
   }
-  .experience .page-heading--with-action h1 {
-    grid-column: 1;
-    grid-row: 2;
-  }
+  .experience .page-heading--with-action h1,
   .experience .page-heading--with-action .page-heading-action {
-    grid-column: 2;
-    grid-row: 2;
+    grid-row: 1;
   }
   .experience .page-heading--with-action:has(.button--primary) {
     display: block;
-  }
-  /* Without an eyebrow the title row is the first row. */
-  .experience .page-heading--with-action.page-heading--without-eyebrow h1,
-  .experience .page-heading--with-action.page-heading--without-eyebrow .page-heading-action {
-    grid-row: 1;
   }
 }

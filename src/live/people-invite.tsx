@@ -19,7 +19,6 @@ export function InvitePersonDialog({ onClose }: { onClose(): void }) {
   return (
     <OverlayDialog label="Invite a person" onClose={onClose} panelClassName="admin-dialog" showCloseButton>
       <div className="dialog-heading">
-        <span className="eyebrow">People</span>
         <h2>Invite someone new</h2>
       </div>
       {created ? (

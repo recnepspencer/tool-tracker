@@ -1,99 +1,53 @@
 import { errorMessage, type Model } from './client';
-import { ArchiveJobDialog, JobDialog } from './job-dialogs';
-import { JobParticipation, ParticipationDialog } from './job-participation';
+import { AddJobDialog, ArchiveJobDialog, JobSheet } from './job-dialogs';
+import { MyJobsList } from './job-participation';
 import { JobRequests, RequestHistoryLink } from './job-requests';
-import {
-  useJobsPageState,
-  useParticipation,
-  useRequestReview,
-  type JobsState,
-  type ParticipationState,
-} from './jobs-state';
-import {
-  ArchivableList,
-  Button,
-  DirectoryToolbar,
-  ErrorState,
-  LoadingState,
-  PageHeading,
-  RecordList,
-  SurfaceCard,
-  TextField,
-} from './kit';
+import { StaffingDialog } from './job-roster';
+import { useJobsPageState, useParticipation, useRequestReview, type JobsState } from './jobs-state';
+import { ArchivableList, Button, DirectoryToolbar, ErrorState, LoadingState, PageHeading, RecordList } from './kit';
 
 export function JobsPage() {
   const state = useJobsPageState();
   const participation = useParticipation();
-  return (
-    <>
-      {state.variant === 'switches' ? (
-        <MyJobs state={state} participation={participation} />
-      ) : (
-        <JobDirectory state={state} participation={participation} />
-      )}
-      <ParticipationDialog participation={participation} />
-    </>
-  );
-}
-
-/** Demo `MyJobsPage`: one switch per job the person can join. */
-function MyJobs({ state, participation }: { state: JobsState; participation: ParticipationState }) {
-  const { jobs, assignments, requests, policy, search, setSearch, visible, participationFor } = state;
-  const queries = [jobs, assignments, requests, policy];
-  const failed = queries.find((query) => query.isError);
-  const choosable = (job: Model<'JobView'>) => {
-    const { own, open } = participationFor(job);
-    return !!own || open;
-  };
-  const all = jobs.data?.filter(choosable) ?? [];
-  const shown = visible?.filter(choosable) ?? [];
-  const error = participation.direct.error;
+  if (!state.staffs)
+    return (
+      <div className="page-content jobs-page">
+        <PageHeading title="My jobs" />
+        <MyJobsList state={state} participation={participation} />
+      </div>
+    );
+  const manages = state.c.can('jobs.manage');
+  const mine = state.view === 'mine';
   return (
     <div className="page-content jobs-page">
       <PageHeading
-        title="My jobs"
-        description="Choose all the jobs you’re working on. Your tools stay with you when your jobs change."
-      />
-      <TextField
-        label="Search jobs"
-        type="search"
-        compact
-        value={search}
-        onChange={setSearch}
-        placeholder="Search jobs"
-      />
-      {error && (
-        <p className="form-error" role="alert">
-          {errorMessage(error)}
-        </p>
-      )}
-      <span className="sr-only" role="status">
-        {participation.saved}
-      </span>
-      {failed ? (
-        <ErrorState
-          message={`Your jobs could not be loaded. ${errorMessage(failed.error)}`}
-          onRetry={() => queries.forEach((query) => void query.refetch())}
-        />
-      ) : queries.some((query) => query.isPending) ? (
-        <LoadingState label="Loading your jobs…" />
-      ) : !all.length ? (
-        <p className="jobs-muted">No active jobs yet. An administrator can add them on the Jobs page.</p>
-      ) : !shown.length ? (
-        <p className="jobs-muted">No jobs match your search.</p>
-      ) : (
-        <SurfaceCard className="job-selection">
-          {shown.map((job) => (
-            <JobParticipation key={job.id} state={state} participation={participation} job={job} />
+        title="Jobs"
+        action={manages && !mine ? <Button onClick={() => state.select('new')}>Add job</Button> : undefined}
+      >
+        {!mine && state.c.can('jobs.assign') ? <RequestHistoryLink state={state} /> : null}
+      </PageHeading>
+      {state.participates ? (
+        <div className="segmented jobs-views" role="tablist" aria-label="Jobs">
+          {(['all', 'mine'] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={state.view === value}
+              onClick={() => state.view !== value && state.setView(value)}
+            >
+              {value === 'all' ? 'All jobs' : 'My jobs'}
+            </button>
           ))}
-        </SurfaceCard>
-      )}
+        </div>
+      ) : null}
+      {mine ? <MyJobsList state={state} participation={participation} /> : <JobDirectory state={state} />}
     </div>
   );
 }
 
-/** Jobs as the Warehouses page lays them out: search, one row per job, and archived jobs one tap away. */
-function JobDirectory({ state, participation }: { state: JobsState; participation: ParticipationState }) {
+/** Every job, one row each, with archived jobs one tap away. A row opens the job's own page. */
+function JobDirectory({ state }: { state: JobsState }) {
   const review = useRequestReview();
   const { c, jobs, visible = [], archived, selected, creating } = state;
   const manages = c.can('jobs.manage');
@@ -106,18 +60,7 @@ function JobDirectory({ state, participation }: { state: JobsState; participatio
       />
     );
   return (
-    <div className="page-content">
-      <PageHeading
-        title="Jobs"
-        description={
-          manages
-            ? 'Add jobs, see who is on them, and archive them when the work is done.'
-            : 'Jobs and the people on them.'
-        }
-        action={manages ? <Button onClick={() => state.select('new')}>Add job</Button> : undefined}
-      >
-        {c.can('jobs.assign') && <RequestHistoryLink state={state} />}
-      </PageHeading>
+    <>
       {jobs.isError && <ErrorState message="Jobs could not be refreshed." onRetry={() => void jobs.refetch()} />}
       {c.can('jobs.assign') && <JobRequests state={state} review={review} />}
       <DirectoryToolbar
@@ -141,29 +84,32 @@ function JobDirectory({ state, participation }: { state: JobsState; participatio
               : archived
                 ? 'No archived jobs.'
                 : manages
-                  ? 'No jobs yet. Add one to start assigning people.'
+                  ? 'No jobs yet. Add one to start putting people on it.'
                   : 'No active jobs yet.'
           }
           onSelect={state.select}
         />
       </ArchivableList>
-      {manages && creating && <JobDialog state={state} participation={participation} />}
-      {selected && !state.confirmingArchive && (
-        <JobDialog key={selected.id} job={selected} state={state} participation={participation} />
+      {manages && creating && <AddJobDialog state={state} />}
+      {selected && state.staffing && <StaffingDialog key={selected.id} state={state} job={selected} />}
+      {selected && !state.staffing && !state.confirmingArchive && (
+        <JobSheet key={selected.id} job={selected} state={state} review={review} />
       )}
       {selected && state.confirmingArchive && <ArchiveJobDialog job={selected} state={state} />}
-    </div>
+    </>
   );
 }
 
-/** The job number, how many people are on it, and where you stand on it. */
+/** How many people are on it, anything waiting, and whether you're on it. */
 function jobSummary(state: JobsState, job: Model<'JobView'>) {
+  if (job.archived_at) return '';
   const people = state.currentFor(job.id).length;
-  const { own, pending } = state.participationFor(job);
+  const waiting = state.c.can('jobs.assign') ? state.waitingFor(job.id).length : 0;
+  const { own } = state.participationFor(job);
   return [
-    job.number,
-    job.archived_at ? '' : `${people} ${people === 1 ? 'person' : 'people'}`,
-    pending ? 'Request pending' : own ? "You're on this job" : '',
+    `${people} ${people === 1 ? 'person' : 'people'}`,
+    waiting ? `${waiting} waiting` : '',
+    own ? 'You’re on it' : '',
   ]
     .filter(Boolean)
     .join(' · ');

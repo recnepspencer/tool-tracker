@@ -1,4 +1,5 @@
 from backend_platform.api import forbidden
+from django.utils import timezone
 
 from .models import CompanyMembership, CompanyRoleGrant
 
@@ -26,14 +27,11 @@ EQUIPMENT_CAPABILITIES = FIELD_CAPABILITIES | {
 WORK_CAPABILITIES = frozenset(
     {"company.read", "jobs.read", "jobs.assign", "jobs.manage", "jobs.manage_policy"}
 )
+# Each role can do everything the one before it can.
 ROLE_CAPABILITIES = {
-    "field_member": FIELD_CAPABILITIES,
-    "company_admin": EQUIPMENT_CAPABILITIES
-    | WORK_CAPABILITIES
-    | {"people.manage", "company.manage"},
-    "equipment_manager": EQUIPMENT_CAPABILITIES,
-    "dispatcher": WORK_CAPABILITIES,
-    "estimator": frozenset({"company.read", "jobs.read"}),
+    "foreman": FIELD_CAPABILITIES,
+    "manager": EQUIPMENT_CAPABILITIES | WORK_CAPABILITIES,
+    "admin": EQUIPMENT_CAPABILITIES | WORK_CAPABILITIES | {"people.manage", "company.manage"},
 }
 
 
@@ -68,3 +66,15 @@ def authorize_write(identity, company_id, capability, *, related_members=()):
         .order_by("id")
     )
     return require_member(identity, company_id, capability)
+
+
+def role_of(member):
+    grant = CompanyRoleGrant.objects.filter(membership=member, revoked_at__isnull=True).first()
+    return grant.role_code if grant else "foreman"
+
+
+def set_role(member, role):
+    """Give the member this role, ending whatever role they held before."""
+    live = CompanyRoleGrant.objects.filter(membership=member, revoked_at__isnull=True)
+    live.exclude(role_code=role).update(revoked_at=timezone.now())
+    CompanyRoleGrant.objects.get_or_create(membership=member, role_code=role, revoked_at=None)

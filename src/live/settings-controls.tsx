@@ -38,6 +38,7 @@ export function CompanyProfile({ state }: { state: Pick<SettingsState, 'c' | 'co
         (c.can('company.manage') ? (
           <CommandForm
             className=""
+            saveWhenChanged
             label="Save company"
             submit={async (form) => {
               await api.POST('/api/companies/{company_id}/update', {
@@ -157,6 +158,7 @@ export function ParticipationSettings({ state }: { state: Pick<SettingsState, 'c
         (c.can('jobs.manage_policy') ? (
           <CommandForm
             className=""
+            saveWhenChanged
             label="Save job rules"
             submit={(form) =>
               api.POST('/api/companies/{company_id}/job-participation-policy', {

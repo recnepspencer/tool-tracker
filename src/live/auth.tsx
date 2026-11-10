@@ -480,6 +480,7 @@ export function CompanySetup() {
                 preferred_name: text(f, 'name'),
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
                 signup_code: pending ? '' : text(f, 'signup_code'),
+                starter_catalog: true,
                 logo_id,
                 owner_email: ownerElse ? text(f, 'owner_email') : null,
                 owner_name: ownerElse ? text(f, 'owner_name') : '',
@@ -631,7 +632,7 @@ export function Invitation() {
             <div className="auth-invitation-card">
               <strong>{data.company_name}</strong>
               <span>{data.email}</span>
-              <span>{data.owner ? 'Owner · Company admin' : human(data.role)}</span>
+              <span>{data.owner ? 'Owner · Admin' : human(data.role)}</span>
             </div>
             {!session ? (
               <Link className={primaryLink} to={`/signup?next=${next}`}>

@@ -216,7 +216,7 @@ export function toolPermissions(state: ToolDetailState, t: Model<'AssetView'>) {
     lifecycle: manages && t.lifecycle !== 'disposed',
     edit: c.can('tools.manage'),
     stewardship: c.can('tools.manage'),
-    reconcile: c.can('reconciliation.manage'),
+    reconcile: c.can('reconciliation.manage') && t.lifecycle !== 'disposed',
   };
 }
 

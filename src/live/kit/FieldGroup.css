@@ -49,9 +49,16 @@
 .experience :is(.field-group, .settings-fields) .field-select-trigger__value {
   text-align: right;
 }
-.experience :is(.field-group, .settings-fields) .field--select .field-control-row,
-.experience :is(.field-group, .settings-fields) .field--select .field-select-trigger {
-  padding-right: var(--space-20);
+/* A prefixed value ("$249.95") keeps its unit beside the right-aligned number. */
+.experience :is(.field-group, .settings-fields) .field-control-row--prefixed {
+  justify-content: flex-end;
+}
+.experience :is(.field-group, .settings-fields) .field-control-row--prefixed .field-control {
+  field-sizing: content;
+  flex: 0 1 auto;
+  max-width: 100%;
+  min-width: 4ch;
+  width: auto;
 }
 /* Notes stack: the label above, the text below, both full width. */
 .experience :is(.field-group, .settings-fields) .field:has(textarea) {

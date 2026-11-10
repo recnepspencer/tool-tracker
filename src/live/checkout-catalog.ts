@@ -70,7 +70,7 @@ export function catalogItems(tools: Asset[], filters: CatalogFilterState): Catal
     })
     .filter((item) =>
       `${item.name} ${item.brand} ${item.model} ${item.category} ${item.units
-        .map((unit) => `${unit.asset_tag} ${unit.serial_number ?? ''}`)
+        .map((unit) => unit.serial_number ?? '')
         .join(' ')}`
         .toLowerCase()
         .includes(search),

@@ -44,7 +44,6 @@ export function WarehousesPage() {
     <div className="page-content">
       <PageHeading
         title="Warehouses"
-        description="Manage custody locations and the people responsible for them."
         action={manages ? <Button onClick={() => state.select('new')}>Add warehouse</Button> : undefined}
       />
       {warehouses.isError && (
@@ -70,7 +69,7 @@ export function WarehousesPage() {
             return {
               id: warehouse.id,
               title: warehouse.name,
-              detail: [warehouse.code, warehouse.address].filter(Boolean).join(' · '),
+              detail: warehouse.address,
               meta: [managerSummary(warehouse), custody && `${custody.stock} in stock · ${custody.out} out`]
                 .filter(Boolean)
                 .join(' · '),
@@ -107,9 +106,7 @@ function WarehouseDialog({ warehouse, state }: { warehouse?: Warehouse; state: W
       page={!!warehouse}
     >
       <div className="dialog-heading">
-        <span className="eyebrow">Warehouses</span>
         <h2>{warehouse ? (manages ? 'Edit warehouse' : warehouse.name) : 'Add a warehouse'}</h2>
-        {warehouse && <p>{warehouse.code}</p>}
       </div>
       {manages && (
         <CommandForm
@@ -129,12 +126,11 @@ function WarehouseDialog({ warehouse, state }: { warehouse?: Warehouse; state: W
                 })
               : api.POST('/api/companies/{company_id}/warehouses', {
                   params: { path: c.path },
-                  body: { code: text(form, 'code'), name: text(form, 'name'), address: text(form, 'address') },
+                  body: { name: text(form, 'name'), address: text(form, 'address') },
                 })
           }
         >
           <FieldGroup>
-            {!warehouse && <Field label="Code" name="code" required maxLength={40} />}
             <Field label="Name" name="name" defaultValue={warehouse?.name} required maxLength={200} />
             <Field label="Address" name="address" defaultValue={warehouse?.address} maxLength={2000} />
           </FieldGroup>
@@ -185,7 +181,6 @@ function ArchiveWarehouseDialog({ warehouse, state }: { warehouse: Warehouse; st
       showCloseButton
     >
       <div className="dialog-heading">
-        <span className="eyebrow">Warehouses</span>
         <h2>Archive {warehouse.name}?</h2>
         <p>Archived warehouses stay in custody history. Restore it to receive stock or add managers again.</p>
       </div>
@@ -218,10 +213,7 @@ export function AccessPage() {
   return (
     <div className="page-content">
       <BackLink to="/app/people">People</BackLink>
-      <PageHeading
-        title="Access guide"
-        description="See what each role can do in this workspace. Access changes are managed from People."
-      />
+      <PageHeading title="Access guide" />
       {access.isError && (
         <ErrorState message="The permission matrix could not be refreshed." onRetry={() => void access.refetch()} />
       )}

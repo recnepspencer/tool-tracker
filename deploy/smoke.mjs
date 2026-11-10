@@ -104,8 +104,8 @@ try {
   const base = `/api/companies/${company.id}`;
   const warehouse = await ensure(
     `${base}/warehouses`,
-    { code: 'CHECK', name: 'Deployment checks' },
-    (v) => v.code === 'CHECK',
+    { name: 'Deployment checks' },
+    (v) => v.name === 'Deployment checks',
   );
   const category = await ensure(
     `${base}/tool-categories`,
@@ -128,11 +128,12 @@ try {
   if (!asset) {
     await page.goto('/app/tools/new');
     const wizard = page.getByRole('dialog', { name: 'Add a tool', exact: true });
-    await page.getByLabel('Choose a tool photo', { exact: true }).setInputFiles('e2e/fixtures/hammer-drill.jpg');
+    await wizard.getByLabel('Tool photo', { exact: true }).setInputFiles('e2e/fixtures/hammer-drill.jpg');
     await expect(wizard.getByRole('img', { name: 'Selected tool', exact: true })).toBeVisible();
     await choose('Tool model', model.id);
     await choose('Home warehouse', warehouse.id);
-    await page.getByLabel('Asset tag', { exact: true }).fill('PIPELINE-PHOTO-001');
+    await page.getByRole('button', { name: 'More details', exact: true }).click();
+    await page.getByLabel('Serial number', { exact: true }).fill('PIPELINE-PHOTO-001');
     await page.getByRole('button', { name: 'Add tool', exact: true }).click();
     await expect(page.getByRole('dialog', { name: 'Deployment photo check details', exact: true })).toBeVisible();
     asset = (await (await page.request.get(`${base}/tools?search=PIPELINE-PHOTO-001`)).json()).items[0];
@@ -147,7 +148,7 @@ try {
   await anonymous.close();
   await expect
     .poll(
-      async () => (await (await page.request.get(`${base}/activity?search=PIPELINE-PHOTO-001`)).json()).items.length,
+      async () => (await (await page.request.get(`${base}/activity?search=${encodeURIComponent(asset.name)}`)).json()).items.length,
       { timeout: 30_000, message: 'The deployed audit worker must materialize the registration.' },
     )
     .toBeGreaterThan(0);
@@ -167,7 +168,7 @@ try {
   await command(page.request, `${base}/invitations`, {
     email,
     preferred_name: 'Deployment member',
-    role: 'field_member',
+    role: 'foreman',
   });
   const invitation = await emailLink(email, '/invite/');
   const memberContext = await browser.newContext({ baseURL: origin, viewport: { width: 390, height: 844 } });
@@ -200,7 +201,7 @@ try {
 
   await page.goto('/app/tools');
   await expect(page.getByRole('heading', { name: 'Inventory', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: `Open ${asset.name}, ${asset.asset_tag}`, exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: `Open ${asset.name}, ${asset.serial_number}`, exact: true })).toBeVisible();
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
   });

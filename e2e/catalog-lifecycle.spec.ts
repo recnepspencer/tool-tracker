@@ -1,11 +1,11 @@
 import { expect } from '@playwright/test';
 import { command, invitedMember, workspace, chooseOption, test } from './support';
 
-for (const role of ['company_admin', 'equipment_manager'])
+for (const role of ['admin', 'manager'])
   test(`${role} edits and archives catalog records without changing physical custody`, async ({ page, browser }) => {
     const fixture = await workspace(page);
     const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
-    const actor = role === 'company_admin' ? page : await context.newPage();
+    const actor = role === 'admin' ? page : await context.newPage();
     try {
       if (actor !== page) await invitedMember(page, actor, fixture.base, role, 'Equipment reviewer');
       const before = (await (await page.request.get(`${fixture.base}/tools`)).json()).items;
@@ -82,7 +82,6 @@ for (const role of ['company_admin', 'equipment_manager'])
         .click();
       await expect(actor.getByRole('button', { name: 'Edit Historical drills', exact: true })).toHaveCount(0);
       await actor.goto('/app/tools/new');
-      await actor.getByRole('button', { name: 'Continue without a photo' }).click();
       // Models in an archived category are not offered for registration.
       await actor.getByRole('combobox', { name: 'Tool model', exact: true }).click();
       await expect(actor.getByRole('listbox', { name: 'Tool model', exact: true }).getByRole('option')).toHaveCount(0);
@@ -96,15 +95,14 @@ for (const role of ['company_admin', 'equipment_manager'])
         .click();
       await expect(actor.getByRole('button', { name: 'Edit Historical drills', exact: true })).toHaveCount(0);
       await actor.goto('/app/tools/new');
-      await actor.getByRole('button', { name: 'Continue without a photo' }).click();
       await chooseOption(actor, 'Tool model', fixture.asset.tool_model_id);
       await chooseOption(actor, 'Home warehouse', fixture.warehouse.id);
-      await actor.getByLabel('Asset tag', { exact: true }).fill('CATALOG-003');
       await actor.getByRole('button', { name: 'Add tool', exact: true }).click();
       await expect(actor.getByRole('dialog', { name: 'Combi drill details', exact: true })).toBeVisible();
-      const created = (await (await actor.request.get(`${fixture.base}/tools?search=CATALOG-003`)).json()).items;
-      expect(created).toHaveLength(1);
-      expect(created[0]).toMatchObject({
+      // The form closes onto the new tool's record.
+      const createdId = new URL(actor.url()).pathname.split('/').pop();
+      const created = await (await actor.request.get(`${fixture.base}/tools/${createdId}`)).json();
+      expect(created).toMatchObject({
         tool_model_id: fixture.asset.tool_model_id,
         warehouse_id: fixture.warehouse.id,
         holder_membership_id: null,
@@ -118,11 +116,9 @@ test('warehouse grants show their subjects and remain revocable after employment
   const fixture = await workspace(page);
   const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
   const worker = await context.newPage();
-  const estimatorPage = await context.newPage();
   try {
-    const member = await invitedMember(page, worker, fixture.base, 'field_member', 'Warehouse lead');
-    // A separate cookie context is unnecessary here: the subject is not logged into the owner page.
-    const estimator = await invitedMember(page, estimatorPage, fixture.base, 'estimator', 'Estimator only');
+    // Every role carries tools, so any foreman can be named to manage a warehouse.
+    const member = await invitedMember(page, worker, fixture.base, 'foreman', 'Warehouse lead');
     await page.goto('/app/warehouses');
     await page.getByRole('button', { name: 'Open Main warehouse', exact: true }).click();
     const authority = page
@@ -131,14 +127,13 @@ test('warehouse grants show their subjects and remain revocable after employment
     await authority.getByRole('combobox', { name: 'Manager', exact: true }).click();
     const candidates = page.getByRole('listbox', { name: 'Manager', exact: true });
     await expect(candidates.getByRole('option', { name: 'Warehouse lead' })).toBeVisible();
-    await expect(candidates.getByRole('option', { name: 'Estimator only' })).toHaveCount(0);
     await candidates.locator(`[data-value="${member.id}"]`).click();
     await authority.getByRole('button', { name: 'Add manager', exact: true }).click();
     await expect(authority.getByRole('button', { name: 'Remove Warehouse lead', exact: true })).toBeVisible();
     await command(page.request, `${fixture.base}/people/${member.id}/update`, {
       expected_revision: member.revision,
       access_state: 'disabled',
-      roles: ['field_member'],
+      role: 'foreman',
       end_membership: true,
       reason: 'Employment ended',
     });
@@ -148,11 +143,6 @@ test('warehouse grants show their subjects and remain revocable after employment
     await expect(authority.getByText(/No warehouse managers yet/)).toBeVisible();
     const warehouses = (await (await page.request.get(`${fixture.base}/warehouses`)).json()).items;
     expect(warehouses[0].managers).toEqual([]);
-    expect(
-      (await (await page.request.get(`${fixture.base}/people`)).json()).items.some(
-        (person: { id: string }) => person.id === estimator.id,
-      ),
-    ).toBe(true);
   } finally {
     await context.close();
   }

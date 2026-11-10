@@ -349,8 +349,8 @@ export function SelectField({
           <span className={cx('field-select-trigger__value', !selected && 'field-select-trigger__value--placeholder')}>
             {selected?.label ?? placeholder}
           </span>
+          <ChevronDownIcon className="field-chevron" />
         </button>
-        <ChevronDownIcon className="field-chevron" />
         {name ? (
           // Submits the value with its form and carries native required validation.
           <input

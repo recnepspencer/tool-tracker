@@ -1,22 +1,33 @@
 import type { Model } from './client';
-import { Button, Callout, OverlayDialog, TextAreaField } from './kit';
-import { useQueueDecision, useQueuePermissions, type QueueItem } from './operations-state';
+import { Button, OverlayDialog, TextAreaField } from './kit';
+import { useQueueDecision, useQueuePermissions } from './operations-state';
+import type { QueueEntry } from './queue-groups';
 
-/** Demo WarehouseQueueReviewDialog for a tool request, with the live withdraw option. */
+const requestOutcomes: Record<Model<'RequestView'>['status'], string> = {
+  pending: '',
+  approved: 'Released, waiting for pickup',
+  rejected: 'Declined',
+  withdrawn: 'Withdrawn',
+  fulfilled: 'Picked up',
+};
+
+/** A tool request with its note, and the release, decline and withdraw options the viewer has. */
 export function RequestReviewDialog({
   request,
-  item,
+  entry,
+  toolName,
   onClose,
 }: {
   request: Model<'RequestView'>;
-  item: QueueItem | undefined;
+  entry: QueueEntry | undefined;
+  toolName: string;
   onClose(): void;
 }) {
   const decision = useQueueDecision();
   const allowed = useQueuePermissions().request(request);
-  const toolName = item?.toolName ?? 'Tool';
   const open = request.status === 'pending' || request.status === 'approved';
   const decide = (action: 'approve' | 'reject' | 'withdraw') => void decision.decideRequest(request, action, onClose);
+  const status = entry?.status || requestOutcomes[request.status];
   return (
     <OverlayDialog
       label={`Review ${toolName}`}
@@ -24,40 +35,35 @@ export function RequestReviewDialog({
       panelClassName="admin-dialog operations-dialog"
       showCloseButton
     >
-      <div className="dialog-heading">
-        <span className="eyebrow">{item?.eyebrow ?? 'Release request'}</span>
+      <div className="dialog-heading queue-dialog-heading">
         <h2>{toolName}</h2>
-        <p>
-          {item?.from ?? 'Warehouse'} → {request.requester_name}
-        </p>
-        {request.note && <p className="queue-item__note">“{request.note}”</p>}
-        {request.decision_note && <p className="queue-item__note">“{request.decision_note}”</p>}
+        <p>{entry?.title ?? `${request.requester_name} asked for the ${toolName}`}</p>
+        {status && <p className="queue-dialog-status">{status}</p>}
+        {request.note && <p className="queue-row__note">“{request.note}”</p>}
+        {request.decision_note && <p className="queue-row__note">“{request.decision_note}”</p>}
       </div>
       {!request.requester_eligible && open && (
-        <Callout
-          tone="amber"
-          eyebrow="Requester access"
-          title="This person no longer has equipment access"
-          description="An authorized manager can decline the request."
-        />
+        <p className="queue-dialog-warning">
+          {request.requester_name} can no longer take tools. You can still decline the request.
+        </p>
       )}
       {(allowed.approve || allowed.reject || allowed.withdraw) && (
         <TextAreaField
-          label="Decision note"
+          label="Note"
           value={decision.note}
           onChange={decision.setNote}
-          placeholder="Optional context for the audit trail"
+          placeholder="Optional"
           maxLength={2000}
         />
       )}
       {decision.error && (
         <p className="form-error" role="alert">
-          <span>The queue decision failed. Your note is still here; try again.</span> <span>{decision.error}</span>
+          <span>That didn't go through. Your note is still here; try again.</span> <span>{decision.error}</span>
         </p>
       )}
       <div className="dialog-actions">
         <Button variant="ghost" onClick={onClose}>
-          Cancel
+          Close
         </Button>
         {allowed.withdraw && (
           <Button variant="ghost" disabled={decision.busy} onClick={() => decide('withdraw')}>
@@ -71,7 +77,7 @@ export function RequestReviewDialog({
         )}
         {allowed.approve && (
           <Button disabled={decision.busy} onClick={() => decide('approve')}>
-            {decision.busy ? 'Saving…' : 'Release to worker'}
+            {decision.busy ? 'Saving…' : 'Release'}
           </Button>
         )}
       </div>

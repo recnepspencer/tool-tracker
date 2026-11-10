@@ -672,6 +672,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/companies/{company_id}/jobs/{job_id}/members': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Job Members Set */
+    post: operations['work_api_job_members_set'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/companies/{company_id}/jobs/{job_id}/participation': {
     parameters: {
       query?: never;
@@ -1383,11 +1400,6 @@ export interface components {
     AssetUpdate: {
       /** Acquisition Cost */
       acquisition_cost?: number | string | null;
-      /**
-       * Acquisition Currency
-       * @default
-       */
-      acquisition_currency: string;
       /** Acquisition Date */
       acquisition_date?: string | null;
       /** Expected Revision */
@@ -1404,12 +1416,8 @@ export interface components {
     AssetView: {
       /** Acquisition Cost */
       acquisition_cost: string | null;
-      /** Acquisition Currency */
-      acquisition_currency: string;
       /** Acquisition Date */
       acquisition_date: string | null;
-      /** Asset Tag */
-      asset_tag: string;
       /**
        * Category Id
        * Format: uuid
@@ -1499,12 +1507,6 @@ export interface components {
       membership_id: string;
       /** Reason */
       reason: string;
-      /**
-       * Responsibility
-       * @default crew
-       * @enum {string}
-       */
-      responsibility: 'crew' | 'foreman' | 'supervisor';
     };
     /** AssignmentPage */
     AssignmentPage: {
@@ -1547,11 +1549,6 @@ export interface components {
        * Format: uuid
        */
       membership_id: string;
-      /**
-       * Responsibility
-       * @enum {string}
-       */
-      responsibility: 'crew' | 'foreman' | 'supervisor';
       /**
        * Starts At
        * Format: date-time
@@ -1688,7 +1685,7 @@ export interface components {
        * Role
        * @enum {string}
        */
-      role: 'field_member' | 'company_admin' | 'equipment_manager' | 'dispatcher' | 'estimator';
+      role: 'admin' | 'manager' | 'foreman';
     };
     /** CategoryInput */
     CategoryInput: {
@@ -1753,6 +1750,11 @@ export interface components {
        * @default
        */
       signup_code: string;
+      /**
+       * Starter Catalog
+       * @default true
+       */
+      starter_catalog: boolean;
       /**
        * Timezone
        * @default America/Denver
@@ -1871,10 +1873,6 @@ export interface components {
       job_id: string;
       /** Name */
       name: string;
-      /** Number */
-      number: string;
-      /** Responsibility */
-      responsibility: string;
     };
     /** DirectoryPage */
     DirectoryPage: {
@@ -1904,8 +1902,6 @@ export interface components {
        * Format: uuid
        */
       asset_id: string;
-      /** Asset Tag */
-      asset_tag: string;
       /** Manufacturer */
       manufacturer: string;
       /** Missing */
@@ -2128,10 +2124,10 @@ export interface components {
       preferred_name: string;
       /**
        * Role
-       * @default field_member
+       * @default foreman
        * @enum {string}
        */
-      role: 'field_member' | 'company_admin' | 'equipment_manager' | 'dispatcher' | 'estimator';
+      role: 'admin' | 'manager' | 'foreman';
     };
     /** InvitationLinkInput */
     InvitationLinkInput: {
@@ -2187,14 +2183,33 @@ export interface components {
        * Role Code
        * @enum {string}
        */
-      role_code: 'field_member' | 'company_admin' | 'equipment_manager' | 'dispatcher' | 'estimator';
+      role_code: 'admin' | 'manager' | 'foreman';
     };
     /** JobInput */
     JobInput: {
       /** Name */
       name: string;
-      /** Number */
-      number: string;
+    };
+    /**
+     * JobMembersInput
+     * @description Everyone who should be on the job after the save; anyone left out comes off it.
+     */
+    JobMembersInput: {
+      /** Expected Revision */
+      expected_revision: number;
+      /** Membership Ids */
+      membership_ids: string[];
+      /**
+       * Note
+       * @default
+       */
+      note: string;
+    };
+    /** JobMembersView */
+    JobMembersView: {
+      /** Assignments */
+      assignments: components['schemas']['AssignmentView'][];
+      job: components['schemas']['JobView'];
     };
     /** JobPage */
     JobPage: {
@@ -2214,8 +2229,6 @@ export interface components {
       expected_revision: number;
       /** Name */
       name: string;
-      /** Number */
-      number: string;
     };
     /** JobView */
     JobView: {
@@ -2228,8 +2241,6 @@ export interface components {
       id: string;
       /** Name */
       name: string;
-      /** Number */
-      number: string;
       /** Revision */
       revision: number;
     };
@@ -2340,8 +2351,11 @@ export interface components {
       preferred_name: string;
       /** Revision */
       revision: number;
-      /** Roles */
-      roles: ('field_member' | 'company_admin' | 'equipment_manager' | 'dispatcher' | 'estimator')[];
+      /**
+       * Role
+       * @enum {string}
+       */
+      role: 'admin' | 'manager' | 'foreman';
       /** Title */
       title: string;
     };
@@ -2361,8 +2375,11 @@ export interface components {
       expected_revision: number;
       /** Reason */
       reason: string;
-      /** Roles */
-      roles: ('field_member' | 'company_admin' | 'equipment_manager' | 'dispatcher' | 'estimator')[];
+      /**
+       * Role
+       * @enum {string}
+       */
+      role: 'admin' | 'manager' | 'foreman';
       /**
        * Title
        * @default
@@ -2578,8 +2595,6 @@ export interface components {
       job_id: string;
       /** Job Name */
       job_name: string;
-      /** Job Number */
-      job_number: string;
       /** Member Name */
       member_name: string;
       /**
@@ -2748,12 +2763,17 @@ export interface components {
     };
     /** ReconciliationInput */
     ReconciliationInput: {
+      /** Duplicate Of Id */
+      duplicate_of_id?: string | null;
       /**
        * Kind
        * @enum {string}
        */
       kind: 'custody_dispute' | 'missing_asset' | 'duplicate_asset';
-      /** Narrative */
+      /**
+       * Narrative
+       * @default
+       */
       narrative: string;
     };
     /** ReconciliationPage */
@@ -2763,18 +2783,75 @@ export interface components {
       /** Next Offset */
       next_offset: number | null;
     };
-    /** ReconciliationResolution */
+    /**
+     * ReconciliationRecordView
+     * @description One tool record in a case, with what tells two units apart.
+     */
+    ReconciliationRecordView: {
+      /** Holder Name */
+      holder_name: string | null;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Lifecycle
+       * @enum {string}
+       */
+      lifecycle: 'active' | 'retired' | 'disposed';
+      /** Manufacturer */
+      manufacturer: string;
+      /** Model Number */
+      model_number: string;
+      /** Name */
+      name: string;
+      /**
+       * Registered At
+       * Format: date-time
+       */
+      registered_at: string;
+      /** Registration Photo Id */
+      registration_photo_id: string | null;
+      /** Revision */
+      revision: number;
+      /** Serial Number */
+      serial_number: string | null;
+    };
+    /**
+     * ReconciliationResolution
+     * @description How a case was settled. Each outcome takes only the fields it needs:
+     *
+     *     - merge: keep_asset_id, expected_asset_revision, expected_duplicate_revision
+     *     - found, move_custody: expected_asset_revision and one destination
+     *     - write_off: expected_asset_revision
+     *     - not_duplicate, records_correct: nothing more
+     *
+     *     A note and a photo are optional on every outcome.
+     */
     ReconciliationResolution: {
       /** Destination Membership Id */
       destination_membership_id?: string | null;
       /** Destination Warehouse Id */
       destination_warehouse_id?: string | null;
       /** Expected Asset Revision */
-      expected_asset_revision: number;
+      expected_asset_revision?: number | null;
+      /** Expected Duplicate Revision */
+      expected_duplicate_revision?: number | null;
       /** Expected Revision */
       expected_revision: number;
-      /** Note */
+      /** Keep Asset Id */
+      keep_asset_id?: string | null;
+      /**
+       * Note
+       * @default
+       */
       note: string;
+      /**
+       * Outcome
+       * @enum {string}
+       */
+      outcome: 'merge' | 'not_duplicate' | 'found' | 'write_off' | 'move_custody' | 'records_correct';
       /** Photo Id */
       photo_id?: string | null;
     };
@@ -2787,6 +2864,9 @@ export interface components {
       asset_id: string;
       /** Corrected Custody Id */
       corrected_custody_id: string | null;
+      /** Duplicate Of Id */
+      duplicate_of_id: string | null;
+      duplicate_record: components['schemas']['ReconciliationRecordView'] | null;
       /**
        * Id
        * Format: uuid
@@ -2809,8 +2889,13 @@ export interface components {
        * Format: uuid
        */
       opened_by_id: string;
+      /** Opened By Name */
+      opened_by_name: string;
+      /** Outcome */
+      outcome: ('merge' | 'not_duplicate' | 'found' | 'write_off' | 'move_custody' | 'records_correct') | null;
       /** Photo Ids */
       photo_ids: string[];
+      record: components['schemas']['ReconciliationRecordView'];
       /** Resolution Note */
       resolution_note: string;
       /** Resolved At */
@@ -2824,15 +2909,8 @@ export interface components {
     RegistrationInput: {
       /** Acquisition Cost */
       acquisition_cost?: number | string | null;
-      /**
-       * Acquisition Currency
-       * @default
-       */
-      acquisition_currency: string;
       /** Acquisition Date */
       acquisition_date?: string | null;
-      /** Asset Tag */
-      asset_tag: string;
       /**
        * Notes
        * @default
@@ -3071,8 +3149,6 @@ export interface components {
        * @default
        */
       address: string;
-      /** Code */
-      code: string;
       /** Name */
       name: string;
     };
@@ -3118,8 +3194,6 @@ export interface components {
       address: string;
       /** Archived At */
       archived_at: string | null;
-      /** Code */
-      code: string;
       /**
        * Id
        * Format: uuid
@@ -4228,6 +4302,33 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['AssignmentView'];
+        };
+      };
+    };
+  };
+  work_api_job_members_set: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        company_id: string;
+        job_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['JobMembersInput'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['JobMembersView'];
         };
       };
     };

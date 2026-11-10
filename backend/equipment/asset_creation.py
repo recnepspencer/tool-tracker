@@ -7,12 +7,11 @@ from equipment.models import CustodyPeriod, ToolAsset
 
 
 @transaction.atomic
-def create_asset_at_warehouse(*, company, tool_model, asset_tag, warehouse, registered_by):
+def create_asset_at_warehouse(*, company, tool_model, warehouse, registered_by):
     """Commit both initial records or neither; never repair existing custody implicitly."""
     asset = ToolAsset.objects.create(
         company=company,
         tool_model=tool_model,
-        asset_tag=asset_tag,
         origin_warehouse=warehouse,
         responsible_warehouse=warehouse,
         registered_by=registered_by,

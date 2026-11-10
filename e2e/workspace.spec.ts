@@ -1,8 +1,8 @@
 import { expect, type Page } from '@playwright/test';
 import { command, workspace, emailLink, password, chooseOption, signupCode, test } from './support';
 
-const unitRow = (page: Page, tag: string) =>
-  page.getByRole('button', { name: `Open Hammer drill, ${tag}`, exact: true });
+const unitRow = (page: Page, serial: string) =>
+  page.getByRole('button', { name: `Open Hammer drill, ${serial}`, exact: true });
 const details = (page: Page) => page.getByRole('dialog', { name: 'Hammer drill details', exact: true });
 
 test('physical assets remain distinct and list navigation survives refresh', async ({ page }) => {
@@ -184,7 +184,7 @@ test('worker participation needs approval and suspended access is revoked', asyn
     const invitation = await command(page.request, `${fixture.base}/invitations`, {
       email,
       preferred_name: 'Crew Member',
-      role: 'field_member',
+      role: 'foreman',
     });
     await command(worker.request, '/api/auth/signup', {
       email,
@@ -212,13 +212,14 @@ test('worker participation needs approval and suspended access is revoked', asyn
     await expect(worker.getByText(/Employee tool registration is disabled/)).toBeVisible();
     await worker.goto('/app/jobs');
     const membership = worker.getByRole('switch', { name: 'Library wiring', exact: true });
-    await membership.click();
-    const asking = worker.getByRole('dialog', { name: 'Request to join Library wiring', exact: true });
-    await asking.getByRole('button', { name: 'Send request', exact: true }).click();
-    await expect(asking).toHaveCount(0);
-    await expect(worker.getByText('Request pending', { exact: true })).toBeVisible();
+    // Joining needs a manager here, so the row asks instead of switching.
+    await worker.getByRole('button', { name: 'Ask to join Library wiring', exact: true }).click();
+    await expect(worker.getByText('Requested', { exact: true })).toBeVisible();
+    await expect(
+      worker.getByRole('button', { name: 'Cancel your request for Library wiring', exact: true }),
+    ).toBeVisible();
     await page.goto('/app/jobs');
-    const requests = page.getByRole('region', { name: 'Participation requests' });
+    const requests = page.getByRole('region', { name: 'Join and leave requests' });
     await requests.getByRole('button', { name: 'Approve Crew Member’s request', exact: true }).click();
     await expect(requests).toHaveCount(0);
     await worker.reload();
@@ -251,11 +252,14 @@ test('registration attaches a real photo served through authorized download', as
     model_number: 'DCD996',
   });
   await page.reload(); // Complete external fixture setup before testing the UI's catalog read.
+  // Tapping Add tool opens the camera straight away; the photo lands in the form.
+  const camera = page.waitForEvent('filechooser');
   await page.getByRole('link', { name: 'Add tool', exact: true }).click();
-  await page.getByLabel('Choose a tool photo', { exact: true }).setInputFiles('e2e/fixtures/hammer-drill.jpg');
+  await (await camera).setFiles('e2e/fixtures/hammer-drill.jpg');
+  const wizard = page.getByRole('dialog', { name: 'Add a tool', exact: true });
+  await expect(wizard.getByRole('img', { name: 'Selected tool', exact: true })).toBeVisible();
   await chooseOption(page, 'Tool model', model.id);
   await chooseOption(page, 'Home warehouse', fixture.warehouse.id);
-  await page.getByLabel('Asset tag', { exact: true }).fill('PHOTO-003');
   await page.getByRole('button', { name: 'Add tool', exact: true }).click();
   // The new tool's record opens on its own after registration.
   const photo = details(page).getByRole('link', { name: 'View photo', exact: true });

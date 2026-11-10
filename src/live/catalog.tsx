@@ -31,7 +31,6 @@ export function CatalogPage() {
     <div className="page-content">
       <PageHeading
         title="Catalog"
-        description="Models describe a kind of tool. Categories group models."
         action={
           manages ? (
             <Button onClick={() => (categoriesView ? state.selectCategory('new') : state.select('new'))}>
@@ -175,7 +174,6 @@ function CategoryDialog({ category, state }: { category?: Category; state: Catal
       showCloseButton
     >
       <div className="dialog-heading">
-        <span className="eyebrow">Catalog</span>
         <h2>{category ? (manages ? 'Edit category' : category.name) : 'Add a category'}</h2>
       </div>
       {manages && (
@@ -247,7 +245,6 @@ function ModelDialog({ model, state }: { model?: ToolModel; state: CatalogPageSt
       showCloseButton
     >
       <div className="dialog-heading">
-        <span className="eyebrow">Catalog</span>
         <h2>{model ? (manages ? 'Edit model' : model.name) : 'Add a model'}</h2>
         {model && (
           <p>

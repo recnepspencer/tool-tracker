@@ -2,6 +2,8 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
+from backend_platform.models import PlatformAuditEventRecord
+from django.utils import timezone
 
 from companies.models import Company
 from tests.conftest import login_client
@@ -14,8 +16,8 @@ from work.models import Job, JobAssignment, JobAssignmentPolicy
 def crew(db, password_hash):
     company = Company.objects.create(name="Job-only tests")
     worker = member_in(company, password_hash)
-    admin = member_in(company, password_hash, "company_admin")
-    job = Job.objects.create(company=company, number="J1", name="Rough-in")
+    admin = member_in(company, password_hash, "admin")
+    job = Job.objects.create(company=company, name="Rough-in")
     policy = JobAssignmentPolicy.objects.create(
         company=company, self_join_mode="direct", self_leave_mode="approval_required"
     )
@@ -37,6 +39,33 @@ def participate(ctx, **kwargs):
         {"request_key": str(uuid4()), **kwargs},
         content_type="application/json",
     )
+
+
+def assign(ctx, revision, reason="Staff the job"):
+    return ctx.manager.post(
+        f"{ctx.base}/jobs/{ctx.job.pk}/assignments",
+        {
+            "expected_revision": revision,
+            "membership_id": str(ctx.worker.member.pk),
+            "reason": reason,
+        },
+        content_type="application/json",
+    )
+
+
+def replace_assignment(ctx, assignment_id):
+    """End the worker's assignment and put them back on the job as a new one."""
+    ctx.job.refresh_from_db()
+    ended = ctx.manager.post(
+        f"{ctx.base}/assignments/{assignment_id}/end",
+        {"expected_revision": ctx.job.revision, "note": "Moving crews around"},
+        content_type="application/json",
+    )
+    assert ended.status_code == 200, ended.content
+    ctx.job.refresh_from_db()
+    replacement = assign(ctx, ctx.job.revision, reason="Back on this job")
+    assert replacement.status_code == 200, replacement.content
+    return replacement.json()
 
 
 def directory_person(ctx):
@@ -71,55 +100,33 @@ def test_join_policy_modes(crew, mode, status, assigned):
 
 def test_leave_approval_names_exact_assignment_and_does_not_end_replacement(crew):
     joined = participate(crew, intent="join").json()
-    assert directory_person(crew)["jobs"] == [
-        {"job_id": str(crew.job.pk), "number": "J1", "name": "Rough-in", "responsibility": "crew"}
-    ]
+    assert directory_person(crew)["jobs"] == [{"job_id": str(crew.job.pk), "name": "Rough-in"}]
     leave = participate(
         crew, intent="leave", assignment_id=joined["resulting_assignment_id"]
     ).json()
     assert JobAssignment.objects.get(pk=joined["resulting_assignment_id"]).ends_at is None
+    # Assigning someone who is already on the job keeps their current assignment.
     crew.job.refresh_from_db()
-    replacement = crew.manager.post(
-        f"{crew.base}/jobs/{crew.job.pk}/assignments",
-        {
-            "expected_revision": crew.job.revision,
-            "membership_id": str(crew.worker.member.pk),
-            "responsibility": "foreman",
-            "reason": "Promoted on this job",
-        },
-        content_type="application/json",
-    )
-    assert replacement.status_code == 200
+    revision = crew.job.revision
+    again = assign(crew, revision)
+    assert again.status_code == 200 and again.json()["id"] == joined["resulting_assignment_id"]
+    crew.job.refresh_from_db()
+    assert crew.job.revision == revision
+    replacement = replace_assignment(crew, joined["resulting_assignment_id"])
     decision = crew.manager.post(
         f"{crew.base}/job-participation-requests/{leave['id']}/approve",
         {"expected_revision": 1},
         content_type="application/json",
     )
     assert decision.status_code == 409
-    assert JobAssignment.objects.get(pk=replacement.json()["id"]).ends_at is None
-    assert directory_person(crew)["jobs"] == [
-        {
-            "job_id": str(crew.job.pk),
-            "number": "J1",
-            "name": "Rough-in",
-            "responsibility": "foreman",
-        }
-    ]
+    assert JobAssignment.objects.get(pk=replacement["id"]).ends_at is None
+    assert directory_person(crew)["jobs"] == [{"job_id": str(crew.job.pk), "name": "Rough-in"}]
 
 
 def test_admin_assignment_bypasses_disabled_self_service_and_archive_preserves_history(crew):
     crew.policy.self_join_mode = "disabled"
     crew.policy.save()
-    assigned = crew.manager.post(
-        f"{crew.base}/jobs/{crew.job.pk}/assignments",
-        {
-            "expected_revision": 1,
-            "membership_id": str(crew.worker.member.pk),
-            "responsibility": "crew",
-            "reason": "Staff the job",
-        },
-        content_type="application/json",
-    )
+    assigned = assign(crew, 1)
     assert_response(assigned, "/api/companies/{company_id}/jobs/{job_id}/assignments")
     crew.job.refresh_from_db()
     archived = crew.manager.post(
@@ -127,7 +134,6 @@ def test_admin_assignment_bypasses_disabled_self_service_and_archive_preserves_h
         {
             "expected_revision": crew.job.revision,
             "name": "Renamed job",
-            "number": "J1",
             "archived": True,
         },
         content_type="application/json",
@@ -145,7 +151,6 @@ def test_admin_assignment_bypasses_disabled_self_service_and_archive_preserves_h
         {
             "expected_revision": archived.json()["revision"],
             "name": "Renamed job",
-            "number": "J1",
             "archived": False,
         },
         content_type="application/json",
@@ -155,15 +160,14 @@ def test_admin_assignment_bypasses_disabled_self_service_and_archive_preserves_h
     assert directory_person(crew)["jobs"] == []
 
 
-def test_worker_cannot_self_promote_or_change_policy(crew):
+def test_worker_cannot_self_assign_or_change_policy(crew):
     assert (
         crew.client.post(
             f"{crew.base}/jobs/{crew.job.pk}/assignments",
             {
                 "expected_revision": 1,
                 "membership_id": str(crew.worker.member.pk),
-                "responsibility": "foreman",
-                "reason": "self promote",
+                "reason": "self assign",
             },
             content_type="application/json",
         ).status_code
@@ -177,7 +181,6 @@ def test_worker_cannot_self_promote_or_change_policy(crew):
         ).status_code
         == 403
     )
-    assert participate(crew, intent="join", responsibility="foreman").status_code == 400
 
 
 def test_participation_retry_is_bound_to_payload_and_allows_multiple_jobs(crew):
@@ -194,7 +197,7 @@ def test_participation_retry_is_bound_to_payload_and_allows_multiple_jobs(crew):
         ).status_code
         == 409
     )
-    another = Job.objects.create(company=crew.company, number="J2", name="Same name is allowed")
+    another = Job.objects.create(company=crew.company, name="Second job")
     crew.job = another
     assert participate(crew, intent="join").status_code == 201
     assert (
@@ -219,13 +222,10 @@ def test_leave_policy_is_independent_from_join_policy(crew, mode, expected):
     assert (assignment.ends_at is not None) == (mode == "direct")
 
 
-@pytest.mark.parametrize(
-    "role", ["company_admin", "equipment_manager", "field_member", "dispatcher", "estimator"]
-)
-def test_each_role_self_participates_only_with_field_capability(crew, password_hash, role):
+@pytest.mark.parametrize("role", ["admin", "manager", "foreman"])
+def test_each_role_can_join_and_leave_jobs_itself(crew, password_hash, role):
     actor = member_in(crew.company, password_hash, role)
     client = login_client(actor.user)
-    allowed = role in {"company_admin", "equipment_manager", "field_member"}
     crew.policy.self_leave_mode = "direct"
     crew.policy.save()
     response = client.post(
@@ -233,19 +233,18 @@ def test_each_role_self_participates_only_with_field_capability(crew, password_h
         {"request_key": str(uuid4()), "intent": "join"},
         content_type="application/json",
     )
-    assert response.status_code == (201 if allowed else 403)
-    if allowed:
-        joined = response.json()
-        response = client.post(
-            f"{crew.base}/jobs/{crew.job.pk}/participation",
-            {
-                "request_key": str(uuid4()),
-                "intent": "leave",
-                "assignment_id": joined["resulting_assignment_id"],
-            },
-            content_type="application/json",
-        )
-        assert response.status_code == 201 and response.json()["status"] == "approved"
+    assert response.status_code == 201
+    joined = response.json()
+    response = client.post(
+        f"{crew.base}/jobs/{crew.job.pk}/participation",
+        {
+            "request_key": str(uuid4()),
+            "intent": "leave",
+            "assignment_id": joined["resulting_assignment_id"],
+        },
+        content_type="application/json",
+    )
+    assert response.status_code == 201 and response.json()["status"] == "approved"
     assert not JobAssignment.objects.filter(membership=actor.member, ends_at__isnull=True).exists()
 
 
@@ -270,7 +269,7 @@ def test_participation_projection_preserves_decision_and_names_when_subject_leav
         {
             "expected_revision": 1,
             "access_state": "disabled",
-            "roles": ["field_member"],
+            "role": "foreman",
             "end_membership": True,
             "reason": "Employment ended",
         },
@@ -287,7 +286,7 @@ def test_participation_projection_preserves_decision_and_names_when_subject_leav
     ]
     rejected = next(item for item in requests if item["id"] == leave["id"])
     assert rejected["member_name"] == "Former crew lead"
-    assert rejected["job_name"] == "Rough-in" and rejected["job_number"] == "J1"
+    assert rejected["job_name"] == "Rough-in"
     assert rejected["decided_by_name"] == "Project coordinator"
     assert rejected["decision_note"] == "Complete the warehouse handover first"
 
@@ -297,17 +296,7 @@ def test_pending_participation_exposes_the_same_stale_assignment_denial_as_appro
     leave = participate(
         crew, intent="leave", assignment_id=joined["resulting_assignment_id"]
     ).json()
-    crew.job.refresh_from_db()
-    replacement = crew.manager.post(
-        f"{crew.base}/jobs/{crew.job.pk}/assignments",
-        {
-            "expected_revision": crew.job.revision,
-            "membership_id": str(crew.worker.member.pk),
-            "responsibility": "supervisor",
-            "reason": "Changed responsibility",
-        },
-        content_type="application/json",
-    ).json()
+    replacement = replace_assignment(crew, joined["resulting_assignment_id"])
     listed = crew.manager.get(f"{crew.base}/job-participation-requests").json()["items"][0]
     assert "no longer current" in listed["approval_blocked_reason"]
     rejected = crew.manager.post(
@@ -317,14 +306,7 @@ def test_pending_participation_exposes_the_same_stale_assignment_denial_as_appro
     )
     assert rejected.status_code == 409 and rejected.json()["code"] == "stale_assignment"
     assert JobAssignment.objects.get(pk=replacement["id"]).ends_at is None
-    assert directory_person(crew)["jobs"] == [
-        {
-            "job_id": str(crew.job.pk),
-            "number": "J1",
-            "name": "Rough-in",
-            "responsibility": "supervisor",
-        }
-    ]
+    assert directory_person(crew)["jobs"] == [{"job_id": str(crew.job.pk), "name": "Rough-in"}]
 
 
 def test_offboarding_rejects_pending_join_with_a_durable_reason(crew):
@@ -336,7 +318,7 @@ def test_offboarding_rejects_pending_join_with_a_durable_reason(crew):
         {
             "expected_revision": 1,
             "access_state": "disabled",
-            "roles": ["field_member"],
+            "role": "foreman",
             "end_membership": True,
             "reason": "Employment ended before joining",
         },
@@ -349,3 +331,97 @@ def test_offboarding_rejects_pending_join_with_a_durable_reason(crew):
     assert history[0]["id"] == pending["id"] and history[0]["status"] == "rejected"
     assert history[0]["decision_note"] == "Employment ended before joining"
     assert not JobAssignment.objects.filter(membership=crew.worker.member).exists()
+
+
+def test_jobs_are_told_apart_by_name(crew):
+    def post(path, body):
+        return crew.manager.post(f"{crew.base}{path}", body, content_type="application/json")
+
+    taken = post("/jobs", {"name": " ROUGH-in "})
+    assert taken.status_code == 409 and taken.json()["code"] == "job_name_exists"
+    panel = post("/jobs", {"name": "Panel swap"}).json()
+    update = f"/jobs/{panel['id']}/update"
+    renamed = post(update, {"expected_revision": panel["revision"], "name": "rough-in"})
+    assert renamed.status_code == 409 and renamed.json()["code"] == "job_name_exists"
+    kept = post(update, {"expected_revision": panel["revision"], "name": "Panel swap"})
+    assert kept.status_code == 200 and "code" not in kept.json()
+    names = [item["name"] for item in crew.manager.get(f"{crew.base}/jobs").json()["items"]]
+    assert names == ["Panel swap", "Rough-in"]
+
+
+def set_members(ctx, revision, people, note=""):
+    return ctx.manager.post(
+        f"{ctx.base}/jobs/{ctx.job.pk}/members",
+        {
+            "expected_revision": revision,
+            "membership_ids": [str(person.member.pk) for person in people],
+            "note": note,
+        },
+        content_type="application/json",
+    )
+
+
+def test_managers_set_everyone_on_a_job_in_one_save(crew, password_hash):
+    second = member_in(crew.company, password_hash, name="Second foreman")
+    third = member_in(crew.company, password_hash, name="Third foreman")
+    added = assert_response(
+        set_members(crew, 1, [crew.worker, second]),
+        "/api/companies/{company_id}/jobs/{job_id}/members",
+    )
+    assert added["job"]["revision"] == 2
+    assert {item["membership_id"] for item in added["assignments"]} == {
+        str(crew.worker.member.pk),
+        str(second.member.pk),
+    }
+    first_assignment = JobAssignment.objects.get(membership=crew.worker.member, ends_at=None)
+
+    # One save adds and removes; whoever stays keeps the same assignment.
+    swapped = set_members(crew, 2, [crew.worker, third], note="Crew swap").json()
+    assert swapped["job"]["revision"] == 3
+    assert {item["membership_id"] for item in swapped["assignments"]} == {
+        str(crew.worker.member.pk),
+        str(third.member.pk),
+    }
+    assert (
+        JobAssignment.objects.get(membership=crew.worker.member, ends_at=None) == first_assignment
+    )
+    ended = JobAssignment.objects.get(membership=second.member)
+    assert ended.ends_at is not None and ended.end_reason == "Crew swap"
+    events = PlatformAuditEventRecord.objects.filter(
+        event_key__in=["work.assignment.created", "work.assignment.ended"]
+    )
+    assert sorted(events.values_list("event_key", flat=True)) == [
+        "work.assignment.created",
+        "work.assignment.created",
+        "work.assignment.created",
+        "work.assignment.ended",
+    ]
+
+    # A retry of a save that already landed succeeds without another revision.
+    retried = set_members(crew, 2, [crew.worker, third], note="Crew swap")
+    assert retried.status_code == 200 and retried.json()["job"]["revision"] == 3
+    # A stale save that would still change something is refused as a whole.
+    stale = set_members(crew, 2, [])
+    assert stale.status_code == 409
+    assert JobAssignment.objects.filter(job=crew.job, ends_at=None).count() == 2
+
+    cleared = set_members(crew, 3, []).json()
+    assert cleared["assignments"] == [] and cleared["job"]["revision"] == 4
+
+
+def test_setting_job_members_is_for_managers_and_active_people_only(crew, password_hash):
+    outsider_company = Company.objects.create(name="Other company")
+    outsider = member_in(outsider_company, password_hash)
+    refused = set_members(crew, 1, [crew.worker, outsider])
+    assert refused.status_code == 404
+    assert not JobAssignment.objects.filter(job=crew.job).exists()
+    worker_attempt = crew.client.post(
+        f"{crew.base}/jobs/{crew.job.pk}/members",
+        {"expected_revision": 1, "membership_ids": [str(crew.worker.member.pk)]},
+        content_type="application/json",
+    )
+    assert worker_attempt.status_code == 403
+    crew.job.archived_at = timezone.now()
+    crew.job.save()
+    archived = set_members(crew, 1, [crew.worker])
+    assert archived.status_code == 409 and archived.json()["code"] == "job_not_joinable"

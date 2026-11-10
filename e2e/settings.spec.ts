@@ -1,12 +1,11 @@
 import { expect } from '@playwright/test';
 import { command, invitedMember, workspace, chooseOption, test } from './support';
 
+// Admins edit the company; managers and admins set the tool and job rules; foremen read them.
 const roles = [
-  { role: 'company_admin', company: true, catalog: true, work: true, tools: true },
-  { role: 'equipment_manager', company: false, catalog: true, work: false, tools: true },
-  { role: 'dispatcher', company: false, catalog: false, work: true, tools: false },
-  { role: 'field_member', company: false, catalog: false, work: false, tools: false },
-  { role: 'estimator', company: false, catalog: false, work: false, tools: false },
+  { role: 'admin', company: true, work: true, tools: true },
+  { role: 'manager', company: false, work: true, tools: true },
+  { role: 'foreman', company: false, work: false, tools: false },
 ];
 
 for (const access of roles)
@@ -42,10 +41,14 @@ for (const access of roles)
       await expect(actor.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
       await expect(actor.getByRole('button', { name: 'Reset workspace data', exact: true })).toHaveCount(0);
       const company = actor.getByRole('region', { name: 'Company profile', exact: true });
-      await expect(company.getByRole('button', { name: 'Save company', exact: true })).toHaveCount(
-        access.company ? 1 : 0,
-      );
-      if (!access.company) {
+      // Settings forms offer Save only once a value differs from what was saved.
+      const saveCompany = company.getByRole('button', { name: 'Save company', exact: true });
+      await expect(saveCompany).toHaveCount(0);
+      if (access.company) {
+        await company.getByLabel('Address', { exact: true }).fill('1 Settings Street');
+        await saveCompany.click();
+        await expect(saveCompany).toHaveCount(0);
+      } else {
         await expect(company.getByText(fixture.company.name, { exact: true })).toBeVisible();
         await expect(company.getByRole('textbox')).toHaveCount(0);
       }
@@ -64,19 +67,18 @@ for (const access of roles)
         await expect(registrationSwitch).toHaveAttribute('aria-checked', 'false');
         await expect(registrationSwitch).toBeEnabled();
         await expect.poll(registrationPolicy).toBe(false);
-      } else if (access.role === 'field_member') {
+      } else {
         await expect(
           registration.getByText('Employees can register tools and upload photos.', { exact: true }),
         ).toBeVisible();
       }
       const participation = actor.getByRole('region', { name: 'Job participation', exact: true });
-      await expect(participation.getByRole('button', { name: 'Save job rules', exact: true })).toHaveCount(
-        access.work ? 1 : 0,
-      );
+      const saveJobRules = participation.getByRole('button', { name: 'Save job rules', exact: true });
+      await expect(saveJobRules).toHaveCount(0);
       if (access.work) {
         await chooseOption(participation, 'Employees joining jobs', 'approval_required');
         await chooseOption(participation, 'Employees leaving jobs', 'disabled');
-        await participation.getByRole('button', { name: 'Save job rules', exact: true }).click();
+        await saveJobRules.click();
         await expect
           .poll(async () => {
             const policy = await (await page.request.get(`${fixture.base}/job-participation-policy`)).json();
@@ -97,13 +99,15 @@ for (const access of roles)
         await expect(participation.getByRole('combobox', { name: 'Employees leaving jobs', exact: true })).toHaveText(
           'Managers assign only',
         );
-      if (access.company) await expect(company.getByLabel('Company name')).toHaveValue(fixture.company.name);
-      else await expect(company.getByText(fixture.company.name, { exact: true })).toBeVisible();
+      if (access.company) {
+        await expect(company.getByLabel('Company name')).toHaveValue(fixture.company.name);
+        await expect(company.getByLabel('Address', { exact: true })).toHaveValue('1 Settings Street');
+      } else await expect(company.getByText(fixture.company.name, { exact: true })).toBeVisible();
       if (!access.work)
         await expect(participation.getByText('Employees decide directly', { exact: true })).toBeVisible();
       await expect(actor.locator('main').getByText('Loading…', { exact: true })).toHaveCount(0);
       expect(await actor.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-      if (access.company || access.role === 'field_member')
+      if (access.company || access.role === 'foreman')
         await actor.screenshot({
           path: `artifacts/settings-${access.role}.png`,
           fullPage: true,

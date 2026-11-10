@@ -59,11 +59,6 @@ function AuditLogPage({ state }: { state: ActivityState }) {
     <div className="page-content admin-activity-page">
       <PageHeading
         title="Audit log"
-        description={
-          company
-            ? 'Immutable operational history across tools, people, and settings.'
-            : 'Your own changes to tools, custody, and team assignments.'
-        }
         action={
           <Button variant="ghost" disabled={!rows.length} onClick={() => exportAuditLog(rows)}>
             <Share aria-hidden="true" />

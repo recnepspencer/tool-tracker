@@ -58,7 +58,6 @@ export function AccountMenu({
               <div className="account-sheet-identity">
                 <Avatar initials={avatar} tone="blue" />
                 <div>
-                  <span className="eyebrow">Account</span>
                   <h2 id="account-sheet-heading">{account.name}</h2>
                   {account.title && <p>{account.title}</p>}
                 </div>

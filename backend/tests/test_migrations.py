@@ -1,6 +1,6 @@
-import hashlib
-import json
+from datetime import timedelta
 from io import StringIO
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
@@ -13,6 +13,7 @@ from django.db.migrations.executor import MigrationExecutor
 from django.db.migrations.loader import MigrationLoader
 from django.db.migrations.operations.models import AddConstraint, RemoveConstraint
 from django.db.migrations.state import ProjectState
+from django.utils import timezone
 
 from companies.constraints import ScopedForeignKey
 from equipment.asset_creation import create_asset_at_warehouse
@@ -21,8 +22,54 @@ from equipment.models import CustodyPeriod, ToolAsset, ToolRequest
 pytestmark = pytest.mark.django_db(transaction=True)
 
 
-def test_purchase_details_upgrade_preserves_existing_units_and_custody(world):
-    from tests.conftest import login_client
+def historical_tools(apps, company, member):
+    """Two identical units stored the way an older schema kept them, tags and codes included."""
+    Warehouse = apps.get_model("equipment", "Warehouse")
+    Category = apps.get_model("equipment", "ToolCategory")
+    Model = apps.get_model("equipment", "ToolModel")
+    Asset = apps.get_model("equipment", "ToolAsset")
+    Custody = apps.get_model("equipment", "CustodyPeriod")
+    with transaction.atomic():
+        warehouse = Warehouse.objects.create(
+            company_id=company.pk, code="MAIN", name="Main warehouse"
+        )
+        category = Category.objects.create(company_id=company.pk, name="Drills")
+        model = Model.objects.create(
+            company_id=company.pk,
+            category_id=category.pk,
+            name="Hammer drill",
+            manufacturer="Milwaukee",
+            model_number="2904-20",
+        )
+        assets = []
+        for tag in ("NE-001", "NE-002"):
+            asset = Asset.objects.create(
+                company_id=company.pk,
+                tool_model_id=model.pk,
+                asset_tag=tag,
+                origin_warehouse_id=warehouse.pk,
+                responsible_warehouse_id=warehouse.pk,
+                registered_by_id=member.pk,
+            )
+            Custody.objects.create(
+                company_id=company.pk,
+                asset_id=asset.pk,
+                holder_warehouse_id=warehouse.pk,
+                starts_at=timezone.now() - timedelta(hours=1),
+            )
+            assets.append(asset)
+    return SimpleNamespace(warehouse=warehouse, model=model, assets=assets)
+
+
+def without(rows, *fields):
+    return [{key: value for key, value in row.items() if key not in fields} for row in rows]
+
+
+def test_purchase_details_upgrade_preserves_existing_units_and_custody(password_hash):
+    # Removing tags and warehouse codes cannot be reversed over stored rows, so the
+    # older records are written after rolling back to the schema that held them.
+    from companies.models import Company
+    from tests.factories import member_in
 
     executor = MigrationExecutor(connection)
     latest = executor.loader.graph.leaf_nodes()
@@ -30,23 +77,12 @@ def test_purchase_details_upgrade_preserves_existing_units_and_custody(world):
     try:
         executor.migrate(previous)
         historical = executor.loader.project_state(previous).apps
+        company = Company.objects.create(name="Existing tools")
+        member = member_in(company, password_hash)
+        tools = historical_tools(historical, company, member.member)
         Asset = historical.get_model("equipment", "ToolAsset")
         Custody = historical.get_model("equipment", "CustodyPeriod")
-        key = uuid4()
-        original_input = {
-            "tool_model_id": str(world.model.pk),
-            "warehouse_id": str(world.warehouse.pk),
-            "asset_tag": world.assets[0].asset_tag,
-            "serial_number": None,
-            "photo_id": None,
-        }
-        Asset.objects.filter(pk=world.assets[0].pk).update(
-            registration_key=key,
-            registration_fingerprint=hashlib.sha256(
-                json.dumps(original_input, separators=(",", ":")).encode()
-            ).hexdigest(),
-        )
-        before = list(Asset.objects.order_by("pk").values())
+        before = without(Asset.objects.order_by("pk").values(), "asset_tag")
         custody = list(Custody.objects.order_by("pk").values())
         MigrationExecutor(connection).migrate(latest)
         assert list(ToolAsset.objects.order_by("pk").values(*before[0])) == before
@@ -54,20 +90,13 @@ def test_purchase_details_upgrade_preserves_existing_units_and_custody(world):
         for asset in ToolAsset.objects.all():
             assert asset.acquisition_date is None
             assert asset.acquisition_cost is None
-            assert asset.acquisition_currency == "" and asset.notes == ""
-        retry = login_client(world.user).post(
-            f"/api/companies/{world.company.pk}/tools",
-            {"request_key": str(key), **original_input},
-            content_type="application/json",
-        )
-        assert retry.status_code == 200 and retry.json()["id"] == str(world.assets[0].pk)
-        assert ToolAsset.objects.count() == len(before)
-        with pytest.raises(IntegrityError), transaction.atomic():
-            ToolAsset.objects.filter(pk=world.assets[0].pk).update(
-                acquisition_cost=10, acquisition_currency=""
-            )
-        with pytest.raises(IntegrityError), transaction.atomic():
-            ToolAsset.objects.filter(pk=world.assets[0].pk).update(acquisition_currency="USD")
+            assert asset.notes == ""
+        unit = ToolAsset.objects.filter(pk=tools.assets[0].pk)
+        with pytest.raises(IntegrityError) as error, transaction.atomic():
+            unit.update(acquisition_cost=-1)
+        assert error.value.__cause__.diag.constraint_name == "asset_acquisition_cost_valid"
+        # Prices are always US dollars, so a price needs nothing else beside it.
+        unit.update(acquisition_cost=10)
     finally:
         MigrationExecutor(connection).migrate(latest)
 
@@ -110,7 +139,7 @@ def test_work_decision_note_upgrade_preserves_existing_participation(password_ha
         executor.migrate(previous)
         historical = executor.loader.project_state(previous).apps
         company = Company.objects.create(name="Existing work records")
-        actor = member_in(company, password_hash, "company_admin")
+        actor = member_in(company, password_hash, "admin")
         Project = historical.get_model("work", "Project")
         Job = historical.get_model("work", "Job")
         Request = historical.get_model("work", "JobParticipationRequest")
@@ -142,41 +171,114 @@ def test_work_decision_note_upgrade_preserves_existing_participation(password_ha
         MigrationExecutor(connection).migrate(latest)
 
 
-def test_existing_database_upgrades_without_losing_assets_custody_or_requests(world):
+def test_existing_database_upgrades_without_losing_assets_custody_or_requests(password_hash):
+    from companies.models import Company
+    from tests.factories import member_in
+
     executor = MigrationExecutor(connection)
     latest = executor.loader.graph.leaf_nodes()
     previous = [("equipment", "0002_company_and_custody_integrity")]
     try:
         executor.migrate(previous)
         old_apps = executor.loader.project_state(previous).apps
+        company = Company.objects.create(name="Existing records")
+        member = member_in(company, password_hash)
+        tools = historical_tools(old_apps, company, member.member)
         Request = old_apps.get_model("equipment", "ToolRequest")
         Asset = old_apps.get_model("equipment", "ToolAsset")
+        Custody = old_apps.get_model("equipment", "CustodyPeriod")
         request = Request.objects.create(
-            company_id=world.company.pk,
-            requester_id=world.member.pk,
-            asset_id=world.assets[0].pk,
-            source_custody_id=CustodyPeriod.objects.get(asset=world.assets[0]).pk,
+            company_id=company.pk,
+            requester_id=member.member.pk,
+            asset_id=tools.assets[0].pk,
+            source_custody_id=Custody.objects.get(asset_id=tools.assets[0].pk).pk,
             request_key=uuid4(),
             note="Preserve this request across the upgrade",
         )
-        asset_rows = list(Asset.objects.order_by("id").values())
-        custody_rows = list(CustodyPeriod.objects.order_by("id").values())
+        asset_rows = without(Asset.objects.order_by("id").values(), "asset_tag")
+        custody_rows = list(Custody.objects.order_by("id").values())
         request_rows = list(Request.objects.order_by("id").values())
         # Reversal really restored the historical trigger, not just its migration state.
         with pytest.raises(IntegrityError, match="requires exactly one"), transaction.atomic():
             Asset.objects.create(
-                company_id=world.company.pk,
-                tool_model_id=world.model.pk,
+                company_id=company.pk,
+                tool_model_id=tools.model.pk,
                 asset_tag="OLD-ORPHAN",
-                origin_warehouse_id=world.warehouse.pk,
-                responsible_warehouse_id=world.warehouse.pk,
-                registered_by_id=world.member.pk,
+                origin_warehouse_id=tools.warehouse.pk,
+                responsible_warehouse_id=tools.warehouse.pk,
+                registered_by_id=member.member.pk,
             )
         MigrationExecutor(connection).migrate(latest)
         assert list(ToolAsset.objects.order_by("id").values(*asset_rows[0])) == asset_rows
         assert list(CustodyPeriod.objects.order_by("id").values()) == custody_rows
         assert list(ToolRequest.objects.order_by("id").values(*request_rows[0])) == request_rows
-        assert ToolRequest.objects.get(pk=request.pk).source_custody.asset_id == world.assets[0].pk
+        assert ToolRequest.objects.get(pk=request.pk).source_custody.asset_id == tools.assets[0].pk
+        call_command("check_database_schema", stdout=StringIO())
+    finally:
+        MigrationExecutor(connection).migrate(latest)
+
+
+def test_three_roles_upgrade_keeps_each_persons_strongest_role():
+    executor = MigrationExecutor(connection)
+    latest = executor.loader.graph.leaf_nodes()
+    previous = [("companies", "0004_company_logo_and_owner")]
+    try:
+        executor.migrate(previous)
+        historical = executor.loader.project_state(previous).apps
+        Company = historical.get_model("companies", "Company")
+        Person = historical.get_model("companies", "Person")
+        Membership = historical.get_model("companies", "CompanyMembership")
+        Grant = historical.get_model("companies", "CompanyRoleGrant")
+        Invitation = historical.get_model("companies", "MembershipInvitation")
+        company = Company.objects.create(name="Old roles")
+
+        def member(name, *roles, revoked=()):
+            person = Person.objects.create(preferred_name=name)
+            result = Membership.objects.create(company_id=company.pk, person_id=person.pk)
+            for role in roles:
+                Grant.objects.create(membership_id=result.pk, role_code=role)
+            for role in revoked:
+                Grant.objects.create(
+                    membership_id=result.pk, role_code=role, revoked_at=timezone.now()
+                )
+            return result.pk
+
+        expected = {
+            member("Admin", "company_admin"): "admin",
+            member("Equipment", "equipment_manager"): "manager",
+            member("Dispatch", "dispatcher"): "manager",
+            member("Estimate", "estimator"): "foreman",
+            member("Field", "field_member"): "foreman",
+            member("Former admin", "field_member", revoked=["company_admin"]): "foreman",
+        }
+        both = member("Field and dispatch", "field_member", "dispatcher")
+        expected[both] = "manager"
+        twice = member("Two manager roles", "equipment_manager", "dispatcher")
+        expected[twice] = "manager"
+        Invitation.objects.create(
+            company_id=company.pk,
+            email="invited@example.com",
+            preferred_name="Invited",
+            role_code="dispatcher",
+            token_digest="0" * 64,
+            expires_at=timezone.now() + timedelta(days=1),
+            invited_by_id=next(iter(expected)),
+        )
+        MigrationExecutor(connection).migrate(latest)
+        from companies.models import CompanyRoleGrant, MembershipInvitation
+
+        live = CompanyRoleGrant.objects.filter(revoked_at__isnull=True)
+        assert live.count() == len(expected)
+        assert dict(live.values_list("membership_id", "role_code")) == expected
+        # The weaker role is ended, not deleted, so the history stays readable.
+        for membership in (both, twice):
+            assert CompanyRoleGrant.objects.filter(membership_id=membership).count() == 2
+        assert set(
+            CompanyRoleGrant.objects.filter(revoked_at__isnull=False).values_list(
+                "role_code", flat=True
+            )
+        ) == {"admin", "foreman", "manager"}
+        assert MembershipInvitation.objects.get().role_code == "manager"
         call_command("check_database_schema", stdout=StringIO())
     finally:
         MigrationExecutor(connection).migrate(latest)
@@ -268,9 +370,7 @@ def test_column_and_target_table_renames_preserve_company_enforcement(world):
             applied = migration.apply(before.clone(), editor)
         Asset = applied.apps.get_model("equipment", "ToolAsset")
         Warehouse = applied.apps.get_model("equipment", "Warehouse")
-        foreign = Warehouse.objects.create(
-            company_id=world.other_company.pk, code="OTHER", name="Other"
-        )
+        foreign = Warehouse.objects.create(company_id=world.other_company.pk, name="Other")
         with pytest.raises(IntegrityError) as error, transaction.atomic():
             Asset.objects.filter(pk=world.assets[0].pk).update(origin_warehouse=foreign)
         assert error.value.__cause__.diag.constraint_name == "asset_origin_company"
@@ -291,7 +391,6 @@ def test_atomic_asset_creation_establishes_initial_custody(world):
     asset = create_asset_at_warehouse(
         company=world.company,
         tool_model=world.model,
-        asset_tag="NEW-001",
         warehouse=world.warehouse,
         registered_by=world.member,
     )

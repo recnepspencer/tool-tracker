@@ -16,6 +16,7 @@ import {
 import { useAppearance } from './appearance';
 import { errorMessage } from './client';
 import { usePeople } from './data';
+import { ROLE_LABELS } from './people-roles';
 import { useCompany, useSession } from './session';
 
 export interface ShellDestination {
@@ -25,14 +26,6 @@ export interface ShellDestination {
   /** Pages reached from this one, which keep it highlighted. */
   also?: string[];
 }
-
-const roleLabels: Record<string, string> = {
-  company_admin: 'Company admin',
-  equipment_manager: 'Equipment manager',
-  dispatcher: 'Dispatcher',
-  estimator: 'Estimator',
-  field_member: 'Field crew',
-};
 
 /** The navigation entries for the signed-in membership, mirroring the demo's NavItems. */
 export function useShellDestinations() {
@@ -52,6 +45,8 @@ export function useShellDestinations() {
           also: ['/app/flagged', '/app/reconciliations'],
         },
         { label: 'Inventory', path: '/app/tools', icon: Boxes, enabled: c.can('tools.read') },
+        // Managers and admins carry tools too, so they keep the same view of what they hold.
+        { label: 'My tools', path: '/app/mine', icon: Wrench, enabled: c.can('tools.read') },
         {
           label: c.can('jobs.manage') ? 'Jobs' : 'My jobs',
           path: '/app/jobs',
@@ -104,7 +99,7 @@ export function useShellAccount(onWorkspaceChange: () => void) {
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState('');
   const person = people.data?.find((item) => item.id === c.membership_id);
-  const title = person?.title || (person ? roleLabels[person.roles[0] ?? ''] : '') || '';
+  const title = person?.title || (person ? ROLE_LABELS[person.role] : '') || '';
   return {
     name: c.preferred_name,
     title,

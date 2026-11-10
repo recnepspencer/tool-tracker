@@ -20,19 +20,16 @@ ParticipationMode = Literal["direct", "approval_required", "disabled"]
 
 
 class JobInput(CommandInput):
-    number: str = Field(min_length=1, max_length=50)
     name: str = Field(min_length=1, max_length=200)
 
 
 class JobUpdate(RevisionInput):
-    number: str = Field(min_length=1, max_length=50)
     name: str = Field(min_length=1, max_length=200)
     archived: bool = False
 
 
 class JobView(Schema):
     id: UUID
-    number: str
     name: str
     archived_at: datetime | None
     revision: int
@@ -77,7 +74,6 @@ class ParticipationView(Schema):
     revision: int
     member_name: str
     job_name: str
-    job_number: str
     decided_by_id: UUID | None
     decided_by_name: str | None
     approval_blocked_reason: str | None
@@ -89,10 +85,6 @@ class ParticipationView(Schema):
     @staticmethod
     def resolve_job_name(obj):
         return obj.job.name
-
-    @staticmethod
-    def resolve_job_number(obj):
-        return obj.job.number
 
     @staticmethod
     def resolve_decided_by_name(obj):
@@ -119,7 +111,6 @@ class DecisionInput(RevisionInput):
 
 class AssignmentInput(RevisionInput):
     membership_id: UUID
-    responsibility: Literal["crew", "foreman", "supervisor"] = "crew"
     reason: str = Field(min_length=1, max_length=2000)
 
 
@@ -127,7 +118,6 @@ class AssignmentView(Schema):
     id: UUID
     job_id: UUID
     membership_id: UUID
-    responsibility: Literal["crew", "foreman", "supervisor"]
     starts_at: datetime
     ends_at: datetime | None
     assigned_by_id: UUID
@@ -155,13 +145,25 @@ class AssignmentPage(Schema):
     next_offset: int | None
 
 
+class JobMembersInput(RevisionInput):
+    """Everyone who should be on the job after the save; anyone left out comes off it."""
+
+    membership_ids: list[UUID] = Field(max_length=1000)
+    note: str = Field(default="", max_length=2000)
+
+
+class JobMembersView(Schema):
+    job: JobView
+    assignments: list[AssignmentView]
+
+
 def jobs_list(
     request: HttpRequest, company_id: UUID, page: Query[PageInput], archived: bool = False
 ):
     require_member(current_identity(request), company_id, "jobs.read")
     return paginate(
         Job.objects.filter(company_id=company_id, archived_at__isnull=not archived).order_by(
-            "number", "id"
+            "name", "id"
         ),
         page.limit,
         page.offset,
@@ -227,6 +229,11 @@ def participation_decide(
 @csrf_protect
 def assignment_create(request: HttpRequest, company_id: UUID, job_id: UUID, data: AssignmentInput):
     return participation.assign_member(current_identity(request), company_id, job_id, data)
+
+
+@csrf_protect
+def job_members_set(request: HttpRequest, company_id: UUID, job_id: UUID, data: JobMembersInput):
+    return participation.set_job_members(current_identity(request), company_id, job_id, data)
 
 
 @csrf_protect
@@ -317,6 +324,13 @@ define_http_endpoint(
     path="/companies/{company_id}/jobs/{job_id}/assignments",
     endpoint=assignment_create,
     response=AssignmentView,
+)
+define_http_endpoint(
+    router,
+    method="post",
+    path="/companies/{company_id}/jobs/{job_id}/members",
+    endpoint=job_members_set,
+    response=JobMembersView,
 )
 define_http_endpoint(
     router,

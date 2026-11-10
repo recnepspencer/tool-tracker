@@ -37,7 +37,6 @@ export function CustodyTimeline({ state }: { state: ToolDetailState }) {
   return (
     <section className="detail-timeline" aria-labelledby={headingId}>
       <div className="detail-section-heading">
-        <span className="eyebrow">Custody record</span>
         <h3 id={headingId}>Timeline</h3>
       </div>
       {events.length ? (
@@ -78,7 +77,6 @@ export function ToolReports({
   return (
     <section className="detail-timeline tool-detail-reports" aria-labelledby={headingId}>
       <div className="detail-section-heading">
-        <span className="eyebrow">Condition</span>
         <h3 id={headingId}>Open reports</h3>
       </div>
       <ol>

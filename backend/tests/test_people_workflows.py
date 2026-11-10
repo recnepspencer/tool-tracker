@@ -14,7 +14,7 @@ from tests.http_contract import assert_response
 @pytest.fixture
 def people(db, password_hash):
     company = Company.objects.create(name="People-only tests")
-    admin = member_in(company, password_hash, "company_admin", email="admin@example.com")
+    admin = member_in(company, password_hash, "admin", email="admin@example.com")
     worker = member_in(company, password_hash, email="worker@example.com")
     return SimpleNamespace(
         company=company,
@@ -31,7 +31,7 @@ def test_last_admin_and_unauthorized_role_changes_are_rejected(people):
     body = {
         "expected_revision": 1,
         "access_state": "suspended",
-        "roles": ["field_member"],
+        "role": "foreman",
         "reason": "Change access",
     }
     assert (
@@ -49,7 +49,7 @@ def test_last_admin_and_unauthorized_role_changes_are_rejected(people):
     ctx.admin.member.refresh_from_db()
     assert ctx.admin.member.access_state == "active"
     assert CompanyRoleGrant.objects.filter(
-        membership=ctx.admin.member, role_code="company_admin", revoked_at__isnull=True
+        membership=ctx.admin.member, role_code="admin", revoked_at__isnull=True
     ).exists()
 
 
@@ -60,7 +60,7 @@ def test_revocation_changes_access_on_existing_session(people):
         {
             "expected_revision": 1,
             "access_state": "suspended",
-            "roles": ["field_member"],
+            "role": "foreman",
             "reason": "Suspend access",
         },
         content_type="application/json",
@@ -73,7 +73,7 @@ def test_revocation_changes_access_on_existing_session(people):
             {
                 "expected_revision": 1,
                 "access_state": "active",
-                "roles": ["field_member"],
+                "role": "foreman",
                 "reason": "stale update",
             },
             content_type="application/json",
@@ -86,7 +86,7 @@ def test_invitation_is_email_bound_single_use_and_never_stores_raw_token(people,
     ctx = people
     response = ctx.manager.post(
         f"{ctx.base}/invitations",
-        {"email": "invited@example.com", "preferred_name": "New worker", "role": "field_member"},
+        {"email": "invited@example.com", "preferred_name": "New worker", "role": "foreman"},
         content_type="application/json",
     )
     invite = assert_response(response, "/api/companies/{company_id}/invitations")
@@ -104,7 +104,7 @@ def test_invitation_is_email_bound_single_use_and_never_stores_raw_token(people,
         "/api/invitations/accept", {"token": invite["token"]}, content_type="application/json"
     )
     member = assert_response(accepted, "/api/invitations/accept")
-    assert member["roles"] == ["field_member"]
+    assert member["role"] == "foreman"
     assert (
         client.post(
             "/api/invitations/accept", {"token": invite["token"]}, content_type="application/json"
@@ -120,7 +120,7 @@ def test_unavailable_invitation_cannot_grant_membership(people, password_hash, u
     ctx = people
     invite = ctx.manager.post(
         f"{ctx.base}/invitations",
-        {"email": "new@example.com", "preferred_name": "New", "role": "company_admin"},
+        {"email": "new@example.com", "preferred_name": "New", "role": "admin"},
         content_type="application/json",
     ).json()
     if unavailable == "revoked":
@@ -148,23 +148,34 @@ def test_sent_invitation_survives_senders_role_change(people, password_hash):
     invite = assert_response(
         ctx.manager.post(
             f"{ctx.base}/invitations",
-            {"email": "new@example.com", "preferred_name": "New", "role": "field_member"},
+            {"email": "new@example.com", "preferred_name": "New", "role": "foreman"},
             content_type="application/json",
         ),
         "/api/companies/{company_id}/invitations",
     )
-    other_admin = member_in(ctx.company, password_hash, "company_admin")
+    other_admin = member_in(ctx.company, password_hash, "admin")
     changed = login_client(other_admin.user).post(
         f"{ctx.base}/people/{ctx.admin.member.pk}/update",
         {
             "expected_revision": 1,
             "access_state": "active",
-            "roles": ["field_member"],
+            "role": "foreman",
             "reason": "Changed responsibilities",
         },
         content_type="application/json",
     )
-    assert_response(changed, "/api/companies/{company_id}/people/{membership_id}/update")
+    assert (
+        assert_response(changed, "/api/companies/{company_id}/people/{membership_id}/update")[
+            "role"
+        ]
+        == "foreman"
+    )
+    # A new role replaces the old one; a person never holds two at once.
+    assert list(
+        CompanyRoleGrant.objects.filter(
+            membership=ctx.admin.member, revoked_at__isnull=True
+        ).values_list("role_code", flat=True)
+    ) == ["foreman"]
     assert (
         ctx.manager.post(
             f"{ctx.base}/invitations",
@@ -180,7 +191,7 @@ def test_sent_invitation_survives_senders_role_change(people, password_hash):
         ),
         "/api/invitations/accept",
     )
-    assert accepted["roles"] == ["field_member"]
+    assert accepted["role"] == "foreman"
     stored = MembershipInvitation.objects.get(pk=invite["invitation"]["id"])
     assert stored.invited_by_id == ctx.admin.member.pk
     assert str(stored.accepted_membership_id) == accepted["id"]
@@ -193,7 +204,7 @@ def test_foreign_membership_cannot_be_changed(people, password_hash):
         {
             "expected_revision": 1,
             "access_state": "disabled",
-            "roles": ["field_member"],
+            "role": "foreman",
             "reason": "Wrong tenant",
         },
         content_type="application/json",
@@ -207,8 +218,8 @@ def test_employment_end_closes_jobs_but_retains_tool_accountability(world, passw
     from equipment.models import CustodyPeriod
     from work.models import Job, JobAssignment
 
-    admin = member_in(world.company, password_hash, "company_admin")
-    job = Job.objects.create(company=world.company, number="J1", name="Job")
+    admin = member_in(world.company, password_hash, "admin")
+    job = Job.objects.create(company=world.company, name="Job")
     assignment = JobAssignment.objects.create(
         company=world.company,
         job=job,
@@ -225,7 +236,7 @@ def test_employment_end_closes_jobs_but_retains_tool_accountability(world, passw
         {
             "expected_revision": 1,
             "access_state": "disabled",
-            "roles": ["field_member"],
+            "role": "foreman",
             "end_membership": True,
             "reason": "Employment ended",
         },

@@ -4,11 +4,11 @@ The original demo at commit `80202f5` is the interaction and layout reference; t
 
 ## Product agreements
 
-- A request names one physical tool. Identical models still have separate unit IDs, asset tags, purchase details, condition and custody.
+- A request names one physical tool. Identical models still have separate unit IDs, photos, serial numbers, purchase details, condition and custody.
 - Approval prepares a handoff. Confirmed receipt changes custody. Requests, assignments and access changes do not silently transfer tools.
 - Companies independently configure employee tool registration and direct/reviewed/manager-controlled joining and leaving jobs.
 - Invitations belong to the company once issued. Later changes to the sender's role do not invalidate them; expiry, explicit revocation and acceptance control their lifecycle.
-- Company roles, warehouse grants and job responsibilities remain separate. Combined roles preserve their existing capabilities. No additional approval rules were introduced.
+- Each person holds one company role (admin, manager or foreman); warehouse grants add scoped warehouse decisions on top. Being on a job adds no access. No additional approval rules were introduced.
 
 ## Workflow and role coverage
 
@@ -19,17 +19,17 @@ The original demo at commit `80202f5` is the interaction and layout reference; t
 | Catalog/warehouses | Admin/equipment managers create/edit/archive/restore definitions and warehouses; manage scoped grants; preserve unit identity | `catalog-lifecycle`, `cutover-workflows`, `role-surfaces`; catalog/custody edge tests |
 | Registration | Admin/equipment manager registration; policy-enabled employee registration; actual photos; optional unit metadata; safe committed retries | `accounts`, `cutover-workflows`, `asset-details`, `access-lifecycle`; registration/evidence and populated-upgrade tests |
 | Browse/details | Photographed inventory, duplicate-model groups, checkout modes/filters, persistent background lists and sheets, readable histories, keyboard focus | `demo-parity`, `workspace`, `asset-details`, `condition-lifecycle` |
-| Requests | Specific-unit request and withdrawal; admin/equipment/scoped warehouse decisions; approval is not receipt | `custody-decisions`, `custody-recovery`; request, isolation and concurrency HTTP tests |
+| Requests | Specific-unit request and withdrawal; admin/manager/scoped warehouse decisions; approval is not receipt | `custody-decisions`, `custody-recovery`; request, isolation and concurrency HTTP tests |
 | Handoffs | Holder transfer/return, source and receiving warehouse authority, accept/decline/cancel, recorded evidence and actual custody | `custody-decisions`, `custody-recovery`, `accounts`; custody, concurrent receipt and rollback tests |
 | Condition/lifecycle | Holder reports; responsible managers find/repair/service/retire/restore/dispose; keep missing, damage and custody independent | `condition-lifecycle`, `workspace`; condition/history HTTP tests and private photo checks |
 | Reconciliation | Admin/equipment managers record and resolve evidenced cases while retaining former-holder accountability | `custody-recovery`; reconciliation, tenant and evidence tests |
-| Jobs/projects | Admin/dispatcher management, roster and crew/foreman/supervisor responsibility changes; field self-service under independent company rules | `jobs-management`, `settings`, `access-lifecycle`; job HTTP scenarios |
-| Directory | Actual current jobs and held units, job/no-job/search filters; latest responsibility after replacement; archive/restore does not revive assignments | `cutover-workflows`; job/directory HTTP observations and combined-access checks |
+| Jobs | Manager and admin management and roster changes; field self-service under independent company rules | `jobs-management`, `settings`, `access-lifecycle`; job HTTP scenarios |
+| Directory | Actual current jobs and held units, job/no-job/search filters; archive/restore does not revive assignments | `cutover-workflows`; job/directory HTTP observations and combined-access checks |
 | Settings | Original narrow company/jobs/categories composition; shared editors and ordinary dialogs; persisted independent filters; readable member rules | Five company-role journeys in `settings`, plus eight role/grant navigation cases |
 | Activity | Real audit worker, own/company scope, search/type/warehouse filters before pagination, Previous/Next and reload | `cutover-workflows`; activity pagination/privacy HTTP tests and rapid-filter controller integration test |
 | Shell/PWA | Eight role/grant combinations, mobile/desktop navigation, account and appearance persistence; manifest eligibility, offline notice, static-only cache and update lifecycle | `role-surfaces`, `workspace-access`, `accounts`, `pwa`; loaded browser captures |
 
-The eight role/grant combinations are company admin, equipment manager, dispatcher, estimator, field member, scoped warehouse manager, foreman assignment and combined dispatcher/equipment roles. Individual workflows run for their applicable actors; route and API boundary checks verify the remaining roles do not receive unusable controls or unauthorized data.
+The role cases are admin, manager, foreman and a foreman with a scoped warehouse grant. Each person holds exactly one role, and each role includes everything the one below it can do. Individual workflows run for their applicable actors; route and API boundary checks verify the remaining roles do not receive unusable controls or unauthorized data.
 
 ## Implementation boundaries
 

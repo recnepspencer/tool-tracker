@@ -30,9 +30,7 @@ def test_bootstrap_invalid_timezone_has_no_partial_company(api_client, timezone)
     assert (Company.objects.count(), CompanyMembership.objects.count()) == before
 
 
-@pytest.mark.parametrize(
-    "role", ["company_admin", "equipment_manager", "dispatcher", "estimator", "field_member"]
-)
+@pytest.mark.parametrize("role", ["admin", "manager", "foreman"])
 def test_company_profile_permission_revision_and_validation(world, password_hash, role):
     actor = member_in(world.company, password_hash, role)
     client = login_client(actor.user)
@@ -44,7 +42,7 @@ def test_company_profile_permission_revision_and_validation(world, password_hash
         "timezone": "America/Chicago",
     }
     response = client.post(f"{base}/update", body, content_type="application/json")
-    if role != "company_admin":
+    if role != "admin":
         assert response.status_code == 403
         world.company.refresh_from_db()
         assert world.company.name == "Nelson Electric" and world.company.address == ""
@@ -83,12 +81,12 @@ def test_company_profile_permission_revision_and_validation(world, password_hash
 def test_activity_filters_apply_before_pagination_and_preserve_private_scope(
     world, password_hash, api_client, asset_url
 ):
-    manager = member_in(world.company, password_hash, "equipment_manager")
+    manager = member_in(world.company, password_hash, "manager")
     client = login_client(manager.user)
     base = f"/api/companies/{world.company.pk}"
     assert post(api_client, asset_url).status_code == 201
     assert post(api_client, f"{base}/tools/{world.assets[1].pk}/requests").status_code == 201
-    other = Warehouse.objects.create(company=world.company, code="OTHER", name="Other warehouse")
+    other = Warehouse.objects.create(company=world.company, name="Other warehouse")
     response = client.post(
         f"{base}/tools/{world.assets[0].pk}/service",
         {"expected_revision": 1, "serviceability": "damaged", "note": "Inspection"},
@@ -113,15 +111,18 @@ def test_activity_filters_apply_before_pagination_and_preserve_private_scope(
         },
     ).json()
     assert len(next_page["items"]) == 1 and next_page["next_offset"] is None
-    assert {item["metadata"]["asset_tag"] for item in [*page["items"], *next_page["items"]]} == {
-        "NE-001",
-        "NE-002",
+    items = [*page["items"], *next_page["items"]]
+    assert {item["metadata"]["asset_id"] for item in items} == {
+        str(world.assets[0].pk),
+        str(world.assets[1].pk),
     }
+    assert {item["metadata"]["tool_name"] for item in items} == {"Hammer drill"}
     assert (
         client.get(f"{base}/activity", {"kind": "flag"}).json()["items"][0]["event_key"]
         == "equipment.asset.serviced"
     )
-    assert len(client.get(f"{base}/activity", {"search": "NE-001"}).json()["items"]) == 2
+    # Both requests and the service record name the tool.
+    assert len(client.get(f"{base}/activity", {"search": "hammer DRILL"}).json()["items"]) == 3
     assert client.get(f"{base}/activity", {"warehouse_id": str(other.pk)}).json()["items"] == []
     own = api_client.get(f"{base}/activity", {"kind": "flag", "mine": "false"}).json()
     assert own["items"] == []  # A client filter cannot expand own-event visibility.

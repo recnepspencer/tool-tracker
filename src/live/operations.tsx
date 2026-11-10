@@ -1,125 +1,128 @@
 import { HandoffReviewDialog } from './handoff-review';
-import { ErrorState, LoadingState, PageHeading, SearchField, SelectField, SurfaceCard } from './kit';
-import { useOperationsPageState, useQueueDecision, type QueueFilter, type QueueItem } from './operations-state';
-import { QueueGroup } from './queue-list';
+import { ErrorState, LoadingState, PageHeading, SearchField } from './kit';
+import { useOperationsPageState, useQueueDecision } from './operations-state';
+import type { QueueAction, QueueEntry } from './queue-groups';
+import { AskRow, HistoryRow, LinkRow, QueueSection } from './queue-list';
 import { RequestReviewDialog } from './queue-review';
-import { RelatedLinks } from './related-links';
-import { useCompany } from './session';
+import { photoSrc } from './tool-status';
+import './experience/queue.css';
 
 export { ReconciliationsPage } from './reconciliation-page';
 
-const filters: ReadonlyArray<readonly [QueueFilter, string]> = [
-  ['', 'All waiting'],
-  ['request', 'Requests'],
-  ['return', 'Returns'],
-];
-
-/** Demo WarehouseQueuePage over the live requests and handoffs. */
+/**
+ * The queue: everything waiting on the viewer, in sections, then what waits on someone else,
+ * then recent decisions behind one toggle.
+ */
 export function OperationsPage() {
   const queue = useOperationsPageState();
   const quick = useQueueDecision();
-  const c = useCompany();
-  if (!queue.loaded && !queue.error) return <LoadingState label="Loading warehouse queue…" />;
-  if (!queue.loaded) return <ErrorState message="The warehouse queue could not be loaded." onRetry={queue.retry} />;
-  const resolve = (item: QueueItem, decision: 'approve' | 'decline') => {
-    if (item.request) {
-      const action = decision === 'approve' ? item.approve : item.decline;
-      if (action === 'approve' || action === 'reject') void quick.decideRequest(item.request, action);
-    } else if (item.handoff) {
-      const action = decision === 'approve' ? item.approve : item.decline;
-      if (action === 'accept' || action === 'decline') void quick.decideHandoff(item.handoff, action);
-    }
+  if (!queue.loaded && !queue.error) return <LoadingState label="Loading queue…" />;
+  if (!queue.loaded) return <ErrorState message="The queue could not be loaded." onRetry={queue.retry} />;
+  const photo = (assetId: string) => photoSrc(queue.c.company_id, queue.photo(assetId));
+  const act = (entry: QueueEntry, action: QueueAction) => {
+    if (action === 'approve' || action === 'reject' || action === 'withdraw') {
+      if (entry.request) void quick.decideRequest(entry.request, action);
+    } else if (entry.handoff) void quick.decideHandoff(entry.handoff, action);
   };
-  const groupProps = {
-    busy: quick.busy,
-    onReview: (item: QueueItem) => queue.openReview(item.key),
-    onResolve: resolve,
-  };
+  const ask = (entry: QueueEntry) => (
+    <AskRow
+      key={entry.key}
+      entry={entry}
+      photo={photo(entry.assetId)}
+      busy={quick.busy}
+      onReview={(item) => queue.openReview(item.key)}
+      onAction={act}
+    />
+  );
   return (
-    <div className="page-content admin-operations-page">
-      <PageHeading title="Queue" description="Review requests and returns at the gate before custody changes.">
-        <RelatedLinks
-          label="Other reviews"
-          links={[
-            { to: '/app/flagged', label: 'Damaged & lost' },
-            ...(c.can('reconciliation.manage') ? [{ to: '/app/reconciliations', label: 'Reconciliation' }] : []),
-          ]}
-        />
-      </PageHeading>
-      <div className="operations-toolbar">
-        <div className="operations-tabs" role="tablist" aria-label="Queue filter">
-          {filters.map(([value, label]) => (
-            <button
-              key={label}
-              type="button"
-              role="tab"
-              aria-selected={!queue.history && queue.kind === value}
-              className={
-                !queue.history && queue.kind === value ? 'operations-tab operations-tab--active' : 'operations-tab'
-              }
-              onClick={() => queue.setKind(value)}
-            >
-              {label}
-              <span>{queue.counts[value]}</span>
-            </button>
-          ))}
-          <button
-            type="button"
-            role="tab"
-            aria-selected={queue.history}
-            className={queue.history ? 'operations-tab operations-tab--active' : 'operations-tab'}
-            onClick={queue.showHistory}
-          >
-            History
-          </button>
-        </div>
-        <div className="operations-filters operations-filters--compact">
-          <SearchField
-            compact
-            label="Search queue"
-            placeholder="Search queue…"
-            value={queue.search}
-            onChange={queue.setSearch}
-          />
-          <SelectField
-            compact
-            hideLabel
-            searchable={false}
-            label="Warehouse"
-            value={queue.warehouse || 'all'}
-            onChange={(value) => queue.setWarehouse(value === 'all' ? '' : value)}
-            options={[
-              { value: 'all', label: 'All warehouses' },
-              ...(queue.refs.warehouses.data ?? []).map((warehouse) => ({
-                value: warehouse.id,
-                label: warehouse.name,
-              })),
-            ]}
-          />
-        </div>
-      </div>
+    <div className="page-content queue-page">
+      <PageHeading title="Queue" />
+      {queue.searchable && (
+        <SearchField label="Search queue" placeholder="Search" value={queue.search} onChange={queue.setSearch} />
+      )}
       {queue.error && <ErrorState message="The queue could not be refreshed." onRetry={queue.retry} />}
       {!queue.review && quick.error && (
         <p className="form-error" role="alert">
           {quick.error}
         </p>
       )}
-      <SurfaceCard className="queue-card">
-        {!queue.empty ? (
-          <>
-            <QueueGroup label="Requests to release" items={queue.groups.request} {...groupProps} />
-            <QueueGroup label="Returns to accept" items={queue.groups.return} {...groupProps} />
-            <QueueGroup label="Transfers between people" items={queue.groups.transfer} {...groupProps} />
-          </>
+      {queue.nothingNeedsYou ? (
+        <div className="queue-empty" role="status">
+          <strong>Nothing needs you</strong>
+        </div>
+      ) : (
+        <>
+          {queue.needsYou.length > 0 && (
+            <QueueSection title="Needs you" count={queue.needsYou.length}>
+              {queue.needsYou.map(ask)}
+            </QueueSection>
+          )}
+          {queue.flagged.length > 0 && (
+            <QueueSection title="Damaged & lost" count={queue.flagged.length}>
+              {queue.flagged.map((entry) => (
+                <LinkRow
+                  key={entry.assetId}
+                  to={entry.to}
+                  state={{ returnTo: queue.returnTo }}
+                  label={`Open ${entry.toolName}`}
+                  title={entry.title}
+                  note={entry.note}
+                  at={entry.at}
+                  photo={photo(entry.assetId)}
+                />
+              ))}
+            </QueueSection>
+          )}
+          {queue.records.length > 0 && (
+            <QueueSection title="Records to fix" count={queue.records.length}>
+              {queue.records.map((entry) => (
+                <LinkRow
+                  key={entry.id}
+                  to={entry.to}
+                  label={`Fix the record for ${entry.toolName}`}
+                  title={entry.title}
+                  note={entry.note}
+                  at={entry.at}
+                  photo={photo(entry.assetId)}
+                />
+              ))}
+            </QueueSection>
+          )}
+        </>
+      )}
+      {queue.waiting.length > 0 && (
+        <QueueSection title="Waiting on others" count={queue.waiting.length} quiet>
+          {queue.waiting.map(ask)}
+        </QueueSection>
+      )}
+      <button
+        type="button"
+        className="queue-history-toggle"
+        aria-expanded={queue.history}
+        onClick={() => queue.setHistory(!queue.history)}
+      >
+        {queue.history ? 'Hide history' : 'Show history'}
+      </button>
+      {queue.history &&
+        (queue.historyLoading ? (
+          <LoadingState label="Loading history…" />
+        ) : queue.historyError ? (
+          <ErrorState message="History could not be loaded." />
+        ) : queue.historyEntries.length ? (
+          <QueueSection title="History" quiet>
+            {queue.historyEntries.map((entry) => (
+              <HistoryRow key={entry.key} entry={entry} photo={photo(entry.assetId)} />
+            ))}
+          </QueueSection>
         ) : (
-          <p className="admin-empty">Nothing waiting in this view. Requests and returns land here.</p>
-        )}
-      </SurfaceCard>
+          <p className="queue-history-empty">No decisions yet.</p>
+        ))}
       {queue.reviewRequest && (
         <RequestReviewDialog
           key={queue.review}
           request={queue.reviewRequest}
-          item={queue.reviewItem}
+          entry={queue.reviewEntry}
+          toolName={queue.reviewTool}
           onClose={() => queue.openReview('')}
         />
       )}
@@ -128,7 +131,9 @@ export function OperationsPage() {
           key={queue.review}
           handoff={queue.reviewHandoff}
           asset={queue.asset(queue.reviewHandoff.asset_id)}
-          item={queue.reviewItem}
+          entry={queue.reviewEntry}
+          pickupRequest={queue.reviewPickupRequest}
+          toolName={queue.reviewTool}
           onClose={() => queue.openReview('')}
         />
       )}

@@ -55,7 +55,6 @@ export function useFlaggedTools() {
         (!query ||
           [
             asset.name,
-            asset.asset_tag,
             asset.category_name,
             asset.responsible_warehouse_name,
             asset.holder_name ?? '',

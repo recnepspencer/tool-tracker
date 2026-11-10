@@ -36,13 +36,13 @@ def seed_review_scenarios(password):
     Company.objects.select_for_update().get(pk=company.pk)
     members = {}
     profiles = [
-        ("admin", "Morgan Administrator", "company_admin", "active"),
-        ("manager", "Sam Equipment Manager", "equipment_manager", "active"),
-        ("reviewer", "Ray Foreman", "field_member", "active"),
-        ("apprentice", "Alex Apprentice", "field_member", "active"),
-        ("warehouse", "Jo North Warehouse", "field_member", "active"),
-        ("estimator", "Casey Estimator", "estimator", "active"),
-        ("suspended", "Taylor Suspended", "field_member", "suspended"),
+        ("admin", "Morgan Administrator", "admin", "active"),
+        ("manager", "Sam Equipment Manager", "manager", "active"),
+        ("reviewer", "Ray Foreman", "foreman", "active"),
+        ("apprentice", "Alex Apprentice", "foreman", "active"),
+        ("warehouse", "Jo North Warehouse", "foreman", "active"),
+        ("estimator", "Casey Estimator", "foreman", "active"),
+        ("suspended", "Taylor Suspended", "foreman", "suspended"),
     ]
     for key, name, role, access in profiles:
         user, created = PlatformUser.objects.get_or_create(email=f"{key}@example.com")
@@ -67,9 +67,8 @@ def seed_review_scenarios(password):
     for code, name in [("MAIN", "Main warehouse"), ("NORTH", "North warehouse")]:
         warehouse, created = Warehouse.objects.get_or_create(
             company=company,
-            code=code,
+            id=review_id(f"warehouse/{code}"),
             defaults={
-                "id": review_id(f"warehouse/{code}"),
                 "name": name,
                 "address": f"{code.title()} review location",
             },
@@ -134,9 +133,8 @@ def seed_review_scenarios(password):
         warehouse = warehouses[code]
         asset, created = ToolAsset.objects.get_or_create(
             company=company,
-            asset_tag=tag,
+            id=review_id(f"asset/{tag}"),
             defaults={
-                "id": review_id(f"asset/{tag}"),
                 "tool_model": definition,
                 "origin_warehouse": warehouse,
                 "responsible_warehouse": warehouse,
@@ -145,7 +143,6 @@ def seed_review_scenarios(password):
                 "serial_number": f"REVIEW-{tag}",
                 "acquisition_date": date(2026, 4, 12) if tag == "NE-001" else None,
                 "acquisition_cost": Decimal("249.95") if tag == "NE-001" else None,
-                "acquisition_currency": "USD" if tag == "NE-001" else "",
                 "notes": "Purchased with two batteries and a carrying case."
                 if tag == "NE-001"
                 else "",
@@ -228,7 +225,6 @@ def seed_review_scenarios(password):
             id=review_id(f"job/{number}"),
             defaults={
                 "company": company,
-                "number": number,
                 "name": name,
                 "archived_at": now if archived else None,
             },
@@ -239,7 +235,6 @@ def seed_review_scenarios(password):
                 company=company,
                 job=job,
                 membership=members["reviewer"],
-                responsibility="foreman",
                 assigned_by=members["admin"],
                 starts_at=now - timedelta(days=7),
                 ends_at=now - timedelta(days=1) if archived else None,

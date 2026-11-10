@@ -1,6 +1,6 @@
 import { Fragment, type KeyboardEvent } from 'react';
-import { Link } from 'react-router-dom';
 import { Plus } from 'lucide-react';
+import { AddToolLink } from './add-tool-photo';
 import type { Model } from './client';
 import { FlaggedToolsPage } from './flagged-tools';
 import { inventoryHolder, lastMoved, useInventoryView, type InventoryGroup } from './inventory-state';
@@ -43,13 +43,12 @@ function WarehouseInventoryPage() {
     <div className="page-content admin-operations-page">
       <PageHeading
         title="Inventory"
-        description={`${view.rows.length} of ${view.activeTotal} ${view.activeTotal === 1 ? 'tool' : 'tools'} · ${view.warehouseLabel}`}
         action={
           view.canRegister ? (
-            <Link className="button button--primary" to="/app/tools/new" state={{ returnTo: view.returnTo }}>
+            <AddToolLink className="button button--primary" to="/app/tools/new" state={{ returnTo: view.returnTo }}>
               <Plus aria-hidden="true" />
               Add tool
-            </Link>
+            </AddToolLink>
           ) : undefined
         }
       />
@@ -189,7 +188,7 @@ function InventoryRow({
       className={`inventory-row${nested ? ' inventory-row--nested' : ''}`}
       role="button"
       tabIndex={0}
-      aria-label={`Open ${item.name}, ${item.asset_tag}`}
+      aria-label={`Open ${item.name}${item.serial_number ? `, ${item.serial_number}` : ''}`}
       onClick={onOpen}
       onKeyDown={activate(onOpen)}
     >
@@ -197,8 +196,8 @@ function InventoryRow({
         <div className="inventory-tool">
           <ToolPhoto src={photoSrc(companyId, item.registration_photo_id)} alt="" size="small" />
           <div>
-            <strong>{nested ? item.serial_number || item.asset_tag : item.name}</strong>
-            <span>{nested ? `${item.asset_tag} · ${item.name}` : `${item.asset_tag} · ${item.category_name}`}</span>
+            <strong>{nested ? item.serial_number || item.name : item.name}</strong>
+            <span>{nested ? item.name : item.category_name}</span>
             <span className="inventory-tool__mobile-context">
               {item.responsible_warehouse_name} · {holder} · {moved}
             </span>

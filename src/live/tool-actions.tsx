@@ -85,7 +85,6 @@ function PanelHeading({ title, onClose }: { title: string; onClose(): void }) {
   return (
     <div className="detail-section-heading">
       <div>
-        <span className="eyebrow">Confirm action</span>
         <h3>{title}</h3>
       </div>
       <button type="button" className="text-button" onClick={onClose}>

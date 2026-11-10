@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
 import { chooseDestination, command, invitedMember, workspace, chooseOption, test } from './support';
 
-for (const role of ['company_admin', 'equipment_manager', 'warehouse'])
+for (const role of ['admin', 'manager', 'warehouse'])
   test(`${role} cancels a stranded proposal while retaining the ended holder's identity`, async ({ page, browser }) => {
     const fixture = await workspace(page);
     const holderContext = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
@@ -9,16 +9,16 @@ for (const role of ['company_admin', 'equipment_manager', 'warehouse'])
     const managerContext = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
     const holder = await holderContext.newPage();
     const receiver = await receiverContext.newPage();
-    const manager = role === 'company_admin' ? page : await managerContext.newPage();
+    const manager = role === 'admin' ? page : await managerContext.newPage();
     try {
-      const holderMember = await invitedMember(page, holder, fixture.base, 'field_member', 'Departed operator');
-      const recipient = await invitedMember(page, receiver, fixture.base, 'field_member', 'Unavailable recipient');
+      const holderMember = await invitedMember(page, holder, fixture.base, 'foreman', 'Departed operator');
+      const recipient = await invitedMember(page, receiver, fixture.base, 'foreman', 'Unavailable recipient');
       if (manager !== page) {
         const actor = await invitedMember(
           page,
           manager,
           fixture.base,
-          role === 'warehouse' ? 'field_member' : role,
+          role === 'warehouse' ? 'foreman' : role,
           'Recovery reviewer',
         );
         if (role === 'warehouse')
@@ -44,14 +44,14 @@ for (const role of ['company_admin', 'equipment_manager', 'warehouse'])
       await command(page.request, `${fixture.base}/people/${holderMember.id}/update`, {
         expected_revision: 1,
         access_state: 'disabled',
-        roles: ['field_member'],
+        role: 'foreman',
         end_membership: true,
         reason: 'Employment ended with accountability outstanding',
       });
       await command(page.request, `${fixture.base}/people/${recipient.id}/update`, {
         expected_revision: 1,
         access_state: 'suspended',
-        roles: ['field_member'],
+        role: 'foreman',
         reason: 'Recipient unavailable',
       });
       // Person-to-person proposals are reached from the tool's pending-handoff notice.
@@ -61,16 +61,14 @@ for (const role of ['company_admin', 'equipment_manager', 'warehouse'])
         .getByRole('link', { name: 'Review in queue', exact: true })
         .click();
       const review = manager.getByRole('dialog', { name: 'Review Hammer drill', exact: true });
-      await expect(review.getByText('Required to void', { exact: true })).toBeVisible();
-      // Voiding without a reason is refused before anything is sent.
-      await review.getByRole('button', { name: 'Void handoff', exact: true }).click();
-      await expect(review.getByRole('alert')).toHaveText(
-        'Add a decision note explaining why this handoff is being voided.',
-      );
+      await expect(review.getByText('Required to stop it', { exact: true })).toBeVisible();
+      // Stopping a transfer without a reason is refused before anything is sent.
+      await review.getByRole('button', { name: 'Stop transfer', exact: true }).click();
+      await expect(review.getByRole('alert')).toHaveText("Add a note saying why you're stopping this transfer.");
       await review
-        .getByLabel('Decision note', { exact: false })
+        .getByLabel('Note', { exact: true })
         .fill('Cancelled stale proposal; physical custody has not changed');
-      await review.getByRole('button', { name: 'Void handoff', exact: true }).click();
+      await review.getByRole('button', { name: 'Stop transfer', exact: true }).click();
       await expect(review).toHaveCount(0);
       expect(
         (await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}/custody`)).json()).items,
@@ -90,8 +88,11 @@ for (const role of ['company_admin', 'equipment_manager', 'warehouse'])
         'href',
         '/app/reconciliations',
       );
+      await expect(opening.getByRole('combobox', { name: 'What’s wrong?', exact: true })).toContainText(
+        'Someone else has it',
+      );
       await opening
-        .getByLabel('Describe the discrepancy')
+        .getByLabel('Details', { exact: true })
         .fill('Warehouse inventory confirms the ended employee returned this tool');
       await opening.getByRole('button', { name: 'Open case', exact: true }).click();
       await expect(opening).toHaveCount(0);
@@ -101,16 +102,17 @@ for (const role of ['company_admin', 'equipment_manager', 'warehouse'])
         .getByRole('button', { name: 'Resolve', exact: true })
         .click();
       const resolve = manager.getByRole('dialog', { name: 'Resolve Hammer drill', exact: true });
-      await resolve.getByLabel('Findings and resolution').fill('Physical return verified with warehouse photo');
-      await chooseOption(resolve, 'Correct custody', `warehouse:${fixture.warehouse.id}`);
-      await resolve.getByRole('button', { name: 'Resolve case', exact: true }).click();
-      await expect(resolve.getByRole('alert')).toContainText('photo evidence');
-      await expect(manager.getByRole('button', { name: 'Load latest values', exact: true })).toHaveCount(0);
-      expect(
-        (await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}/custody`)).json()).items,
-      ).toEqual(before);
+      await expect(resolve.getByRole('heading', { name: 'Custody dispute: Hammer drill' })).toBeVisible();
+      await expect(resolve.getByText('Records say Departed operator has it, but that’s in doubt.')).toBeVisible();
+      await resolve.getByRole('radio', { name: 'Records are right', exact: true }).click();
+      await expect(resolve.getByRole('combobox', { name: 'Who has it now?', exact: true })).toHaveCount(0);
+      await resolve.getByRole('radio', { name: 'Someone else has it', exact: true }).click();
+      const move = resolve.getByRole('button', { name: 'Move custody', exact: true });
+      await expect(move).toBeDisabled();
+      await chooseOption(resolve, 'Who has it now?', `warehouse:${fixture.warehouse.id}`);
+      await resolve.getByLabel('Note', { exact: true }).fill('Physical return verified with warehouse photo');
       await resolve.locator('input[type="file"][name="photo"]').setInputFiles('e2e/fixtures/hammer-drill.jpg');
-      await resolve.getByRole('button', { name: 'Resolve case', exact: true }).click();
+      await move.click();
       await expect(resolve).toHaveCount(0);
       await expect(manager.getByText('No open reconciliation cases match this view.')).toBeVisible();
       const history = (await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}/custody`)).json())
@@ -133,14 +135,14 @@ test('a source warehouse grant does not authorize another warehouse receipt', as
   const holder = await holderContext.newPage();
   const manager = await managerContext.newPage();
   try {
-    const operator = await invitedMember(page, holder, fixture.base, 'field_member', 'Returning operator');
-    const reviewer = await invitedMember(page, manager, fixture.base, 'field_member', 'Warehouse reviewer');
+    const operator = await invitedMember(page, holder, fixture.base, 'foreman', 'Returning operator');
+    const reviewer = await invitedMember(page, manager, fixture.base, 'foreman', 'Warehouse reviewer');
     await command(page.request, `${fixture.base}/warehouses/${fixture.warehouse.id}/authority`, {
       expected_revision: 1,
       membership_id: reviewer.id,
       enabled: true,
     });
-    const east = await command(page.request, `${fixture.base}/warehouses`, { code: 'EAST', name: 'East warehouse' });
+    const east = await command(page.request, `${fixture.base}/warehouses`, { name: 'East warehouse' });
     const issued = await command(page.request, `${fixture.base}/tools/${fixture.asset.id}/handoffs`, {
       request_key: crypto.randomUUID(),
       expected_revision: fixture.asset.revision,
@@ -156,9 +158,18 @@ test('a source warehouse grant does not authorize another warehouse receipt', as
     await holder.getByRole('button', { name: 'Send to East warehouse', exact: true }).click();
     await expect(holder.getByText('In transfer to East warehouse.', { exact: false })).toBeVisible();
     const handoff = (await (await page.request.get(`${fixture.base}/handoffs`)).json()).items[0];
-    // A return to another warehouse is not in this manager's gate queue; its deep link offers no receipt.
+    // A return to another warehouse waits on that warehouse, not this manager; its deep link offers no receipt.
     await manager.goto('/app/operations');
-    await expect(manager.getByRole('button', { name: 'Review return for Hammer drill', exact: true })).toHaveCount(0);
+    await expect(
+      manager
+        .getByRole('region', { name: 'Waiting on others', exact: true })
+        .getByText('Waiting for East warehouse to accept'),
+    ).toBeVisible();
+    await expect(
+      manager
+        .getByRole('region', { name: 'Needs you', exact: true })
+        .getByRole('button', { name: 'Review return for Hammer drill', exact: true }),
+    ).toHaveCount(0);
     await manager.goto(`/app/operations?review=handoff:${handoff.id}`);
     const review = manager.getByRole('dialog', { name: 'Review Hammer drill', exact: true });
     await expect(review).toBeVisible();

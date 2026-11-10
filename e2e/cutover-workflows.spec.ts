@@ -72,7 +72,6 @@ test('company profile and warehouse dialogs persist changes and recover stale dr
   await page.goto('/app/warehouses');
   await page.getByRole('button', { name: 'Add warehouse', exact: true }).click();
   const create = page.getByRole('dialog', { name: 'Create warehouse', exact: true });
-  await create.getByLabel('Code', { exact: true }).fill('EAST');
   await create.getByLabel('Name', { exact: true }).fill('East warehouse');
   await create.getByLabel('Address', { exact: true }).fill('77 East Road');
   await create.getByRole('button', { name: 'Save warehouse', exact: true }).click();
@@ -186,14 +185,13 @@ test('foremen directory filters actual assignments and preserves held tool ident
   const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
   const worker = await context.newPage();
   try {
-    const member = await invitedMember(page, worker, fixture.base, 'field_member', 'Assigned Foreman');
+    const member = await invitedMember(page, worker, fixture.base, 'foreman', 'Assigned Foreman');
     const assignment = await command(page.request, `${fixture.base}/jobs/${fixture.job.id}/assignments`, {
       expected_revision: fixture.job.revision,
       membership_id: member.id,
-      responsibility: 'foreman',
       reason: 'Lead installation',
     });
-    expect(assignment).toMatchObject({ membership_id: member.id, responsibility: 'foreman' });
+    expect(assignment).toMatchObject({ membership_id: member.id });
     const handoff = await command(page.request, `${fixture.base}/tools/${fixture.asset.id}/handoffs`, {
       request_key: crypto.randomUUID(),
       expected_revision: fixture.asset.revision,
@@ -246,17 +244,18 @@ test('photo-first registration survives a lost server response without duplicati
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/app/tools/new');
   const wizard = page.getByRole('dialog', { name: 'Add a tool', exact: true });
-  await expect(wizard.getByRole('group', { name: 'Tool photo', exact: true })).toBeVisible();
-  await page.screenshot({ path: 'artifacts/parity-registration-capture-mobile.png', fullPage: true });
-  await page.getByLabel('Choose a tool photo', { exact: true }).setInputFiles('e2e/fixtures/hammer-drill.jpg');
-  await expect(wizard.getByRole('img', { name: 'Selected tool', exact: true })).toBeVisible();
+  const photo = wizard.getByLabel('Tool photo', { exact: true });
+  const selected = wizard.getByRole('img', { name: 'Selected tool', exact: true });
+  await photo.setInputFiles('e2e/fixtures/hammer-drill.jpg');
+  await expect(selected).toBeVisible();
   await chooseOption(page, 'Tool model', model.id);
   await chooseOption(page, 'Home warehouse', fixture.warehouse.id);
-  await page.getByLabel('Asset tag', { exact: true }).fill('RETRY-PHOTO');
-  await page.getByRole('button', { name: /Retake/ }).click();
-  await page.getByLabel('Choose a tool photo', { exact: true }).setInputFiles('e2e/fixtures/hammer-drill.jpg');
-  await expect(wizard.getByRole('img', { name: 'Selected tool', exact: true })).toBeVisible();
-  await expect(page.getByLabel('Asset tag', { exact: true })).toHaveValue('RETRY-PHOTO');
+  // Removing and replacing the photo keeps what was already chosen.
+  await wizard.getByRole('button', { name: 'Remove photo', exact: true }).click();
+  await expect(selected).toHaveCount(0);
+  await photo.setInputFiles('e2e/fixtures/hammer-drill.jpg');
+  await expect(selected).toBeVisible();
+  await expect(wizard.getByRole('combobox', { name: 'Tool model', exact: true })).toContainText('Hammer drill');
   await page.screenshot({ path: 'artifacts/parity-registration-details-mobile.png', fullPage: true });
   await page.route(
     `**${fixture.base}/tools`,
@@ -273,7 +272,9 @@ test('photo-first registration survives a lost server response without duplicati
   await page.getByRole('button', { name: 'Add tool', exact: true }).click();
   // The retried command returns the committed unit, and the wizard closes onto its record.
   await expect(page.getByRole('dialog', { name: 'Hammer drill details', exact: true })).toBeVisible();
-  const tools = (await (await page.request.get(`${fixture.base}/tools?search=RETRY-PHOTO`)).json()).items;
+  const tools = (await (await page.request.get(`${fixture.base}/tools`)).json()).items.filter(
+    (tool: { tool_model_id: string }) => tool.tool_model_id === model.id,
+  );
   expect(tools).toHaveLength(1);
   expect(tools[0]).toMatchObject({ warehouse_id: fixture.warehouse.id, holder_membership_id: null });
   expect(tools[0].registration_photo_id).toBeTruthy();
@@ -286,7 +287,7 @@ test('activity filters read actual audit events with own versus company visibili
   const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
   const worker = await context.newPage();
   try {
-    await invitedMember(page, worker, fixture.base, 'field_member');
+    await invitedMember(page, worker, fixture.base, 'foreman');
     await command(worker.request, `${fixture.base}/tools/${fixture.asset.id}/requests`, {
       request_key: crypto.randomUUID(),
       note: 'For the next shift',

@@ -39,7 +39,7 @@ All business routes are scoped under `/api/companies/{company_id}` except compan
 | Custody | Request a specific asset; approve/reject/withdraw; propose transfer/return; accept/decline/cancel; browse scoped queues and custody history. |
 | Condition | Independent damage and missing incidents; repair/service records; found reports; retirement, restoration, and disposal. |
 | Reconciliation | Investigate cases; record reasoned resolutions; correct custody with photo evidence and both case/asset revisions. |
-| Work | Projects, jobs, administrative assignments and responsibility changes; configurable direct/approval-required/disabled self-join and self-leave; decisions, archive/restore, historical assignments. |
+| Work | Jobs with unique names, administrative assignments; configurable direct/approval-required/disabled self-join and self-leave; decisions, archive/restore, historical assignments. |
 | Evidence/reporting | Validated staged JPEG/PNG/WebP uploads, authorized downloads, typed evidence links, company summary, person/job/tool directory, and scoped activity. |
 
 Requests do not reserve tools. Approval creates a pending handoff; the recipient's acceptance records actual receipt. Only one handoff may be pending per asset. A warehouse receipt updates responsible warehouse; a worker transfer preserves it. Job changes preserve equipment custody. Suspension preserves accountability; employment end explicitly closes job assignments. Disposed assets cannot be restored. Duplicate reconciliation cases can record findings; automatic asset identity merging is outside this API.

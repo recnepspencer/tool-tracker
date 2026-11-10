@@ -9,12 +9,17 @@ async function requestTool(worker: Page, fixture: Fixture) {
   await expect(worker.getByRole('form', { name: 'Action details', exact: true })).toHaveCount(0);
   await expect(worker.getByText('Requested from Main warehouse. Waiting for review.', { exact: false })).toBeVisible();
 }
-const requestButtons = { reject: 'Decline', withdraw: 'Withdraw request', approve: 'Release to worker' };
-async function requestDecision(actor: Page, decision: keyof typeof requestButtons) {
+const requestButtons = { reject: 'Decline', withdraw: 'Withdraw request', approve: 'Release' };
+// A released request shows in the queue as its pickup, which the requester can still withdraw.
+async function requestDecision(
+  actor: Page,
+  decision: keyof typeof requestButtons,
+  row: 'request' | 'pickup' = 'request',
+) {
   await actor.goto('/app/operations');
-  await actor.getByRole('button', { name: 'Review request for Hammer drill', exact: true }).click();
+  await actor.getByRole('button', { name: `Review ${row} for Hammer drill`, exact: true }).click();
   const dialog = actor.getByRole('dialog', { name: 'Review Hammer drill', exact: true });
-  await dialog.getByLabel('Decision note').fill(`Decision: ${decision}`);
+  await dialog.getByLabel('Note', { exact: true }).fill(`Decision: ${decision}`);
   await dialog.getByRole('button', { name: requestButtons[decision], exact: true }).click();
   await expect(dialog).toHaveCount(0);
 }
@@ -50,20 +55,20 @@ async function proposeTransfer(holder: Page, fixture: Fixture, kind: 'Person' | 
   await expect(holder.getByText(`In transfer to ${name}.`, { exact: false })).toBeVisible();
 }
 
-// A field member requests UNIT-001 and the role under test reviews it.
+// A foreman requests UNIT-001 and the role under test reviews it.
 async function requestScenario(page: Page, browser: Browser, role: string) {
   const fixture = await workspace(page);
   const workerContext = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
   const reviewerContext = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
   const worker = await workerContext.newPage();
-  const reviewer = role === 'company_admin' ? page : await reviewerContext.newPage();
-  const member = await invitedMember(page, worker, fixture.base, 'field_member', 'Field operator');
+  const reviewer = role === 'admin' ? page : await reviewerContext.newPage();
+  const member = await invitedMember(page, worker, fixture.base, 'foreman', 'Field operator');
   if (reviewer !== page) {
     const manager = await invitedMember(
       page,
       reviewer,
       fixture.base,
-      role === 'warehouse' ? 'field_member' : role,
+      role === 'warehouse' ? 'foreman' : role,
       'Equipment reviewer',
     );
     if (role === 'warehouse')
@@ -82,7 +87,7 @@ async function requestScenario(page: Page, browser: Browser, role: string) {
   return { fixture, worker, reviewer, member, custody, initial: await custody(), close };
 }
 
-for (const role of ['company_admin', 'equipment_manager', 'warehouse']) {
+for (const role of ['admin', 'manager', 'warehouse']) {
   test(`${role} rejects, sees withdrawals and a withdrawn release without moving custody`, async ({
     page,
     browser,
@@ -98,7 +103,7 @@ for (const role of ['company_admin', 'equipment_manager', 'warehouse']) {
       await requestTool(worker, fixture);
       await requestDecision(reviewer, 'approve');
       expect(await custody()).toEqual(initial);
-      await requestDecision(worker, 'withdraw');
+      await requestDecision(worker, 'withdraw', 'pickup');
       expect((await (await page.request.get(`${fixture.base}/handoffs`)).json()).items).toEqual([]);
       expect(await custody()).toEqual(initial);
       await reviewer.goto('/app/operations?history=true');
@@ -132,13 +137,13 @@ for (const role of ['company_admin', 'equipment_manager', 'warehouse']) {
         fixture.warehouse.id,
       );
       await reviewer.goto('/app/operations?history=true');
-      await expect(reviewer.getByText('Request fulfilled', { exact: true })).toBeVisible();
+      await expect(reviewer.getByText('Picked up', { exact: true })).toBeVisible();
     } finally {
       await close();
     }
   });
 }
-// The role under test holds UNIT-001; a field member can be named to receive it.
+// The role under test holds UNIT-001; a foreman can be named to receive it.
 async function holderScenario(page: Page, browser: Browser, role: string, withReceiver: boolean) {
   const fixture = await workspace(page);
   const holderContext = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
@@ -147,15 +152,15 @@ async function holderScenario(page: Page, browser: Browser, role: string, withRe
     await holderContext.close();
     await receiverContext.close();
   };
-  const holder = role === 'company_admin' ? page : await holderContext.newPage();
+  const holder = role === 'admin' ? page : await holderContext.newPage();
   const receiver = await receiverContext.newPage();
   const [holderMember] = await Promise.all([
     holder === page
       ? (await (await page.request.get('/api/me')).json()).memberships.find(
           (item: { company_id: string }) => item.company_id === fixture.company.id,
         )
-      : invitedMember(page, holder, fixture.base, role === 'warehouse' ? 'field_member' : role, 'Tool holder'),
-    withReceiver ? invitedMember(page, receiver, fixture.base, 'field_member', 'Receiving operator') : undefined,
+      : invitedMember(page, holder, fixture.base, role === 'warehouse' ? 'foreman' : role, 'Tool holder'),
+    withReceiver ? invitedMember(page, receiver, fixture.base, 'foreman', 'Receiving operator') : undefined,
   ]);
   const holderId = holderMember.id ?? holderMember.membership_id;
   if (role === 'warehouse')
@@ -176,7 +181,7 @@ async function holderScenario(page: Page, browser: Browser, role: string, withRe
   return { fixture, holder, receiver, holderId, tool, close };
 }
 
-for (const role of ['company_admin', 'equipment_manager', 'field_member', 'warehouse']) {
+for (const role of ['admin', 'manager', 'foreman', 'warehouse']) {
   test(`${role} as holder keeps a unit the receiver declines or the holder cancels`, async ({ page, browser }) => {
     const { fixture, holder, receiver, holderId, tool, close } = await holderScenario(page, browser, role, true);
     try {
@@ -218,7 +223,7 @@ test('a photographed handoff recovers a committed command after its response is 
   const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
   const receiver = await context.newPage();
   try {
-    await invitedMember(page, receiver, fixture.base, 'field_member', 'Photo receiver');
+    await invitedMember(page, receiver, fixture.base, 'foreman', 'Photo receiver');
     await page.goto(`/app/tools/${fixture.asset.id}?action=transfer`);
     const form = page.getByRole('dialog', { name: 'Transfer Hammer drill', exact: true });
     await chooseDestination(page, 'Person', 'Photo receiver');

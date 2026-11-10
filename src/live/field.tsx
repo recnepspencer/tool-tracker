@@ -1,5 +1,6 @@
 import { Link, Outlet } from 'react-router-dom';
 import { Plus } from 'lucide-react';
+import { AddToolLink } from './add-tool-photo';
 import { ToolCatalogCard } from './checkout-card';
 import { CatalogFilters } from './checkout-filters';
 import { useCheckout, useMyTools } from './field-state';
@@ -21,10 +22,7 @@ export function MyToolsPage() {
   return (
     <div className="worker-screen">
       <div className="worker-screen-heading">
-        <div>
-          <div className="worker-eyebrow">{c.preferred_name}</div>
-          <h1>My tools</h1>
-        </div>
+        <h1>My tools</h1>
       </div>
       <section className="worker-pending-section" aria-label="Pending tool movements">
         {pending.isPending && <LoadingState label="Checking pending handoffs…" />}
@@ -65,10 +63,10 @@ export function MyToolsPage() {
         Need something else? Browse checkout
       </Link>
       {canRegister && (
-        <Link className="button button--primary floating-action" to="/app/mine/new">
+        <AddToolLink className="button button--primary floating-action" to="/app/mine/new">
           <Plus aria-hidden="true" />
           Add tool
-        </Link>
+        </AddToolLink>
       )}
       {pending.reviewing && (
         <PendingHandoffReviewSheet key={pending.reviewing.key} item={pending.reviewing} onClose={pending.closeReview} />

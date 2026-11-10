@@ -75,7 +75,6 @@ export function useInventoryView() {
       (!warehouse || tool.responsible_warehouse_id === warehouse) &&
       (!query ||
         [
-          tool.asset_tag,
           tool.serial_number ?? '',
           tool.name,
           tool.manufacturer,

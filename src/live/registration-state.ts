@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { receiveLaunchPhoto } from './add-tool-photo';
 import { api, errorMessage, requestKey, result } from './client';
 import { assetDetailsInput } from './asset-details';
 import { useCategoryOptions } from './catalog-state';
@@ -8,11 +9,9 @@ import { useReferences } from './data';
 import { useModalFocusTrap } from './experience/use-modal-focus-trap';
 import { useCompany } from './session';
 import { useSheetNavigation } from './sheet-navigation';
-import { uploadPhoto } from './photos';
+import { photoTypes, uploadPhoto } from './photos';
 import { text } from './ui';
 import { useRegistrationPolicy } from './registration-policy';
-
-const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 export function useRegisterToolState() {
   const c = useCompany();
@@ -22,10 +21,9 @@ export function useRegisterToolState() {
   const navigate = useNavigate();
   const { root, close } = useSheetNavigation();
   const panelRef = useRef<HTMLElement>(null);
-  const photoInput = useRef<HTMLInputElement>(null);
   useModalFocusTrap(true, close, panelRef);
-  const [step, setStep] = useState<'capture' | 'details'>('capture');
   const [preview, setPreview] = useState('');
+  const [photoName, setPhotoName] = useState('');
   const [photoError, setPhotoError] = useState('');
   const [optionalOpen, setOptionalOpen] = useState(false);
   const [warehouse, setWarehouse] = useState(() =>
@@ -49,30 +47,25 @@ export function useRegisterToolState() {
       document.body.style.overflow = previousOverflow;
     };
   }, []);
-  const choosePhoto = (file: File | undefined) => {
-    if (!file) return;
-    if (!PHOTO_TYPES.includes(file.type) || file.size > 8 * 1024 * 1024) {
+  const choosePhoto = useCallback((file: File) => {
+    if (!photoTypes.includes(file.type) || file.size > 8 * 1024 * 1024) {
       setPhotoError('Choose a JPEG, PNG, or WebP photo under 8 MB.');
       return;
     }
     setPhotoError('');
     selectedPhoto.current = file;
     uploadedPhoto.current = null;
+    setPhotoName(file.name);
     setPreview(URL.createObjectURL(file));
-    setStep('details');
-  };
-  const skipPhoto = () => {
+  }, []);
+  // A photo taken from the Add tool tap arrives once the camera closes.
+  useEffect(() => receiveLaunchPhoto(choosePhoto), [choosePhoto]);
+  const removePhoto = () => {
     selectedPhoto.current = null;
     uploadedPhoto.current = null;
+    setPhotoName('');
     setPreview('');
     setPhotoError('');
-    setStep('details');
-  };
-  const retake = () => {
-    selectedPhoto.current = null;
-    uploadedPhoto.current = null;
-    setPreview('');
-    setStep('capture');
   };
   const command = useCommandForm(async (form: FormData) => {
     if (selectedPhoto.current && !uploadedPhoto.current) {
@@ -83,7 +76,6 @@ export function useRegisterToolState() {
     const body = {
       tool_model_id: text(form, 'model'),
       warehouse_id: text(form, 'warehouse'),
-      asset_tag: text(form, 'tag'),
       ...assetDetailsInput(form),
       photo_id: uploadedPhoto.current,
     };
@@ -115,14 +107,12 @@ export function useRegisterToolState() {
     policy,
     canRegister,
     panelRef,
-    photoInput,
     close,
-    step,
     preview,
+    photoName,
     photoError,
     choosePhoto,
-    skipPhoto,
-    retake,
+    removePhoto,
     optionalOpen,
     toggleOptional: () => setOptionalOpen((current) => !current),
     warehouse,

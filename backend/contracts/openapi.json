@@ -190,12 +190,6 @@
             ],
             "title": "Acquisition Cost"
           },
-          "acquisition_currency": {
-            "default": "",
-            "pattern": "^([A-Z]{3})?$",
-            "title": "Acquisition Currency",
-            "type": "string"
-          },
           "acquisition_date": {
             "anyOf": [
               {
@@ -251,10 +245,6 @@
             ],
             "title": "Acquisition Cost"
           },
-          "acquisition_currency": {
-            "title": "Acquisition Currency",
-            "type": "string"
-          },
           "acquisition_date": {
             "anyOf": [
               {
@@ -266,10 +256,6 @@
               }
             ],
             "title": "Acquisition Date"
-          },
-          "asset_tag": {
-            "title": "Asset Tag",
-            "type": "string"
           },
           "category_id": {
             "format": "uuid",
@@ -489,11 +475,9 @@
         },
         "required": [
           "id",
-          "asset_tag",
           "serial_number",
           "acquisition_date",
           "acquisition_cost",
-          "acquisition_currency",
           "notes",
           "tool_model_id",
           "category_id",
@@ -541,16 +525,6 @@
             "maxLength": 2000,
             "minLength": 1,
             "title": "Reason",
-            "type": "string"
-          },
-          "responsibility": {
-            "default": "crew",
-            "enum": [
-              "crew",
-              "foreman",
-              "supervisor"
-            ],
-            "title": "Responsibility",
             "type": "string"
           }
         },
@@ -659,15 +633,6 @@
             "title": "Membership Id",
             "type": "string"
           },
-          "responsibility": {
-            "enum": [
-              "crew",
-              "foreman",
-              "supervisor"
-            ],
-            "title": "Responsibility",
-            "type": "string"
-          },
           "starts_at": {
             "format": "date-time",
             "title": "Starts At",
@@ -678,7 +643,6 @@
           "id",
           "job_id",
           "membership_id",
-          "responsibility",
           "starts_at",
           "ends_at",
           "assigned_by_id",
@@ -1105,11 +1069,9 @@
           },
           "role": {
             "enum": [
-              "field_member",
-              "company_admin",
-              "equipment_manager",
-              "dispatcher",
-              "estimator"
+              "admin",
+              "manager",
+              "foreman"
             ],
             "title": "Role",
             "type": "string"
@@ -1285,6 +1247,11 @@
             "maxLength": 40,
             "title": "Signup Code",
             "type": "string"
+          },
+          "starter_catalog": {
+            "default": true,
+            "title": "Starter Catalog",
+            "type": "boolean"
           },
           "timezone": {
             "default": "America/Denver",
@@ -1600,21 +1567,11 @@
           "name": {
             "title": "Name",
             "type": "string"
-          },
-          "number": {
-            "title": "Number",
-            "type": "string"
-          },
-          "responsibility": {
-            "title": "Responsibility",
-            "type": "string"
           }
         },
         "required": [
           "job_id",
-          "number",
-          "name",
-          "responsibility"
+          "name"
         ],
         "title": "DirectoryJob",
         "type": "object"
@@ -1689,10 +1646,6 @@
             "title": "Asset Id",
             "type": "string"
           },
-          "asset_tag": {
-            "title": "Asset Tag",
-            "type": "string"
-          },
           "manufacturer": {
             "title": "Manufacturer",
             "type": "string"
@@ -1739,7 +1692,6 @@
         },
         "required": [
           "asset_id",
-          "asset_tag",
           "name",
           "manufacturer",
           "model_number",
@@ -2344,13 +2296,11 @@
             "type": "string"
           },
           "role": {
-            "default": "field_member",
+            "default": "foreman",
             "enum": [
-              "field_member",
-              "company_admin",
-              "equipment_manager",
-              "dispatcher",
-              "estimator"
+              "admin",
+              "manager",
+              "foreman"
             ],
             "title": "Role",
             "type": "string"
@@ -2489,11 +2439,9 @@
           },
           "role_code": {
             "enum": [
-              "field_member",
-              "company_admin",
-              "equipment_manager",
-              "dispatcher",
-              "estimator"
+              "admin",
+              "manager",
+              "foreman"
             ],
             "title": "Role Code",
             "type": "string"
@@ -2520,19 +2468,64 @@
             "minLength": 1,
             "title": "Name",
             "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "JobInput",
+        "type": "object"
+      },
+      "JobMembersInput": {
+        "additionalProperties": false,
+        "description": "Everyone who should be on the job after the save; anyone left out comes off it.",
+        "properties": {
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
           },
-          "number": {
-            "maxLength": 50,
-            "minLength": 1,
-            "title": "Number",
+          "membership_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "title": "Membership Ids",
+            "type": "array"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Note",
             "type": "string"
           }
         },
         "required": [
-          "number",
-          "name"
+          "expected_revision",
+          "membership_ids"
         ],
-        "title": "JobInput",
+        "title": "JobMembersInput",
+        "type": "object"
+      },
+      "JobMembersView": {
+        "properties": {
+          "assignments": {
+            "items": {
+              "$ref": "#/components/schemas/AssignmentView"
+            },
+            "title": "Assignments",
+            "type": "array"
+          },
+          "job": {
+            "$ref": "#/components/schemas/JobView"
+          }
+        },
+        "required": [
+          "job",
+          "assignments"
+        ],
+        "title": "JobMembersView",
         "type": "object"
       },
       "JobPage": {
@@ -2581,17 +2574,10 @@
             "minLength": 1,
             "title": "Name",
             "type": "string"
-          },
-          "number": {
-            "maxLength": 50,
-            "minLength": 1,
-            "title": "Number",
-            "type": "string"
           }
         },
         "required": [
           "expected_revision",
-          "number",
           "name"
         ],
         "title": "JobUpdate",
@@ -2620,10 +2606,6 @@
             "title": "Name",
             "type": "string"
           },
-          "number": {
-            "title": "Number",
-            "type": "string"
-          },
           "revision": {
             "title": "Revision",
             "type": "integer"
@@ -2631,7 +2613,6 @@
         },
         "required": [
           "id",
-          "number",
           "name",
           "archived_at",
           "revision"
@@ -2887,19 +2868,14 @@
             "title": "Revision",
             "type": "integer"
           },
-          "roles": {
-            "items": {
-              "enum": [
-                "field_member",
-                "company_admin",
-                "equipment_manager",
-                "dispatcher",
-                "estimator"
-              ],
-              "type": "string"
-            },
-            "title": "Roles",
-            "type": "array"
+          "role": {
+            "enum": [
+              "admin",
+              "manager",
+              "foreman"
+            ],
+            "title": "Role",
+            "type": "string"
           },
           "title": {
             "title": "Title",
@@ -2914,7 +2890,7 @@
           "access_state",
           "ended_at",
           "revision",
-          "roles",
+          "role",
           "capabilities",
           "is_owner"
         ],
@@ -2949,21 +2925,14 @@
             "title": "Reason",
             "type": "string"
           },
-          "roles": {
-            "items": {
-              "enum": [
-                "field_member",
-                "company_admin",
-                "equipment_manager",
-                "dispatcher",
-                "estimator"
-              ],
-              "type": "string"
-            },
-            "maxItems": 5,
-            "minItems": 1,
-            "title": "Roles",
-            "type": "array"
+          "role": {
+            "enum": [
+              "admin",
+              "manager",
+              "foreman"
+            ],
+            "title": "Role",
+            "type": "string"
           },
           "title": {
             "default": "",
@@ -2975,7 +2944,7 @@
         "required": [
           "expected_revision",
           "access_state",
-          "roles",
+          "role",
           "reason"
         ],
         "title": "MembershipUpdate",
@@ -3482,10 +3451,6 @@
             "title": "Job Name",
             "type": "string"
           },
-          "job_number": {
-            "title": "Job Number",
-            "type": "string"
-          },
           "member_name": {
             "title": "Member Name",
             "type": "string"
@@ -3563,7 +3528,6 @@
           "revision",
           "member_name",
           "job_name",
-          "job_number",
           "decided_by_id",
           "decided_by_name",
           "approval_blocked_reason"
@@ -3909,6 +3873,18 @@
       "ReconciliationInput": {
         "additionalProperties": false,
         "properties": {
+          "duplicate_of_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duplicate Of Id"
+          },
           "kind": {
             "enum": [
               "custody_dispute",
@@ -3919,15 +3895,14 @@
             "type": "string"
           },
           "narrative": {
+            "default": "",
             "maxLength": 4000,
-            "minLength": 1,
             "title": "Narrative",
             "type": "string"
           }
         },
         "required": [
-          "kind",
-          "narrative"
+          "kind"
         ],
         "title": "ReconciliationInput",
         "type": "object"
@@ -3960,8 +3935,97 @@
         "title": "ReconciliationPage",
         "type": "object"
       },
+      "ReconciliationRecordView": {
+        "description": "One tool record in a case, with what tells two units apart.",
+        "properties": {
+          "holder_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Name"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "lifecycle": {
+            "enum": [
+              "active",
+              "retired",
+              "disposed"
+            ],
+            "title": "Lifecycle",
+            "type": "string"
+          },
+          "manufacturer": {
+            "title": "Manufacturer",
+            "type": "string"
+          },
+          "model_number": {
+            "title": "Model Number",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "registered_at": {
+            "format": "date-time",
+            "title": "Registered At",
+            "type": "string"
+          },
+          "registration_photo_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Photo Id"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "serial_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Serial Number"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "manufacturer",
+          "model_number",
+          "serial_number",
+          "registration_photo_id",
+          "registered_at",
+          "holder_name",
+          "lifecycle",
+          "revision"
+        ],
+        "title": "ReconciliationRecordView",
+        "type": "object"
+      },
       "ReconciliationResolution": {
         "additionalProperties": false,
+        "description": "How a case was settled. Each outcome takes only the fields it needs:\n\n- merge: keep_asset_id, expected_asset_revision, expected_duplicate_revision\n- found, move_custody: expected_asset_revision and one destination\n- write_off: expected_asset_revision\n- not_duplicate, records_correct: nothing more\n\nA note and a photo are optional on every outcome.",
         "properties": {
           "destination_membership_id": {
             "anyOf": [
@@ -3988,19 +4052,62 @@
             "title": "Destination Warehouse Id"
           },
           "expected_asset_revision": {
-            "minimum": 1,
-            "title": "Expected Asset Revision",
-            "type": "integer"
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Asset Revision"
+          },
+          "expected_duplicate_revision": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Duplicate Revision"
           },
           "expected_revision": {
             "minimum": 1,
             "title": "Expected Revision",
             "type": "integer"
           },
+          "keep_asset_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keep Asset Id"
+          },
           "note": {
+            "default": "",
             "maxLength": 2000,
-            "minLength": 1,
             "title": "Note",
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "merge",
+              "not_duplicate",
+              "found",
+              "write_off",
+              "move_custody",
+              "records_correct"
+            ],
+            "title": "Outcome",
             "type": "string"
           },
           "photo_id": {
@@ -4018,8 +4125,7 @@
         },
         "required": [
           "expected_revision",
-          "note",
-          "expected_asset_revision"
+          "outcome"
         ],
         "title": "ReconciliationResolution",
         "type": "object"
@@ -4042,6 +4148,28 @@
               }
             ],
             "title": "Corrected Custody Id"
+          },
+          "duplicate_of_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duplicate Of Id"
+          },
+          "duplicate_record": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReconciliationRecordView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "id": {
             "format": "uuid",
@@ -4071,6 +4199,29 @@
             "title": "Opened By Id",
             "type": "string"
           },
+          "opened_by_name": {
+            "title": "Opened By Name",
+            "type": "string"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "enum": [
+                  "merge",
+                  "not_duplicate",
+                  "found",
+                  "write_off",
+                  "move_custody",
+                  "records_correct"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome"
+          },
           "photo_ids": {
             "items": {
               "format": "uuid",
@@ -4078,6 +4229,9 @@
             },
             "title": "Photo Ids",
             "type": "array"
+          },
+          "record": {
+            "$ref": "#/components/schemas/ReconciliationRecordView"
           },
           "resolution_note": {
             "title": "Resolution Note",
@@ -4115,16 +4269,21 @@
         "required": [
           "id",
           "asset_id",
+          "duplicate_of_id",
           "kind",
           "narrative",
           "opened_at",
           "opened_by_id",
+          "opened_by_name",
           "resolved_at",
           "resolved_by_id",
+          "outcome",
           "resolution_note",
           "corrected_custody_id",
           "revision",
-          "photo_ids"
+          "photo_ids",
+          "record",
+          "duplicate_record"
         ],
         "title": "ReconciliationView",
         "type": "object"
@@ -4147,12 +4306,6 @@
             ],
             "title": "Acquisition Cost"
           },
-          "acquisition_currency": {
-            "default": "",
-            "pattern": "^([A-Z]{3})?$",
-            "title": "Acquisition Currency",
-            "type": "string"
-          },
           "acquisition_date": {
             "anyOf": [
               {
@@ -4164,12 +4317,6 @@
               }
             ],
             "title": "Acquisition Date"
-          },
-          "asset_tag": {
-            "maxLength": 64,
-            "minLength": 1,
-            "title": "Asset Tag",
-            "type": "string"
           },
           "notes": {
             "default": "",
@@ -4220,8 +4367,7 @@
         "required": [
           "request_key",
           "tool_model_id",
-          "warehouse_id",
-          "asset_tag"
+          "warehouse_id"
         ],
         "title": "RegistrationInput",
         "type": "object"
@@ -4712,12 +4858,6 @@
             "title": "Address",
             "type": "string"
           },
-          "code": {
-            "maxLength": 40,
-            "minLength": 1,
-            "title": "Code",
-            "type": "string"
-          },
           "name": {
             "maxLength": 200,
             "minLength": 1,
@@ -4726,7 +4866,6 @@
           }
         },
         "required": [
-          "code",
           "name"
         ],
         "title": "WarehouseInput",
@@ -4835,10 +4974,6 @@
             ],
             "title": "Archived At"
           },
-          "code": {
-            "title": "Code",
-            "type": "string"
-          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -4862,7 +4997,6 @@
         },
         "required": [
           "id",
-          "code",
           "name",
           "address",
           "archived_at",
@@ -6899,6 +7033,59 @@
           }
         },
         "summary": "Assignment Create",
+        "tags": [
+          "work"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/jobs/{job_id}/members": {
+      "post": {
+        "operationId": "work_api_job_members_set",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobMembersInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobMembersView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Job Members Set",
         "tags": [
           "work"
         ]

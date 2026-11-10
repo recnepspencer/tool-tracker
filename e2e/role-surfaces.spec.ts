@@ -1,31 +1,51 @@
 import { expect } from '@playwright/test';
 import { command, workspace, invitedMember, test } from './support';
 
+// Each role can do everything the one before it can: a foreman holds, requests and hands off
+// tools and joins jobs; a manager also runs tools, the catalog, warehouses and jobs; an admin
+// also manages people and the company. `pages` is the Menu's page list, in order.
 const cases = [
-  { role: 'company_admin', equipment: true, catalog: true, people: true, work: true, home: 'Queue' },
-  { role: 'equipment_manager', equipment: true, catalog: true, people: false, work: false, home: 'Queue' },
-  { role: 'dispatcher', equipment: false, catalog: false, people: false, work: true, home: 'Jobs' },
-  { role: 'estimator', equipment: false, catalog: false, people: false, work: false, home: 'Jobs' },
-  { role: 'field_member', equipment: true, catalog: false, people: false, work: false, home: 'My tools' },
   {
-    role: 'field_member',
-    scope: 'warehouse',
-    equipment: true,
-    catalog: false,
-    people: false,
-    work: false,
+    role: 'admin',
+    manage: true,
+    people: true,
     home: 'Queue',
+    pages: [
+      'Queue',
+      'Inventory',
+      'My tools',
+      'Jobs',
+      'People',
+      'Foremen',
+      'Warehouses',
+      'Catalog',
+      'Activity',
+      'Settings',
+    ],
   },
   {
-    role: 'field_member',
-    scope: 'foreman',
-    equipment: true,
-    catalog: false,
+    role: 'manager',
+    manage: true,
     people: false,
-    work: false,
-    home: 'My tools',
+    home: 'Queue',
+    pages: ['Queue', 'Inventory', 'My tools', 'Jobs', 'Foremen', 'Warehouses', 'Catalog', 'Activity', 'Settings'],
   },
-  { role: 'dispatcher', scope: 'combined', equipment: true, catalog: true, people: false, work: true, home: 'Queue' },
+  {
+    role: 'foreman',
+    manage: false,
+    people: false,
+    home: 'My tools',
+    pages: ['My tools', 'Checkout', 'My jobs', 'Foremen', 'Activity'],
+  },
+  {
+    // A foreman who manages a warehouse works from its Queue in the control room.
+    role: 'foreman',
+    scope: 'warehouse',
+    manage: false,
+    people: false,
+    home: 'Queue',
+    pages: ['Queue', 'Inventory', 'My tools', 'My jobs', 'Foremen', 'Activity'],
+  },
 ];
 
 for (const item of cases)
@@ -44,20 +64,6 @@ for (const item of cases)
           membership_id: member.id,
           enabled: true,
         });
-      if (item.scope === 'foreman')
-        await command(page.request, `${fixture.base}/jobs/${fixture.job.id}/assignments`, {
-          expected_revision: fixture.job.revision,
-          membership_id: member.id,
-          responsibility: 'foreman',
-          reason: 'Lead the crew',
-        });
-      if (item.scope === 'combined')
-        await command(page.request, `${fixture.base}/people/${member.id}/update`, {
-          expected_revision: member.revision,
-          access_state: 'active',
-          roles: ['dispatcher', 'equipment_manager'],
-          reason: 'Combined operational responsibilities',
-        });
       const failures: string[] = [];
       actor.on('pageerror', (error) => failures.push(error.message));
       actor.on('response', (response) => {
@@ -67,18 +73,19 @@ for (const item of cases)
       await actor.goto('/app');
       await expect(actor.getByRole('heading', { level: 1, name: item.home, exact: true })).toBeVisible();
       const routes = [
-        ['/app/tools', 'Inventory', item.equipment],
-        ['/app/mine', 'My tools', item.equipment],
-        ['/app/checkout', 'Browse tools', item.equipment],
-        ['/app/flagged', 'Damaged & lost', item.equipment],
-        ['/app/operations', 'Queue', item.equipment],
-        ['/app/directory', 'Foremen', item.equipment],
-        ['/app/jobs', item.equipment && !item.work ? 'My jobs' : 'Jobs', true],
+        // Every role holds tools, so every role can reach the tool pages by address.
+        ['/app/tools', 'Inventory', true],
+        ['/app/mine', 'My tools', true],
+        ['/app/checkout', 'Browse tools', true],
+        ['/app/flagged', 'Damaged & lost', true],
+        ['/app/operations', 'Queue', true],
+        ['/app/directory', 'Foremen', true],
+        ['/app/jobs', item.manage ? 'Jobs' : 'My jobs', true],
         ['/app/people', 'People', item.people],
         ['/app/access', 'Access guide', item.people],
-        ['/app/warehouses', 'Warehouses', item.catalog],
-        ['/app/catalog', 'Catalog', item.catalog],
-        ['/app/reconciliations', 'Reconciliation', item.catalog],
+        ['/app/warehouses', 'Warehouses', item.manage],
+        ['/app/catalog', 'Catalog', item.manage],
+        ['/app/reconciliations', 'Reconciliation', item.manage],
         // The control room shows the company audit log; the field shell shows the person's movement record.
         ['/app/activity', /^(Audit log|Movement record)$/, true],
         ['/app/settings', 'Settings', true],
@@ -96,7 +103,7 @@ for (const item of cases)
             await expect(warehouse.getByRole('group', { name: 'Managers', exact: true })).toHaveCount(0);
           }
           if (url === '/app/jobs') {
-            await expect(actor.getByRole('button', { name: 'Add job', exact: true })).toHaveCount(item.work ? 1 : 0);
+            await expect(actor.getByRole('button', { name: 'Add job', exact: true })).toHaveCount(item.manage ? 1 : 0);
             const roster = actor.getByRole('button', { name: 'Open Library wiring', exact: true });
             if (heading === 'My jobs') {
               // The field "My jobs" list is a set of participation switches without a roster.
@@ -104,17 +111,20 @@ for (const item of cases)
               await expect(roster).toHaveCount(0);
             } else {
               await roster.click();
-              await expect(actor.getByRole('region', { name: 'Assign a person', exact: true })).toHaveCount(
-                item.work ? 1 : 0,
+              const job = actor.getByRole('dialog', { name: 'Library wiring', exact: true });
+              await expect(job.getByRole('button', { name: 'Edit people', exact: true })).toHaveCount(
+                item.manage ? 1 : 0,
               );
               await actor.keyboard.press('Escape');
             }
           }
           if (url === '/app/settings') {
             await expect(actor.getByRole('region', { name: 'Company profile', exact: true })).toHaveCount(1);
-            await expect(actor.getByRole('button', { name: 'Save company', exact: true })).toHaveCount(
+            // Only an admin edits the company profile; its Save button waits for a change.
+            await expect(actor.getByRole('textbox', { name: 'Company name', exact: true })).toHaveCount(
               item.people ? 1 : 0,
             );
+            await expect(actor.getByRole('button', { name: 'Save company', exact: true })).toHaveCount(0);
           }
         } else
           await expect(actor.getByText('Your company permissions do not allow access to this page.')).toBeVisible();
@@ -130,8 +140,7 @@ for (const item of cases)
       const menu = actor.getByRole('dialog', { name: 'Menu', exact: true });
       await menuTab.click();
       const pages = menu.getByRole('navigation', { name: 'Pages', exact: true });
-      await expect(pages.getByRole('link', { name: 'People', exact: true })).toHaveCount(item.people ? 1 : 0);
-      await expect(pages.getByRole('link', { name: 'Warehouses', exact: true })).toHaveCount(item.catalog ? 1 : 0);
+      await expect(pages.getByRole('link')).toHaveText(item.pages);
       const appearance = actor.getByRole('switch', { name: 'Appearance', exact: true });
       await expect(appearance).not.toBeChecked();
       await appearance.click();

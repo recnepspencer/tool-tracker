@@ -93,7 +93,7 @@ function ToolDrawer({ state }: { state: ToolDetailState }) {
         closeLabel="Close tool details"
       >
         <header className="inventory-drawer__header">
-          <span>{t?.asset_tag ?? 'Tool details'}</span>
+          <span>{t?.name ?? 'Tool details'}</span>
         </header>
         <div className="inventory-drawer__scroll" data-overlay-scroll>
           {tool.isPending ? (
@@ -154,7 +154,7 @@ function DrawerContent({ state, asset: t }: { state: ToolDetailState; asset: Mod
       {t.lifecycle === 'disposed' && (
         <Callout
           tone="amber"
-          eyebrow="Disposed"
+
           title="Disposal is permanent"
           description="This tool cannot be restored. Its custody and audit history stay on record."
         />

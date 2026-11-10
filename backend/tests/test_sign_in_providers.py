@@ -12,7 +12,8 @@ from django.core.mail import EmailMessage
 
 from accounts import mail_backends, providers
 from accounts.models import ExternalLogin, SignupCode
-from companies.models import CompanyRoleGrant, MembershipInvitation
+from companies.access import set_role
+from companies.models import MembershipInvitation
 from tests.conftest import login_client
 from tests.test_browser_accounts import browser, new_company, post
 
@@ -105,11 +106,11 @@ def test_existing_account_is_matched_by_verified_email(world, monkeypatch):
 
 
 def test_invitation_needs_its_own_address(world, monkeypatch):
-    CompanyRoleGrant.objects.create(membership=world.member, role_code="company_admin")
+    set_role(world.member, "admin")
     token = post(
         login_client(world.user),
         f"/api/companies/{world.company.pk}/invitations",
-        {"email": "invited@example.com", "preferred_name": "Invited", "role": "field_member"},
+        {"email": "invited@example.com", "preferred_name": "Invited", "role": "foreman"},
     ).json()["token"]
     client = browser()
     state, nonce = start(client, return_to="/signup", invitation_token=token)

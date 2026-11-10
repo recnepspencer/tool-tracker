@@ -10,7 +10,7 @@ from tests.http_contract import assert_response
 
 @pytest.fixture
 def condition(world, password_hash):
-    manager = member_in(world.company, password_hash, "equipment_manager")
+    manager = member_in(world.company, password_hash, "manager")
     return SimpleNamespace(
         world=world,
         client=login_client(manager.user),
@@ -93,13 +93,13 @@ def test_lifecycle_history_retains_reasons_and_actor_after_employment_ends(
             content_type="application/json",
         )
         assert response.status_code == 200
-    admin = member_in(ctx.world.company, password_hash, "company_admin")
+    admin = member_in(ctx.world.company, password_hash, "admin")
     changed = login_client(admin.user).post(
         f"{ctx.base}/people/{ctx.actor.member.pk}/update",
         {
             "expected_revision": 1,
             "access_state": "disabled",
-            "roles": ["field_member"],
+            "role": "foreman",
             "end_membership": True,
             "reason": "Employment ended",
         },

@@ -80,6 +80,8 @@ export async function ownedCompany(page: Page) {
     name: `Company ${suffix}`,
     preferred_name: 'Workspace Owner',
     signup_code,
+    // Scenarios build exactly the catalog they assert on.
+    starter_catalog: false,
   });
   const base = `/api/companies/${company.id}`;
   // The shared owner belongs to every scenario's company, so pin this one for every tab.
@@ -92,7 +94,7 @@ export async function ownedCompany(page: Page) {
 export async function workspace(page: Page) {
   const { company, base } = await ownedCompany(page);
   const [warehouse, category] = await Promise.all([
-    command(page.request, `${base}/warehouses`, { code: 'MAIN', name: 'Main warehouse' }),
+    command(page.request, `${base}/warehouses`, { name: 'Main warehouse' }),
     command(page.request, `${base}/tool-categories`, { name: 'Drills' }),
   ]);
   const [model, job] = await Promise.all([
@@ -102,20 +104,20 @@ export async function workspace(page: Page) {
       manufacturer: 'Makita',
       model_number: 'XPH14',
     }),
-    command(page.request, `${base}/jobs`, { number: 'J1', name: 'Library wiring' }),
+    command(page.request, `${base}/jobs`, { name: 'Library wiring' }),
   ]);
   // Sequential so UNIT-001 is the older record wherever lists order by creation.
   const asset = await command(page.request, `${base}/tools`, {
     request_key: crypto.randomUUID(),
     tool_model_id: model.id,
     warehouse_id: warehouse.id,
-    asset_tag: 'UNIT-001',
+    serial_number: 'UNIT-001',
   });
   const second = await command(page.request, `${base}/tools`, {
     request_key: crypto.randomUUID(),
     tool_model_id: model.id,
     warehouse_id: warehouse.id,
-    asset_tag: 'UNIT-002',
+    serial_number: 'UNIT-002',
   });
   await page.goto('/app/tools');
   await expect(page.getByRole('heading', { name: 'Inventory', exact: true })).toBeVisible();

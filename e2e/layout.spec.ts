@@ -73,7 +73,7 @@ test('a field member’s screens line up on a phone', async ({ page, browser }) 
   });
   const worker = await context.newPage();
   try {
-    await invitedMember(page, worker, fixture.base, 'field_member');
+    await invitedMember(page, worker, fixture.base, 'foreman');
     await audit(
       worker,
       [

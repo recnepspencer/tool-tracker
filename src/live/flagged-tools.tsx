@@ -37,7 +37,7 @@ export function FlaggedToolsPage() {
   return (
     <div className="page-content admin-operations-page">
       <BackLink to="/app/operations">Queue</BackLink>
-      <PageHeading title="Damaged & lost" description="Review flagged tools and decide what happens next." />
+      <PageHeading title="Damaged & lost" />
       <DirectoryToolbar<FlaggedCondition>
         searchLabel="Search damaged and lost tools"
         searchPlaceholder="Search tools…"
@@ -97,9 +97,7 @@ function FlaggedRow({ row, companyId, returnTo }: { row: FlaggedRowModel; compan
         <ToolPhoto src={photoSrc(companyId, asset.registration_photo_id)} alt="" size="small" priority />
         <div className="flagged-row__body">
           <h2>{asset.name}</h2>
-          <span className="flagged-row__identity">
-            {asset.asset_tag} · {asset.category_name}
-          </span>
+          <span className="flagged-row__identity">{asset.category_name}</span>
           {latest && (
             <>
               <span className="flagged-row__identity">

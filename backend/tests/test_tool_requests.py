@@ -20,7 +20,6 @@ def test_two_identical_tools_remain_distinct(api_client, world, asset_url):
     items = api_client.get(url).json()["items"]
     assert {item["id"] for item in items} == {str(a.id) for a in world.assets}
     assert {item["tool_model_id"] for item in items} == {str(world.model.id)}
-    assert {item["asset_tag"] for item in items} == {"NE-001", "NE-002"}
     before = list(CustodyPeriod.objects.values())
     response = post(api_client, asset_url, note="  Needed for rough-in  ")
     assert response.status_code == 201, response.content
@@ -181,8 +180,9 @@ def test_pagination_is_bounded_and_deterministic(api_client, world):
     url = f"/api/companies/{world.company.id}/tools"
     first = api_client.get(url, {"limit": 1}).json()
     second = api_client.get(url, {"limit": 1, "offset": first["next_offset"]}).json()
-    assert first["items"][0]["asset_tag"] == "NE-001"
-    assert second["items"][0]["asset_tag"] == "NE-002"
+    # Same model, so registration order decides.
+    assert first["items"][0]["id"] == str(world.assets[0].id)
+    assert second["items"][0]["id"] == str(world.assets[1].id)
     assert second["next_offset"] is None
     assert api_client.get(url, {"limit": 101}).status_code == 400
     assert api_client.get(url, {"offset": -1}).status_code == 400

@@ -8,16 +8,9 @@ from companies.constraints import ScopedForeignKey
 
 
 class Job(CompanyRecord):
-    number = models.CharField(max_length=50)
     name = models.CharField(max_length=200)
     archived_at = models.DateTimeField(null=True)
     revision = models.PositiveIntegerField(default=1)
-
-    class Meta(CompanyRecord.Meta):
-        constraints = [
-            *CompanyRecord.Meta.constraints,
-            models.UniqueConstraint(fields=["company", "number"], name="job_number_unique"),
-        ]
 
 
 class JobAssignmentPolicy(models.Model):
@@ -39,7 +32,6 @@ class JobAssignmentPolicy(models.Model):
 class JobAssignment(CompanyRecord):
     job = models.ForeignKey(Job, on_delete=models.PROTECT)
     membership = models.ForeignKey("companies.CompanyMembership", on_delete=models.PROTECT)
-    responsibility = models.CharField(max_length=16, default="crew")
     starts_at = models.DateTimeField()
     ends_at = models.DateTimeField(null=True)
     assigned_by = models.ForeignKey(
@@ -67,10 +59,6 @@ class JobAssignment(CompanyRecord):
                 fields=["job", "membership"],
                 condition=Q(ends_at__isnull=True),
                 name="one_open_job_assignment",
-            ),
-            models.CheckConstraint(
-                condition=Q(responsibility__in=["crew", "foreman", "supervisor"]),
-                name="assignment_responsibility_valid",
             ),
             models.CheckConstraint(
                 condition=Q(ends_at__isnull=True) | Q(ends_at__gt=F("starts_at")),

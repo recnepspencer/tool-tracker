@@ -59,8 +59,7 @@ def list_assets(
     if search:
         text = search[:200]
         query = query.filter(
-            Q(asset_tag__icontains=text)
-            | Q(serial_number__icontains=text)
+            Q(serial_number__icontains=text)
             | Q(tool_model__name__icontains=text)
             | Q(tool_model__manufacturer__icontains=text)
             | Q(tool_model__model_number__icontains=text)
@@ -69,7 +68,9 @@ def list_assets(
         query = query.filter(warehouse_id=warehouse_id)
     if holder_membership_id:
         query = query.filter(holder_membership_id=holder_membership_id)
-    rows = list(query.order_by("asset_tag", "id")[offset : offset + limit + 1])
+    rows = list(
+        query.order_by("tool_model__name", "registered_at", "id")[offset : offset + limit + 1]
+    )
     return {
         "items": [asset_view(asset) for asset in rows[:limit]],
         "next_offset": offset + limit if len(rows) > limit else None,
@@ -80,13 +81,11 @@ def asset_view(asset):
     reason = unavailable_reason(asset)
     return {
         "id": asset.id,
-        "asset_tag": asset.asset_tag,
         "serial_number": asset.serial_number,
         "acquisition_date": asset.acquisition_date,
         "acquisition_cost": format(asset.acquisition_cost, ".2f")
         if asset.acquisition_cost is not None
         else None,
-        "acquisition_currency": asset.acquisition_currency,
         "notes": asset.notes,
         "tool_model_id": asset.tool_model_id,
         "category_id": asset.tool_model.category_id,

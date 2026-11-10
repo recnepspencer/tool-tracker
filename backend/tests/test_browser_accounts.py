@@ -15,7 +15,8 @@ from PIL import Image
 
 from accounts.models import AuthenticationWindow, SignupChallenge, SignupCode
 from accounts.signup_codes import issue_codes
-from companies.models import Company, CompanyRoleGrant, MembershipInvitation
+from companies.access import set_role
+from companies.models import Company, MembershipInvitation
 from tests.conftest import PASSWORD, login_client
 from tests.http_contract import assert_response
 
@@ -117,14 +118,14 @@ def test_signup_expiry_duplicate_and_csrf(world):
 
 
 def test_invitation_email_signup_accept_and_replay(world):
-    CompanyRoleGrant.objects.create(membership=world.member, role_code="company_admin")
+    set_role(world.member, "admin")
     admin = login_client(world.user)
     url = f"/api/companies/{world.company.pk}/invitations"
     created = assert_response(
         post(
             admin,
             url,
-            {"email": "invitee@example.com", "preferred_name": "Invitee", "role": "field_member"},
+            {"email": "invitee@example.com", "preferred_name": "Invitee", "role": "foreman"},
         ),
         "/api/companies/{company_id}/invitations",
     )
@@ -150,18 +151,18 @@ def test_invitation_email_signup_accept_and_replay(world):
         post(client, "/api/invitations/accept", {"token": created["token"]}),
         "/api/invitations/accept",
     )
-    assert accepted["roles"] == ["field_member"]
+    assert accepted["role"] == "foreman"
     assert post(client, "/api/invitations/accept", {"token": created["token"]}).status_code == 409
     assert client.get(f"/api/invitations/{created['token']}/preview").status_code == 404
 
 
 def test_invitee_can_ask_for_their_link_again(world):
-    CompanyRoleGrant.objects.create(membership=world.member, role_code="company_admin")
+    set_role(world.member, "admin")
     admin = login_client(world.user)
     created = post(
         admin,
         f"/api/companies/{world.company.pk}/invitations",
-        {"email": "invitee@example.com", "preferred_name": "Invitee", "role": "field_member"},
+        {"email": "invitee@example.com", "preferred_name": "Invitee", "role": "foreman"},
     ).json()
     client = browser()
     sent = len(mail.outbox)
@@ -229,7 +230,7 @@ def test_reset_real_email_single_use_and_session_revocation(world):
 
 
 def test_invitation_mail_failure_rolls_back(world, monkeypatch):
-    CompanyRoleGrant.objects.create(membership=world.member, role_code="company_admin")
+    set_role(world.member, "admin")
     client = login_client(world.user)
 
     def fail(*args, **kwargs):
@@ -381,7 +382,7 @@ def test_named_owner_accepts_ownership_and_owner_is_protected():
     assert mail.outbox[-1].subject == "Take ownership of A real company"
     token = re.search(r"/invite/([\w-]+)", mail.outbox[-1].body).group(1)
     preview = founder.get(f"/api/invitations/{token}/preview").json()
-    assert preview["owner"] and preview["role"] == "company_admin"
+    assert preview["owner"] and preview["role"] == "admin"
     boss = browser()
     verified(boss, "boss@example.com", invitation_token=token)
     accepted = assert_response(
@@ -397,7 +398,7 @@ def test_named_owner_accepts_ownership_and_owner_is_protected():
         {
             "expected_revision": accepted["revision"],
             "access_state": "active",
-            "roles": ["field_member"],
+            "role": "foreman",
             "reason": "Testing",
         },
     )

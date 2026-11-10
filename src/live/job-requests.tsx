@@ -38,7 +38,7 @@ export function JobRequests({
   return (
     <>
       {shown ? (
-        <Section title="Participation requests">
+        <Section title={completed ? 'Request history' : 'Join and leave requests'}>
           {review.decide.isError && !review.review && (
             <p className="form-error" role="alert">
               {errorMessage(review.decide.error)}
@@ -46,30 +46,22 @@ export function JobRequests({
           )}
           <SurfaceCard className="queue-card">
             {requests.isPending ? (
-              <LoadingState label="Loading participation requests…" />
+              <LoadingState label="Loading requests…" />
             ) : requests.isError ? (
               <ErrorState
-                message={`Participation requests could not be loaded. ${errorMessage(requests.error)}`}
+                message={`Requests could not be loaded. ${errorMessage(requests.error)}`}
                 onRetry={() => void requests.refetch()}
               />
+            ) : requests.data.length ? (
+              <div className="queue-list">
+                {requests.data.map((request) => (
+                  <RequestItem key={request.id} request={request} c={c} busy={busy} review={review} />
+                ))}
+              </div>
             ) : (
-              <section className="operations-queue-group">
-                <div className="operations-queue-group__heading">
-                  <h3>{completed ? 'Request history' : 'Waiting for a decision'}</h3>
-                  <span>{requests.data.length}</span>
-                </div>
-                {requests.data.length ? (
-                  <div className="queue-list">
-                    {requests.data.map((request) => (
-                      <RequestItem key={request.id} request={request} c={c} busy={busy} review={review} />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="admin-empty">
-                    {completed ? 'No decided requests yet.' : 'No one is waiting on a decision.'}
-                  </p>
-                )}
-              </section>
+              <p className="admin-empty">
+                {completed ? 'No decided requests yet.' : 'No one is waiting on a decision.'}
+              </p>
             )}
           </SurfaceCard>
         </Section>
@@ -79,16 +71,45 @@ export function JobRequests({
   );
 }
 
+/** The requests waiting on one job, decided right there with Approve or Reject. */
+export function JobRequestsPanel({
+  requests,
+  c,
+  review,
+}: {
+  requests: Request[];
+  c: JobsState['c'];
+  review: RequestReviewState;
+}) {
+  return (
+    <>
+      {review.decide.isError ? (
+        <p className="form-error" role="alert">
+          {errorMessage(review.decide.error)}
+        </p>
+      ) : null}
+      <div className="queue-list">
+        {requests.map((request) => (
+          <RequestItem key={request.id} request={request} c={c} busy={review.decide.isPending} review={review} inline />
+        ))}
+      </div>
+    </>
+  );
+}
+
 function RequestItem({
   request,
   c,
   busy,
   review,
+  inline = false,
 }: {
   request: Request;
   c: JobsState['c'];
   busy: boolean;
   review: RequestReviewState;
+  /** Inside a job's page: no review dialog to open, just the decision buttons. */
+  inline?: boolean;
 }) {
   const pending = request.status === 'pending';
   const decides = pending && c.can('jobs.assign');
@@ -99,19 +120,14 @@ function RequestItem({
       <Avatar tone="neutral" size="small" initials={initials(request.member_name)} />
       <span className="queue-item__body">
         <span className="queue-item__heading">
-          <span>
-            <span className="eyebrow">
-              Request to {verb}
-              {pending ? '' : ` · ${requestStatusLabel[request.status]}`}
-            </span>
-            <strong className="queue-item__name">{request.job_name}</strong>
-          </span>
+          <strong className="queue-item__name">{request.member_name}</strong>
           <time className="queue-item__time" dateTime={request.requested_at}>
             {formatStamp(request.requested_at)}
           </time>
         </span>
         <span className="queue-item__person">
-          <strong>{request.member_name}</strong> · {request.job_number}
+          Asks to {verb} {request.job_name}
+          {pending ? '' : ` · ${requestStatusLabel[request.status]}`}
         </span>
         {request.reason && <span className="queue-item__note">“{request.reason}”</span>}
         {request.decided_by_name && (
@@ -131,7 +147,7 @@ function RequestItem({
   );
   return (
     <article className="queue-item" aria-label={`${request.member_name} ${request.intent} ${request.job_name}`}>
-      {decides ? (
+      {decides && !inline ? (
         <button
           type="button"
           className="queue-item__open"
@@ -182,7 +198,7 @@ function RequestItem({
   );
 }
 
-/** Demo `WarehouseQueueReviewDialog`, for a participation request. */
+/** A request with room for a decision note. */
 function RequestReviewDialog({ review }: { review: RequestReviewState }) {
   const { review: request, note, setNote, decide, resolve, close } = review;
   if (!request) return null;
@@ -195,11 +211,9 @@ function RequestReviewDialog({ review }: { review: RequestReviewState }) {
       showCloseButton
     >
       <div className="dialog-heading">
-        <span className="eyebrow">Request to {verb}</span>
-        <h2>{request.job_name}</h2>
-        <p>
-          {request.member_name} · {request.job_number}
-        </p>
+        <h2>
+          {request.member_name} asks to {verb} {request.job_name}
+        </h2>
       </div>
       {request.reason && <p className="jobs-muted">“{request.reason}”</p>}
       <TextAreaField

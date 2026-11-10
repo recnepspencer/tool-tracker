@@ -111,7 +111,7 @@ export function useActivityState() {
       kind: activityKind(event.event_key),
       assetId: c.can('tools.read') ? assetId : undefined,
       toolName: asset?.name,
-      unit: metaText(event.metadata, 'asset_tag') ?? asset?.asset_tag,
+      unit: asset?.serial_number ?? undefined,
       warehouseId,
       warehouseName: warehouseName(warehouseId) ?? asset?.responsible_warehouse_name,
       imageSrc: photoSrc(c.company_id, asset?.registration_photo_id),

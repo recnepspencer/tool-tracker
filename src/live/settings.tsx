@@ -10,7 +10,7 @@ export function SettingsPage() {
     return <ErrorState message="Settings could not be loaded." onRetry={() => void company.refetch()} />;
   return (
     <div className="page-content admin-settings-page">
-      <PageHeading title="Settings" description="Company details and the rules your team works by." />
+      <PageHeading title="Settings" />
       <CompanyProfile state={state} />
       <RegistrationSettings state={state} />
       <ParticipationSettings state={state} />

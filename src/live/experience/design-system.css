@@ -55,7 +55,8 @@
   opacity: 0.7;
 }
 
-/* A segmented control switches between two or three views of one page. */
+/* A segmented control switches between two or three views of one page, or picks one of two or three
+   choices in a form (role="radio", aria-checked). */
 .experience .segmented {
   background: var(--chip-bg);
   border-radius: var(--radius-sm);
@@ -75,7 +76,7 @@
   min-height: var(--space-32);
   padding: 0 var(--space-12);
 }
-.experience .segmented > [aria-selected='true'] {
+.experience .segmented > :is([aria-selected='true'], [aria-checked='true']) {
   background: var(--neutral-fill-hover);
   color: var(--ink);
 }
@@ -123,8 +124,6 @@
     .worker-filter-group > span,
     .flagged-list__header,
     .permission-matrix__header,
-    .worker-add-step-label,
-    .worker-camera-label,
     .worker-transfer-label,
     .worker-form-card-heading > span
   ) {
@@ -148,7 +147,6 @@
     .admin-meta-kind,
     .permission-lock,
     .side-nav-link small,
-    .worker-upload-chip,
     .worker-form-card-heading small,
     .custody-photo-optional,
     .custody-photo-picker__optional,
@@ -214,7 +212,7 @@
 
 /* Page titles are one size everywhere: 28px, the top of the type scale. */
 .experience .worker-screen-heading h1 {
-  font: var(--weight-semibold) var(--text-8xl) / var(--leading-snug) var(--font-sans);
+  font: var(--weight-semibold) var(--text-5xl) / var(--leading-snug) var(--font-sans);
   letter-spacing: var(--tracking-display);
 }
 

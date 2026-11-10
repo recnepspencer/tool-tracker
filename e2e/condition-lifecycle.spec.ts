@@ -77,22 +77,22 @@ async function changeLifecycle(page: Page, status: string, reason: string) {
   await expect(timelineOf(page).getByText(reason, { exact: true })).toBeVisible();
 }
 
-for (const role of ['company_admin', 'equipment_manager', 'warehouse'])
+for (const role of ['admin', 'manager', 'warehouse'])
   test(`${role} resolves condition, repairs, retires, restores and disposes one physical unit`, async ({
     page,
     browser,
   }) => {
     const fixture = await workspace(page);
     const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
-    const actor = role === 'company_admin' ? page : await context.newPage();
-    const actorName = role === 'company_admin' ? 'Workspace Owner' : 'Maintenance lead';
+    const actor = role === 'admin' ? page : await context.newPage();
+    const actorName = role === 'admin' ? 'Workspace Owner' : 'Maintenance lead';
     try {
       if (actor !== page) {
         const member = await invitedMember(
           page,
           actor,
           fixture.base,
-          role === 'warehouse' ? 'field_member' : role,
+          role === 'warehouse' ? 'foreman' : role,
           actorName,
         );
         if (role === 'warehouse')
@@ -194,7 +194,7 @@ test('a field holder reports with photos and returns a damaged tool for repair w
   const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4173', viewport: { width: 390, height: 844 } });
   const holder = await context.newPage();
   try {
-    const member = await invitedMember(page, holder, fixture.base, 'field_member', 'Field operator');
+    const member = await invitedMember(page, holder, fixture.base, 'foreman', 'Field operator');
     const issue = await command(page.request, `${fixture.base}/tools/${fixture.asset.id}/handoffs`, {
       expected_revision: 1,
       request_key: crypto.randomUUID(),

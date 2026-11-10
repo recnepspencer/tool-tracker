@@ -52,12 +52,15 @@
   cursor: default;
   opacity: var(--opacity-disabled);
 }
-/* Centred, not baseline-aligned: the smaller hint would otherwise hang below the label. */
+/* Centred, not baseline-aligned: the smaller hint would otherwise hang below the label.
+   The hint ("required", "optional") sits with its label, never across the field where a
+   select's chevron or a label-row action lives. */
 .field-head {
   align-items: center;
   display: flex;
-  gap: var(--space-8);
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-8);
+  min-width: 0;
 }
 /* Out of the flow, so a link on the label row can't make this field taller than its neighbours. */
 .field-action {
@@ -132,11 +135,6 @@ textarea.field-control {
   display: flex;
   gap: var(--space-8);
 }
-.field--select .field-control-row,
-.field--select .field-select-trigger {
-  box-sizing: border-box;
-  padding-right: calc(var(--space-16) + var(--space-8));
-}
 .field-select-trigger {
   align-items: center;
   appearance: none;
@@ -170,13 +168,23 @@ textarea.field-control {
 .field-select-trigger__value--placeholder {
   color: var(--dim);
 }
+/* In the trigger's own row, after the value, so nothing on the label row can meet it. */
 .field-chevron {
   color: var(--dim);
+  flex: none;
   pointer-events: none;
-  position: absolute;
-  right: var(--space-16);
-  top: 50%;
-  transform: translateY(-50%);
+}
+/* A unit in front of the value, such as the "$" on a price. */
+.field-prefix {
+  color: var(--dim);
+  flex: none;
+  font: var(--font-control);
+}
+.field--compact .field-prefix {
+  font: var(--font-control-compact);
+}
+.field-control-row--prefixed {
+  gap: var(--space-4);
 }
 .icon-chevron-down {
   display: block;

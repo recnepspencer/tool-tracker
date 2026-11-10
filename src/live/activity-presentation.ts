@@ -33,6 +33,7 @@ const titles: Record<string, string> = {
   'equipment.registration_policy.updated': 'Employee registration rule updated',
   'equipment.reconciliation.opened': 'Reconciliation opened',
   'equipment.reconciliation.resolved': 'Reconciliation resolved',
+  'equipment.reconciliation.merged': 'Duplicate record merged',
   'work.project.created': 'Project created',
   'work.project.updated': 'Project updated',
   'work.job.created': 'Job created',
