@@ -1,0 +1,134 @@
+.experience .record-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.experience .record-list > li + li {
+  border-top: var(--border-width) solid var(--border);
+}
+.experience .record-row {
+  align-items: center;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: var(--space-16);
+  min-height: var(--space-56);
+  padding: var(--space-12) var(--space-16);
+  text-align: left;
+  width: 100%;
+}
+.experience .record-row:hover {
+  background: var(--hover);
+}
+.experience .record-row:focus-visible {
+  outline: var(--focus-ring-width) solid var(--blue);
+  outline-offset: calc(var(--focus-ring-width) * -1);
+}
+.experience .record-row__main {
+  display: grid;
+  flex: 1 1 auto;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.experience .record-row__main strong {
+  font-weight: var(--weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.experience .record-row__main span,
+.experience .record-row__meta {
+  color: var(--muted);
+  font-size: var(--text-body);
+}
+.experience .record-row__meta {
+  flex: 0 1 40%;
+  min-width: 0;
+  text-align: right;
+}
+.experience .record-row__chevron {
+  color: var(--dim);
+  flex: none;
+  height: var(--space-18);
+  width: var(--space-18);
+}
+.experience .archived-notice {
+  align-items: center;
+  display: flex;
+  gap: var(--space-12);
+  justify-content: space-between;
+}
+.experience .archived-toggle {
+  background: none;
+  border: 0;
+  color: var(--blue-soft);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--text-body);
+  min-height: var(--space-44);
+  padding: 0;
+}
+.experience .archived-toggle:hover {
+  text-decoration: underline;
+}
+.experience .archived-toggle--end {
+  align-self: center;
+}
+.experience .undo-toast {
+  align-items: center;
+  background: var(--card);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-card);
+  bottom: var(--space-24);
+  box-shadow: var(--elevation-overlay);
+  display: flex;
+  gap: var(--space-16);
+  left: 50%;
+  box-sizing: border-box;
+  max-width: calc(100vw - var(--space-32));
+  padding: var(--space-8) var(--space-8) var(--space-8) var(--space-16);
+  width: max-content;
+  position: fixed;
+  transform: translateX(-50%);
+  z-index: var(--z-account);
+}
+.experience .undo-toast button {
+  background: none;
+  border: 0;
+  border-radius: var(--radius-field);
+  color: var(--blue-soft);
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--weight-semibold);
+  min-height: var(--space-40);
+  padding: 0 var(--space-12);
+}
+.experience .undo-toast button:hover {
+  background: var(--hover);
+}
+@media (max-width: 920px) {
+  /* Above the tab bar and the floating add button. */
+  .experience .undo-toast {
+    bottom: calc(var(--tab-bar-height) + env(safe-area-inset-bottom) + var(--space-80));
+  }
+}
+@media (max-width: 620px) {
+  /* Phones stack the extra detail under the title instead of squeezing a column. */
+  .experience .record-row {
+    display: grid;
+    gap: var(--space-4) var(--space-12);
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .experience .record-row__meta {
+    grid-column: 1;
+    text-align: left;
+  }
+  .experience .record-row__chevron {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+}

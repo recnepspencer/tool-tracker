@@ -1,9 +1,15 @@
 import { Fragment, type KeyboardEvent } from 'react';
-import { Link } from 'react-router-dom';
 import { Plus } from 'lucide-react';
+import { AddToolLink } from './add-tool-photo';
 import type { Model } from './client';
 import { FlaggedToolsPage } from './flagged-tools';
-import { inventoryHolder, lastMoved, useInventoryView, type InventoryGroup } from './inventory-state';
+import {
+  inventoryHolder,
+  lastMoved,
+  useInventoryView,
+  type InventoryGroup,
+  type InventoryShow,
+} from './inventory-state';
 import {
   ChevronDownIcon,
   ErrorState,
@@ -15,9 +21,11 @@ import {
   SurfaceCard,
   ToolPhoto,
 } from './kit';
-import { assetLabel, photoSrc, toolStatus } from './tool-status';
+import { photoSrc, viewerStatus } from './tool-status';
 
 type Asset = Model<'AssetView'>;
+
+const showLabels: Record<InventoryShow, string> = { all: 'All tools', available: 'Available', mine: 'With you' };
 
 const activate = (action: () => void) => (event: KeyboardEvent) => {
   if (event.key === 'Enter' || event.key === ' ') {
@@ -43,21 +51,30 @@ function WarehouseInventoryPage() {
     <div className="page-content admin-operations-page">
       <PageHeading
         title="Inventory"
-        description={`${view.rows.length} of ${view.activeTotal} ${view.activeTotal === 1 ? 'tool' : 'tools'} · ${view.warehouseLabel}`}
         action={
           view.canRegister ? (
-            <Link
-              className="button button--primary operations-add-button"
-              to="/app/tools/new"
-              state={{ returnTo: view.returnTo }}
-            >
+            <AddToolLink className="button button--primary" to="/app/tools/new" state={{ returnTo: view.returnTo }}>
               <Plus aria-hidden="true" />
               Add tool
-            </Link>
+            </AddToolLink>
           ) : undefined
         }
       />
       <div className="operations-toolbar operations-toolbar--inventory">
+        <div className="segmented inventory-views" role="tablist" aria-label="Show">
+          {(Object.keys(showLabels) as InventoryShow[]).map((value) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={view.show === value}
+              onClick={() => view.show !== value && view.setShow(value)}
+            >
+              {showLabels[value]}
+              <span className="inventory-views__count">{view.counts[value]}</span>
+            </button>
+          ))}
+        </div>
         <div className="operations-filters operations-filters--compact">
           <SearchField
             compact
@@ -102,6 +119,7 @@ function WarehouseInventoryPage() {
                         key={item.id}
                         item={item}
                         companyId={view.c.company_id}
+                        membershipId={view.c.membership_id}
                         onOpen={() => view.open(item.id)}
                       />
                     );
@@ -117,6 +135,7 @@ function WarehouseInventoryPage() {
                               item={item}
                               nested
                               companyId={view.c.company_id}
+                              membershipId={view.c.membership_id}
                               onOpen={() => view.open(item.id)}
                             />
                           ))
@@ -128,7 +147,9 @@ function WarehouseInventoryPage() {
             </table>
           </div>
         ) : (
-          <p className="admin-empty">No tools match this inventory view.</p>
+          <p className="admin-empty">
+            {view.show === 'mine' ? 'You are not holding any tools.' : 'No tools match this inventory view.'}
+          </p>
         )}
       </SurfaceCard>
     </div>
@@ -178,22 +199,25 @@ function InventoryGroupRow({
 function InventoryRow({
   item,
   companyId,
+  membershipId,
   nested = false,
   onOpen,
 }: {
   item: Asset;
   companyId: string;
+  membershipId: string;
   nested?: boolean;
   onOpen(): void;
 }) {
-  const holder = inventoryHolder(item);
+  const holder = inventoryHolder(item, membershipId);
+  const status = viewerStatus(item, membershipId);
   const moved = lastMoved(item);
   return (
     <tr
       className={`inventory-row${nested ? ' inventory-row--nested' : ''}`}
       role="button"
       tabIndex={0}
-      aria-label={`Open ${item.name}, ${item.asset_tag}`}
+      aria-label={`Open ${item.name}${item.serial_number ? `, ${item.serial_number}` : ''}`}
       onClick={onOpen}
       onKeyDown={activate(onOpen)}
     >
@@ -201,8 +225,8 @@ function InventoryRow({
         <div className="inventory-tool">
           <ToolPhoto src={photoSrc(companyId, item.registration_photo_id)} alt="" size="small" />
           <div>
-            <strong>{nested ? item.serial_number || item.asset_tag : item.name}</strong>
-            <span>{nested ? `${item.asset_tag} · ${item.name}` : `${item.asset_tag} · ${item.category_name}`}</span>
+            <strong>{nested ? item.serial_number || item.name : item.name}</strong>
+            <span>{nested ? item.name : item.category_name}</span>
             <span className="inventory-tool__mobile-context">
               {item.responsible_warehouse_name} · {holder} · {moved}
             </span>
@@ -211,7 +235,7 @@ function InventoryRow({
       </td>
       <td>{holder}</td>
       <td>
-        <StatusBadge tone={toolStatus(item)}>{assetLabel(item)}</StatusBadge>
+        <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
         {item.pending_handoff_id && <span className="inventory-pending-label">In transfer</span>}
       </td>
       <td>{item.responsible_warehouse_name}</td>

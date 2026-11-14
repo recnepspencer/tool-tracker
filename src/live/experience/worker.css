@@ -2,7 +2,7 @@
   align-items: center;
   display: flex;
   justify-content: space-between;
-  padding: 0 var(--space-6) var(--space-12);
+  padding-bottom: var(--gap-item);
 }
 .experience .worker-section-count {
   color: var(--dim);
@@ -18,7 +18,7 @@
   display: flex;
   gap: var(--space-16);
   justify-content: space-between;
-  padding: var(--worker-page-pad-top) var(--space-6) var(--space-18);
+  padding: var(--worker-page-pad-top) 0 var(--gap-heading);
 }
 
 .experience .worker-screen-heading h1 {
@@ -48,8 +48,10 @@
 
 .experience .worker-pending-section {
   display: grid;
-  gap: var(--space-18);
-  margin-bottom: var(--space-22);
+  gap: var(--gap-section);
+}
+.experience .worker-pending-section:not(:empty) {
+  margin-bottom: var(--gap-section);
 }
 .experience .worker-pending-group {
   display: grid;
@@ -73,13 +75,13 @@
 .experience .worker-tool-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-9);
+  gap: var(--gap-item);
 }
 .experience .worker-empty-copy {
   color: var(--muted);
   font-size: var(--text-body);
   line-height: var(--leading-body);
-  margin-block: var(--space-16);
+  margin-block: 0;
 }
 .experience .worker-tool-row {
   align-items: center;
@@ -285,7 +287,7 @@
   font-size: var(--space-13);
   height: var(--space-48);
   justify-content: center;
-  margin-top: var(--space-18);
+  margin-top: var(--gap-heading);
   text-decoration: none;
   transition:
     border-color var(--duration-180) ease,

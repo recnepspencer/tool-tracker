@@ -14,7 +14,7 @@ The original demo at commit `80202f5` and the local HTML designs are the referen
 | Inventory | Photo table, grouped identical models, individual unit expansion, holder/status/warehouse | `demo-parity`, `workspace`, `catalog-lifecycle` |
 | Damaged/lost | Filtered inventory, reports, finding/repair actions and durable evidence/history | `condition-lifecycle`, `workspace` |
 | People | Directory table, person sheet, invitations, role/access changes, offboarding/reinstatement | `invitations`, `access-lifecycle`, `accounts` |
-| Jobs/directory | Job list, roster, responsibility history, independent join/leave rules and held-tool directory | `jobs-management`, `cutover-workflows`, public-HTTP job/directory tests |
+| Jobs/directory | Job list, roster, assignment history, independent join/leave rules and held-tool directory | `jobs-management`, `cutover-workflows`, public-HTTP job/directory tests |
 | Warehouses | Table, create/edit/archive/restore dialogs, scoped managers and stock | `cutover-workflows`, `catalog-lifecycle`, `custody-recovery` |
 | Access/activity | Server-projected capabilities and readable, filtered activity | `role-surfaces`, `access-lifecycle`, `cutover-workflows` |
 | Settings | Narrow company/jobs/categories cards, shared editors, actual company rules and readonly values | Five role journeys in `settings`; independent filters and saved-value checks after reload |

@@ -29,8 +29,8 @@ def world(db, password_hash):
         )
         person = Person.objects.create(identity_user=user, preferred_name="Ray")
         member = CompanyMembership.objects.create(company=company, person=person)
-        grant = CompanyRoleGrant.objects.create(membership=member, role_code="field_member")
-        warehouse = Warehouse.objects.create(company=company, code="MAIN", name="Main warehouse")
+        grant = CompanyRoleGrant.objects.create(membership=member, role_code="foreman")
+        warehouse = Warehouse.objects.create(company=company, name="Main warehouse")
         category = ToolCategory.objects.create(company=company, name="Drills")
         model = ToolModel.objects.create(
             company=company,
@@ -40,11 +40,10 @@ def world(db, password_hash):
             model_number="2904-20",
         )
         assets = []
-        for tag in ("NE-001", "NE-002"):
+        for _ in range(2):
             asset = ToolAsset.objects.create(
                 company=company,
                 tool_model=model,
-                asset_tag=tag,
                 registered_by=member,
                 origin_warehouse=warehouse,
                 responsible_warehouse=warehouse,

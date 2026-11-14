@@ -1,5 +1,5 @@
 from django.db import models
-from django.db.models import Q
+from django.db.models import F, Q
 
 from companies.base import CompanyRecord
 from companies.constraints import ScopedForeignKey
@@ -154,9 +154,16 @@ class AssetLifecycleEvent(CompanyRecord):
 
 class ReconciliationCase(CompanyRecord):
     asset = models.ForeignKey("equipment.ToolAsset", on_delete=models.PROTECT)
+    # A duplicate case names the other record for the same physical unit.
+    duplicate_of = models.ForeignKey(
+        "equipment.ToolAsset",
+        null=True,
+        on_delete=models.PROTECT,
+        related_name="reconciliation_duplicates",
+    )
     kind = models.CharField(max_length=24)
     opened_by = models.ForeignKey("companies.CompanyMembership", on_delete=models.PROTECT)
-    narrative = models.TextField()
+    narrative = models.TextField(blank=True)
     opened_at = models.DateTimeField(auto_now_add=True)
     resolved_at = models.DateTimeField(null=True)
     resolved_by = models.ForeignKey(
@@ -166,6 +173,8 @@ class ReconciliationCase(CompanyRecord):
         related_name="reconciliations_resolved",
     )
     resolution_note = models.TextField(blank=True)
+    # Blank on cases resolved before outcomes were recorded.
+    outcome = models.CharField(max_length=24, blank=True, default="")
     corrected_custody = models.ForeignKey(
         "equipment.CustodyPeriod", null=True, on_delete=models.PROTECT
     )
@@ -175,6 +184,7 @@ class ReconciliationCase(CompanyRecord):
         constraints = [
             *CompanyRecord.Meta.constraints,
             ScopedForeignKey(field="asset", name="reconciliation_asset_company"),
+            ScopedForeignKey(field="duplicate_of", name="reconciliation_duplicate_company"),
             ScopedForeignKey(field="opened_by", name="reconciliation_opener_company"),
             ScopedForeignKey(field="resolved_by", name="reconciliation_resolver_company"),
             ScopedForeignKey(
@@ -185,5 +195,24 @@ class ReconciliationCase(CompanyRecord):
             models.CheckConstraint(
                 condition=Q(kind__in=["custody_dispute", "missing_asset", "duplicate_asset"]),
                 name="reconciliation_kind_valid",
+            ),
+            models.CheckConstraint(
+                condition=Q(duplicate_of__isnull=True)
+                | (Q(kind="duplicate_asset") & ~Q(duplicate_of=F("asset"))),
+                name="reconciliation_duplicate_valid",
+            ),
+            models.CheckConstraint(
+                condition=Q(
+                    outcome__in=[
+                        "",
+                        "merge",
+                        "not_duplicate",
+                        "found",
+                        "write_off",
+                        "move_custody",
+                        "records_correct",
+                    ]
+                ),
+                name="reconciliation_outcome_valid",
             ),
         ]

@@ -24,13 +24,38 @@ def copy_client(source):
     return client
 
 
-def test_combined_directory_requires_both_work_and_equipment_access(world, password_hash):
-    estimator = member_in(world.company, password_hash, "estimator")
-    client = login_client(estimator.user)
-    base = f"/api/companies/{world.company.pk}"
-    assert client.get(f"{base}/jobs").status_code == 200
-    assert client.get(f"{base}/directory").status_code == 403
-    assert client.get(f"{base}/directory?search=NE-001").status_code == 403
+def test_directory_search_finds_people_by_job_and_held_tool(world, password_hash):
+    from django.utils import timezone
+
+    from work.models import Job, JobAssignment
+
+    holder = member_in(world.company, password_hash, name="Tool holder")
+    crew = member_in(world.company, password_hash, name="Crew member")
+    custody = CustodyPeriod.objects.get(asset=world.assets[0])
+    custody.holder_warehouse = None
+    custody.holder_membership = holder.member
+    custody.save()
+    job = Job.objects.create(company=world.company, name="Panel swap")
+    JobAssignment.objects.create(
+        company=world.company,
+        job=job,
+        membership=crew.member,
+        assigned_by=world.member,
+        starts_at=timezone.now(),
+    )
+    client = login_client(world.user)
+    url = f"/api/companies/{world.company.pk}/directory"
+
+    def found(text):
+        items = client.get(url, {"search": text}).json()["items"]
+        return {item["membership_id"]: item for item in items}
+
+    tools = found("hammer DRILL")
+    assert set(tools) == {str(holder.member.pk)}
+    assert tools[str(holder.member.pk)]["tools"][0]["asset_id"] == str(world.assets[0].pk)
+    jobs = found("panel")
+    assert set(jobs) == {str(crew.member.pk)}
+    assert jobs[str(crew.member.pk)]["jobs"] == [{"job_id": str(job.pk), "name": "Panel swap"}]
 
 
 @pytest.mark.django_db(transaction=True)
@@ -122,7 +147,7 @@ def test_evidenced_reconciliation_preserves_custody_and_binary_contract(
     world, password_hash, settings, tmp_path
 ):
     settings.MEDIA_ROOT = tmp_path
-    manager = member_in(world.company, password_hash, "equipment_manager")
+    manager = member_in(world.company, password_hash, "manager")
     client = login_client(manager.user)
     base = f"/api/companies/{world.company.pk}"
     asset = world.assets[0]
@@ -135,11 +160,11 @@ def test_evidenced_reconciliation_preserves_custody_and_binary_contract(
     path = f"{base}/reconciliations/{case['id']}/resolve"
     body = {
         "expected_revision": 1,
+        "outcome": "move_custody",
         "expected_asset_revision": 1,
         "destination_membership_id": str(world.member.pk),
         "note": "Verified physical receipt",
     }
-    assert client.post(path, body, content_type="application/json").status_code == 409
     stream = BytesIO()
     Image.new("RGB", (2, 2), "green").save(stream, format="PNG")
     uploaded = client.post(

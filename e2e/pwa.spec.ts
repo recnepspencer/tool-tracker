@@ -3,7 +3,7 @@ import { appendFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { workspace, test } from './support';
 
-test('a real worker update preserves drafts until each tab accepts a reload', async ({ page, context }) => {
+test('a real worker update reloads each tab only when no work is lost', async ({ page, context }) => {
   const fixture = await workspace(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/app/settings');
@@ -22,55 +22,57 @@ test('a real worker update preserves drafts until each tab accepts a reload', as
   const otherTab = await context.newPage();
   await otherTab.goto('/app/tools');
   await otherTab.waitForFunction(() => navigator.serviceWorker.controller !== null);
+  // A marker survives only as long as the page is not reloaded.
+  const watch = () => {
+    Reflect.set(window, 'beforeUpdate', true);
+    navigator.serviceWorker.addEventListener('controllerchange', () => Reflect.set(window, 'updated', true));
+  };
+  await page.evaluate(watch);
+  await otherTab.evaluate(watch);
+  const unreloaded = (tab: typeof page) => tab.evaluate(() => Reflect.get(window, 'beforeUpdate') === true);
+  const hide = (tab: typeof page) =>
+    tab.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
   await profile.getByLabel('Company name').fill('Saved through the update');
   const ownedBuild = process.env.NELSON_BROWSER_DIST;
   if (!ownedBuild) throw new Error('The PWA journey requires the isolated browser build.');
-  await appendFile(resolve(ownedBuild, 'sw.js'), `\n// Update journey ${crypto.randomUUID()}\n`);
+  await appendFile(
+    resolve(ownedBuild, 'sw.js'),
+    `
+// Update journey ${crypto.randomUUID()}
+`,
+  );
   await page.evaluate(async () => {
     await (await navigator.serviceWorker.ready).update();
   });
-  const update = page.getByRole('button', { name: 'Update app', exact: true });
-  await expect(update).toBeVisible();
-  await expect(otherTab.getByRole('button', { name: 'Update app', exact: true })).toBeVisible();
-  await otherTab.getByRole('button', { name: 'Later', exact: true }).click();
-  await otherTab.getByRole('button', { name: 'Expand Hammer drill, 2 tools', exact: true }).click();
-  await otherTab.getByRole('button', { name: 'Open Hammer drill, UNIT-001', exact: true }).click();
-  const toolDetails = otherTab.getByRole('dialog', { name: 'Hammer drill details', exact: true });
-  await toolDetails.getByRole('button', { name: 'Edit', exact: true }).click();
-  const editor = otherTab.getByRole('dialog', { name: 'Edit Hammer drill', exact: true });
-  await editor.getByLabel('Serial number', { exact: true }).fill('OTHER-TAB-DRAFT');
+  await page.waitForFunction(() => Reflect.get(window, 'updated') === true);
+  await otherTab.waitForFunction(() => Reflect.get(window, 'updated') === true);
+  // No prompt: the new release has taken over, and the tab with a draft keeps it on screen.
+  await expect(page.getByRole('button', { name: 'Update app' })).toHaveCount(0);
+  expect(await unreloaded(page)).toBe(true);
   await expect(profile.getByLabel('Company name')).toHaveValue('Saved through the update');
-  expect((await (await page.request.get(fixture.base)).json()).name).toBe(fixture.company.name);
+  // Switching away mid-edit does not reload either.
+  await hide(page);
+  expect(await unreloaded(page)).toBe(true);
+  await expect(profile.getByLabel('Company name')).toHaveValue('Saved through the update');
+  // The untouched tab reloads as soon as it is in the background.
+  // The reload can tear down the evaluation that caused it.
+  await Promise.all([otherTab.waitForEvent('load'), hide(otherTab).catch(() => undefined)]);
+  expect(await unreloaded(otherTab)).toBe(false);
+  await expect(otherTab.getByRole('heading', { name: 'Inventory', exact: true })).toBeVisible();
   await page.screenshot({ path: 'artifacts/pwa-update-mobile.png', fullPage: true, animations: 'disabled' });
-  await page.getByRole('button', { name: 'Later', exact: true }).click();
-  await expect(update).toHaveCount(0);
-  await expect(profile.getByLabel('Company name')).toHaveValue('Saved through the update');
-  expect(await page.evaluate(async () => Boolean((await navigator.serviceWorker.ready).waiting))).toBe(true);
   await profile.getByRole('button', { name: 'Save company', exact: true }).click();
   await expect
     .poll(async () => (await (await page.request.get(fixture.base)).json()).name)
     .toBe('Saved through the update');
-  await page.reload();
-  await expect(profile.getByLabel('Company name')).toHaveValue('Saved through the update');
-  await expect(update).toBeVisible();
-  await Promise.all([page.waitForEvent('load'), update.click()]);
-  await expect(profile.getByLabel('Company name')).toHaveValue('Saved through the update');
-  await expect(update).toHaveCount(0);
+  // Leaving the page is the other safe moment.
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await Promise.all([page.waitForEvent('load'), page.getByRole('link', { name: 'Inventory', exact: true }).click()]);
+  await expect(page.getByRole('heading', { name: 'Inventory', exact: true })).toBeVisible();
+  expect(await unreloaded(page)).toBe(false);
   expect(await page.evaluate(async () => (await navigator.serviceWorker.ready).waiting === null)).toBe(true);
-  await expect(editor.getByLabel('Serial number', { exact: true })).toHaveValue('OTHER-TAB-DRAFT');
-  await editor.getByRole('button', { name: 'Save changes', exact: true }).click();
-  await expect(editor).toHaveCount(0);
-  await otherTab.keyboard.press('Escape');
-  await expect(toolDetails).toHaveCount(0);
-  const otherUpdate = otherTab.getByRole('button', { name: 'Update app', exact: true });
-  await expect(otherUpdate).toBeVisible();
-  await Promise.all([otherTab.waitForEvent('load'), otherUpdate.click()]);
-  await expect(otherUpdate).toHaveCount(0);
-  await otherTab.goto('/app/tools');
-  await otherTab.getByRole('button', { name: 'Expand Hammer drill, 2 tools', exact: true }).click();
-  await otherTab.getByRole('button', { name: 'Open Hammer drill, UNIT-001', exact: true }).click();
-  await toolDetails.getByRole('button', { name: 'Edit', exact: true }).click();
-  await expect(editor.getByLabel('Serial number', { exact: true })).toHaveValue('OTHER-TAB-DRAFT');
   const cached = await page.evaluate(async () =>
     (
       await Promise.all(

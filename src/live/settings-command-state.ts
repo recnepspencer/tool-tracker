@@ -10,8 +10,9 @@ export function useCommand() {
   const [state, setState] = useState({ busy: false, error: '' });
   const running = useRef(false);
   const cache = useQueryClient();
-  async function run(command: () => Promise<unknown>, onDone?: () => void) {
-    if (running.current) return;
+  // Resolves true once the command succeeded and the cache refresh finished.
+  async function run(command: () => Promise<unknown>, onDone?: () => void): Promise<boolean> {
+    if (running.current) return false;
     running.current = true;
     setState({ busy: true, error: '' });
     try {
@@ -21,8 +22,10 @@ export function useCommand() {
         predicate: (query) => !['session', 'invitation'].includes(String(query.queryKey[0])),
       });
       setState({ busy: false, error: '' });
+      return true;
     } catch (error) {
       setState({ busy: false, error: errorMessage(error) });
+      return false;
     } finally {
       running.current = false;
     }

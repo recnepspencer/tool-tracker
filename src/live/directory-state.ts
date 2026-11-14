@@ -44,8 +44,7 @@ export function useDirectoryState() {
   // match keeps every tool, otherwise only the matching tools stay visible.
   const needle = search.trim().toLowerCase();
   const matches = (values: Array<string | null>) => values.some((value) => value?.toLowerCase().includes(needle));
-  const toolMatches = (tool: Tool) =>
-    matches([tool.name, tool.asset_tag, tool.manufacturer, tool.model_number, tool.serial_number]);
+  const toolMatches = (tool: Tool) => matches([tool.name, tool.manufacturer, tool.model_number, tool.serial_number]);
   const visibleTools = (person: Person) =>
     !needle || matches([person.name, ...person.jobs.map((item) => item.name)])
       ? person.tools

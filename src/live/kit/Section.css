@@ -1,0 +1,57 @@
+/* Three distances, so how far apart two things sit says how related they are:
+   items in one section (--gap-item), the page heading and its first section (--gap-heading),
+   and one section and the next (--gap-section). */
+.page-section {
+  min-width: 0;
+}
+* + .page-section,
+.page-section + * {
+  margin-top: var(--gap-section);
+}
+/* In the page stack, which already puts --gap-item between its parts, add only the difference. */
+.experience .page-content > * + .page-section,
+.experience .page-content > .page-section + * {
+  margin-top: calc(var(--gap-section) - var(--gap-item));
+}
+.experience .page-content > .page-heading + .page-section {
+  margin-top: 0;
+}
+.page-section__head {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8) var(--space-16);
+  justify-content: space-between;
+  margin-bottom: var(--gap-item);
+}
+.page-section__titles {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.page-section__titles h2 {
+  color: var(--ink);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-heading);
+  line-height: var(--leading-snug);
+  margin: 0;
+}
+.page-section__titles p {
+  color: var(--muted);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  margin: 0;
+  max-width: var(--space-620);
+}
+.page-section__action {
+  display: flex;
+  flex: none;
+  gap: var(--space-8);
+}
+/* Cards, toolbars and lists in one section stack at one distance, never touching. */
+.page-section__body {
+  display: grid;
+  gap: var(--gap-item);
+  min-width: 0;
+}

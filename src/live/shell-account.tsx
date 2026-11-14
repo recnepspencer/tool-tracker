@@ -5,20 +5,25 @@ import { AccountPassword } from './account-password';
 import { Avatar, Button, SelectField } from './kit';
 import { initials } from './format';
 import { useModalFocusTrap } from './experience/use-modal-focus-trap';
+import { ThemeToggle } from './shell-chrome';
 import type { useShellAccount } from './shell-state';
 
 type Account = ReturnType<typeof useShellAccount>;
 
-/** Demo AccountMenu: the header trigger and the control-room account sheet. */
+/** The desktop header's account trigger and its sheet; phones reach the same things from Menu. */
 export function AccountMenu({
   account,
   open,
   settings,
+  theme,
+  onToggleTheme,
   onOpenChange,
 }: {
   account: Account;
   open: boolean;
   settings: boolean;
+  theme: 'dark' | 'light';
+  onToggleTheme(): void;
   onOpenChange(open: boolean): void;
 }) {
   const sheetRef = useRef<HTMLElement>(null);
@@ -54,7 +59,6 @@ export function AccountMenu({
               <div className="account-sheet-identity">
                 <Avatar initials={avatar} tone="blue" />
                 <div>
-                  <span className="eyebrow">Account</span>
                   <h2 id="account-sheet-heading">{account.name}</h2>
                   {account.title && <p>{account.title}</p>}
                 </div>
@@ -84,6 +88,7 @@ export function AccountMenu({
                 options={account.workspaces}
               />
             )}
+            <ThemeToggle theme={theme} onToggleTheme={onToggleTheme} />
             {settings ? (
               <Link className="account-sheet-action" aria-label="Open settings" to="/app/settings" onClick={close}>
                 <Settings aria-hidden="true" />
@@ -113,105 +118,6 @@ export function AccountMenu({
           </section>
         </div>
       ) : null}
-    </div>
-  );
-}
-
-/** Demo WorkerAccountSheet: the bottom account sheet opened from the drawer profile. */
-export function AccountSheet({
-  account,
-  open,
-  settings,
-  onClose,
-}: {
-  account: Account;
-  open: boolean;
-  settings: boolean;
-  onClose(): void;
-}) {
-  const sheetRef = useRef<HTMLElement>(null);
-  useModalFocusTrap(open, onClose, sheetRef);
-  if (!open) return null;
-  return (
-    <div className="worker-account-layer" role="presentation">
-      <button
-        type="button"
-        className="worker-scrim worker-scrim--strong"
-        aria-label="Close account menu"
-        onClick={onClose}
-      />
-      <section
-        ref={sheetRef}
-        className="worker-bottom-sheet worker-account-sheet"
-        role="dialog"
-        aria-modal="true"
-        aria-label={account.name}
-      >
-        <span className="worker-sheet-handle" />
-        <div className="worker-account-sheet-topbar">
-          <button type="button" className="worker-close-button" aria-label="Close account menu" onClick={onClose}>
-            <X aria-hidden="true" />
-          </button>
-        </div>
-        <div className="worker-account-heading">
-          <span className="worker-avatar worker-avatar--large">{initials(account.name)}</span>
-          <div>
-            <span className="worker-form-label">Account</span>
-            <h2>{account.name}</h2>
-            {account.title && <p>{account.title}</p>}
-          </div>
-        </div>
-        <div className="worker-account-facts">
-          {account.workspaces.length < 2 && (
-            <div>
-              <span>Workspace</span>
-              <strong>{account.companyName}</strong>
-            </div>
-          )}
-          <div>
-            <span>Email</span>
-            <strong>{account.email}</strong>
-          </div>
-        </div>
-        {account.workspaces.length > 1 && (
-          <SelectField
-            label="Workspace"
-            searchable={false}
-            presentation="sheet"
-            value={account.companyId}
-            onChange={account.chooseWorkspace}
-            options={account.workspaces}
-          />
-        )}
-        {settings ? (
-          <Link
-            className="worker-sheet-secondary-button worker-account-settings-link"
-            to="/app/settings"
-            onClick={onClose}
-          >
-            <Settings aria-hidden="true" />
-            <span>Settings</span>
-          </Link>
-        ) : null}
-        <AccountPassword className="worker-sheet-secondary-button worker-account-settings-link" />
-        <button
-          type="button"
-          className="worker-sheet-secondary-button"
-          disabled={account.refreshing}
-          aria-busy={account.refreshing}
-          onClick={() => void account.refreshAccess()}
-        >
-          Refresh access
-        </button>
-        {account.refreshError && (
-          <p className="form-error" role="alert">
-            {account.refreshError}
-          </p>
-        )}
-        <button type="button" className="worker-sheet-secondary-button" onClick={account.signOut}>
-          Sign out
-        </button>
-      </section>
     </div>
   );
 }

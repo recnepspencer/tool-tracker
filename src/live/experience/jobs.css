@@ -3,95 +3,316 @@
 }
 .experience .jobs-muted {
   color: var(--muted);
-}
-.experience .jobs-manager > .field {
-  margin-block: var(--space-16);
-}
-.experience .jobs-manager h2 {
   margin: 0;
-  font-size: inherit;
 }
-.experience .job-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-12);
-  padding-block: var(--space-12);
-  border-top: var(--border-width) solid var(--border);
+.experience .jobs-views {
+  max-width: var(--space-320);
 }
-.experience .job-row-copy {
+
+/* My jobs: one grouped list, one row per job, the control on the right like a settings row. */
+.experience .my-jobs {
   display: grid;
-  gap: var(--space-4);
-  min-width: 0;
-  overflow-wrap: anywhere;
+  gap: var(--space-12);
 }
-.experience .job-row-copy small {
-  color: var(--muted);
-}
-.experience .job-members-link {
-  background: none;
-  border: 0;
+.experience .my-jobs__list {
+  background: var(--card);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-card);
+  list-style: none;
+  margin: 0;
+  overflow: hidden;
   padding: 0;
-  color: var(--blue-soft);
-  text-align: left;
-  cursor: pointer;
-  font: inherit;
 }
-.experience .job-roster {
-  display: grid;
-  gap: var(--space-12);
-}
-.experience .job-roster a {
-  display: grid;
-  gap: var(--space-4);
-  color: var(--ink);
-  text-decoration: none;
-  padding-block: var(--space-12);
+.experience .my-jobs__list > li + li {
   border-top: var(--border-width) solid var(--border);
 }
-.experience .job-roster span {
-  color: var(--muted);
+.experience .my-jobs__list .switch {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  min-height: var(--space-56);
+  padding: var(--space-12) var(--space-16);
 }
-.experience .job-row-actions {
+.experience .my-jobs__list .switch:hover:not(:disabled) {
+  background: var(--hover);
+}
+/* While a change is on its way the switches keep their colour; only the pointer says wait. */
+.experience .my-jobs__list .switch--disabled {
+  cursor: progress;
+  opacity: 1;
+}
+.experience .my-job {
+  align-items: center;
   display: flex;
-  gap: var(--space-6);
-  flex-shrink: 0;
+  gap: var(--space-12);
+  min-height: var(--space-56);
+  padding: var(--space-8) var(--space-16);
 }
-.experience .job-dialog h2 {
-  padding-right: var(--space-32);
-  margin-top: 0;
+.experience .my-job__copy {
+  display: grid;
+  flex: 1 1 auto;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.experience .my-job__copy strong {
+  color: var(--ink);
+  font: var(--font-switch);
   overflow-wrap: anywhere;
 }
-.experience .job-form {
+.experience .my-job__copy span {
+  color: var(--muted);
+  font-size: var(--text-md);
+}
+.experience .my-job__action {
+  flex: none;
+}
+.experience .my-job__requested {
+  color: var(--amber);
+  flex: none;
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+}
+.experience .my-job__on {
+  align-items: center;
+  color: var(--blue-soft);
+  display: inline-flex;
+  flex: none;
+  font-size: var(--text-md);
+  gap: var(--space-4);
+}
+.experience .my-job__on svg {
+  height: var(--space-16);
+  width: var(--space-16);
+}
+.experience .my-jobs__hint {
+  color: var(--muted);
+  font-size: var(--text-md);
+  margin: 0;
+  padding-inline: var(--space-16);
+}
+
+/* A job's page: its name, a few numbers, then one section at a time. */
+.experience .job-sheet {
+  align-content: start;
   display: grid;
   gap: var(--space-16);
 }
-.experience .job-dialog-actions {
+.experience .job-sheet__head {
+  align-items: baseline;
   display: flex;
-  gap: var(--space-10);
-  margin-top: var(--space-16);
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  padding-right: var(--space-48);
 }
-.experience .job-dialog-actions > .button {
-  flex: 1;
+.experience .job-sheet__head h2 {
+  font-size: var(--text-3xl);
+  letter-spacing: var(--tracking-heading);
+  margin: 0;
+  overflow-wrap: anywhere;
 }
-.experience .job-selection {
+.experience .job-sheet__status {
+  color: var(--muted);
+  font-size: var(--text-md);
+}
+.experience .job-facts {
   display: grid;
-  margin-top: var(--space-16);
-  padding: var(--space-8) var(--space-16);
+  gap: var(--space-8);
+  grid-template-columns: repeat(auto-fit, minmax(var(--space-80), 1fr));
+  margin: 0;
 }
-.experience .job-selection > .switch {
-  width: 100%;
-  padding-block: var(--space-16);
+.experience .job-facts > div {
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-10) var(--space-12);
 }
-.experience .job-selection > .switch + .switch {
+.experience .job-facts dt {
+  color: var(--muted);
+  font-size: var(--text-md);
+}
+.experience .job-facts dd {
+  color: var(--ink);
+  font-size: var(--text-xl);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-semibold);
+  margin: 0;
+}
+.experience .job-tabs > button {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-6);
+}
+.experience .job-tabs__count {
+  background: var(--amber-bg);
+  border-radius: var(--radius-pill);
+  color: var(--amber);
+  font-size: var(--text-sm);
+  min-width: var(--space-18);
+  padding: 0 var(--space-6);
+  text-align: center;
+}
+.experience .job-panel {
+  display: grid;
+  gap: var(--space-12);
+  min-width: 0;
+}
+.experience .job-panel > .archived-toggle {
+  justify-self: start;
+}
+.experience .job-list {
+  background: var(--card);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-card);
+  list-style: none;
+  margin: 0;
+  padding: 0 var(--space-16);
+}
+.experience .job-list__row {
+  align-items: center;
+  display: flex;
+  gap: var(--space-12);
+  min-height: var(--space-56);
+  padding-block: var(--space-10);
+}
+.experience .job-list__row + .job-list__row {
   border-top: var(--border-width) solid var(--border);
+}
+.experience .job-list__copy {
+  display: grid;
+  flex: 1 1 auto;
+  gap: var(--space-2);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.experience .job-list__copy strong,
+.experience .job-list__copy > a {
+  color: var(--ink);
+  font-weight: var(--weight-medium);
+}
+.experience .job-list__copy a {
+  color: inherit;
+  text-decoration: none;
+}
+.experience .job-list__copy a:hover {
+  text-decoration: underline;
+}
+.experience .job-list__copy > span {
+  color: var(--muted);
+  font-size: var(--text-md);
+}
+.experience .job-archive {
+  border-top: var(--border-width) solid var(--border);
+  display: grid;
+  gap: var(--space-12);
+  justify-items: start;
+  padding-top: var(--space-16);
+}
+
+/* Choosing who is on a job: a search, then everyone as a checklist with round ticks. */
+.experience .staffing-dialog > form {
+  display: grid;
+  gap: var(--space-12);
+}
+.experience .staffing-summary {
+  color: var(--muted);
+  font-size: var(--text-md);
+  margin: 0;
+}
+.experience .staffing-list {
+  background: var(--card);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-card);
+  list-style: none;
+  margin: 0;
+  overflow: hidden;
+  padding: 0;
+}
+.experience .staffing-list > li + li {
+  border-top: var(--border-width) solid var(--border);
+}
+.experience .staffing-row {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: var(--space-12);
+  min-height: var(--space-56);
+  padding: var(--space-8) var(--space-16);
+  position: relative;
+}
+.experience .staffing-row:hover {
+  background: var(--hover);
+}
+/* The real checkbox covers the whole row, so a tap anywhere on it ticks the person. */
+.experience .staffing-row__input {
+  cursor: pointer;
+  height: 100%;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  position: absolute;
+  width: 100%;
+  z-index: var(--z-1);
+}
+.experience .staffing-row__mark {
+  align-items: center;
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-full);
+  color: transparent;
+  display: inline-flex;
+  flex: none;
+  height: var(--space-22);
+  justify-content: center;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+  width: var(--space-22);
+}
+.experience .staffing-row__mark svg {
+  height: var(--space-14);
+  stroke-width: 3;
+  width: var(--space-14);
+}
+.experience .staffing-row__input:checked + .staffing-row__mark {
+  background: var(--blue-fill);
+  border-color: var(--blue-fill);
+  color: var(--on-accent);
+}
+.experience .staffing-row__input:focus-visible + .staffing-row__mark {
+  outline: var(--focus-ring-width) solid var(--blue);
+  outline-offset: var(--focus-ring-offset);
+}
+.experience .staffing-row__input:disabled + .staffing-row__mark {
+  opacity: var(--opacity-locked);
+}
+.experience .staffing-row__copy {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.experience .staffing-row__copy strong {
+  font-weight: var(--weight-medium);
+}
+.experience .staffing-row__copy span {
+  color: var(--muted);
+  font-size: var(--text-md);
+}
+/* On wide screens Cancel and Save stay in reach at the bottom of a long checklist. */
+@media (min-width: 621px) {
+  .experience .staffing-dialog .dialog-actions {
+    background: var(--card-2);
+    bottom: calc(var(--space-22) * -1);
+    margin-bottom: calc(var(--space-22) * -1);
+    padding-block: var(--space-12) var(--space-22);
+    position: sticky;
+  }
 }
 .experience .foremen-filters {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   align-items: end;
   gap: var(--space-12);
-  margin-bottom: var(--space-16);
 }
 .experience .foremen-list {
   display: grid;
@@ -184,14 +405,5 @@
   .experience .foreman-card > summary {
     gap: var(--space-8);
     padding: var(--space-12);
-  }
-  .experience .job-row {
-    flex-wrap: wrap;
-  }
-  .experience .job-row-copy {
-    flex: 1 1 100%;
-  }
-  .experience .job-row-actions {
-    margin-left: auto;
   }
 }

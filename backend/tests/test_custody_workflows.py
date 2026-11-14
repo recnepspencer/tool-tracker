@@ -11,7 +11,7 @@ from tests.http_contract import assert_response
 
 @pytest.fixture
 def custody(world, password_hash, api_client):
-    manager = member_in(world.company, password_hash, "equipment_manager")
+    manager = member_in(world.company, password_hash, "manager")
     receiver = member_in(world.company, password_hash)
     return SimpleNamespace(
         world=world,

@@ -15,7 +15,6 @@
   flex-wrap: wrap;
   gap: var(--space-14);
   justify-content: space-between;
-  margin-bottom: var(--space-14);
 }
 .experience .admin-filters {
   display: flex;

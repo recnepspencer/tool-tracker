@@ -72,12 +72,11 @@ test('company profile and warehouse dialogs persist changes and recover stale dr
   await page.goto('/app/warehouses');
   await page.getByRole('button', { name: 'Add warehouse', exact: true }).click();
   const create = page.getByRole('dialog', { name: 'Create warehouse', exact: true });
-  await create.getByLabel('Code', { exact: true }).fill('EAST');
   await create.getByLabel('Name', { exact: true }).fill('East warehouse');
   await create.getByLabel('Address', { exact: true }).fill('77 East Road');
   await create.getByRole('button', { name: 'Save warehouse', exact: true }).click();
   await expect(create).toHaveCount(0);
-  await page.getByRole('button', { name: 'East warehouse', exact: true }).click();
+  await page.getByRole('button', { name: 'Open East warehouse', exact: true }).click();
   const warehouse = page.getByRole('dialog', { name: 'Edit warehouse', exact: true });
   await expect(warehouse).toBeVisible();
   await expect(warehouse.getByLabel('Address', { exact: true })).toHaveValue('77 East Road');
@@ -85,7 +84,6 @@ test('company profile and warehouse dialogs persist changes and recover stale dr
   // Archiving is its own confirmation step rather than a checkbox in the edit form.
   await warehouse.getByRole('button', { name: 'Archive warehouse', exact: true }).click();
   const confirm = page.getByRole('dialog', { name: 'Archive warehouse', exact: true });
-  const statusTabs = page.getByRole('tablist', { name: 'Warehouse status', exact: true });
   let releaseRead!: () => void;
   let readStarted!: () => void;
   const slowRead = new Promise<void>((resolve) => {
@@ -94,8 +92,9 @@ test('company profile and warehouse dialogs persist changes and recover stale dr
   const started = new Promise<void>((resolve) => {
     readStarted = resolve;
   });
+  // Archiving refreshes the warehouse list this page is showing.
   await page.route(
-    `**${fixture.base}/tool-registration-policy`,
+    (url) => url.pathname === `${fixture.base}/warehouses`,
     async (route) => {
       const response = await route.fetch();
       readStarted();
@@ -112,22 +111,18 @@ test('company profile and warehouse dialogs persist changes and recover stale dr
     // Saving and closing must finish before a slow background read; the next
     // user's navigation must not be replaced by a delayed close callback.
     await expect(page).toHaveURL(/\/app\/warehouses$/);
-    await statusTabs.getByRole('tab', { name: 'Archived', exact: true }).click();
-    await expect(statusTabs.getByRole('tab', { name: 'Archived', exact: true })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
+    await page.getByRole('button', { name: 'Show archived warehouses', exact: true }).click();
+    await expect(page.getByText('Archived warehouses', { exact: true })).toBeVisible();
   } finally {
     releaseRead();
   }
-  await page.getByRole('button', { name: 'East warehouse', exact: true }).click();
+  await page.getByRole('button', { name: 'Open East warehouse', exact: true }).click();
   await warehouse.getByRole('button', { name: 'Restore warehouse', exact: true }).click();
   await expect(warehouse).toHaveCount(0);
   await expect(page.getByText('No archived warehouses.', { exact: true })).toBeVisible();
-  await statusTabs.getByRole('tab', { name: 'Active', exact: true }).click();
-  await expect(statusTabs.getByRole('tab', { name: 'Active', exact: true })).toHaveAttribute('aria-selected', 'true');
-  await expect(page.getByRole('button', { name: 'East warehouse', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Main warehouse', exact: true }).click();
+  await page.getByRole('button', { name: 'Show active warehouses', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Open East warehouse', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Open Main warehouse', exact: true }).click();
   await warehouse.getByRole('button', { name: 'Archive warehouse', exact: true }).click();
   await confirm.getByRole('button', { name: 'Archive warehouse', exact: true }).click();
   await expect(confirm.getByRole('alert')).toContainText('Resolve warehouse custody');
@@ -141,7 +136,7 @@ test('company profile and warehouse dialogs persist changes and recover stale dr
 test('closing a saving sheet does not navigate back when its committed response arrives', async ({ page }) => {
   const fixture = await workspace(page);
   await page.goto('/app/warehouses');
-  await page.getByRole('button', { name: 'Main warehouse', exact: true }).click();
+  await page.getByRole('button', { name: 'Open Main warehouse', exact: true }).click();
   const sheet = page.getByRole('dialog', { name: 'Edit warehouse', exact: true });
   await sheet.getByLabel('Name', { exact: true }).fill('Updated main warehouse');
   let releaseResponse!: () => void;
@@ -190,14 +185,13 @@ test('foremen directory filters actual assignments and preserves held tool ident
   const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
   const worker = await context.newPage();
   try {
-    const member = await invitedMember(page, worker, fixture.base, 'field_member', 'Assigned Foreman');
+    const member = await invitedMember(page, worker, fixture.base, 'foreman', 'Assigned Foreman');
     const assignment = await command(page.request, `${fixture.base}/jobs/${fixture.job.id}/assignments`, {
       expected_revision: fixture.job.revision,
       membership_id: member.id,
-      responsibility: 'foreman',
       reason: 'Lead installation',
     });
-    expect(assignment).toMatchObject({ membership_id: member.id, responsibility: 'foreman' });
+    expect(assignment).toMatchObject({ membership_id: member.id });
     const handoff = await command(page.request, `${fixture.base}/tools/${fixture.asset.id}/handoffs`, {
       request_key: crypto.randomUUID(),
       expected_revision: fixture.asset.revision,
@@ -250,17 +244,18 @@ test('photo-first registration survives a lost server response without duplicati
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/app/tools/new');
   const wizard = page.getByRole('dialog', { name: 'Add a tool', exact: true });
-  await expect(wizard.getByRole('group', { name: 'Tool photo', exact: true })).toBeVisible();
-  await page.screenshot({ path: 'artifacts/parity-registration-capture-mobile.png', fullPage: true });
-  await page.getByLabel('Choose a tool photo', { exact: true }).setInputFiles('e2e/fixtures/hammer-drill.jpg');
-  await expect(wizard.getByRole('img', { name: 'Selected tool', exact: true })).toBeVisible();
-  await chooseOption(page, 'Tool type', model.id);
+  const photo = wizard.getByLabel('Tool photo', { exact: true });
+  const selected = wizard.getByRole('img', { name: 'Selected tool', exact: true });
+  await photo.setInputFiles('e2e/fixtures/hammer-drill.jpg');
+  await expect(selected).toBeVisible();
+  await chooseOption(page, 'Tool model', model.id);
   await chooseOption(page, 'Home warehouse', fixture.warehouse.id);
-  await page.getByLabel('Asset tag', { exact: true }).fill('RETRY-PHOTO');
-  await page.getByRole('button', { name: /Retake/ }).click();
-  await page.getByLabel('Choose a tool photo', { exact: true }).setInputFiles('e2e/fixtures/hammer-drill.jpg');
-  await expect(wizard.getByRole('img', { name: 'Selected tool', exact: true })).toBeVisible();
-  await expect(page.getByLabel('Asset tag', { exact: true })).toHaveValue('RETRY-PHOTO');
+  // Removing and replacing the photo keeps what was already chosen.
+  await wizard.getByRole('button', { name: 'Remove photo', exact: true }).click();
+  await expect(selected).toHaveCount(0);
+  await photo.setInputFiles('e2e/fixtures/hammer-drill.jpg');
+  await expect(selected).toBeVisible();
+  await expect(wizard.getByRole('combobox', { name: 'Tool model', exact: true })).toContainText('Hammer drill');
   await page.screenshot({ path: 'artifacts/parity-registration-details-mobile.png', fullPage: true });
   await page.route(
     `**${fixture.base}/tools`,
@@ -277,7 +272,9 @@ test('photo-first registration survives a lost server response without duplicati
   await page.getByRole('button', { name: 'Add tool', exact: true }).click();
   // The retried command returns the committed unit, and the wizard closes onto its record.
   await expect(page.getByRole('dialog', { name: 'Hammer drill details', exact: true })).toBeVisible();
-  const tools = (await (await page.request.get(`${fixture.base}/tools?search=RETRY-PHOTO`)).json()).items;
+  const tools = (await (await page.request.get(`${fixture.base}/tools`)).json()).items.filter(
+    (tool: { tool_model_id: string }) => tool.tool_model_id === model.id,
+  );
   expect(tools).toHaveLength(1);
   expect(tools[0]).toMatchObject({ warehouse_id: fixture.warehouse.id, holder_membership_id: null });
   expect(tools[0].registration_photo_id).toBeTruthy();
@@ -290,7 +287,7 @@ test('activity filters read actual audit events with own versus company visibili
   const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
   const worker = await context.newPage();
   try {
-    await invitedMember(page, worker, fixture.base, 'field_member');
+    await invitedMember(page, worker, fixture.base, 'foreman');
     await command(worker.request, `${fixture.base}/tools/${fixture.asset.id}/requests`, {
       request_key: crypto.randomUUID(),
       note: 'For the next shift',

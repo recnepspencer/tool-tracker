@@ -67,14 +67,14 @@ export function PendingHandoffReviewSheet({ item, onClose }: { item: PendingItem
           </div>
           <div>
             <h2>{item.toolName}</h2>
-            {item.asset && <p>{item.asset.asset_tag}</p>}
+            {item.asset?.serial_number && <p>{item.asset.serial_number}</p>}
           </div>
         </div>
         {item.actions.includes('void') && (
           <div className="worker-pending-review-evidence">
             <Callout
               tone="amber"
-              eyebrow="Administrator"
+
               title="Void this transfer"
               description="Cancels the proposal without changing custody. Your reason and identity stay in the history."
             />

@@ -5,7 +5,7 @@ import { api } from './client';
 import { Button } from './kit';
 
 /** Password changes stay inside the account surface that opened them. */
-export function AccountPassword({ className }: { className?: string }) {
+export function AccountPassword({ className, iconClassName }: { className?: string; iconClassName?: string }) {
   const [editing, setEditing] = useState(false);
   const [changed, setChanged] = useState(false);
   return (
@@ -39,7 +39,7 @@ export function AccountPassword({ className }: { className?: string }) {
             setEditing(true);
           }}
         >
-          <KeyRound aria-hidden="true" />
+          <KeyRound className={iconClassName} aria-hidden="true" />
           <span>Change password</span>
         </button>
       )}

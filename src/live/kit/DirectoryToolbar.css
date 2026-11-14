@@ -1,9 +1,9 @@
 .directory-toolbar {
   align-items: center;
   display: grid;
-  gap: var(--space-12);
-  grid-template-columns: minmax(var(--space-220), var(--space-520)) auto minmax(0, auto);
-  margin-bottom: var(--space-16);
+  gap: var(--gap-tight) var(--space-12);
+  /* The last column takes what is left, so a trailing filter sits at the right edge, as on the Queue. */
+  grid-template-columns: minmax(var(--space-220), var(--space-520)) auto minmax(0, 1fr);
 }
 .directory-toolbar > .field--search {
   min-width: 0;

@@ -2,6 +2,7 @@ from backend_platform.api import create_api
 from cleanforce_identity.api import router as identity_router
 from django.urls import include, path
 
+from accounts import sign_in
 from accounts.api import router as accounts_router
 from companies.api import router as company_router
 from equipment.api import router as tools_router
@@ -19,6 +20,7 @@ from .read_api import router as read_router
 api = create_api(title="Tool Tracker API", version="0.1.0")
 api.add_router("", identity_router)
 api.add_router("", accounts_router)
+api.add_router("", sign_in.router)
 api.add_router("", session_router)
 api.add_router("", tools_router)
 api.add_router("", catalog_router)
@@ -32,6 +34,8 @@ describe_photo_download(api)
 
 urlpatterns = [
     path("healthz", readiness),
+    # Google and Microsoft send the browser back here, so it is a page, not a JSON endpoint.
+    path("api/auth/providers/<str:provider>/callback", sign_in.callback),
     path("", include("backend_platform.urls")),
     path("api/", api.urls),
 ]

@@ -29,7 +29,6 @@ def test_seed_scenarios_are_coherent_and_reruns_preserve_user_changes():
     assert assets["NE-001"].pk != assets["NE-002"].pk
     assert assets["NE-001"].tool_model_id == assets["NE-002"].tool_model_id
     assert assets["NE-001"].acquisition_cost == Decimal("249.95")
-    assert assets["NE-001"].acquisition_currency == "USD"
     assert assets["NE-002"].acquisition_cost is None
     assert set(
         AssetIncident.objects.filter(asset=assets["NE-005"]).values_list("kind", flat=True)
@@ -61,7 +60,6 @@ def test_seed_scenarios_are_coherent_and_reruns_preserve_user_changes():
     )
     assets["NE-002"].serial_number = "USER-EDITED"
     assets["NE-002"].acquisition_cost = Decimal("175.00")
-    assets["NE-002"].acquisition_currency = "CAD"
     assets["NE-002"].notes = "User-entered purchase details"
     assets["NE-002"].save()
     ToolRegistrationPolicy.objects.update(employee_tool_creation_enabled=False)

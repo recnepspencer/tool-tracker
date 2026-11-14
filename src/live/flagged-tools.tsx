@@ -12,6 +12,7 @@ import {
   SurfaceCard,
   ToolPhoto,
 } from './kit';
+import { BackLink } from './related-links';
 import { assetLabel, photoSrc, toolStatus } from './tool-status';
 
 const filters: { value: FlaggedCondition; label: string }[] = [
@@ -35,11 +36,8 @@ export function FlaggedToolsPage() {
     );
   return (
     <div className="page-content admin-operations-page">
-      <PageHeading
-        eyebrow="Warehouse operations"
-        title="Damaged & lost"
-        description="Review flagged tools and decide what happens next."
-      />
+      <BackLink to="/app/operations">Queue</BackLink>
+      <PageHeading title="Damaged & lost" />
       <DirectoryToolbar<FlaggedCondition>
         searchLabel="Search damaged and lost tools"
         searchPlaceholder="Search tools…"
@@ -100,7 +98,7 @@ function FlaggedRow({ row, companyId, returnTo }: { row: FlaggedRowModel; compan
         <div className="flagged-row__body">
           <h2>{asset.name}</h2>
           <span className="flagged-row__identity">
-            {asset.asset_tag} · {asset.category_name}
+            {asset.serial_number ? `${asset.category_name} · ${asset.serial_number}` : asset.category_name}
           </span>
           {latest && (
             <>

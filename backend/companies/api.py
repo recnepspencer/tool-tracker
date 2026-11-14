@@ -12,11 +12,11 @@ from pydantic import EmailStr, Field
 from config.contracts import CommandInput, PageInput, RevisionInput, paginate
 
 from . import people, profile
-from .access import ROLE_CAPABILITIES, capabilities, require_member
+from .access import ROLE_CAPABILITIES, capabilities, require_member, role_of
 from .models import Company, CompanyMembership, MembershipInvitation
 
 router = Router(tags=["company and people"])
-RoleCode = Literal["field_member", "company_admin", "equipment_manager", "dispatcher", "estimator"]
+RoleCode = Literal["admin", "manager", "foreman"]
 
 
 class CompanyInput(CommandInput):
@@ -30,6 +30,8 @@ class CompanyInput(CommandInput):
     # Leave empty, or use your own email, to own the company yourself.
     owner_email: EmailStr | None = None
     owner_name: str = Field(default="", max_length=120)
+    # Starts the catalog with common electrical-contractor categories and tool models.
+    starter_catalog: bool = True
 
 
 class CompanyView(Schema):
@@ -64,7 +66,7 @@ class MemberView(Schema):
     access_state: Literal["active", "suspended", "disabled"]
     ended_at: datetime | None
     revision: int
-    roles: list[RoleCode]
+    role: RoleCode
     capabilities: list[str]
     is_owner: bool
 
@@ -76,7 +78,7 @@ class MemberPage(Schema):
 
 class MembershipUpdate(RevisionInput):
     access_state: Literal["active", "suspended", "disabled"]
-    roles: list[RoleCode] = Field(min_length=1, max_length=5)
+    role: RoleCode
     title: str = Field(default="", max_length=120)
     end_membership: bool = False
     reason: str = Field(min_length=1, max_length=2000)
@@ -85,7 +87,7 @@ class MembershipUpdate(RevisionInput):
 class InvitationInput(CommandInput):
     email: EmailStr
     preferred_name: str = Field(min_length=1, max_length=120)
-    role: RoleCode = "field_member"
+    role: RoleCode = "foreman"
 
 
 class InvitationView(Schema):
@@ -127,11 +129,7 @@ def member_view(member):
         "access_state": member.access_state,
         "ended_at": member.ended_at,
         "revision": member.revision,
-        "roles": list(
-            member.companyrolegrant_set.filter(revoked_at__isnull=True).values_list(
-                "role_code", flat=True
-            )
-        ),
+        "role": role_of(member),
         "capabilities": sorted(capabilities(member)),
         "is_owner": member.company.owner_id == member.pk,
     }

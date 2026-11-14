@@ -1,70 +1,23 @@
 import { useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage, isStaleRecord, result, type Model } from './client';
 import { collect, useReferences } from './data';
 import { useAssetCollection } from './field-state';
-import { formatStamp } from './format';
+import { useFlaggedTools } from './flagged-state';
 import { useListLocation } from './list-location';
+import { groupQueue, queueHistory, queuePermissions, type QueueEntry, type QueueNames } from './queue-groups';
 import { useCompany } from './session';
-import { photoSrc } from './tool-status';
+
+export type { QueueEntry } from './queue-groups';
 
 type Request = Model<'RequestView'>;
 type Handoff = Model<'HandoffView'>;
 type Asset = Model<'AssetView'>;
+type Incident = Model<'IncidentView'>;
 
-export type QueueKind = 'request' | 'return' | 'transfer';
-export type QueueFilter = '' | 'request' | 'return';
-
-/** One row of the warehouse queue, shaped like the demo's WarehouseQueueItemView. */
-export interface QueueItem {
-  key: string;
-  kind: QueueKind;
-  eyebrow: string;
-  toolName: string;
-  toolTag: string;
-  imageSrc: string | null;
-  personName: string;
-  personRole: string;
-  from: string;
-  to: string;
-  note: string;
-  decisionNote: string;
-  time: string;
-  fulfilsRequest?: boolean;
-  /** Present for open items the viewer may decide inline. */
-  decline?: 'reject' | 'decline';
-  approve?: 'approve' | 'accept';
-  request?: Request;
-  handoff?: Handoff;
-  asset?: Asset;
-}
-
-const requestStatusLabels: Record<Request['status'], string> = {
-  pending: 'Request to release',
-  approved: 'Released · awaiting pickup',
-  rejected: 'Request declined',
-  withdrawn: 'Request withdrawn',
-  fulfilled: 'Request fulfilled',
-};
-const handoffStatusLabels: Record<Handoff['status'], string> = {
-  pending: 'Return to accept',
-  accepted: 'Return accepted',
-  declined: 'Return declined',
-  cancelled: 'Return cancelled',
-};
-const transferStatusLabels: Record<Handoff['status'], string> = {
-  pending: 'Transfer pending',
-  accepted: 'Transfer accepted',
-  declined: 'Transfer declined',
-  cancelled: 'Transfer cancelled',
-};
-const roleLabels: Record<string, string> = {
-  company_admin: 'Company admin',
-  equipment_manager: 'Equipment manager',
-  dispatcher: 'Dispatcher',
-  estimator: 'Estimator',
-  field_member: 'Field crew',
-};
+/** Search appears only once the page holds more than this many rows. */
+export const SEARCH_THRESHOLD = 10;
 
 /**
  * Tool names and photos come from the shared inventory collection; only tools
@@ -87,201 +40,217 @@ export function useAssetLookup(ids: string[]) {
   return (id: string): Asset | undefined => known.get(id) ?? extra.find((query) => query.data?.id === id)?.data;
 }
 
-export function useOperationsPageState() {
+/**
+ * Requests and handoffs: the open ones, or every one for history. The keys keep the shape the
+ * field pending list shares, `[company, 'handoffs', all, warehouse]`.
+ */
+function useMovements(all: boolean, enabled = true) {
   const c = useCompany();
-  const location = useListLocation();
-  const review = location.params.get('review') ?? '';
-  const rawKind = location.params.get('kind') ?? '';
-  const kind: QueueFilter = rawKind === 'request' || rawKind === 'return' ? rawKind : '';
-  const search = location.params.get('search') ?? '';
-  const warehouse = location.params.get('warehouse') ?? '';
-  const history = location.params.get('history') === 'true';
-  const refs = useReferences();
   const requests = useQuery({
-    queryKey: [c.company_id, 'requests', history, warehouse],
+    queryKey: [c.company_id, 'requests', all, ''],
+    enabled,
     queryFn: () =>
       collect((offset) =>
         api
           .GET('/api/companies/{company_id}/tool-requests', {
-            params: {
-              path: c.path,
-              query: { offset, pending: !history, ...(warehouse ? { warehouse_id: warehouse } : {}) },
-            },
+            params: { path: c.path, query: { offset, pending: !all } },
           })
           .then(result),
       ),
   });
   const handoffs = useQuery({
-    queryKey: [c.company_id, 'handoffs', history, warehouse],
+    queryKey: [c.company_id, 'handoffs', all, ''],
+    enabled,
     queryFn: () =>
       collect((offset) =>
         api
           .GET('/api/companies/{company_id}/handoffs', {
-            params: {
-              path: c.path,
-              query: { offset, pending: !history, ...(warehouse ? { warehouse_id: warehouse } : {}) },
-            },
+            params: { path: c.path, query: { offset, pending: !all } },
           })
           .then(result),
       ),
   });
-  const asset = useAssetLookup([...(requests.data ?? []), ...(handoffs.data ?? [])].map((item) => item.asset_id));
+  return { requests, handoffs };
+}
+
+const caseSentences: Record<string, (tool: string) => string> = {
+  custody_dispute: (tool) => `Nobody agrees who has the ${tool}`,
+  missing_asset: (tool) => `The ${tool} can't be found`,
+  duplicate_asset: (tool) => `The ${tool} may be listed twice`,
+};
+
+/** An open record that needs fixing, linked to the page that fixes it. */
+export interface RecordToFix {
+  id: string;
+  assetId: string;
+  toolName: string;
+  title: string;
+  note: string;
+  at: string;
+  to: string;
+}
+
+/** A damaged or lost tool the viewer answers for, linked to its decisions. */
+export interface FlaggedEntry {
+  assetId: string;
+  toolName: string;
+  title: string;
+  note: string;
+  at: string | null;
+  to: string;
+}
+
+function flaggedTitle(asset: Asset, latest: Incident | undefined) {
+  if (asset.missing || latest?.kind === 'missing')
+    return latest ? `${latest.reported_by_name} reported the ${asset.name} lost` : `The ${asset.name} is lost`;
+  if (latest) return `${latest.reported_by_name} reported the ${asset.name} damaged`;
+  return asset.serviceability === 'out_of_service'
+    ? `The ${asset.name} is out of service`
+    : `The ${asset.name} is damaged`;
+}
+
+/** Everything the queue page shows: what needs the viewer, what waits on others, and history. */
+export function useOperationsPageState() {
+  const c = useCompany();
+  const location = useLocation();
+  const list = useListLocation();
+  const review = list.params.get('review') ?? '';
+  const search = list.params.get('search') ?? '';
+  const history = list.params.get('history') === 'true';
+  const refs = useReferences();
+  const live = useMovements(false);
+  const past = useMovements(true, history);
+  const flagged = useFlaggedTools();
+  const recordsAllowed = c.can('reconciliation.manage');
+  const cases = useQuery({
+    queryKey: [c.company_id, 'cases', 'queue'],
+    enabled: recordsAllowed,
+    queryFn: () =>
+      collect((offset) =>
+        api
+          .GET('/api/companies/{company_id}/reconciliations', {
+            params: { path: c.path, query: { offset, open_only: true } },
+          })
+          .then(result),
+      ),
+  });
+  const requests = live.requests.data ?? [];
+  const handoffs = live.handoffs.data ?? [];
+  const pastRequests = past.requests.data ?? [];
+  const pastHandoffs = past.handoffs.data ?? [];
+  const openCases = recordsAllowed ? (cases.data ?? []) : [];
+  const asset = useAssetLookup(
+    [...requests, ...handoffs, ...pastRequests, ...pastHandoffs, ...openCases].map((item) => item.asset_id),
+  );
   const permissions = useQueuePermissions();
-  const role = (membershipId: string) => {
-    const person = refs.people.data?.find((item) => item.id === membershipId);
-    return person?.title || (person ? (roleLabels[person.roles[0] ?? ''] ?? '') : '');
+  const names: QueueNames = {
+    tool: (id) => asset(id)?.name ?? 'tool',
+    warehouse: (id) => refs.warehouse(id),
   };
-  const base = (asset: Asset | undefined) => ({
-    toolName: asset?.name ?? 'Tool',
-    toolTag: asset?.asset_tag ?? '',
-    imageSrc: photoSrc(c.company_id, asset?.registration_photo_id),
-    asset,
-  });
+  const viewer = {
+    membershipId: c.membership_id,
+    managesAll: c.can('tools.manage'),
+    managedWarehouseIds: c.managed_warehouse_ids,
+  };
+  const groups = groupQueue(requests, handoffs, viewer, names, permissions);
 
-  const requestItems: QueueItem[] = (requests.data ?? []).map((request) => {
-    const tool = asset(request.asset_id);
-    const allowed = permissions.request(request);
-    const open = request.status === 'pending' || request.status === 'approved';
+  const flaggedEntries: FlaggedEntry[] = flagged.rows
+    .filter((row) => row.policy.canEdit)
+    .map(({ asset: tool, incidents }) => {
+      const latest = incidents.at(-1);
+      return {
+        assetId: tool.id,
+        toolName: tool.name,
+        title: flaggedTitle(tool, latest),
+        note: latest?.description ?? '',
+        at: latest?.reported_at ?? null,
+        to: `/app/flagged/${tool.id}`,
+      };
+    });
+  const records: RecordToFix[] = openCases.map((item) => {
+    const tool = names.tool(item.asset_id);
+    const sentence = caseSentences[item.kind] ?? ((name: string) => `The ${name} record needs fixing`);
     return {
-      ...base(tool),
-      key: `request:${request.id}`,
-      kind: 'request',
-      eyebrow: requestStatusLabels[request.status],
-      personName: request.requester_name,
-      personRole: role(request.requester_id),
-      from: request.source_warehouse_id
-        ? refs.warehouse(request.source_warehouse_id)
-        : (tool?.holder_name ?? tool?.warehouse_name ?? 'Current holder'),
-      to: request.requester_name,
-      note: request.note,
-      decisionNote: request.decision_note,
-      time: formatStamp(request.decided_at && !open ? request.decided_at : request.requested_at),
-      decline: allowed.reject ? 'reject' : undefined,
-      approve: allowed.approve ? 'approve' : undefined,
-      request,
+      id: item.id,
+      assetId: item.asset_id,
+      toolName: tool,
+      title: sentence(tool),
+      note: item.narrative,
+      at: item.opened_at,
+      to: `/app/reconciliations?resolve=${item.id}`,
     };
   });
-  const handoffItems: QueueItem[] = (handoffs.data ?? []).map((handoff) => {
-    const tool = asset(handoff.asset_id);
-    // A return lands in a warehouse this person answers for. Everything else
-    // (person-to-person transfers) belongs to history, not the gate queue.
-    const isReturn = permissions.authority(handoff.destination_warehouse_id);
-    const receiving = isReturn && permissions.handoff(handoff, tool).receiving;
-    return {
-      ...base(tool),
-      key: `handoff:${handoff.id}`,
-      kind: isReturn ? 'return' : 'transfer',
-      eyebrow: (isReturn ? handoffStatusLabels : transferStatusLabels)[handoff.status],
-      fulfilsRequest: handoff.tool_request_id !== null,
-      personName: handoff.proposed_by_name,
-      personRole: role(handoff.proposed_by_id),
-      from: handoff.source_warehouse_id
-        ? refs.warehouse(handoff.source_warehouse_id)
-        : (tool?.holder_name ?? handoff.proposed_by_name),
-      to: handoff.destination_name,
-      note: handoff.note,
-      decisionNote: handoff.resolution_note,
-      time: formatStamp(handoff.resolved_at ?? handoff.proposed_at),
-      decline: receiving ? 'decline' : undefined,
-      approve: receiving ? 'accept' : undefined,
-      handoff,
-    };
-  });
-  // Handoffs that fulfil an approved request are represented by that request.
-  const scoped = [...requestItems, ...handoffItems].filter(
-    (item) => !item.fulfilsRequest && (item.kind !== 'transfer' || history),
-  );
-  const query = search.trim().toLocaleLowerCase();
-  const visible = scoped.filter(
-    (item) =>
-      (!kind || item.kind === kind) &&
-      (!query ||
-        `${item.toolName} ${item.toolTag} ${item.personName} ${item.from} ${item.to}`
-          .toLocaleLowerCase()
-          .includes(query)),
-  );
-  const loaded = requests.data !== undefined && handoffs.data !== undefined;
 
-  // Deep links (`?review=request:<id>` / `?review=handoff:<id>`) open from the
-  // loaded records whether or not the item is in the visible group.
+  const total = groups.needsYou.length + groups.waiting.length + flaggedEntries.length + records.length;
+  const searchable = total > SEARCH_THRESHOLD || !!search;
+  const query = searchable ? search.trim().toLocaleLowerCase() : '';
+  const matches = (...parts: string[]) => !query || parts.join(' ').toLocaleLowerCase().includes(query);
+  const visible = (entry: QueueEntry) => matches(entry.title, entry.status, entry.note, entry.toolName);
+  const historyEntries = history
+    ? queueHistory(pastRequests, pastHandoffs, names).filter((entry) =>
+        matches(entry.title, entry.outcome, entry.note, entry.toolName),
+      )
+    : [];
+
+  // Deep links (`?review=request:<id>` / `?review=handoff:<id>`) open from any loaded record.
+  const allRequests = [...requests, ...pastRequests];
+  const allHandoffs = [...handoffs, ...pastHandoffs];
   const [reviewKind, reviewId] = review.split(':');
-  const reviewRequest = reviewKind === 'request' ? requests.data?.find((item) => item.id === reviewId) : undefined;
-  const reviewHandoff = reviewKind === 'handoff' ? handoffs.data?.find((item) => item.id === reviewId) : undefined;
+  const reviewRequest = reviewKind === 'request' ? allRequests.find((item) => item.id === reviewId) : undefined;
+  const reviewHandoff = reviewKind === 'handoff' ? allHandoffs.find((item) => item.id === reviewId) : undefined;
+  const reviewed = reviewRequest ?? reviewHandoff;
 
   return {
     c,
-    refs,
-    requests,
-    handoffs,
-    loaded,
-    error: requests.error ?? handoffs.error,
+    loaded:
+      live.requests.data !== undefined &&
+      live.handoffs.data !== undefined &&
+      !flagged.tools.isPending &&
+      !flagged.incidents.isPending &&
+      (!recordsAllowed || !cases.isPending),
+    error: live.requests.error ?? live.handoffs.error,
     retry: () => {
-      void requests.refetch();
-      void handoffs.refetch();
+      void live.requests.refetch();
+      void live.handoffs.refetch();
     },
-    counts: {
-      '': scoped.length,
-      request: scoped.filter((item) => item.kind === 'request').length,
-      return: scoped.filter((item) => item.kind === 'return').length,
-    } satisfies Record<QueueFilter, number>,
-    groups: {
-      request: visible.filter((item) => item.kind === 'request'),
-      return: visible.filter((item) => item.kind === 'return'),
-      transfer: visible.filter((item) => item.kind === 'transfer'),
-    },
-    empty: visible.length === 0,
+    needsYou: groups.needsYou.filter(visible),
+    waiting: groups.waiting.filter(visible),
+    flagged: flaggedEntries.filter((entry) => matches(entry.title, entry.note, entry.toolName)),
+    records: records.filter((entry) => matches(entry.title, entry.note, entry.toolName)),
+    /** Where a damaged or lost tool's sheet returns to when closed. */
+    returnTo: location.pathname + location.search,
+    nothingNeedsYou: groups.needsYou.length + flaggedEntries.length + records.length === 0,
+    searchable,
+    search,
+    setSearch: (value: string) => list.update('search', value),
+    history,
+    historyLoading: history && (past.requests.isPending || past.handoffs.isPending),
+    historyError: history && (past.requests.isError || past.handoffs.isError),
+    historyEntries,
+    setHistory: (value: boolean) => list.update('history', value ? 'true' : ''),
+    photo: (assetId: string) => asset(assetId)?.registration_photo_id ?? null,
     asset,
-    permissions,
-    review,
     reviewRequest,
     reviewHandoff,
-    reviewItem: [...requestItems, ...handoffItems].find((item) => item.key === review),
-    openReview: (id: string) => location.update('review', id),
-    kind,
-    search,
-    warehouse,
-    history,
-    // Completed history is its own queue tab, so choosing it clears the kind and vice versa.
-    showHistory: () => {
-      location.update('kind', '');
-      location.update('history', 'true');
-    },
-    setKind: (value: QueueFilter) => {
-      location.update('history', '');
-      location.update('kind', value);
-    },
-    setSearch: (value: string) => location.update('search', value),
-    setWarehouse: (value: string) => location.update('warehouse', value),
+    reviewEntry: [...groups.needsYou, ...groups.waiting].find((entry) => entry.key === review),
+    reviewTool: reviewed ? names.tool(reviewed.asset_id) : '',
+    /** The request a pickup handoff fulfils, so its requester can still withdraw it. */
+    reviewPickupRequest: reviewHandoff?.tool_request_id
+      ? allRequests.find((item) => item.id === reviewHandoff.tool_request_id)
+      : undefined,
+    review,
+    openReview: (key: string) => list.update('review', key),
   };
 }
 
 /** Who may do what with a pending request or handoff, from the live permission rules. */
 export function useQueuePermissions() {
   const c = useCompany();
-  const authority = (id: string | null | undefined) =>
-    !!id && (c.can('tools.manage') || c.managed_warehouse_ids.includes(id));
-  return {
-    authority,
-    request: (request: Request) => {
-      const open = request.status === 'pending' || request.status === 'approved';
-      const manages = authority(request.source_warehouse_id);
-      return {
-        approve: request.status === 'pending' && manages && request.requester_eligible,
-        reject: open && manages,
-        withdraw: open && request.requester_id === c.membership_id,
-      };
-    },
-    handoff: (handoff: Handoff, asset: Asset | undefined) => {
-      const open = handoff.status === 'pending';
-      const receiving =
-        handoff.destination_membership_id === c.membership_id || authority(handoff.destination_warehouse_id);
-      return {
-        receiving: open && receiving,
-        cancelling: open && handoff.proposed_by_id === c.membership_id,
-        voidAllowed: open && authority(handoff.source_warehouse_id ?? asset?.responsible_warehouse_id),
-      };
-    },
-  };
+  return queuePermissions({
+    membershipId: c.membership_id,
+    managesAll: c.can('tools.manage'),
+    managedWarehouseIds: c.managed_warehouse_ids,
+  });
 }
 
 type RequestAction = 'approve' | 'reject' | 'withdraw';

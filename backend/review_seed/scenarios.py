@@ -21,7 +21,7 @@ from equipment.models import (
     Warehouse,
     WarehouseRoleGrant,
 )
-from work.models import Job, JobAssignment, JobAssignmentPolicy, JobParticipationRequest, Project
+from work.models import Job, JobAssignment, JobAssignmentPolicy, JobParticipationRequest
 
 
 def review_id(name):
@@ -36,13 +36,13 @@ def seed_review_scenarios(password):
     Company.objects.select_for_update().get(pk=company.pk)
     members = {}
     profiles = [
-        ("admin", "Morgan Administrator", "company_admin", "active"),
-        ("manager", "Sam Equipment Manager", "equipment_manager", "active"),
-        ("reviewer", "Ray Foreman", "field_member", "active"),
-        ("apprentice", "Alex Apprentice", "field_member", "active"),
-        ("warehouse", "Jo North Warehouse", "field_member", "active"),
-        ("estimator", "Casey Estimator", "estimator", "active"),
-        ("suspended", "Taylor Suspended", "field_member", "suspended"),
+        ("admin", "Morgan Administrator", "admin", "active"),
+        ("manager", "Sam Equipment Manager", "manager", "active"),
+        ("reviewer", "Ray Foreman", "foreman", "active"),
+        ("apprentice", "Alex Apprentice", "foreman", "active"),
+        ("warehouse", "Jo North Warehouse", "foreman", "active"),
+        ("estimator", "Casey Estimator", "foreman", "active"),
+        ("suspended", "Taylor Suspended", "foreman", "suspended"),
     ]
     for key, name, role, access in profiles:
         user, created = PlatformUser.objects.get_or_create(email=f"{key}@example.com")
@@ -67,9 +67,8 @@ def seed_review_scenarios(password):
     for code, name in [("MAIN", "Main warehouse"), ("NORTH", "North warehouse")]:
         warehouse, created = Warehouse.objects.get_or_create(
             company=company,
-            code=code,
+            id=review_id(f"warehouse/{code}"),
             defaults={
-                "id": review_id(f"warehouse/{code}"),
                 "name": name,
                 "address": f"{code.title()} review location",
             },
@@ -134,9 +133,8 @@ def seed_review_scenarios(password):
         warehouse = warehouses[code]
         asset, created = ToolAsset.objects.get_or_create(
             company=company,
-            asset_tag=tag,
+            id=review_id(f"asset/{tag}"),
             defaults={
-                "id": review_id(f"asset/{tag}"),
                 "tool_model": definition,
                 "origin_warehouse": warehouse,
                 "responsible_warehouse": warehouse,
@@ -145,7 +143,6 @@ def seed_review_scenarios(password):
                 "serial_number": f"REVIEW-{tag}",
                 "acquisition_date": date(2026, 4, 12) if tag == "NE-001" else None,
                 "acquisition_cost": Decimal("249.95") if tag == "NE-001" else None,
-                "acquisition_currency": "USD" if tag == "NE-001" else "",
                 "notes": "Purchased with two batteries and a carrying case."
                 if tag == "NE-001"
                 else "",
@@ -218,24 +215,17 @@ def seed_review_scenarios(password):
                     request_key=review_id(f"handoff-key/{tag}"),
                     note="Approved; awaiting actual receipt",
                 )
-    project, _ = Project.objects.get_or_create(
-        id=review_id("project"),
-        defaults={"company": company, "number": "P-100", "name": "Riverside campus"},
-    )
     jobs = {}
-    for number, name, status, archived in [
-        ("J-100", "Electrical rough-in", "active", False),
-        ("J-200", "Finish electrical", "active", False),
-        ("J-OLD", "Completed service call", "completed", True),
+    for number, name, archived in [
+        ("J-100", "Electrical rough-in", False),
+        ("J-200", "Finish electrical", False),
+        ("J-OLD", "Completed service call", True),
     ]:
         job, created = Job.objects.get_or_create(
             id=review_id(f"job/{number}"),
             defaults={
                 "company": company,
-                "project": project,
-                "number": number,
                 "name": name,
-                "status": status,
                 "archived_at": now if archived else None,
             },
         )
@@ -245,7 +235,6 @@ def seed_review_scenarios(password):
                 company=company,
                 job=job,
                 membership=members["reviewer"],
-                responsibility="foreman",
                 assigned_by=members["admin"],
                 starts_at=now - timedelta(days=7),
                 ends_at=now - timedelta(days=1) if archived else None,

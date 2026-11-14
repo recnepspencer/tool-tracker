@@ -99,9 +99,6 @@
     display: none;
   }
 }
-.experience .worker-activity-heading {
-  padding: var(--space-2) var(--space-6) var(--space-16);
-}
 .experience .worker-activity-heading h1 {
   margin: 0;
 }

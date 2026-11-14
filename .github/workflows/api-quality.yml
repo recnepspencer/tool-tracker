@@ -6,6 +6,8 @@ on:
       CLEANFORCE_DEPLOY_KEY:
         required: true
   pull_request:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:

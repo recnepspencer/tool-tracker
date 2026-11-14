@@ -2,7 +2,7 @@ import hashlib
 import json
 
 from backend_platform.api import conflict, forbidden, not_found
-from django.db import IntegrityError, transaction
+from django.db import transaction
 
 from companies.access import authorize_write, capabilities, require_member
 from companies.audit import record_company_event
@@ -67,7 +67,7 @@ def register_asset(identity, company_id, data):
     payload = data.model_dump(mode="json", exclude={"request_key"})
     # Keep existing retry hashes valid when optional details are added or schemas
     # are reorganized. The original registration fields retain their wire order.
-    original_fields = ("tool_model_id", "warehouse_id", "asset_tag", "serial_number", "photo_id")
+    original_fields = ("tool_model_id", "warehouse_id", "serial_number", "photo_id")
     ordered = {field: payload.pop(field) for field in original_fields}
     ordered.update({field: value for field, value in payload.items() if value not in (None, "")})
     fingerprint = hashlib.sha256(
@@ -110,27 +110,10 @@ def register_asset(identity, company_id, data):
     warehouse = active_warehouse(company_id, data.warehouse_id, lock=True)
     if manager:
         require_warehouse_authority(member, warehouse.pk)
-    if ToolAsset.objects.filter(company_id=company_id, asset_tag=data.asset_tag).exists():
-        raise conflict("Asset tag already exists.", code="asset_tag_exists")
-    # Warehouse lock serializes registrations to that warehouse; a company tag
-    # can still race across warehouses, so the unique constraint remains authority.
     photo = claim_file(member, data.photo_id, "registration") if data.photo_id else None
-    try:
-        with transaction.atomic():
-            asset = create_asset_at_warehouse(
-                company=member.company,
-                tool_model=model,
-                asset_tag=data.asset_tag,
-                warehouse=warehouse,
-                registered_by=member,
-            )
-    except IntegrityError as exc:
-        if (
-            getattr(getattr(exc.__cause__, "diag", None), "constraint_name", None)
-            == "asset_tag_unique"
-        ):
-            raise conflict("Asset tag already exists.", code="asset_tag_exists") from exc
-        raise
+    asset = create_asset_at_warehouse(
+        company=member.company, tool_model=model, warehouse=warehouse, registered_by=member
+    )
     assign_asset_details(asset, data)
     asset.registration_key = data.request_key
     asset.registration_fingerprint = fingerprint

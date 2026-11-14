@@ -1,5 +1,7 @@
 import { Link, Outlet } from 'react-router-dom';
 import { EquipmentReports } from './equipment-reports';
+import { Plus } from 'lucide-react';
+import { AddToolLink } from './add-tool-photo';
 import { ToolCatalogCard } from './checkout-card';
 import { CatalogFilters } from './checkout-filters';
 import { useCheckout, useMyTools } from './field-state';
@@ -8,21 +10,20 @@ import { ErrorState, LoadingState, SearchField } from './kit';
 import { ToolRow } from './my-tools-row';
 import { PendingGroup } from './pending-card';
 import { PendingHandoffReviewSheet } from './pending-review';
+import { useRegistrationPolicy } from './registration-policy';
 
 const CATALOG_PRIORITY_IMAGE_COUNT = 4;
 
 export function MyToolsPage() {
   const { c, tools, pending, transferStatus, openTool, startTransfer } = useMyTools();
+  const { canRegister } = useRegistrationPolicy();
   if (tools.isPending) return <LoadingState label="Loading your tools…" />;
   if (tools.error || !tools.data)
     return <ErrorState message="Your tools could not be loaded." onRetry={() => void tools.refetch()} />;
   return (
     <div className="worker-screen">
       <div className="worker-screen-heading">
-        <div>
-          <div className="worker-eyebrow">{c.preferred_name}</div>
-          <h1>My tools</h1>
-        </div>
+        <h1>My tools</h1>
       </div>
       <section className="worker-pending-section" aria-label="Pending tool movements">
         {pending.isPending && <LoadingState label="Checking pending handoffs…" />}
@@ -63,6 +64,12 @@ export function MyToolsPage() {
       <Link className="worker-checkout-pill" to="/app/checkout" aria-label="Browse checkout catalog">
         Need something else? Browse checkout
       </Link>
+      {canRegister && (
+        <AddToolLink className="button button--primary floating-action" to="/app/mine/new">
+          <Plus aria-hidden="true" />
+          Add tool
+        </AddToolLink>
+      )}
       {pending.reviewing && (
         <PendingHandoffReviewSheet key={pending.reviewing.key} item={pending.reviewing} onClose={pending.closeReview} />
       )}

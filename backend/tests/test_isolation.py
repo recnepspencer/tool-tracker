@@ -15,7 +15,7 @@ def test_cross_company_paths_and_foreign_asset_are_denied(api_client, world, ass
     assert post(api_client, f"{prefix}/tools/{world.assets[0].id}/requests").status_code == 403
     # Even with memberships in both companies, an asset cannot cross the path scope.
     member = CompanyMembership.objects.create(company=world.other_company, person=world.person)
-    CompanyRoleGrant.objects.create(membership=member, role_code="field_member")
+    CompanyRoleGrant.objects.create(membership=member, role_code="foreman")
     assert post(api_client, f"{prefix}/tools/{world.assets[0].id}/requests").status_code == 404
     assert api_client.get(f"{prefix}/tools").json()["items"] == []
     assert ToolRequest.objects.count() == 0
@@ -31,7 +31,7 @@ def test_competing_requests_are_independent_and_private(
         )
         person = Person.objects.create(identity_user=user, preferred_name="Second worker")
         member = CompanyMembership.objects.create(company=world.company, person=person)
-        CompanyRoleGrant.objects.create(membership=member, role_code="field_member")
+        CompanyRoleGrant.objects.create(membership=member, role_code="foreman")
     other_client = login_client(user)
     second = post(other_client, asset_url)
     assert second.status_code == 201

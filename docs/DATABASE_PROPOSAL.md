@@ -24,11 +24,11 @@ Preserve those domain needs. Change these demo assumptions:
 
 | Demo behavior | Proposed behavior |
 | --- | --- |
-| A user has one worker/admin/warehouse role | Company membership and scoped permission grants coexist with job responsibilities. |
+| A user has one worker/admin/warehouse role | Each membership holds one company role; scoped warehouse grants add to it. |
 | Workers always join or leave any active job | Company policy selects direct, approval-required, or disabled self-service independently for joining and leaving. |
 | Employees can add tools whenever the add-tool flow is available | A company setting enables or disables employee tool registration; the API enforces it on every new registration. |
 | Removing a person automatically returns their tools | Suspend access immediately; preserve custody until actual receipt or an explicit, evidenced reconciliation. |
-| Job name is the unique business identifier | Company job number is unique. Names can repeat. Preserve old numbers after archive. |
+| Job number is the business identifier | Job name is unique within a company, regardless of case. No separate number. |
 | Lost and damaged share a condition enum | Separate serviceability from missing-asset incidents. |
 | Warehouse responsibility may be inferred from holder | Record the responsible warehouse explicitly; accepted warehouse receipt updates it according to a defined rule. |
 | Approving a request immediately changes custody | Approval creates a pending handoff; it does not reserve the tool or establish custody. Recipient acceptance records receipt. |
@@ -73,13 +73,13 @@ Each custody period has a person holder or warehouse holder, exclusively; the di
 | `Person` | `identity_user -> cleanforce_identity.PlatformUser` nullable and unique, `preferred_name`, `legal_name`, contact email, phone | A real person can be recorded before they have an account. Contact details are not credentials. |
 | `CompanyMembership` | `company`, `person`, `employee_number` nullable, `relationship_kind` employee/contractor, `joined_at`, `ended_at`, `access_state` active/suspended/disabled, `title`, `home_warehouse` nullable | One durable membership per company/person. Rehire reactivates this identity; employment episodes can be separate records if needed later. Employment dates and access suspension are different facts. Employee number unique within company when present. |
 | `MembershipInvitation` | `company`, intended `membership` nullable, normalized email, token digest, inviter, `expires_at`, `accepted_at`, `revoked_at` | Invites are not fake users. Token is single-use; store only its digest. Permission grants become effective only through an authorized acceptance workflow. |
-| `CompanyRoleGrant` | `membership`, `role_code`, `granted_by`, `granted_at`, `revoked_at` | Codes such as company_admin, equipment_manager, field_member, dispatcher, estimator. One unrevoked grant per membership/role. Capabilities for each code live in reviewed application policy initially. |
+| `CompanyRoleGrant` | `membership`, `role_code`, `granted_by`, `granted_at`, `revoked_at` | Codes admin, manager and foreman, each including the one below it. One unrevoked grant per membership. Capabilities for each code live in reviewed application policy initially. |
 | `WarehouseRoleGrant` | `membership`, `warehouse`, `role_code`, grant/revoke provenance | Warehouse-specific authority. Multiple managers are possible. Being a warehouse's named contact is not enough to authorize inventory operations. |
 | `JobRoleGrant` | `membership`, `job`, `role_code`, grant/revoke provenance | Explicit job-scoped authority where needed. Job assignment describes participation; a grant determines authority. Do not require generic role customization or a permission editor for launch. |
 
 CleanForce already owns passwords, login/recovery state, sessions, and authentication identities. Do not create another password table or assume its `PlatformUser` is Django's configured `AUTH_USER_MODEL`; the current package has its own managed identity model. Reference that model explicitly.
 
-Company administrators, dispatchers, and estimators are not mutually exclusive person types. Being a foreman on a job is a job responsibility, not a global account role. A `lead` assignment can imply a reviewed job-scoped capability when policy deliberately says so; do not also store a duplicate grant for the identical fact. Use `JobRoleGrant` for independently delegated access.
+Each person holds one company role. Being on a job carries no extra access.
 
 ## Projects and jobs
 
@@ -91,13 +91,13 @@ Company administrators, dispatchers, and estimators are not mutually exclusive p
 | `ProjectParty` | `project`, `party`, `relationship_code`, primary contact nullable | Associates owner, architect, GC, and other participants without forcing the project to have only one external company. Unique project/party/relationship. Add when these relationships are captured. |
 | `Site` | `company`, name, structured address, access notes, `archived_at` | Physical work location. One location may host multiple projects. Embed ordinary address fields here; a global address identity service adds no value. |
 | `ProjectSite` | `project`, `site` | Real many-to-many relationship for work spanning locations. Unique pair. |
-| `Job` | `company`, `project`, unique company job number, name, status planned/active/on_hold/completed/cancelled, scheduled dates, actual dates, `archived_at`, `revision` | Execution scope, phase, or contract of a project. Completion and archival are different. Multiple jobs may belong to one project. |
+| `Job` | `company`, unique company name, status planned/active/on_hold/completed/cancelled, scheduled dates, actual dates, `archived_at`, `revision` | Execution scope, phase, or contract of a project. Completion and archival are different. |
 | `JobSite` | `job`, `site` | Allowed sites for this job. Must also be a site of its project, enforced in the command and by a constraint trigger if stored as independent rows. |
 | `JobAssignmentPolicy` | one-to-one `company`, `self_join_mode`, `self_leave_mode`, `revision` | Each mode is direct/approval_required/disabled. Defaults are deliberate configuration, not scattered route checks. Start with one company policy and no job-level overrides. |
-| `JobAssignment` | `job`, `membership`, `responsibility_code` crew/foreman/supervisor, `starts_at`, `ends_at` nullable, `assigned_by`, `ended_by` nullable, assignment/end reason | Effective interval of real participation. Many jobs per person. No overlapping intervals for the same job/person. Responsibility changes close the previous interval and open a new one. |
-| `JobParticipationRequest` | `job`, subject membership, requester, `intent` join/leave, requested responsibility, `target_assignment` for leave, `request_key`, status pending/approved/rejected/withdrawn, `policy_revision`, requested/decided times, decider, reason, resulting assignment nullable | Intent and approval history. A pending request is not an assignment. A leave request names the exact assignment so late approval cannot end a newer assignment. One pending request per person/job/intent. |
+| `JobAssignment` | `job`, `membership`, `starts_at`, `ends_at` nullable, `assigned_by`, `ended_by` nullable, assignment/end reason | Effective interval of real participation. Many jobs per person. No overlapping intervals for the same job/person. |
+| `JobParticipationRequest` | `job`, subject membership, requester, `intent` join/leave, `target_assignment` for leave, `request_key`, status pending/approved/rejected/withdrawn, `policy_revision`, requested/decided times, decider, reason, resulting assignment nullable | Intent and approval history. A pending request is not an assignment. A leave request names the exact assignment so late approval cannot end a newer assignment. One pending request per person/job/intent. |
 
-Joining directly creates the assignment and an approved participation request in the same transaction. Approval-required creates only the request. Disabled self-service creates neither. Admin assignment bypasses the self-service mode only with `jobs.assign`; it still checks active membership, job lifecycle, eligibility, and overlap. Self-join can create only the default crew responsibility; it cannot self-promote someone to foreman.
+Joining directly creates the assignment and an approved participation request in the same transaction. Approval-required creates only the request. Disabled self-service creates neither. Admin assignment bypasses the self-service mode only with `jobs.assign`; it still checks active membership, job lifecycle, eligibility, and overlap.
 
 Self-leave follows its own company mode. Approval rechecks current authorization, subject eligibility, job state, and the referenced assignment. A policy change does not silently approve old pending requests. An administrator may explicitly decide them under current administrator authority.
 
@@ -110,10 +110,10 @@ If future scheduling is needed, add `PlannedJobAssignment` for proposed dates/al
 | Model | Important fields and relationships | Meaning and constraints |
 | --- | --- | --- |
 | `ToolRegistrationPolicy` | one-to-one `company`, `employee_tool_creation_enabled` boolean, `revision`, `updated_by` membership, `updated_at` | Company-wide switch for employee registration of new physical tools, including registration photos. Managers and administrators with company-scoped policy authority can change it. |
-| `Warehouse` | `company`, unique company code, name, structured address, `archived_at` | A company-controlled inventory location. Archive only after open operational responsibilities are resolved. Multiple managers are role grants. |
+| `Warehouse` | `company`, unique company name, structured address, `archived_at` | A company-controlled inventory location. Archive only after open operational responsibilities are resolved. Multiple managers are role grants. |
 | `ToolCategory` | `company`, name, normalized name, `archived_at` | Classification. Unique normalized name per company. IDs survive renaming. |
 | `ToolModel` | `company`, `category`, name, manufacturer name, model number, specification text, default photo, `archived_at`, `revision` | Shared catalog description of a kind of tool. No quantity or custodian. Manufacturer/model is not globally unique unless the business can establish that rule. |
-| `ToolAsset` | `company`, `tool_model`, unique company asset tag, serial nullable, notes, acquisition date/cost/currency, `origin_warehouse`, `responsible_warehouse`, lifecycle active/retired/disposed, serviceability serviceable/damaged/out_of_service, `retired_at`, reason, `revision` | One physical item. Origin is acquisition provenance; responsible warehouse is current operational stewardship. No stored UI status or arbitrary quantity. |
+| `ToolAsset` | `company`, `tool_model`, registration photo, serial nullable, notes, acquisition date/cost (USD), `origin_warehouse`, `responsible_warehouse`, lifecycle active/retired/disposed, serviceability serviceable/damaged/out_of_service, `retired_at`, reason, `revision` | One physical item. Origin is acquisition provenance; responsible warehouse is current operational stewardship. No stored UI status or arbitrary quantity. |
 | `ToolAssetIdentifier` | `asset`, scheme barcode/qr/legacy_tag, normalized value, `retired_at` | Optional additional scan identifiers. Unique active company/scheme/value; retain retired identifiers to resolve historical references. Build when multiple identifiers are needed. |
 | `AssetLifecycleEvent` | `asset`, from/to lifecycle, actor, effective/recorded time, reason, evidence | Records retirement, disposal, and authorized reactivation. Distinguish a damaged asset from an asset permanently removed from service. |
 
@@ -132,7 +132,7 @@ Here, uploading a tool means registering a new physical tool and attaching its r
 | Authorized manager or administrator | May register tools through their management authority, independent of the employee switch. |
 | Manager or administrator with `tools.manage_registration_policy` for this company | May enable or disable employee registration. |
 
-Grant company-scoped `tools.manage_registration_policy` to the equipment_manager and company_admin roles. A job title alone does not authorize this company-wide change. Warehouse-scoped management grants continue to govern their own warehouses; company policy management requires the explicit company capability. Managers' asset registration authority must still cover the destination warehouse and company.
+Grant company-scoped `tools.manage_registration_policy` to the manager and admin roles. A job title alone does not authorize this company-wide change. Warehouse-scoped management grants continue to govern their own warehouses; company policy management requires the explicit company capability. Managers' asset registration authority must still cover the destination warehouse and company.
 
 An enabled switch permits eligible employees to register assets; it does not permit editing existing shared catalog definitions, choosing another person's custody without acceptance, or bypassing company/warehouse validation. Registration can select an existing tool model or create a validated new model where the registration command supports that. Turning the switch off preserves previously registered assets and their history. Photos used as evidence on existing incidents or handoffs follow those operations' own permissions.
 
@@ -200,7 +200,7 @@ Estimating labor classifications and rate cards are not worker login roles. Mate
 
 | Invariant | Enforcement |
 | --- | --- |
-| Unique company/job number, asset tag, membership/person pair | Database unique constraints. |
+| Unique company job name, warehouse name, membership/person pair | Database unique constraints. |
 | Exactly one custody holder or handoff destination | Row check constraint over explicit nullable foreign keys. |
 | Positive interval duration when end exists | Row check; use half-open intervals `[start, end)`. |
 | No overlapping custody or job-assignment intervals | PostgreSQL exclusion constraints on asset or job/person plus time range; `btree_gist` migration where needed. A partial unique constraint protects one open interval but does not protect historical overlaps. |
@@ -214,7 +214,7 @@ Estimating labor classifications and rate cards are not worker login roles. Mate
 
 PostgreSQL does not support ordinary CHECK constraints that inspect other rows/tables. Same-company and cross-record transition rules must not be described as checked by `Model.clean()` or by an ordinary CHECK when they are not. See [PostgreSQL constraints](https://www.postgresql.org/docs/current/ddl-constraints.html) and [Django PostgreSQL constraints](https://docs.djangoproject.com/en/5.2/ref/contrib/postgres/constraints/).
 
-Indexes should serve actual lookup paths: open custody by holder, asset/time history, active assignments by membership and job, pending requests by company/job, incident state by asset, asset tags, and business keys. Do not add a second stored count or status merely because a screen displays it.
+Indexes should serve actual lookup paths: open custody by holder, asset/time history, active assignments by membership and job, pending requests by company/job, incident state by asset, and business keys. Do not add a second stored count or status merely because a screen displays it.
 
 ## CleanForce composition
 
@@ -256,6 +256,6 @@ Essential tests for implementation: anonymous denial; suspended/ineligible membe
 
 The first implemented slice is [the backend tool request API](../backend/README.md): real CleanForce authentication, company membership and roles, warehouses, tool models, individual assets, custody periods, and requests for a specific asset. It includes actual PostgreSQL migrations and HTTP/database tests. The job-joining code above remains an illustrative example rather than an installed feature.
 
-The backend now implements manager request decisions and receipt-based custody, company-configurable employee registration, staged evidence, projects/jobs and configurable participation, condition/service/lifecycle commands, and evidenced reconciliation. See [the backend README](../backend/README.md) and its checked OpenAPI for the installed contract and operational limits. Reservations, observations, additional project relationships, and estimating tables remain later extensions.
+The backend now implements manager request decisions and receipt-based custody, company-configurable employee registration, staged evidence, jobs and configurable participation, condition/service/lifecycle commands, and evidenced reconciliation. See [the backend README](../backend/README.md) and its checked OpenAPI for the installed contract and operational limits. Reservations, observations, additional project relationships, and estimating tables remain later extensions.
 
 This gives the bid application stable company, people, customer, project, and execution identities without making the first tool release carry an unfinished estimating system.

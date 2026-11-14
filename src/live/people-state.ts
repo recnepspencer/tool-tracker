@@ -81,11 +81,10 @@ export function usePeoplePageState() {
   const term = search.trim().toLocaleLowerCase();
   const matches = (...values: string[]) => !term || values.some((value) => value.toLocaleLowerCase().includes(term));
   const memberRows: PeopleRow[] = (people.data ?? [])
-    .filter((member) => matches(member.preferred_name, member.title, ...member.roles.map((role) => ROLE_LABELS[role])))
+    .filter((member) => matches(member.preferred_name, member.title, ROLE_LABELS[member.role]))
     .filter((member) => {
       if (filter === 'invited') return false;
-      if (filter === 'admins')
-        return member.roles.includes('company_admin') || member.roles.includes('equipment_manager');
+      if (filter === 'admins') return member.role !== 'foreman';
       if (filter === 'no-access') return memberLifecycle(member) !== 'active';
       return true;
     })

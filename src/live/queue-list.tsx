@@ -1,108 +1,166 @@
+import { useId, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
-import { Button, ToolPhoto } from './kit';
-import type { QueueItem } from './operations-state';
+import { formatStamp } from './format';
+import { Button, ToolPhoto, cx } from './kit';
+import type { HistoryEntry, QueueAction, QueueEntry, QueueKind } from './queue-groups';
 
-/** Demo QueueGroup: a headed, counted list inside the single queue card. */
-export function QueueGroup({
-  label,
-  items,
-  busy,
-  onReview,
-  onResolve,
+export const actionLabels: Record<QueueAction, string> = {
+  approve: 'Release',
+  reject: 'Decline',
+  accept: 'Accept',
+  decline: 'Decline',
+  withdraw: 'Withdraw',
+  cancel: 'Cancel',
+};
+
+export const kindNouns: Record<QueueKind, string> = {
+  request: 'request',
+  pickup: 'pickup',
+  return: 'return',
+  transfer: 'transfer',
+};
+
+/** One headed, counted group of rows. The count sits outside the heading so the region keeps a plain name. */
+export function QueueSection({
+  title,
+  count,
+  quiet = false,
+  children,
 }: {
-  label: string;
-  items: QueueItem[];
-  busy: boolean;
-  onReview(item: QueueItem): void;
-  onResolve(item: QueueItem, decision: 'approve' | 'decline'): void;
+  title: string;
+  count?: number;
+  quiet?: boolean;
+  children: ReactNode;
 }) {
-  if (!items.length) return null;
+  const id = useId();
   return (
-    <section className="operations-queue-group" aria-label={label}>
-      <div className="operations-queue-group__heading">
-        <h2>{label}</h2>
-        <span>{items.length}</span>
-      </div>
-      <div className="queue-list">
-        {items.map((item) => (
-          <WarehouseQueueItem item={item} busy={busy} onReview={onReview} onResolve={onResolve} key={item.key} />
-        ))}
-      </div>
+    <section className={cx('queue-section', quiet && 'queue-section--quiet')} aria-labelledby={id}>
+      <header className="queue-section__head">
+        <h2 id={id}>{title}</h2>
+        {count !== undefined && (
+          <span className="queue-section__count" aria-label={`${count} ${count === 1 ? 'item' : 'items'}`}>
+            {count}
+          </span>
+        )}
+      </header>
+      <ul className="queue-rows">{children}</ul>
     </section>
   );
 }
 
-const kindLabel = (item: QueueItem) =>
-  item.kind === 'request' ? 'request' : item.kind === 'return' ? 'return' : 'transfer';
+function RowText({ title, note, meta }: { title: string; note: string; meta: ReactNode }) {
+  return (
+    <span className="queue-row__text">
+      <strong className="queue-row__title">{title}</strong>
+      {note && <span className="queue-row__note">“{note}”</span>}
+      <span className="queue-row__meta">{meta}</span>
+    </span>
+  );
+}
 
-/** Demo WarehouseQueueItem. */
-function WarehouseQueueItem({
-  item,
+/** A request, return, pickup or transfer: tap for the note and every option, or decide on the row. */
+export function AskRow({
+  entry,
+  photo,
   busy,
   onReview,
-  onResolve,
+  onAction,
 }: {
-  item: QueueItem;
+  entry: QueueEntry;
+  photo: string | null;
   busy: boolean;
-  onReview(item: QueueItem): void;
-  onResolve(item: QueueItem, decision: 'approve' | 'decline'): void;
+  onReview(entry: QueueEntry): void;
+  onAction(entry: QueueEntry, action: QueueAction): void;
 }) {
-  const note = item.decisionNote || item.note;
+  const noun = kindNouns[entry.kind];
   return (
-    <article className="queue-item">
+    <li className="queue-row">
       <button
         type="button"
-        className="queue-item__open"
+        className="queue-row__open"
         disabled={busy}
-        onClick={() => onReview(item)}
-        aria-label={`Review ${kindLabel(item)} for ${item.toolName}`}
+        onClick={() => onReview(entry)}
+        aria-label={`Review ${noun} for ${entry.toolName}`}
       >
-        <ToolPhoto src={item.imageSrc} alt="" size="small" />
-        <span className="queue-item__body">
-          <span className="queue-item__heading">
-            <span>
-              <span className="eyebrow">{item.eyebrow}</span>
-              <strong className="queue-item__name">{item.toolName}</strong>
-            </span>
-            <span className="queue-item__time">{item.time}</span>
-          </span>
-          <span className="queue-item__person">
-            <strong>{item.personName}</strong>
-            {item.personRole && ` · ${item.personRole}`}
-          </span>
-          <span className="queue-item__route">
-            {item.from} <span aria-hidden="true">→</span> {item.to}
-          </span>
-          {note && <span className="queue-item__note">“{note}”</span>}
-        </span>
-        <span className="queue-item__review">
-          <span className="queue-item__review-label">Review</span>
-          <ChevronRight aria-hidden="true" />
-        </span>
+        <ToolPhoto src={photo} alt="" size="small" />
+        <RowText
+          title={entry.title}
+          note={entry.note}
+          meta={
+            <>
+              {entry.status && <span className="queue-row__status">{entry.status}</span>}
+              <time dateTime={entry.at}>{formatStamp(entry.at)}</time>
+            </>
+          }
+        />
+        <ChevronRight className="queue-row__chevron" aria-hidden="true" />
       </button>
-      {(item.decline || item.approve) && (
-        <div className="queue-item__decisions">
-          {item.decline && (
+      {entry.actions.length > 0 && (
+        <div className="queue-row__actions">
+          {entry.actions.map((action, index) => (
             <Button
-              variant="secondary"
+              key={action}
+              variant={index === entry.actions.length - 1 && entry.actions.length > 1 ? 'primary' : 'secondary'}
               disabled={busy}
-              aria-label={`Decline ${kindLabel(item)} for ${item.toolName}`}
-              onClick={() => onResolve(item, 'decline')}
+              aria-label={`${actionLabels[action]} ${noun} for ${entry.toolName}`}
+              onClick={() => onAction(entry, action)}
             >
-              Decline
+              {actionLabels[action]}
             </Button>
-          )}
-          {item.approve && (
-            <Button
-              disabled={busy}
-              aria-label={`${item.kind === 'request' ? 'Release' : 'Accept return'} for ${item.toolName}`}
-              onClick={() => onResolve(item, 'approve')}
-            >
-              {item.kind === 'request' ? 'Release' : 'Accept'}
-            </Button>
-          )}
+          ))}
         </div>
       )}
-    </article>
+    </li>
+  );
+}
+
+/** A row that opens another page: a damaged or lost tool, or a record to fix. */
+export function LinkRow({
+  to,
+  state,
+  label,
+  title,
+  note,
+  at,
+  photo,
+}: {
+  to: string;
+  state?: unknown;
+  label: string;
+  title: string;
+  note: string;
+  at: string | null;
+  photo: string | null;
+}) {
+  return (
+    <li className="queue-row">
+      <Link className="queue-row__open" to={to} state={state} aria-label={label}>
+        <ToolPhoto src={photo} alt="" size="small" />
+        <RowText title={title} note={note} meta={at ? <time dateTime={at}>{formatStamp(at)}</time> : null} />
+        <ChevronRight className="queue-row__chevron" aria-hidden="true" />
+      </Link>
+    </li>
+  );
+}
+
+/** A past decision: what was asked, how it ended, and the note left with it. */
+export function HistoryRow({ entry, photo }: { entry: HistoryEntry; photo: string | null }) {
+  return (
+    <li className="queue-row">
+      <div className="queue-row__open queue-row__open--static">
+        <ToolPhoto src={photo} alt="" size="small" />
+        <RowText
+          title={entry.title}
+          note={entry.note}
+          meta={
+            <>
+              <span className="queue-row__status">{entry.outcome}</span>
+              <time dateTime={entry.at}>{formatStamp(entry.at)}</time>
+            </>
+          }
+        />
+      </div>
+    </li>
   );
 }

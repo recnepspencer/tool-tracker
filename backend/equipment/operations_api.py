@@ -8,7 +8,7 @@ from django.db.models import Q
 from django.http import HttpRequest
 from django.views.decorators.csrf import csrf_protect
 from ninja import Query, Router, Schema, Status
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from companies.access import capabilities, require_member
 from config.contracts import CommandInput, PageInput, RevisionInput, paginate
@@ -212,35 +212,123 @@ class LifecyclePage(Schema):
     next_offset: int | None
 
 
+ReconciliationKind = Literal["custody_dispute", "missing_asset", "duplicate_asset"]
+ReconciliationOutcome = Literal[
+    "merge", "not_duplicate", "found", "write_off", "move_custody", "records_correct"
+]
+
+
 class ReconciliationInput(CommandInput):
-    kind: Literal["custody_dispute", "missing_asset", "duplicate_asset"]
-    narrative: str = Field(min_length=1, max_length=4000)
+    kind: ReconciliationKind
+    # Required for a duplicate: the other record for the same physical unit.
+    duplicate_of_id: UUID | None = None
+    narrative: str = Field(default="", max_length=4000)
 
 
-class ReconciliationResolution(ReasonInput):
-    expected_asset_revision: int = Field(ge=1)
+# Which fields each outcome needs. Everything else must be left out.
+RESOLUTION_FIELDS = {
+    "merge": {"keep_asset_id", "expected_asset_revision", "expected_duplicate_revision"},
+    "not_duplicate": set(),
+    "found": {"expected_asset_revision", "destination"},
+    "write_off": {"expected_asset_revision"},
+    "move_custody": {"expected_asset_revision", "destination"},
+    "records_correct": set(),
+}
+
+
+class ReconciliationResolution(RevisionInput):
+    """How a case was settled. Each outcome takes only the fields it needs:
+
+    - merge: keep_asset_id, expected_asset_revision, expected_duplicate_revision
+    - found, move_custody: expected_asset_revision and one destination
+    - write_off: expected_asset_revision
+    - not_duplicate, records_correct: nothing more
+
+    A note and a photo are optional on every outcome.
+    """
+
+    outcome: ReconciliationOutcome
+    keep_asset_id: UUID | None = None
+    expected_asset_revision: int | None = Field(default=None, ge=1)
+    expected_duplicate_revision: int | None = Field(default=None, ge=1)
     destination_membership_id: UUID | None = None
     destination_warehouse_id: UUID | None = None
+    note: str = Field(default="", max_length=2000)
     photo_id: UUID | None = None
+
+    @model_validator(mode="after")
+    def fields_match_outcome(self):
+        needed = RESOLUTION_FIELDS[self.outcome]
+        given = {
+            name
+            for name in ("keep_asset_id", "expected_asset_revision", "expected_duplicate_revision")
+            if getattr(self, name) is not None
+        }
+        destinations = [self.destination_membership_id, self.destination_warehouse_id]
+        if any(destinations):
+            given.add("destination")
+        if missing := sorted(needed - given):
+            raise ValueError(f"{self.outcome} needs {', '.join(missing)}.")
+        if extra := sorted(given - needed):
+            raise ValueError(f"{self.outcome} does not take {', '.join(extra)}.")
+        if "destination" in needed and all(destinations):
+            raise ValueError("Choose one person or one warehouse, not both.")
+        return self
+
+
+class ReconciliationRecordView(Schema):
+    """One tool record in a case, with what tells two units apart."""
+
+    id: UUID
+    name: str
+    manufacturer: str
+    model_number: str
+    serial_number: str | None
+    registration_photo_id: UUID | None
+    registered_at: datetime
+    holder_name: str | None
+    lifecycle: Literal["active", "retired", "disposed"]
+    revision: int
 
 
 class ReconciliationView(Schema):
     id: UUID
     asset_id: UUID
-    kind: Literal["custody_dispute", "missing_asset", "duplicate_asset"]
+    duplicate_of_id: UUID | None
+    kind: ReconciliationKind
     narrative: str
     opened_at: datetime
     opened_by_id: UUID
+    opened_by_name: str
     resolved_at: datetime | None
     resolved_by_id: UUID | None
+    outcome: ReconciliationOutcome | None
     resolution_note: str
     corrected_custody_id: UUID | None
     revision: int
     photo_ids: list[UUID]
+    record: ReconciliationRecordView
+    duplicate_record: ReconciliationRecordView | None
 
     @staticmethod
     def resolve_photo_ids(obj):
         return list(obj.reconciliationattachment_set.values_list("file_id", flat=True))
+
+    @staticmethod
+    def resolve_opened_by_name(obj):
+        return obj.opened_by.person.preferred_name
+
+    @staticmethod
+    def resolve_outcome(obj):
+        return obj.outcome or None
+
+    @staticmethod
+    def resolve_record(obj):
+        return reconciliation.record_summary(obj.asset)
+
+    @staticmethod
+    def resolve_duplicate_record(obj):
+        return reconciliation.record_summary(obj.duplicate_of)
 
 
 class ReconciliationPage(Schema):
@@ -456,7 +544,9 @@ def cases_list(
     request: HttpRequest, company_id: UUID, page: Query[PageInput], open_only: bool = True
 ):
     require_member(current_identity(request), company_id, "reconciliation.manage")
-    query = ReconciliationCase.objects.filter(company_id=company_id)
+    query = ReconciliationCase.objects.filter(company_id=company_id).select_related(
+        "asset__tool_model", "duplicate_of__tool_model", "opened_by__person"
+    )
     if open_only:
         query = query.filter(resolved_at__isnull=True)
     return paginate(query.order_by("-opened_at", "id"), page.limit, page.offset)

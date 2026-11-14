@@ -20,7 +20,7 @@ from tests.http_contract import assert_response
 @pytest.fixture
 def registration(world, api_client, password_hash, settings, tmp_path):
     settings.MEDIA_ROOT = tmp_path
-    manager = member_in(world.company, password_hash, "equipment_manager")
+    manager = member_in(world.company, password_hash, "manager")
     policy = ToolRegistrationPolicy.objects.create(
         company=world.company, employee_tool_creation_enabled=True
     )
@@ -45,7 +45,7 @@ def payload(ctx, **overrides):
         "request_key": str(uuid4()),
         "tool_model_id": str(ctx.world.model.pk),
         "warehouse_id": str(ctx.world.warehouse.pk),
-        "asset_tag": "NEW-UNIT",
+        "serial_number": "NEW-UNIT",
         **overrides,
     }
 
@@ -72,12 +72,14 @@ def test_employee_switch_manager_override_and_duplicate_units(registration):
     assert_response(policy, "/api/companies/{company_id}/tool-registration-policy")
     assert (
         ctx.worker.post(
-            f"{ctx.base}/tools", payload(ctx, asset_tag="BLOCKED"), content_type="application/json"
+            f"{ctx.base}/tools",
+            payload(ctx, serial_number="BLOCKED"),
+            content_type="application/json",
         ).status_code
         == 403
     )
     manager_created = ctx.manager.post(
-        f"{ctx.base}/tools", payload(ctx, asset_tag="MANAGED"), content_type="application/json"
+        f"{ctx.base}/tools", payload(ctx, serial_number="MANAGED"), content_type="application/json"
     )
     assert manager_created.status_code == 201
     assert ToolAsset.objects.filter(pk=asset["id"]).exists()
@@ -105,7 +107,6 @@ def test_purchase_details_round_trip_without_changing_model_or_custody(registrat
         "serial_number": "SERIAL-NEW",
         "acquisition_date": "2026-04-12",
         "acquisition_cost": "249.95",
-        "acquisition_currency": "USD",
         "notes": "Purchased with two batteries.\nKeep the case with this unit.",
     }
     body = payload(ctx, **details)
@@ -164,7 +165,6 @@ def test_purchase_details_round_trip_without_changing_model_or_custody(registrat
         "serial_number": "CORRECTED",
         "acquisition_date": None,
         "acquisition_cost": None,
-        "acquisition_currency": "",
         "notes": "",
     }
     assert list(CustodyPeriod.objects.order_by("pk").values()) == custody
@@ -177,23 +177,11 @@ def test_invalid_purchase_amount_does_not_register_a_tool(registration, price):
     ctx = registration
     response = ctx.manager.post(
         f"{ctx.base}/tools",
-        payload(ctx, acquisition_cost=price, acquisition_currency="USD"),
+        payload(ctx, acquisition_cost=price),
         content_type="application/json",
     )
     assert response.status_code == 400
-    assert not ToolAsset.objects.filter(asset_tag="NEW-UNIT").exists()
-
-
-def test_purchase_price_requires_currency_without_partial_registration(registration):
-    ctx = registration
-    before = CustodyPeriod.objects.count()
-    response = ctx.manager.post(
-        f"{ctx.base}/tools", payload(ctx, acquisition_cost="12.34"), content_type="application/json"
-    )
-    assert response.status_code == 409
-    assert response.json()["code"] == "acquisition_currency_required"
-    assert not ToolAsset.objects.filter(asset_tag="NEW-UNIT").exists()
-    assert CustodyPeriod.objects.count() == before
+    assert not ToolAsset.objects.filter(serial_number="NEW-UNIT").exists()
 
 
 def test_photo_staging_does_not_bypass_later_policy_disable(registration):
@@ -216,7 +204,7 @@ def test_photo_staging_does_not_bypass_later_policy_disable(registration):
     )
     assert denied.status_code == 403
     assert StoredFile.objects.get(pk=staged["id"]).attached_at is None
-    assert not ToolAsset.objects.filter(asset_tag="NEW-UNIT").exists()
+    assert not ToolAsset.objects.filter(serial_number="NEW-UNIT").exists()
 
 
 def test_photo_claim_download_and_cleanup_preserve_attached_evidence(registration):
@@ -235,7 +223,7 @@ def test_photo_claim_download_and_cleanup_preserve_attached_evidence(registratio
     assert (
         ctx.manager.post(
             f"{ctx.base}/tools",
-            payload(ctx, photo_id=uploaded["id"], asset_tag="REUSE"),
+            payload(ctx, photo_id=uploaded["id"], serial_number="REUSE"),
             content_type="application/json",
         ).status_code
         == 409
@@ -260,7 +248,7 @@ def test_upload_checks_real_bytes_and_tool_registration_rejects_foreign_ids(regi
     )
     from equipment.models import Warehouse
 
-    foreign = Warehouse.objects.create(company=ctx.world.other_company, code="OTHER", name="Other")
+    foreign = Warehouse.objects.create(company=ctx.world.other_company, name="Other")
     assert (
         ctx.manager.post(
             f"{ctx.base}/tools",
@@ -269,4 +257,4 @@ def test_upload_checks_real_bytes_and_tool_registration_rejects_foreign_ids(regi
         ).status_code
         == 404
     )
-    assert not ToolAsset.objects.filter(asset_tag="NEW-UNIT").exists()
+    assert not ToolAsset.objects.filter(serial_number="NEW-UNIT").exists()

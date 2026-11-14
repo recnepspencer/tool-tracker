@@ -8,7 +8,7 @@ from cleanforce_identity.models import PlatformUser
 from django.db import transaction
 from django.utils import timezone
 
-from .access import authorize_write
+from .access import authorize_write, set_role
 from .audit import record_company_event
 from .logos import adopt, pending_logo, release
 from .models import Company, CompanyMembership, CompanyRoleGrant, MembershipInvitation, Person
@@ -63,7 +63,7 @@ def bootstrap_company(identity, data):
         identity_user_id=identity.user_id, defaults={"preferred_name": data.preferred_name}
     )
     member = CompanyMembership.objects.create(company=company, person=person)
-    CompanyRoleGrant.objects.create(membership=member, role_code="company_admin")
+    CompanyRoleGrant.objects.create(membership=member, role_code="admin")
     # The creator holds ownership until a named owner accepts their invitation.
     company.owner = member
     company.save(update_fields=["owner"])
@@ -72,6 +72,11 @@ def bootstrap_company(identity, data):
     code.company = company
     code.save(update_fields=["claimed_by", "claimed_at", "company"])
     record_company_event(identity, company.pk, "companies.company.created", company)
+    if data.starter_catalog:
+        from equipment.models import ToolCategory, ToolModel
+        from equipment.starter_catalog import add_starter_catalog
+
+        add_starter_catalog(company.pk, ToolCategory, ToolModel)
     invitation = token = None
     if someone_else:
         token = secrets.token_urlsafe(32)
@@ -79,7 +84,7 @@ def bootstrap_company(identity, data):
             company=company,
             email=owner_email,
             preferred_name=data.owner_name.strip(),
-            role_code="company_admin",
+            role_code="admin",
             grants_ownership=True,
             token_digest=hashlib.sha256(token.encode()).hexdigest(),
             invited_by=member,
@@ -101,9 +106,7 @@ def transfer_ownership(identity, company_id, membership_id):
     if subject is None:
         raise not_found("Active membership not found.")
     # Ownership always comes with administration, so the new owner can run the company.
-    CompanyRoleGrant.objects.get_or_create(
-        membership=subject, role_code="company_admin", revoked_at=None
-    )
+    set_role(subject, "admin")
     company.owner = subject
     company.save(update_fields=["owner"])
     # A handover settles ownership; an older owner invitation must not take it back.
@@ -222,11 +225,9 @@ def update_membership(identity, company_id, membership_id, data):
         raise not_found("Membership not found.")
     expect_revision(subject, data.expected_revision)
     is_admin = CompanyRoleGrant.objects.filter(
-        membership=subject, role_code="company_admin", revoked_at__isnull=True
+        membership=subject, role_code="admin", revoked_at__isnull=True
     ).exists()
-    removing_admin = (
-        data.access_state != "active" or data.end_membership or "company_admin" not in data.roles
-    )
+    removing_admin = data.access_state != "active" or data.end_membership or data.role != "admin"
     if company.owner_id == subject.pk and removing_admin:
         raise conflict(
             "Transfer ownership before changing the owner's access or administrator role.",
@@ -239,7 +240,7 @@ def update_membership(identity, company_id, membership_id, data):
             membership__company_id=company_id,
             membership__access_state="active",
             membership__ended_at__isnull=True,
-            role_code="company_admin",
+            role_code="admin",
             revoked_at__isnull=True,
         )
         .exclude(membership=subject)
@@ -249,11 +250,7 @@ def update_membership(identity, company_id, membership_id, data):
             "The company must retain an active administrator.", code="last_administrator"
         )
     now = timezone.now()
-    CompanyRoleGrant.objects.filter(membership=subject, revoked_at__isnull=True).exclude(
-        role_code__in=data.roles
-    ).update(revoked_at=now)
-    for role in sorted(set(data.roles)):
-        CompanyRoleGrant.objects.get_or_create(membership=subject, role_code=role, revoked_at=None)
+    set_role(subject, data.role)
     subject.access_state = data.access_state
     subject.title = data.title
     subject.ended_at = (subject.ended_at or now) if data.end_membership else None

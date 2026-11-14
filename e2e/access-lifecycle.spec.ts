@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import { command, invitedMember, workspace, emailLink, password, chooseOption, test } from './support';
+import { command, invitedMember, workspace, emailLink, password, test } from './support';
 
 async function issue(
   owner: Page,
@@ -17,7 +17,7 @@ async function issue(
   });
 }
 
-test('an open equipment page loses revoked controls and gains combined roles through real access refresh', async ({
+test('an open equipment page loses revoked controls and regains them through real access refresh', async ({
   page,
   browser,
 }) => {
@@ -25,46 +25,47 @@ test('an open equipment page loses revoked controls and gains combined roles thr
   const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
   const actor = await context.newPage();
   try {
-    const member = await invitedMember(page, actor, fixture.base, 'equipment_manager', 'Changing operator');
+    const member = await invitedMember(page, actor, fixture.base, 'manager', 'Changing operator');
     await actor.goto(`/app/tools/${fixture.asset.id}?action=edit`);
     const metadata = actor.getByRole('dialog', { name: 'Edit Hammer drill', exact: true });
     await metadata.getByLabel('Serial number', { exact: true }).fill('REVOKED-DRAFT');
     await command(page.request, `${fixture.base}/people/${member.id}/update`, {
       expected_revision: 1,
       access_state: 'active',
-      roles: ['estimator'],
-      reason: 'Move to estimating',
+      role: 'foreman',
+      reason: 'Back to leading a crew',
     });
+    // The refused save refreshes access: a foreman still sees tools but can't edit them.
     await metadata.getByRole('button', { name: 'Save changes', exact: true }).click();
-    await expect(actor.getByText('Your company permissions do not allow access to this page.')).toBeVisible();
     await expect(metadata).toHaveCount(0);
-    await expect(actor.getByRole('dialog', { name: 'Hammer drill details', exact: true })).toHaveCount(0);
+    // The tool's drawer stays open behind the closed dialog; close it to reach the tab bar.
+    const drawer = actor.getByRole('dialog', { name: 'Hammer drill details', exact: true });
+    await drawer.getByRole('button', { name: 'Close tool details', exact: true }).click();
+    await expect(drawer).toHaveCount(0);
     await expect(actor.getByRole('link', { name: 'Inventory', exact: true })).toHaveCount(0);
-    expect(
-      (await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}`)).json()).serial_number,
-    ).toBeNull();
-    await actor.getByRole('button', { name: 'Open navigation', exact: true }).click();
-    await actor.getByRole('dialog', { name: 'Navigation' }).getByRole('link', { name: 'Jobs', exact: true }).click();
-    await expect(actor.getByRole('heading', { name: 'Jobs', exact: true, level: 1 })).toBeVisible();
+    expect((await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}`)).json()).serial_number).toBe(
+      'UNIT-001',
+    );
+    await actor
+      .getByRole('navigation', { name: 'Main', exact: true })
+      .getByRole('link', { name: 'My jobs', exact: true })
+      .click();
+    await expect(actor.getByRole('heading', { name: 'My jobs', exact: true, level: 1 })).toBeVisible();
     await expect(actor.getByRole('button', { name: 'Add job', exact: true })).toHaveCount(0);
     await command(page.request, `${fixture.base}/people/${member.id}/update`, {
       expected_revision: 2,
       access_state: 'active',
-      roles: ['dispatcher', 'field_member'],
-      reason: 'Coordinate work and carry tools',
+      role: 'manager',
+      reason: 'Running tools and jobs again',
     });
-    // Refresh access lives in the account sheet opened from the navigation drawer's profile.
-    await actor.getByRole('button', { name: 'Open navigation', exact: true }).click();
-    await actor
-      .getByRole('dialog', { name: 'Navigation' })
-      .getByRole('button', { name: 'Open account for Changing operator', exact: true })
-      .click();
-    const account = actor.getByRole('dialog', { name: 'Changing operator', exact: true });
+    // Refresh access lives in the tab bar's Menu.
+    await actor.getByRole('button', { name: 'Menu', exact: true }).click();
+    const account = actor.getByRole('dialog', { name: 'Menu', exact: true });
     await account.getByRole('button', { name: 'Refresh access', exact: true }).click();
-    // The refreshed roles move the open page into the control room.
+    // The refreshed role moves the open page into the control-room layout.
     await expect(
       actor
-        .getByRole('navigation', { name: 'Control room destinations', exact: true })
+        .getByRole('navigation', { name: 'Main navigation', exact: true })
         .getByRole('link', { name: 'Inventory', exact: true }),
     ).toBeVisible();
     await expect(account.getByRole('button', { name: 'Refresh access', exact: true })).toBeEnabled();
@@ -73,8 +74,8 @@ test('an open equipment page loses revoked controls and gains combined roles thr
     await expect(account).toHaveCount(0);
     await expect(actor.getByRole('button', { name: 'Add job', exact: true })).toBeVisible();
     const own = (await (await actor.request.get('/api/me')).json()).memberships[0];
-    expect(own.capabilities).toEqual(expect.arrayContaining(['jobs.assign', 'tools.transfer']));
-    expect(own.capabilities).not.toContain('tools.manage');
+    expect(own.capabilities).toEqual(expect.arrayContaining(['jobs.assign', 'tools.transfer', 'tools.manage']));
+    expect(own.capabilities).not.toContain('people.manage');
   } finally {
     await context.close();
   }
@@ -88,12 +89,11 @@ test('offboarding closes jobs, keeps named custody and reinstates the same emplo
   const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
   const worker = await context.newPage();
   try {
-    const member = await invitedMember(page, worker, fixture.base, 'field_member', 'Returning employee');
+    const member = await invitedMember(page, worker, fixture.base, 'foreman', 'Returning employee');
     await issue(page, worker, fixture, member.id);
     const assignment = await command(page.request, `${fixture.base}/jobs/${fixture.job.id}/assignments`, {
       expected_revision: 1,
       membership_id: member.id,
-      responsibility: 'foreman',
       reason: 'Lead the work',
     });
     const policy = await (await page.request.get(`${fixture.base}/job-participation-policy`)).json();
@@ -139,9 +139,7 @@ test('offboarding closes jobs, keeps named custody and reinstates the same emplo
     await expect(person).toHaveCount(0);
     await worker.getByRole('button', { name: 'Refresh access', exact: true }).click();
     await expect(worker.getByRole('heading', { name: 'My tools', exact: true })).toBeVisible();
-    await expect(
-      worker.getByRole('button', { name: 'Open details for Hammer drill unit UNIT-001', exact: true }),
-    ).toBeVisible();
+    await expect(worker.getByRole('button', { name: 'Open details for Hammer drill', exact: true })).toBeVisible();
     expect((await (await worker.request.get(`${fixture.base}/assignments`)).json()).items).toEqual([]);
     const historical = (await (await worker.request.get(`${fixture.base}/assignments?current=false`)).json()).items;
     expect(historical[0]).toMatchObject({
@@ -150,16 +148,18 @@ test('offboarding closes jobs, keeps named custody and reinstates the same emplo
       end_reason: 'Employment ended with tool accountability retained',
     });
     await page.goto(`/app/jobs?job=${fixture.job.id}&history=true`);
-    const roster = page.getByRole('dialog', { name: 'People on Library wiring', exact: true });
-    await expect(roster.getByRole('combobox', { name: 'Assignments', exact: true })).toHaveText('Assignment history');
-    await expect(roster.getByRole('article', { name: 'Returning employee foreman', exact: true })).toBeVisible();
+    const roster = page.getByRole('dialog', { name: 'Library wiring', exact: true });
+    await expect(roster.getByRole('button', { name: 'Hide past people', exact: true })).toBeVisible();
+    await expect(
+      roster.getByRole('list', { name: 'Past people', exact: true }).getByText('Returning employee', { exact: true }),
+    ).toBeVisible();
     await page.screenshot({ path: 'artifacts/jobs-rehired-history.png', fullPage: true });
     await worker.goto('/app/jobs');
     await worker.getByRole('switch', { name: 'Library wiring', exact: true }).click();
     await expect(worker.getByRole('switch', { name: 'Library wiring', exact: true })).toBeChecked();
-    const current = (await (await worker.request.get(`${fixture.base}/assignments`)).json()).items;
-    expect(current[0].id).not.toBe(assignment.id);
-    expect(current[0].responsibility).toBe('crew');
+    const current = async () => (await (await worker.request.get(`${fixture.base}/assignments`)).json()).items;
+    await expect.poll(async () => (await current()).length).toBe(1);
+    expect((await current())[0].id).not.toBe(assignment.id);
     expect((await (await page.request.get(`${fixture.base}/tools/${fixture.asset.id}/custody`)).json()).items).toEqual(
       before,
     );
@@ -178,8 +178,8 @@ test('revoking a receiving warehouse grant removes an open receipt action withou
   const holder = await holderContext.newPage();
   const manager = await managerContext.newPage();
   try {
-    const employee = await invitedMember(page, holder, fixture.base, 'field_member', 'Tool operator');
-    const receiver = await invitedMember(page, manager, fixture.base, 'field_member', 'Warehouse receiver');
+    const employee = await invitedMember(page, holder, fixture.base, 'foreman', 'Tool operator');
+    const receiver = await invitedMember(page, manager, fixture.base, 'foreman', 'Warehouse receiver');
     await issue(page, holder, fixture, employee.id);
     const grant = await command(page.request, `${fixture.base}/warehouses/${fixture.warehouse.id}/authority`, {
       expected_revision: 1,
@@ -195,7 +195,7 @@ test('revoking a receiving warehouse grant removes an open receipt action withou
     await manager.goto('/app/operations');
     await manager.getByRole('button', { name: 'Review return for Hammer drill', exact: true }).click();
     const review = manager.getByRole('dialog', { name: 'Review Hammer drill', exact: true });
-    await review.getByLabel('Decision note', { exact: true }).fill('Received at the gate');
+    await review.getByLabel('Note', { exact: true }).fill('Received at the gate');
     await command(page.request, `${fixture.base}/warehouses/${fixture.warehouse.id}/authority`, {
       expected_revision: grant.revision,
       membership_id: receiver.id,
@@ -222,7 +222,7 @@ test('company rules changed mid-draft refresh disabled participation and registr
   const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
   const actor = await context.newPage();
   try {
-    await invitedMember(page, actor, fixture.base, 'field_member', 'Employee operator');
+    await invitedMember(page, actor, fixture.base, 'foreman', 'Employee operator');
     let policy = await (await page.request.get(`${fixture.base}/job-participation-policy`)).json();
     await command(page.request, `${fixture.base}/job-participation-policy`, {
       expected_revision: policy.revision,
@@ -238,11 +238,11 @@ test('company rules changed mid-draft refresh disabled participation and registr
       self_leave_mode: 'approval_required',
     });
     await actor.getByRole('switch', { name: 'Library wiring', exact: true }).click();
-    // The refused join refreshes the rules: the switch stays, disabled, and says who to ask.
-    await expect(actor.getByRole('switch', { name: 'Library wiring', exact: true })).toBeDisabled();
-    await expect(actor.getByRole('switch', { name: 'Library wiring', exact: true })).not.toBeChecked();
+    // The refused join refreshes the rules: the switch becomes a plain row and the list says who adds you.
+    await expect(actor.getByRole('switch', { name: 'Library wiring', exact: true })).toHaveCount(0);
+    await expect(actor.getByRole('group', { name: 'Library wiring', exact: true })).toBeVisible();
     await expect(actor.getByRole('heading', { name: 'My jobs', exact: true })).toBeVisible();
-    await expect(actor.getByText('Ask a manager to add you', { exact: true })).toBeVisible();
+    await expect(actor.getByText('A manager adds you to jobs.', { exact: true })).toBeVisible();
     expect((await (await actor.request.get(`${fixture.base}/assignments`)).json()).items).toEqual([]);
     const registration = await (await page.request.get(`${fixture.base}/tool-registration-policy`)).json();
     if (!registration.employee_tool_creation_enabled)
@@ -250,8 +250,10 @@ test('company rules changed mid-draft refresh disabled participation and registr
         expected_revision: registration.revision,
         employee_tool_creation_enabled: true,
       });
+    const toolIds = async () =>
+      (await (await page.request.get(`${fixture.base}/tools`)).json()).items.map((tool: { id: string }) => tool.id);
+    const toolsBefore = await toolIds();
     await actor.goto('/app/mine/new');
-    await actor.getByRole('button', { name: 'Continue without a photo' }).click();
     await actor.getByLabel('What is it?', { exact: true }).fill('DENIED-NEW-UNIT');
     const latest = await (await page.request.get(`${fixture.base}/tool-registration-policy`)).json();
     await command(page.request, `${fixture.base}/tool-registration-policy`, {
@@ -260,18 +262,14 @@ test('company rules changed mid-draft refresh disabled participation and registr
     });
     await actor.getByRole('button', { name: 'Submit for review', exact: true }).click();
     await expect(actor.getByText(/Field inventory collection is closed/)).toBeVisible();
-    expect((await (await page.request.get(`${fixture.base}/tools?search=DENIED-NEW-UNIT`)).json()).items).toEqual([]);
+    expect(await toolIds()).toEqual(toolsBefore);
+    const submissions = (await (await page.request.get(`${fixture.base}/equipment-submissions`)).json()).items;
+    expect(submissions.filter((item: { description: string }) => item.description === 'DENIED-NEW-UNIT')).toEqual([]);
     await actor.keyboard.press('Escape');
     await expect(actor.getByRole('dialog', { name: 'Add a tool', exact: true })).toHaveCount(0);
-    await expect(actor.getByRole('link', { name: 'Add a tool', exact: true })).toHaveCount(0);
-    await actor.getByRole('button', { name: 'Open navigation', exact: true }).click();
-    await expect(
-      actor.getByRole('dialog', { name: 'Navigation' }).getByRole('link', { name: 'My tools' }),
-    ).toBeVisible();
-    await expect(
-      actor.getByRole('dialog', { name: 'Navigation' }).getByRole('link', { name: 'Add a tool', exact: true }),
-    ).toHaveCount(0);
-    await actor.keyboard.press('Escape');
+    await actor.goto('/app/mine');
+    await expect(actor.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'My tools' })).toBeVisible();
+    await expect(actor.getByRole('link', { name: 'Add tool', exact: true })).toHaveCount(0);
     await page.goto('/app/tools');
     await expect(page.getByRole('link', { name: 'Add tool', exact: true })).toBeVisible();
     await command(page.request, `${fixture.base}/tool-registration-policy`, {
@@ -279,13 +277,12 @@ test('company rules changed mid-draft refresh disabled participation and registr
       employee_tool_creation_enabled: true,
     });
     await actor.reload();
-    await actor.getByRole('button', { name: 'Open navigation', exact: true }).click();
-    const addTool = actor
-      .getByRole('dialog', { name: 'Navigation' })
-      .getByRole('link', { name: 'Add a tool', exact: true });
+    const addTool = actor.getByRole('link', { name: 'Add tool', exact: true });
     await expect(addTool).toBeVisible();
     await addTool.click();
-    await expect(actor.getByRole('button', { name: 'Continue without a photo' })).toBeVisible();
+    // Foremen submit equipment for review rather than choosing a catalog model.
+    await expect(actor.getByLabel('What is it?', { exact: true })).toBeVisible();
+    await expect(actor.getByRole('combobox', { name: 'Tool model', exact: true })).toHaveCount(0);
   } finally {
     await context.close();
   }
@@ -298,26 +295,36 @@ test('cross-tab sign-out clears private data and sign-in restores the filtered d
   const fixture = await workspace(page);
   const context = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
   const first = await context.newPage();
-  await invitedMember(page, first, fixture.base, 'field_member', 'Shared session operator');
+  await invitedMember(page, first, fixture.base, 'foreman', 'Shared session operator');
   const email = (await (await first.request.get('/api/me')).json()).email;
   const second = await context.newPage();
   try {
+    // Field roles browse checkout, where units group by model, so filter by name against a second model.
+    const level = await command(page.request, `${fixture.base}/tool-models`, {
+      category_id: fixture.asset.category_id,
+      name: 'Laser level',
+    });
+    await command(page.request, `${fixture.base}/tools`, {
+      request_key: crypto.randomUUID(),
+      tool_model_id: level.id,
+      warehouse_id: fixture.warehouse.id,
+    });
     await first.goto('/app/mine');
-    await second.goto('/app/tools?search=UNIT-001');
-    await expect(second.getByRole('button', { name: 'Open Hammer drill, UNIT-001', exact: true })).toBeVisible();
-    // Sign out lives in the account sheet opened from the navigation drawer's profile.
-    await first.getByRole('button', { name: 'Open navigation', exact: true }).click();
-    await first.getByRole('button', { name: 'Open account for Shared session operator', exact: true }).click();
+    await second.goto('/app/checkout?search=Hammer');
+    await expect(second.getByRole('button', { name: 'Open Hammer drill', exact: true })).toHaveCount(1);
+    await expect(second.getByRole('button', { name: 'Open Laser level', exact: true })).toHaveCount(0);
+    // Sign out lives in the tab bar's Menu.
+    await first.getByRole('button', { name: 'Menu', exact: true }).click();
     await first.getByRole('button', { name: 'Sign out', exact: true }).click();
     await expect(second.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible();
-    await expect(second.getByText('UNIT-001', { exact: false })).toHaveCount(0);
-    expect(new URL(second.url()).searchParams.get('next')).toBe('/app/tools?search=UNIT-001');
+    await expect(second.getByText('Hammer drill', { exact: false })).toHaveCount(0);
+    expect(new URL(second.url()).searchParams.get('next')).toBe('/app/checkout?search=Hammer');
     await first.getByLabel('Email address', { exact: true }).fill(email);
     await first.getByLabel('Password', { exact: true }).fill(password);
     await first.getByRole('button', { name: 'Sign in', exact: true }).click();
-    await expect(second).toHaveURL(/\/app\/tools\?search=UNIT-001$/);
-    await expect(second.getByRole('button', { name: 'Open Hammer drill, UNIT-001', exact: true })).toBeVisible();
-    await expect(second.getByRole('button', { name: 'Open Hammer drill, UNIT-002', exact: true })).toHaveCount(0);
+    await expect(second).toHaveURL(/\/app\/checkout\?search=Hammer$/);
+    await expect(second.getByRole('button', { name: 'Open Hammer drill', exact: true })).toHaveCount(1);
+    await expect(second.getByRole('button', { name: 'Open Laser level', exact: true })).toHaveCount(0);
     expect((await second.request.get(`${fixture.base}/tools`)).status()).toBe(200);
   } finally {
     await context.close();
@@ -331,7 +338,7 @@ test('password recovery revokes a different browser session on its next private 
   const recovery = await browser.newContext({ baseURL: 'http://127.0.0.1:4173' });
   const reset = await recovery.newPage();
   try {
-    await invitedMember(page, worker, fixture.base, 'field_member', 'Recovery operator');
+    await invitedMember(page, worker, fixture.base, 'foreman', 'Recovery operator');
     const email = (await (await worker.request.get('/api/me')).json()).email;
     await worker.goto('/app/checkout');
     // Checkout opens on its filter sheet; close it so the page behind is usable.
@@ -347,13 +354,12 @@ test('password recovery revokes a different browser session on its next private 
     await reset.getByRole('button', { name: 'Update password', exact: true }).click();
     await expect(reset.getByText('Your password has been updated.', { exact: false })).toBeVisible();
     expect((await worker.request.get(`${fixture.base}/jobs`)).status()).toBe(401);
-    if (await worker.getByRole('button', { name: 'Open navigation', exact: true }).count()) {
-      await worker.getByRole('button', { name: 'Open navigation', exact: true }).click();
-      await worker
-        .getByRole('dialog', { name: 'Navigation' })
-        .getByRole('link', { name: 'Activity', exact: true })
-        .click();
-    }
+    // Activity lives in the Menu; opening it is the session's next private read.
+    await worker.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Menu', exact: true }).click();
+    await worker
+      .getByRole('dialog', { name: 'Menu', exact: true })
+      .getByRole('link', { name: 'Activity', exact: true })
+      .click();
     await expect(worker.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible();
     await expect(worker.getByRole('button', { name: /UNIT-001/ })).toHaveCount(0);
     await worker.getByLabel('Email address', { exact: true }).fill(email);

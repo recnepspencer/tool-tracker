@@ -1,6 +1,10 @@
 /// <reference types="vite-plugin-pwa/react" />
 import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useRegisterSW } from 'virtual:pwa-register/react';
+
+/** An open app checks for a new release this often, besides on every load. */
+const UPDATE_CHECK_MS = 60 * 60 * 1000;
 
 interface InstallPrompt extends Event {
   prompt(): Promise<void>;
@@ -11,18 +15,44 @@ export function usePwaState() {
   const [online, setOnline] = useState(navigator.onLine);
   const [install, setInstall] = useState<InstallPrompt | null>(null);
   const [installError, setInstallError] = useState('');
-  const reloadRequested = useRef(false);
-  const [activatedUpdate, setActivatedUpdate] = useState(false);
-  const {
-    needRefresh: [update, setUpdate],
-    updateServiceWorker,
-  } = useRegisterSW({
-    onNeedReload: () => {
-      // Activating a worker is shared; consent to discard a page is per tab.
-      if (reloadRequested.current) window.location.reload();
-      else setActivatedUpdate(true);
+  // The page the tab was showing when a new release took over its service worker.
+  const [updatedOn, setUpdatedOn] = useState<string | null>(null);
+  useRegisterSW({
+    onRegisteredSW: (_url, registration) => {
+      if (registration) setInterval(() => void registration.update(), UPDATE_CHECK_MS);
     },
+    onNeedReload: () => setUpdatedOn(window.location.pathname),
   });
+  // Whether anyone has typed, picked or clicked inside a form on this page; switching apps
+  // to look something up must not cost them what they had filled in.
+  const { pathname } = useLocation();
+  const touched = useRef(false);
+  useEffect(() => {
+    touched.current = false;
+  }, [pathname]);
+  useEffect(() => {
+    const touch = (event: Event) => {
+      if (event.target instanceof Element && event.target.closest('form')) touched.current = true;
+    };
+    const kinds = ['input', 'change', 'click'];
+    for (const kind of kinds) document.addEventListener(kind, touch, true);
+    return () => {
+      for (const kind of kinds) document.removeEventListener(kind, touch, true);
+    };
+  }, []);
+  // Reload into the new release once the page is being left anyway, or while the tab is in
+  // the background with no form in progress.
+  useEffect(() => {
+    if (updatedOn === null) return;
+    const safe = () => pathname !== updatedOn || (document.visibilityState === 'hidden' && !touched.current);
+    if (safe()) {
+      window.location.reload();
+      return;
+    }
+    const hidden = () => safe() && window.location.reload();
+    document.addEventListener('visibilitychange', hidden);
+    return () => document.removeEventListener('visibilitychange', hidden);
+  }, [updatedOn, pathname]);
   // Connection and installation events are external browser state.
   useEffect(() => {
     const connection = () => setOnline(navigator.onLine);
@@ -63,21 +93,8 @@ export function usePwaState() {
     online,
     install,
     installError,
-    update: update || activatedUpdate,
     installApp,
     dismissInstall: () => setInstall(null),
     dismissInstallError: () => setInstallError(''),
-    later: () => {
-      reloadRequested.current = false;
-      setUpdate(false);
-      setActivatedUpdate(false);
-    },
-    updateApp: async () => {
-      if (activatedUpdate) window.location.reload();
-      else {
-        reloadRequested.current = true;
-        await updateServiceWorker(true);
-      }
-    },
   };
 }

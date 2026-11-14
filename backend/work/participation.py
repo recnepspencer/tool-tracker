@@ -18,7 +18,7 @@ def lock_job(company_id, job_id):
 
 
 def join_issue(job):
-    if job.archived_at or job.status not in {"planned", "active"}:
+    if job.archived_at:
         return "This job is not accepting assignments.", "job_not_joinable"
     return None
 
@@ -226,14 +226,11 @@ def assign_member(identity, company_id, job_id, data):
         job=job, membership=subject, ends_at__isnull=True
     ).first()
     if current:
-        if current.responsibility == data.responsibility:
-            return current
-        end_assignment(current, actor, data.reason)
+        return current
     result = JobAssignment.objects.create(
         company_id=company_id,
         job=job,
         membership=subject,
-        responsibility=data.responsibility,
         assigned_by=actor,
         starts_at=timezone.now(),
     )
@@ -265,3 +262,69 @@ def end_member_assignment(identity, company_id, assignment_id, data):
         identity, company_id, "work.assignment.ended", assignment, metadata={"job_id": str(job.pk)}
     )
     return assignment
+
+
+@transaction.atomic
+def set_job_members(identity, company_id, job_id, data):
+    """Make the job's current people exactly `membership_ids`, in one revision and one transaction."""
+    wanted = set(data.membership_ids)
+    seen = set(
+        JobAssignment.objects.filter(
+            company_id=company_id, job_id=job_id, ends_at__isnull=True
+        ).values_list("membership_id", flat=True)
+    )
+    actor = authorize_write(identity, company_id, "jobs.assign", related_members=wanted | seen)
+    job = lock_job(company_id, job_id)
+    current = {
+        assignment.membership_id: assignment
+        for assignment in JobAssignment.objects.filter(job=job, ends_at__isnull=True)
+    }
+    adds = wanted - current.keys()
+    removes = current.keys() - wanted
+    # A retried save that already landed has nothing left to do, so it succeeds on any revision.
+    if adds or removes:
+        expect_revision(job, data.expected_revision)
+    subjects = []
+    if adds:
+        require_joinable(job)
+        subjects = list(
+            CompanyMembership.objects.filter(
+                pk__in=adds, company_id=company_id, access_state="active", ended_at__isnull=True
+            )
+        )
+        if len(subjects) != len(adds):
+            raise not_found("Active membership not found.")
+    for membership_id in sorted(removes, key=str):
+        assignment = current[membership_id]
+        end_assignment(assignment, actor, data.note)
+        record_company_event(
+            identity,
+            company_id,
+            "work.assignment.ended",
+            assignment,
+            metadata={"job_id": str(job.pk), "note": data.note},
+        )
+    for subject in sorted(subjects, key=lambda member: str(member.pk)):
+        assignment = JobAssignment.objects.create(
+            company_id=company_id,
+            job=job,
+            membership=subject,
+            assigned_by=actor,
+            starts_at=timezone.now(),
+        )
+        record_company_event(
+            identity,
+            company_id,
+            "work.assignment.created",
+            assignment,
+            metadata={"job_id": str(job.pk), "note": data.note},
+        )
+    if adds or removes:
+        job.revision += 1
+        job.save(update_fields=["revision"])
+    return {
+        "job": job,
+        "assignments": JobAssignment.objects.filter(job=job, ends_at__isnull=True)
+        .select_related("membership__person", "assigned_by__person", "ended_by__person")
+        .order_by("membership__person__preferred_name", "id"),
+    }

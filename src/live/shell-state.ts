@@ -1,16 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Activity,
   Boxes,
   BriefcaseBusiness,
-  ClipboardCheck,
   ClipboardList,
+  HardHat,
   Library,
   PackageCheck,
-  Settings,
-  ShieldCheck,
-  TriangleAlert,
   Users,
   Warehouse,
   Wrench,
@@ -19,23 +16,16 @@ import {
 import { useAppearance } from './appearance';
 import { errorMessage } from './client';
 import { usePeople } from './data';
-import { useModalFocusTrap } from './experience/use-modal-focus-trap';
-import { useRegistrationPolicy } from './registration-policy';
+import { ROLE_LABELS } from './people-roles';
 import { useCompany, useSession } from './session';
 
 export interface ShellDestination {
   label: string;
   path: string;
   icon: LucideIcon;
+  /** Pages reached from this one, which keep it highlighted. */
+  also?: string[];
 }
-
-const roleLabels: Record<string, string> = {
-  company_admin: 'Company admin',
-  equipment_manager: 'Equipment manager',
-  dispatcher: 'Dispatcher',
-  estimator: 'Estimator',
-  field_member: 'Field crew',
-};
 
 /** The navigation entries for the signed-in membership, mirroring the demo's NavItems. */
 export function useShellDestinations() {
@@ -43,35 +33,38 @@ export function useShellDestinations() {
   const control =
     c.can('tools.manage') || c.can('people.manage') || c.can('jobs.manage') || c.managed_warehouse_ids.length > 0;
   const settings = c.can('company.manage') || c.can('tools.manage_registration_policy') || c.can('jobs.manage_policy');
+  // Related pages share one entry: Damaged & lost and Reconciliation are reached from the Queue,
+  // and role permissions from People. Settings is listed in Menu and the desktop account menu.
   const entries: Array<ShellDestination & { enabled: boolean }> = control
     ? [
-        { label: 'Queue', path: '/app/operations', icon: ClipboardList, enabled: c.can('tools.read') },
+        {
+          label: 'Queue',
+          path: '/app/operations',
+          icon: ClipboardList,
+          enabled: c.can('tools.read'),
+          also: ['/app/flagged', '/app/reconciliations'],
+        },
         { label: 'Inventory', path: '/app/tools', icon: Boxes, enabled: c.can('tools.read') },
-        { label: 'Damaged & lost', path: '/app/flagged', icon: TriangleAlert, enabled: c.can('tools.read') },
-        {
-          label: 'Reconciliation',
-          path: '/app/reconciliations',
-          icon: ClipboardCheck,
-          enabled: c.can('reconciliation.manage'),
-        },
-        { label: 'People', path: '/app/people', icon: Users, enabled: c.can('people.manage') },
-        {
-          label: 'Foremen',
-          path: '/app/directory',
-          icon: BriefcaseBusiness,
-          enabled: c.can('tools.read') && c.can('jobs.read'),
-        },
+        // Managers and admins carry tools too: My tools is what they hold, Checkout what they can
+        // take. Inventory stays the company's record of every tool.
+        { label: 'My tools', path: '/app/mine', icon: Wrench, enabled: c.can('tools.read') },
+        { label: 'Checkout', path: '/app/checkout', icon: PackageCheck, enabled: c.can('tools.read') },
         {
           label: c.can('jobs.manage') ? 'Jobs' : 'My jobs',
           path: '/app/jobs',
           icon: BriefcaseBusiness,
           enabled: c.can('jobs.read'),
         },
+        { label: 'People', path: '/app/people', icon: Users, enabled: c.can('people.manage'), also: ['/app/access'] },
+        {
+          label: 'Foremen',
+          path: '/app/directory',
+          icon: HardHat,
+          enabled: c.can('tools.read') && c.can('jobs.read'),
+        },
         { label: 'Warehouses', path: '/app/warehouses', icon: Warehouse, enabled: c.can('catalog.manage') },
         { label: 'Catalog', path: '/app/catalog', icon: Library, enabled: c.can('catalog.manage') },
-        { label: 'Access', path: '/app/access', icon: ShieldCheck, enabled: c.can('people.manage') },
         { label: 'Activity', path: '/app/activity', icon: Activity, enabled: true },
-        { label: 'Settings', path: '/app/settings', icon: Settings, enabled: settings },
       ]
     : [
         { label: 'My tools', path: '/app/mine', icon: Wrench, enabled: c.can('tools.read') },
@@ -85,7 +78,7 @@ export function useShellDestinations() {
         {
           label: 'Foremen',
           path: '/app/directory',
-          icon: Users,
+          icon: HardHat,
           enabled: c.can('tools.read') && c.can('jobs.read'),
         },
         { label: 'Activity', path: '/app/activity', icon: Activity, enabled: true },
@@ -93,7 +86,9 @@ export function useShellDestinations() {
   return {
     control,
     settings,
-    destinations: entries.filter((entry) => entry.enabled).map(({ label, path, icon }) => ({ label, path, icon })),
+    destinations: entries
+      .filter((entry) => entry.enabled)
+      .map(({ label, path, icon, also }) => ({ label, path, icon, also })),
   };
 }
 
@@ -106,7 +101,7 @@ export function useShellAccount(onWorkspaceChange: () => void) {
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState('');
   const person = people.data?.find((item) => item.id === c.membership_id);
-  const title = person?.title || (person ? roleLabels[person.roles[0] ?? ''] : '') || '';
+  const title = person?.title || (person ? ROLE_LABELS[person.role] : '') || '';
   return {
     name: c.preferred_name,
     title,
@@ -143,18 +138,14 @@ export function useShellAccount(onWorkspaceChange: () => void) {
 }
 
 export function useShellNavigation() {
-  const { canRegister } = useRegistrationPolicy();
   const location = useLocation();
   // Each overlay remembers the path it opened on, so navigating closes it
   // without a synchronizing effect.
   const [openPath, setOpenPath] = useState<string | null>(null);
   const [accountPath, setAccountPath] = useState<string | null>(null);
-  const [sheetPath, setSheetPath] = useState<string | null>(null);
-  const navigationRef = useRef<HTMLElement>(null);
   const menu = openPath === location.pathname;
-  useModalFocusTrap(menu, () => setOpenPath(null), navigationRef);
   const { theme, toggleTheme } = useAppearance();
-  // The open drawer owns the viewport, as in the demo's navigation drawers.
+  // The open menu owns the viewport.
   useEffect(() => {
     if (!menu) return;
     const previousOverflow = document.body.style.overflow;
@@ -168,24 +159,14 @@ export function useShellNavigation() {
     window.scrollTo(0, 0);
   }, [location.pathname]);
   return {
-    canRegister,
     menu,
-    navigationRef,
     setMenu: (open: boolean) => setOpenPath(open ? location.pathname : null),
     /** The desktop account menu in the control-room header. */
     accountOpen: accountPath === location.pathname,
     setAccountOpen: (open: boolean) => setAccountPath(open ? location.pathname : null),
-    /** The bottom account sheet opened from the navigation drawer profile. */
-    accountSheetOpen: sheetPath === location.pathname,
-    openAccountSheet: () => {
-      setOpenPath(null);
-      setSheetPath(location.pathname);
-    },
-    closeAccountSheet: () => setSheetPath(null),
     closeAll: () => {
       setOpenPath(null);
       setAccountPath(null);
-      setSheetPath(null);
     },
     theme,
     toggleTheme,

@@ -2,7 +2,7 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { errorMessage, type Model } from './client';
 import { Callout, cx, ErrorState, LoadingState, OverlayDialog, StatusBadge, ToolPhoto } from './kit';
-import { assetLabel, photoSrc, toolStatus } from './tool-status';
+import { photoSrc, viewerStatus } from './tool-status';
 import { CustodyTimeline, ToolReports } from './tool-history';
 import { ToolFacts, custodianName, custodyCaveat } from './tool-detail-facts';
 import { WorkerActionPanel, WorkerToolActions, WorkerToolNotices } from './tool-actions';
@@ -24,6 +24,7 @@ function WorkerToolSheet({ state }: { state: ToolDetailState }) {
       label="Tool details"
       onClose={close}
       backdropClassName="worker-sheet-backdrop"
+      page
       panelClassName={cx('worker-bottom-sheet worker-detail-sheet', action && 'worker-detail-sheet--action')}
     >
       <span className="worker-sheet-handle" />
@@ -61,7 +62,7 @@ function WorkerToolContent({ state, asset: t }: { state: ToolDetailState; asset:
           <p>
             {t.manufacturer} · {t.model_number}
           </p>
-          <StatusBadge tone={toolStatus(t)}>{assetLabel(t)}</StatusBadge>
+          <ViewerStatusBadge asset={t} membershipId={c.membership_id} />
         </div>
       </div>
       <WorkerToolNotices state={state} asset={t} />
@@ -92,7 +93,7 @@ function ToolDrawer({ state }: { state: ToolDetailState }) {
         closeLabel="Close tool details"
       >
         <header className="inventory-drawer__header">
-          <span>{t?.asset_tag ?? 'Tool details'}</span>
+          <span>{t?.name ?? 'Tool details'}</span>
         </header>
         <div className="inventory-drawer__scroll" data-overlay-scroll>
           {tool.isPending ? (
@@ -107,6 +108,11 @@ function ToolDrawer({ state }: { state: ToolDetailState }) {
       {t && <ToolDrawerDialog state={state} asset={t} permissions={toolPermissions(state, t)} />}
     </>
   );
+}
+
+function ViewerStatusBadge({ asset, membershipId }: { asset: Model<'AssetView'>; membershipId: string }) {
+  const status = viewerStatus(asset, membershipId);
+  return <StatusBadge tone={status.tone}>{status.label}</StatusBadge>;
 }
 
 function DrawerContent({ state, asset: t }: { state: ToolDetailState; asset: Model<'AssetView'> }) {
@@ -125,12 +131,12 @@ function DrawerContent({ state, asset: t }: { state: ToolDetailState; asset: Mod
       <div className="inventory-drawer__identity">
         <h2>{t.name}</h2>
         <p>{[t.manufacturer, t.model_number, t.category_name].filter(Boolean).join(' · ')}</p>
-        <StatusBadge tone={toolStatus(t)}>{assetLabel(t)}</StatusBadge>
+        <ViewerStatusBadge asset={t} membershipId={c.membership_id} />
       </div>
 
       <section className="inventory-drawer__holder" aria-label="Current custody">
         <span>{t.holder_membership_id ? 'Checked out to' : 'Warehouse custody'}</span>
-        <strong>{custodianName(t)}</strong>
+        <strong>{t.holder_membership_id === c.membership_id ? 'You' : custodianName(t)}</strong>
         {caveat && <small>{caveat}</small>}
       </section>
       {t.pending_handoff_id ? (
@@ -153,7 +159,7 @@ function DrawerContent({ state, asset: t }: { state: ToolDetailState; asset: Mod
       {t.lifecycle === 'disposed' && (
         <Callout
           tone="amber"
-          eyebrow="Disposed"
+
           title="Disposal is permanent"
           description="This tool cannot be restored. Its custody and audit history stay on record."
         />
