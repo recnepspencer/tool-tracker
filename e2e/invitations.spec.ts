@@ -28,9 +28,8 @@ test('revoked links recover clearly and a replacement invitation joins the inten
       await dialog.getByLabel('Name', { exact: true }).fill('New teammate');
       await dialog.getByLabel('Email address', { exact: true }).fill(email);
       await dialog.getByRole('button', { name: 'Create invitation', exact: true }).click();
-      const link = dialog.getByRole('link', { name: 'View invitation', exact: true });
-      await expect(link).toBeVisible();
-      const url = await link.getAttribute('href');
+      await expect(dialog.getByText('We emailed the invitation.', { exact: true })).toBeVisible();
+      const url = await emailLink(email, '/invite/');
       await page.keyboard.press('Escape');
       await expect(dialog).toHaveCount(0);
       return url!;

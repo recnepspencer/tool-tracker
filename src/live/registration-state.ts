@@ -51,8 +51,8 @@ export function useRegisterToolState() {
   }, []);
   const choosePhoto = (file: File | undefined) => {
     if (!file) return;
-    if (!PHOTO_TYPES.includes(file.type) || file.size > 8 * 1024 * 1024) {
-      setPhotoError('Choose a JPEG, PNG, or WebP photo under 8 MB.');
+    if (!PHOTO_TYPES.includes(file.type) || file.size > 40 * 1024 * 1024) {
+      setPhotoError('Choose a JPEG, PNG, or WebP photo under 40 MB.');
       return;
     }
     setPhotoError('');
@@ -79,6 +79,24 @@ export function useRegisterToolState() {
       const photo = new FormData();
       photo.set('photo', selectedPhoto.current);
       uploadedPhoto.current = await uploadPhoto(c.company_id, photo, 'registration');
+    }
+    if (!c.can('tools.manage')) {
+      const body = {
+        description: text(form, 'description'),
+        suggested_type_id: text(form, 'model') || null,
+        in_my_possession: form.get('possession') === 'on',
+        location: text(form, 'location'),
+        notes: text(form, 'notes'),
+        photo_id: uploadedPhoto.current,
+      };
+      const fingerprint = JSON.stringify(body);
+      if (submission.current?.fingerprint !== fingerprint) submission.current = { fingerprint, key: requestKey() };
+      await api.POST('/api/companies/{company_id}/equipment-submissions', {
+        params: { path: c.path },
+        body: { ...body, request_key: submission.current.key },
+      });
+      navigate('/app/mine', { replace: true });
+      return;
     }
     const body = {
       tool_model_id: text(form, 'model'),

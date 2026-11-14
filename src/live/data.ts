@@ -1,6 +1,54 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useEffect, useMemo } from 'react';
 import { api, result } from './client';
 import { useCompany } from './session';
+
+// Large pages keep the number of round trips low on high-latency connections.
+const TOOL_PAGE = 500;
+
+/**
+ * Every tool unit visible to this member, or only those they hold. The first
+ * page renders as soon as it arrives; later pages load behind it, so a large
+ * company does not wait for its whole inventory over a slow connection.
+ */
+export function useToolCollection(mine = false, { enabled = true } = {}) {
+  const c = useCompany();
+  const query = useInfiniteQuery({
+    queryKey: [c.company_id, 'asset-collection', mine],
+    enabled,
+    initialPageParam: 0,
+    queryFn: ({ pageParam, signal }) =>
+      api
+        .GET('/api/companies/{company_id}/tools', {
+          params: {
+            path: c.path,
+            query: {
+              offset: pageParam,
+              limit: TOOL_PAGE,
+              ...(mine ? { holder_membership_id: c.membership_id } : {}),
+            },
+          },
+          signal,
+        })
+        .then(result),
+    getNextPageParam: (page) => page.next_offset ?? undefined,
+  });
+  const { hasNextPage, isFetchingNextPage, isError, fetchNextPage } = query;
+  useEffect(() => {
+    if (hasNextPage && !isFetchingNextPage && !isError) void fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, isError, fetchNextPage]);
+  const data = useMemo(() => query.data?.pages.flatMap((page) => page.items), [query.data]);
+  return {
+    data,
+    isPending: query.isPending,
+    isError: query.isError,
+    error: query.error,
+    isFetching: query.isFetching,
+    /** True while later pages are still arriving behind the first. */
+    loadingMore: !!hasNextPage,
+    refetch: query.refetch,
+  };
+}
 
 export async function collect<T>(
   load: (offset: number) => Promise<{ items: T[]; next_offset: number | null }>,

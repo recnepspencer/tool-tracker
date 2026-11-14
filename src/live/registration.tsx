@@ -1,11 +1,11 @@
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
+import { EquipmentTypePicker } from './equipment-type-picker';
 import { AddToolCaptureStep, AddToolHeader } from './add-tool-steps';
 import { AssetDetailsFields } from './asset-details';
 import { errorMessage } from './client';
 import { ChevronDownIcon, EmptyState, ErrorState, FormDraftContext, LoadingState, SelectField } from './kit';
 import { useRegisterToolState } from './registration-state';
-import { Field } from './ui';
+import { Field, TextArea } from './ui';
 
 /**
  * The demo's `AddToolWizard`: a full-screen two-step track (photo, then
@@ -39,7 +39,7 @@ export function RegisterTool() {
             ) : policy.error ? (
               <ErrorState message={errorMessage(policy.error)} onRetry={() => void policy.refetch()} />
             ) : (
-              <EmptyState label="Employee tool registration is disabled by your company. Contact your equipment manager." />
+              <EmptyState label="Field inventory collection is closed. Tell a manager if equipment needs to be added." />
             )}
           </div>
         ) : (
@@ -88,73 +88,88 @@ export function RegisterTool() {
                     </div>
                   )}
                   {wizard.referenceError && <p className="worker-add-error">{wizard.referenceError}</p>}
-                  {wizard.noModels && (
+                  {c.can('tools.manage') && wizard.noModels && (
                     <p className="worker-add-error">
-                      Your equipment manager needs to add a tool model before you can register a tool.
+                      Your equipment manager needs to add a tool type before you can register a tool.
                     </p>
                   )}
-                  {wizard.noRegistrableModels && (
+                  {c.can('tools.manage') && wizard.noRegistrableModels && (
                     <p className="worker-add-error">
-                      No models are currently eligible for registration. Ask your equipment manager to restore a
-                      category or model.
+                      No tool types are currently eligible for registration. Ask your equipment manager to restore a
+                      category or tool type.
                     </p>
                   )}
-                  <div className="worker-details-pickers">
-                    <SelectField
-                      className="worker-select-field"
-                      label="Tool model"
-                      hint="required"
-                      name="model"
-                      options={wizard.modelOptions}
-                      placeholder="Select a tool model"
-                      required
-                      searchable
-                      presentation="sheet"
-                    />
-                    <SelectField
-                      className="worker-select-field"
-                      label="Home warehouse"
-                      hint="required"
-                      name="warehouse"
-                      value={wizard.warehouse}
-                      onChange={wizard.setWarehouse}
-                      options={wizard.warehouseOptions}
-                      placeholder="Select a warehouse"
-                      required
-                      searchable={wizard.warehouseOptions.length > 6}
-                      presentation="sheet"
-                    />
-                  </div>
-                  <div className="worker-form-stack">
-                    <Field
-                      className="worker-add-field"
-                      label="Asset tag"
-                      hint="required"
-                      name="tag"
-                      required
-                      maxLength={64}
-                      placeholder="The tag on this unit"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    className={`worker-optional-toggle${wizard.optionalOpen ? ' worker-optional-toggle--open' : ''}`}
-                    aria-expanded={wizard.optionalOpen}
-                    onClick={wizard.toggleOptional}
-                  >
-                    <span>Serial, price, notes</span>
-                    <ChevronDownIcon className="worker-optional-chevron" />
-                  </button>
-                  {/* Kept mounted while collapsed so typed values still submit. */}
-                  <div hidden={!wizard.optionalOpen}>
-                    <div className="worker-form-stack worker-optional-fields">
-                      <AssetDetailsFields />
+                  {c.can('tools.manage') ? (
+                    <>
+                      <div className="worker-details-pickers">
+                        <EquipmentTypePicker />
+                        <SelectField
+                          className="worker-select-field"
+                          label="Home warehouse"
+                          hint="required"
+                          name="warehouse"
+                          value={wizard.warehouse}
+                          onChange={wizard.setWarehouse}
+                          options={wizard.warehouseOptions}
+                          placeholder="Select a warehouse"
+                          required
+                          searchable={wizard.warehouseOptions.length > 6}
+                          presentation="sheet"
+                        />
+                      </div>
+                      <div className="worker-form-stack">
+                        <Field
+                          className="worker-add-field"
+                          label="Asset tag"
+                          hint="required"
+                          name="tag"
+                          required
+                          maxLength={64}
+                          placeholder="The tag on this unit"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        className={`worker-optional-toggle${wizard.optionalOpen ? ' worker-optional-toggle--open' : ''}`}
+                        aria-expanded={wizard.optionalOpen}
+                        onClick={wizard.toggleOptional}
+                      >
+                        <span>Serial, price, notes</span>
+                        <ChevronDownIcon className="worker-optional-chevron" />
+                      </button>
+                      {/* Kept mounted while collapsed so typed values still submit. */}
+                      <div hidden={!wizard.optionalOpen}>
+                        <div className="worker-form-stack worker-optional-fields">
+                          <AssetDetailsFields />
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="worker-form-stack">
+                      <p>Tell us about equipment already in the field. A manager will review it before registration.</p>
+                      <Field
+                        label="What is it?"
+                        name="description"
+                        required
+                        maxLength={500}
+                        placeholder="For example: a laptop, ladder, or pickup truck"
+                      />
+                      <SelectField
+                        label="Suggested tool type"
+                        name="model"
+                        options={[{ value: '', label: 'Not sure / not listed' }, ...wizard.modelOptions]}
+                      />
+                      <label>
+                        <input type="checkbox" name="possession" defaultChecked /> I have this equipment
+                      </label>
+                      <Field
+                        label="Location or job"
+                        name="location"
+                        maxLength={500}
+                        hint="Required if it is not with you"
+                      />
+                      <TextArea label="Notes" name="notes" maxLength={4000} />
                     </div>
-                  </div>
-                  {c.can('catalog.manage') && (
-                    <Link className="text-button" to="/app/catalog">
-                      Manage models and warehouses
-                    </Link>
                   )}
                   {command.error && (
                     <p className="worker-add-error" role="alert">
@@ -165,12 +180,14 @@ export function RegisterTool() {
                 </div>
                 <div className="worker-add-footer">
                   <button type="submit" className="worker-primary-button" disabled={command.busy}>
-                    {command.busy ? 'Adding…' : 'Add tool'}
+                    {command.busy ? 'Saving…' : c.can('tools.manage') ? 'Add tool' : 'Submit for review'}
                   </button>
                   <p>
-                    {wizard.warehouseName
-                      ? `Starts in ${wizard.warehouseName} stock`
-                      : 'Starts in the selected warehouse’s stock'}
+                    {!c.can('tools.manage')
+                      ? 'Your submission will appear under Reported equipment.'
+                      : wizard.warehouseName
+                        ? `Starts in ${wizard.warehouseName} stock`
+                        : 'Starts in the selected warehouse’s stock'}
                   </p>
                 </div>
               </form>

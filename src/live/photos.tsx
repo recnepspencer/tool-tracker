@@ -5,10 +5,51 @@ import { cx } from './kit';
 import { Field } from './ui';
 export const photoTypes = ['image/jpeg', 'image/png', 'image/webp'];
 
-/** The server accepts JPEG, PNG and WebP photos up to 8 MB. */
+const SERVER_LIMIT = 8 * 1024 * 1024;
+// Camera originals can exceed the server limit; the browser shrinks them first.
+const SOURCE_LIMIT = 40 * 1024 * 1024;
+const MAX_EDGE = 1600;
+const KEEP_BYTES = 600 * 1024;
+
+/** Accept camera originals up to 40 MB; uploads are downscaled to fit the server's 8 MB limit. */
 export function checkPhoto(file: File) {
   if (file.type && !photoTypes.includes(file.type)) throw new Error('Choose a JPEG, PNG or WebP photo.');
-  if (file.size > 8 * 1024 * 1024) throw new Error('Choose a photo under 8 MB.');
+  if (file.size > SOURCE_LIMIT) throw new Error('Choose a photo under 40 MB.');
+}
+
+/**
+ * Field crews upload over weak signal, and phone cameras produce several
+ * megabytes per photo. Downscale to 1600px JPEG before upload, which also
+ * applies EXIF rotation and drops location metadata. Small photos, and any
+ * browser that cannot decode the file, keep the original bytes.
+ */
+export async function preparePhoto(file: File): Promise<File> {
+  if (typeof createImageBitmap !== 'function') return file;
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    try {
+      const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+      if (scale === 1 && file.size <= KEEP_BYTES) return file;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      const context = canvas.getContext('2d');
+      if (!context) return file;
+      context.fillStyle = '#fff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.8));
+      if (!blob || blob.size >= file.size) return file;
+      return new File([blob], `${file.name.replace(/\.[^.]+$/, '') || 'photo'}.jpg`, {
+        type: 'image/jpeg',
+        lastModified: file.lastModified,
+      });
+    } finally {
+      bitmap.close();
+    }
+  } catch {
+    return file;
+  }
 }
 
 export async function uploadPhoto(
@@ -16,9 +57,11 @@ export async function uploadPhoto(
   f: FormData,
   purpose: 'registration' | 'incident' | 'handoff' | 'service' | 'reconciliation',
 ) {
-  const file = f.get('photo');
-  if (!(file instanceof File) || !file.size) return null;
-  checkPhoto(file);
+  const original = f.get('photo');
+  if (!(original instanceof File) || !original.size) return null;
+  checkPhoto(original);
+  const file = await preparePhoto(original);
+  if (file.size > SERVER_LIMIT) throw new Error('This photo is too large to upload. Try a smaller photo.');
   return result(
     await api.POST('/api/companies/{company_id}/files', {
       params: { path: { company_id } },
@@ -36,7 +79,7 @@ export async function uploadPhoto(
 export function PhotoField() {
   return (
     <Field
-      label="Photo (optional, up to 8 MB)"
+      label="Photo (optional)"
       name="photo"
       type="file"
       accept="image/jpeg,image/png,image/webp"

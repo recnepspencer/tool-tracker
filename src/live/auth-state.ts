@@ -182,6 +182,25 @@ export function useInvitationState() {
     }
   }
 
+  async function register(form: FormData) {
+    if (!data) return;
+    if (form.get('password') !== form.get('confirm')) throw new Error('Passwords do not match.');
+    try {
+      const joined = result(
+        await api.POST('/api/auth/invitation-signup', {
+          body: { token, name: String(form.get('name') ?? '').trim(), password: String(form.get('password')) },
+        }),
+      );
+      const membership = joined.memberships[0];
+      if (!membership) throw new Error('Your access could not be loaded. Please try again.');
+      setAccepted({ name: data.company_name, membershipId: membership.membership_id });
+      await refresh();
+    } catch (error) {
+      if (error instanceof ApiError && error.code === 'invalid_invitation') await invitation.refetch();
+      throw error;
+    }
+  }
+
   return {
     session,
     loading,
@@ -191,6 +210,7 @@ export function useInvitationState() {
     navigate,
     accepted,
     accept,
+    register,
     invitation,
     next,
     unavailable,

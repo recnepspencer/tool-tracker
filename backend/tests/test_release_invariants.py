@@ -11,7 +11,7 @@ from django.db import close_old_connections, connection, transaction
 from django.test import Client
 from PIL import Image
 
-from equipment.models import CustodyHandoff, CustodyPeriod, ToolAsset, ToolRegistrationPolicy
+from equipment.models import CustodyHandoff, CustodyPeriod, ToolRegistrationPolicy
 from tests.conftest import login_client
 from tests.factories import member_in
 from tests.http_contract import assert_response, contract
@@ -34,7 +34,7 @@ def test_combined_directory_requires_both_work_and_equipment_access(world, passw
 
 
 @pytest.mark.django_db(transaction=True)
-def test_registration_waiting_on_policy_observes_disable(world, api_client):
+def test_collection_waiting_on_policy_observes_disable(world, api_client):
     policy = ToolRegistrationPolicy.objects.create(
         company=world.company, employee_tool_creation_enabled=True
     )
@@ -49,12 +49,10 @@ def test_registration_waiting_on_policy_observes_disable(world, api_client):
                 pids.append(cursor.fetchone()[0])
             ready.set()
             return copy_client(api_client).post(
-                f"/api/companies/{world.company.pk}/tools",
+                f"/api/companies/{world.company.pk}/equipment-submissions",
                 {
                     "request_key": str(uuid4()),
-                    "asset_tag": "RACING-REGISTRATION",
-                    "tool_model_id": str(world.model.pk),
-                    "warehouse_id": str(world.warehouse.pk),
+                    "description": "RACING-COLLECTION",
                 },
                 content_type="application/json",
             )
@@ -78,7 +76,9 @@ def test_registration_waiting_on_policy_observes_disable(world, api_client):
             policy.save()
         response = future.result(timeout=10)
     assert response.status_code == 403, response.content
-    assert not ToolAsset.objects.filter(asset_tag="RACING-REGISTRATION").exists()
+    from equipment.models import EquipmentSubmission
+
+    assert not EquipmentSubmission.objects.filter(description="RACING-COLLECTION").exists()
 
 
 @pytest.mark.django_db(transaction=True)

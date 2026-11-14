@@ -6,6 +6,7 @@ from .evidence import (
     ReconciliationAttachment,
     ServiceEventAttachment,
 )
+from .intake import EquipmentSubmission
 from .operations import (
     AssetLifecycleEvent,
     AssetServiceEvent,
@@ -17,6 +18,7 @@ from .operations import (
 from .requests import ToolRequest
 
 __all__ = [
+    "EquipmentSubmission",
     "ToolAsset",
     "ToolCategory",
     "ToolModel",

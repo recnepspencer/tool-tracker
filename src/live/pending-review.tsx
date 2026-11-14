@@ -24,7 +24,7 @@ export function PendingHandoffReviewSheet({ item, onClose }: { item: PendingItem
   const decision = usePendingDecision(item, onClose);
   const incoming = item.variant === 'incoming';
   const DirectionIcon = incoming ? ArrowDownToLine : ArrowUpFromLine;
-  const image = photoSrc(c.company_id, item.asset?.registration_photo_id);
+  const image = photoSrc(c.company_id, item.asset?.registration_photo_id, 'display');
   const voidOnly = item.actions.length === 1 && item.actions[0] === 'void';
   return (
     <OverlayDialog

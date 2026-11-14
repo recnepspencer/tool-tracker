@@ -12,7 +12,7 @@ async function client(fetch: ReturnType<typeof vi.fn>) {
 const response = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-it('gets fresh CSRF authority for each mutation and keeps credentials in cookies', async () => {
+it('gets fresh CSRF authority after account changes and keeps credentials in cookies', async () => {
   const fetch = vi
     .fn()
     .mockResolvedValueOnce(response({ csrf_token: 'first' }))
@@ -137,4 +137,36 @@ it('notifies the session boundary on expired reads, without treating bad passwor
   ).rejects.toThrow('Invalid password');
   expect(expired).toHaveBeenCalledOnce();
   window.removeEventListener('session-expired', expired);
+});
+
+it('reuses one CSRF token across company writes and refreshes it once when rejected', async () => {
+  const rejected = new Response('<h1>CSRF verification failed</h1>', {
+    status: 403,
+    headers: { 'Content-Type': 'text/html' },
+  });
+  const fetch = vi
+    .fn()
+    .mockResolvedValueOnce(response({ csrf_token: 'one' }))
+    .mockResolvedValueOnce(response({ message: 'ok' }))
+    .mockResolvedValueOnce(response({ message: 'ok' }))
+    .mockResolvedValueOnce(rejected)
+    .mockResolvedValueOnce(response({ csrf_token: 'two' }))
+    .mockResolvedValueOnce(response({ message: 'ok' }));
+  const { api } = await client(fetch);
+  const params = { path: { company_id: 'company', invitation_id: 'invitation' } };
+  const revoke = () => api.POST('/api/companies/{company_id}/invitations/{invitation_id}/revoke', { params });
+  await revoke();
+  await revoke();
+  await revoke();
+  const urls = fetch.mock.calls.map(([input]) => (input instanceof Request ? input.url : String(input)));
+  expect(urls.filter((url) => url.endsWith('/api/auth/csrf'))).toHaveLength(2);
+  expect((fetch.mock.calls[2][0] as Request).headers.get('X-CSRFToken')).toBe('one');
+  expect((fetch.mock.calls[5][0] as Request).headers.get('X-CSRFToken')).toBe('two');
+});
+
+it('revalidates reads with the browser cache instead of bypassing it', async () => {
+  const fetch = vi.fn().mockResolvedValueOnce(response({ items: [], next_offset: null }));
+  const { api } = await client(fetch);
+  await api.GET('/api/companies/{company_id}/people', { params: { path: { company_id: 'company' } } });
+  expect((fetch.mock.calls[0][0] as Request).cache).toBe('no-cache');
 });

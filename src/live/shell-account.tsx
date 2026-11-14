@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { KeyRound, LogOut, RefreshCw, Settings, X } from 'lucide-react';
+import { LogOut, RefreshCw, Settings, X } from 'lucide-react';
+import { AccountPassword } from './account-password';
 import { Avatar, Button, SelectField } from './kit';
 import { initials } from './format';
 import { useModalFocusTrap } from './experience/use-modal-focus-trap';
@@ -89,10 +90,7 @@ export function AccountMenu({
                 <span>Settings</span>
               </Link>
             ) : null}
-            <Link className="account-sheet-action" to="/forgot-password" onClick={close}>
-              <KeyRound aria-hidden="true" />
-              <span>Change password</span>
-            </Link>
+            <AccountPassword className="account-sheet-action" />
             <Button
               className="account-sheet-sign-out"
               variant="ghost"
@@ -195,10 +193,7 @@ export function AccountSheet({
             <span>Settings</span>
           </Link>
         ) : null}
-        <Link className="worker-sheet-secondary-button worker-account-settings-link" to="/forgot-password">
-          <KeyRound aria-hidden="true" />
-          <span>Change password</span>
-        </Link>
+        <AccountPassword className="worker-sheet-secondary-button worker-account-settings-link" />
         <button
           type="button"
           className="worker-sheet-secondary-button"

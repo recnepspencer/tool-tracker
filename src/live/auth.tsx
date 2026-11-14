@@ -72,8 +72,9 @@ export function Signup() {
   const state = useSignupState();
   const { session, loading, next, path } = state;
   if (!loading && session) return <Navigate to={next} replace />;
+  if (path === 'invited') return <Navigate to={next} replace />;
   if (path === 'team') return <FindInvitation {...state} />;
-  if (path === 'invited' || path === 'company') return <SignupForm {...state} />;
+  if (path === 'company') return <SignupForm {...state} />;
   const signIn = (
     <span>
       Already have an account? <Link to={`/login?next=${encodeURIComponent(next)}`}>Sign in</Link>
@@ -548,6 +549,7 @@ export function Invitation() {
     navigate,
     accepted,
     accept,
+    register,
     invitation,
     next,
     unavailable,
@@ -627,9 +629,26 @@ export function Invitation() {
               <span>{data.owner ? 'Owner · Company admin' : human(data.role)}</span>
             </div>
             {!session ? (
-              <Link className={primaryLink} to={`/signup?next=${next}`}>
-                Create an account
-              </Link>
+              <AccountForm label="Create account and join" pendingLabel="Joining workspace…" submit={register}>
+                <Field
+                  label="Your name"
+                  name="name"
+                  autoComplete="name"
+                  required
+                  maxLength={120}
+                  defaultValue={data.preferred_name}
+                />
+                <Field
+                  label="Work email"
+                  name="email"
+                  type="email"
+                  autoComplete="username"
+                  value={data.email}
+                  readOnly
+                />
+                <p className="auth-help">Your invitation verifies this email. Set a password to join your team.</p>
+                <PasswordFields />
+              </AccountForm>
             ) : session.email.toLowerCase() !== data.email.toLowerCase() ? (
               <>
                 <div className="auth-notice" role="status">

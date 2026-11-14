@@ -1,4 +1,5 @@
 import { Link, Outlet } from 'react-router-dom';
+import { EquipmentReports } from './equipment-reports';
 import { ToolCatalogCard } from './checkout-card';
 import { CatalogFilters } from './checkout-filters';
 import { useCheckout, useMyTools } from './field-state';
@@ -29,6 +30,7 @@ export function MyToolsPage() {
         <PendingGroup title="Needs your response" items={pending.needsResponse} onReview={pending.openReview} />
         <PendingGroup title="Waiting on someone else" items={pending.waiting} onReview={pending.openReview} />
       </section>
+      <EquipmentReports />
       <section className="worker-possession-section">
         <div className="worker-section-heading">
           <div>

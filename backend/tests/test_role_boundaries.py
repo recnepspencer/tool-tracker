@@ -93,12 +93,11 @@ def test_public_read_surfaces_and_write_boundaries(world, password_hash, role):
             "warehouse_id": str(world.warehouse.pk),
             "asset_tag": "REGISTERED",
         },
-        equipment,
+        catalog,
         status=201,
     )
     assert (
-        ToolAsset.objects.filter(company=world.company, asset_tag="REGISTERED").exists()
-        == equipment
+        ToolAsset.objects.filter(company=world.company, asset_tag="REGISTERED").exists() == catalog
     )
     command(
         f"/tools/{world.assets[0].pk}/requests",

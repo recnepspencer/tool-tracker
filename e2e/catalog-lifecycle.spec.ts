@@ -10,13 +10,13 @@ for (const role of ['company_admin', 'equipment_manager'])
       if (actor !== page) await invitedMember(page, actor, fixture.base, role, 'Equipment reviewer');
       const before = (await (await page.request.get(`${fixture.base}/tools`)).json()).items;
       await actor.goto('/app/catalog');
-      const modelStatus = actor.getByRole('tablist', { name: 'Model status', exact: true });
-      const modelDialog = actor.getByRole('dialog', { name: 'Edit model', exact: true });
+      const modelStatus = actor.getByRole('tablist', { name: 'Tool type status', exact: true });
+      const modelDialog = actor.getByRole('dialog', { name: 'Edit tool type', exact: true });
       await expect(actor.getByRole('button', { name: 'Edit Hammer drill', exact: true })).toHaveCount(1);
       await actor.getByRole('button', { name: 'Edit Hammer drill', exact: true }).click();
       await modelDialog.getByLabel('Tool name', { exact: true }).fill('Combi drill');
       await modelDialog.getByLabel('Model number').fill('C100');
-      await modelDialog.getByRole('button', { name: 'Save model', exact: true }).click();
+      await modelDialog.getByRole('button', { name: 'Save tool type', exact: true }).click();
       await expect(modelDialog).toHaveCount(0);
       await expect(actor.getByRole('button', { name: 'Edit Combi drill', exact: true })).toBeVisible();
       const after = (await (await page.request.get(`${fixture.base}/tools`)).json()).items;
@@ -41,7 +41,7 @@ for (const role of ['company_admin', 'equipment_manager'])
       );
       expect(after.map((asset: { name: string }) => asset.name)).toEqual(['Combi drill', 'Combi drill']);
       await actor.getByRole('button', { name: 'Edit Combi drill', exact: true }).click();
-      await modelDialog.getByRole('button', { name: 'Archive model', exact: true }).click();
+      await modelDialog.getByRole('button', { name: 'Archive tool type', exact: true }).click();
       await expect(modelDialog).toHaveCount(0);
       await expect(actor.getByRole('button', { name: 'Edit Combi drill', exact: true })).toHaveCount(0);
       await modelStatus.getByRole('tab', { name: 'Archived', exact: true }).click();
@@ -55,7 +55,7 @@ for (const role of ['company_admin', 'equipment_manager'])
       await expect(modelDialog.locator('input.field-select-proxy[name="category"]')).toHaveValue(
         fixture.asset.category_id,
       );
-      await modelDialog.getByRole('button', { name: 'Restore model', exact: true }).click();
+      await modelDialog.getByRole('button', { name: 'Restore tool type', exact: true }).click();
       await expect(modelDialog).toHaveCount(0);
       await expect(actor.getByRole('button', { name: 'Edit Combi drill', exact: true })).toHaveCount(0);
       await modelStatus.getByRole('tab', { name: 'Active', exact: true }).click();
@@ -74,16 +74,16 @@ for (const role of ['company_admin', 'equipment_manager'])
       await actor.goto('/app/tools/new');
       await actor.getByRole('button', { name: 'Continue without a photo' }).click();
       // Models in an archived category are not offered for registration.
-      await actor.getByRole('combobox', { name: 'Tool model', exact: true }).click();
-      await expect(actor.getByRole('listbox', { name: 'Tool model', exact: true }).getByRole('option')).toHaveCount(0);
+      await actor.getByRole('combobox', { name: 'Tool type', exact: true }).click();
+      await expect(actor.getByRole('listbox', { name: 'Tool type', exact: true }).getByRole('option')).toHaveCount(0);
       await actor.keyboard.press('Escape');
-      await expect(actor.getByText(/No models are currently eligible/)).toBeVisible();
+      await expect(actor.getByText(/No tool types are currently eligible/)).toBeVisible();
       await actor.goto('/app/catalog?categories=archived');
       await categories.getByRole('button', { name: 'Restore Historical drills', exact: true }).click();
       await expect(categories.getByText('Historical drills', { exact: true })).toHaveCount(0);
       await actor.goto('/app/tools/new');
       await actor.getByRole('button', { name: 'Continue without a photo' }).click();
-      await chooseOption(actor, 'Tool model', fixture.asset.tool_model_id);
+      await chooseOption(actor, 'Tool type', fixture.asset.tool_model_id);
       await chooseOption(actor, 'Home warehouse', fixture.warehouse.id);
       await actor.getByLabel('Asset tag', { exact: true }).fill('CATALOG-003');
       await actor.getByRole('button', { name: 'Add tool', exact: true }).click();

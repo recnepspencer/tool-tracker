@@ -12,7 +12,7 @@ export function EvidenceThumbnails({ companyId, ids, label }: { companyId: strin
   return (
     <div className="tool-detail-evidence">
       {ids.map((id, index) => (
-        <a key={id} href={photoSrc(companyId, id) ?? undefined} target="_blank" rel="noreferrer">
+        <a key={id} href={photoSrc(companyId, id, 'original') ?? undefined} target="_blank" rel="noreferrer">
           <ToolPhoto src={photoSrc(companyId, id)} alt={`${label} photo ${index + 1}`} size="small" />
         </a>
       ))}

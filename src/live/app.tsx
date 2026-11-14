@@ -1,14 +1,21 @@
-import { lazy } from 'react';
+import { lazy, Suspense } from 'react';
 import { Link, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { AppProviders } from './providers';
 import { Shell } from './shell';
 
-import { CompanySetup, Invitation, Login, Recovery, ResetPassword, Signup, VerifyEmail } from './auth';
 import { PwaStatus } from './pwa';
 import { useCompany, useSession } from './session';
 import { AuthLayout } from './auth-ui';
 import { Button, ErrorState, LoadingState } from './kit';
 
+// Account screens load on demand: a signed-in crew member opening the app never needs them.
+const Login = lazy(() => import('./auth').then((m) => ({ default: m.Login })));
+const Signup = lazy(() => import('./auth').then((m) => ({ default: m.Signup })));
+const VerifyEmail = lazy(() => import('./auth').then((m) => ({ default: m.VerifyEmail })));
+const Recovery = lazy(() => import('./auth').then((m) => ({ default: m.Recovery })));
+const ResetPassword = lazy(() => import('./auth').then((m) => ({ default: m.ResetPassword })));
+const Invitation = lazy(() => import('./auth').then((m) => ({ default: m.Invitation })));
+const CompanySetup = lazy(() => import('./auth').then((m) => ({ default: m.CompanySetup })));
 const ToolSurface = lazy(() => import('./field').then((m) => ({ default: m.ToolSurface })));
 const ToolSheet = lazy(() => import('./field').then((m) => ({ default: m.ToolSheet })));
 const WarehousesPage = lazy(() => import('./workspace-pages').then((m) => ({ default: m.WarehousesPage })));
@@ -27,7 +34,8 @@ function RequireAccount() {
   const { session, member, loading, error, refresh } = useSession();
   const location = useLocation();
   if (loading) return <LoadingState label="Opening your workspace…" />;
-  if (error)
+  // A saved session keeps the workspace open while the connection is down.
+  if (error && !session)
     return (
       <AuthLayout
         eyebrow="Connection"
@@ -76,71 +84,73 @@ export function App() {
         Skip to content
       </a>
       <PwaStatus />
-      <Routes>
-        <Route path="/" element={<Navigate to="/app" replace />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="/forgot-password" element={<Recovery />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/invite/:token" element={<Invitation />} />
-        <Route path="/company-setup" element={<CompanySetup />} />
-        <Route element={<RequireAccount />}>
-          <Route path="/app" element={<Shell />}>
-            <Route index element={<Home />} />
-            <Route element={<Permit capabilities={['tools.read']} />}>
-              <Route path="tools" element={<ToolSurface />}>
-                <Route path="new" element={<RegisterTool />} />
-                <Route path=":assetId" element={<ToolSheet />} />
+      <Suspense fallback={<LoadingState />}>
+        <Routes>
+          <Route path="/" element={<Navigate to="/app" replace />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/forgot-password" element={<Recovery />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/invite/:token" element={<Invitation />} />
+          <Route path="/company-setup" element={<CompanySetup />} />
+          <Route element={<RequireAccount />}>
+            <Route path="/app" element={<Shell />}>
+              <Route index element={<Home />} />
+              <Route element={<Permit capabilities={['tools.read']} />}>
+                <Route path="tools" element={<ToolSurface />}>
+                  <Route path="new" element={<RegisterTool />} />
+                  <Route path=":assetId" element={<ToolSheet />} />
+                </Route>
+                <Route path="flagged" element={<ToolSurface field="flagged" />}>
+                  <Route path=":assetId" element={<ToolSheet />} />
+                </Route>
+                <Route path="mine" element={<ToolSurface field="mine" />}>
+                  <Route path="new" element={<RegisterTool />} />
+                  <Route path=":assetId" element={<ToolSheet />} />
+                </Route>
+                <Route path="checkout" element={<ToolSurface field="checkout" />}>
+                  <Route path=":assetId" element={<ToolSheet />} />
+                </Route>
+                <Route path="operations" element={<OperationsPage />} />
               </Route>
-              <Route path="flagged" element={<ToolSurface field="flagged" />}>
-                <Route path=":assetId" element={<ToolSheet />} />
+              <Route element={<Permit capabilities={['jobs.read']} />}>
+                <Route path="jobs" element={<JobsPage />} />
               </Route>
-              <Route path="mine" element={<ToolSurface field="mine" />}>
-                <Route path="new" element={<RegisterTool />} />
-                <Route path=":assetId" element={<ToolSheet />} />
+              <Route element={<Permit capabilities={['tools.read', 'jobs.read']} />}>
+                <Route path="directory" element={<DirectoryPage />} />
               </Route>
-              <Route path="checkout" element={<ToolSurface field="checkout" />}>
-                <Route path=":assetId" element={<ToolSheet />} />
+              <Route element={<Permit capabilities={['people.manage']} />}>
+                <Route path="people" element={<PeoplePage />} />
+                <Route path="access" element={<AccessPage />} />
               </Route>
-              <Route path="operations" element={<OperationsPage />} />
+              <Route element={<Permit capabilities={['catalog.manage']} />}>
+                <Route path="catalog" element={<CatalogPage />} />
+                <Route path="warehouses" element={<WarehousesPage />} />
+              </Route>
+              <Route element={<Permit capabilities={['reconciliation.manage']} />}>
+                <Route path="reconciliations" element={<ReconciliationsPage />} />
+              </Route>
+              <Route path="settings" element={<SettingsPage />} />
+              <Route path="activity" element={<ActivityPage />} />
             </Route>
-            <Route element={<Permit capabilities={['jobs.read']} />}>
-              <Route path="jobs" element={<JobsPage />} />
-            </Route>
-            <Route element={<Permit capabilities={['tools.read', 'jobs.read']} />}>
-              <Route path="directory" element={<DirectoryPage />} />
-            </Route>
-            <Route element={<Permit capabilities={['people.manage']} />}>
-              <Route path="people" element={<PeoplePage />} />
-              <Route path="access" element={<AccessPage />} />
-            </Route>
-            <Route element={<Permit capabilities={['catalog.manage']} />}>
-              <Route path="catalog" element={<CatalogPage />} />
-              <Route path="warehouses" element={<WarehousesPage />} />
-            </Route>
-            <Route element={<Permit capabilities={['reconciliation.manage']} />}>
-              <Route path="reconciliations" element={<ReconciliationsPage />} />
-            </Route>
-            <Route path="settings" element={<SettingsPage />} />
-            <Route path="activity" element={<ActivityPage />} />
           </Route>
-        </Route>
-        <Route
-          path="*"
-          element={
-            <AuthLayout
-              eyebrow="Not found"
-              title="Page not found"
-              description="This address does not match a page in Tool Tracker."
-            >
-              <Link className="button button--primary button--full" to="/app">
-                Return to your workspace
-              </Link>
-            </AuthLayout>
-          }
-        />
-      </Routes>
+          <Route
+            path="*"
+            element={
+              <AuthLayout
+                eyebrow="Not found"
+                title="Page not found"
+                description="This address does not match a page in Tool Tracker."
+              >
+                <Link className="button button--primary button--full" to="/app">
+                  Return to your workspace
+                </Link>
+              </AuthLayout>
+            }
+          />
+        </Routes>
+      </Suspense>
     </AppProviders>
   );
 }

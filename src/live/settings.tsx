@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom';
+import { AccountPassword } from './account-password';
+import { SettingsCard } from './settings-command';
 import { CategoryManager } from './category-manager';
 import { JobsPage } from './jobs';
 import { ErrorState, LoadingState, PageHeading } from './kit';
@@ -20,6 +22,9 @@ export function SettingsPage() {
         description="Manage company details, jobs, tool categories, and team rules."
       />
       <div className="settings-grid">
+        <SettingsCard eyebrow="Account security">
+          <AccountPassword className="button button--secondary" />
+        </SettingsCard>
         <CompanyProfile state={state} />
         {c.can('jobs.manage') && <JobsPage embedded />}
         {c.can('catalog.manage') && (
@@ -29,7 +34,7 @@ export function SettingsPage() {
             onArchivedChange={state.setCategoryArchived}
             footer={
               <Link className="text-link" to="/app/catalog">
-                Manage tool models
+                Manage tool types
               </Link>
             }
           />

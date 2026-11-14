@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { api, result } from './client';
-import { Button, OverlayDialog, TextField } from './kit';
+import { Button, OverlayDialog } from './kit';
 import { ROLES, ROLE_LABELS, type RoleCode } from './people-roles';
 import { useCompany } from './session';
 import { CommandForm } from './settings-command';
@@ -9,13 +8,10 @@ import { Field, Select, text } from './ui';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/** The demo's InvitePersonDialog, with its share-the-link success view. */
+/** Invitations are delivered to the named recipient by email. */
 export function InvitePersonDialog({ onClose }: { onClose(): void }) {
   const c = useCompany();
-  const [created, setCreated] = useState<{ name: string; token: string } | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [copyError, setCopyError] = useState('');
-  const link = created ? `${window.location.origin}/invite/${created.token}` : '';
+  const [created, setCreated] = useState<{ name: string } | null>(null);
   return (
     <OverlayDialog label="Invite a person" onClose={onClose} panelClassName="admin-dialog" showCloseButton>
       <div className="dialog-heading">
@@ -25,22 +21,7 @@ export function InvitePersonDialog({ onClose }: { onClose(): void }) {
       {created ? (
         <div className="admin-form">
           <h3>Invitation ready for {created.name}</h3>
-          <p className="jobs-muted">We emailed the invitation. You can also share the link so they can join.</p>
-          <TextField label="Invitation link" value={link} onChange={() => undefined} readOnly />
-          <Button
-            onClick={() =>
-              void navigator.clipboard
-                .writeText(link)
-                .then(() => setCopied(true))
-                .catch(() => setCopyError('Select and copy the invitation link above.'))
-            }
-          >
-            {copied ? 'Link copied' : 'Copy invitation link'}
-          </Button>
-          <Link className="text-button" to={`/invite/${created.token}`} onClick={onClose}>
-            View invitation
-          </Link>
-          {copyError && <p className="form-error">{copyError}</p>}
+          <p className="jobs-muted">We emailed the invitation.</p>
           <Button variant="secondary" onClick={onClose}>
             Done
           </Button>
@@ -57,13 +38,13 @@ export function InvitePersonDialog({ onClose }: { onClose(): void }) {
             if (!name) throw new Error('Enter a name.');
             if (!email) throw new Error('Enter an email address.');
             if (!emailPattern.test(email)) throw new Error('Enter a valid email address.');
-            const invitation = result(
+            result(
               await api.POST('/api/companies/{company_id}/invitations', {
                 params: { path: c.path },
                 body: { email, preferred_name: name, role: text(form, 'role') as RoleCode },
               }),
             );
-            setCreated({ name, token: invitation.token });
+            setCreated({ name });
           }}
         >
           <Field label="Name" name="name" required maxLength={120} />

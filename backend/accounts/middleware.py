@@ -12,6 +12,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.http import JsonResponse
 from django.utils import timezone
+from django.utils.cache import get_conditional_response, patch_vary_headers, set_response_etag
 
 from .models import AuthenticationWindow
 
@@ -70,12 +71,58 @@ class BrowserSecurityMiddleware:
         if (
             request.method == "POST"
             and request.path
-            in {"/api/auth/password-login", "/api/auth/sign-in", "/api/auth/verify-signup"}
+            in {
+                "/api/auth/password-login",
+                "/api/auth/sign-in",
+                "/api/auth/verify-signup",
+                "/api/auth/invitation-signup",
+                "/api/auth/change-password",
+            }
             and response.status_code < 400
         ):
             identity = current_actor_identity(request)
             user = PlatformUser.objects.get(pk=identity.user_id)
             request.session["nelson_credentials"] = [str(user.pk), str(user.password_reset_version)]
-        response["Cache-Control"] = "no-store"
+        if (
+            request.method == "POST"
+            and response.status_code < 400
+            and request.path in SESSION_CHANGES
+        ):
+            # Drop private HTTP-cached records and photos from a shared device.
+            response["Clear-Site-Data"] = '"cache"'
         response["Referrer-Policy"] = "no-referrer"
+        return cache_policy(request, response)
+
+
+# Signing in or out changes whose private data this browser may hold.
+SESSION_CHANGES = {
+    "/api/auth/password-login",
+    "/api/auth/sign-in",
+    "/api/auth/verify-signup",
+    "/api/auth/invitation-signup",
+    "/api/auth/sign-out",
+    "/api/auth/logout",
+}
+
+
+def cache_policy(request, response):
+    """Let weak connections revalidate company reads instead of downloading them again.
+
+    Successful company reads are stored privately and always revalidated: an
+    unchanged list answers 304 with no body. Account endpoints and every other
+    response stay uncacheable. Immutable attached photos keep their own policy.
+    """
+    if response.get("Cache-Control", "").startswith("private, max-age"):
         return response
+    if (
+        request.method in {"GET", "HEAD"}
+        and response.status_code == 200
+        and not response.streaming
+        and request.path.startswith("/api/companies/")
+    ):
+        response["Cache-Control"] = "private, no-cache"
+        patch_vary_headers(response, ("Cookie",))
+        set_response_etag(response)
+        return get_conditional_response(request, etag=response["ETag"], response=response)
+    response["Cache-Control"] = "no-store"
+    return response

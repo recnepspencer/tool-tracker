@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, result, type Model } from './client';
-import { collect, usePeople } from './data';
+import { collect, usePeople, useToolCollection } from './data';
 import { useListLocation } from './list-location';
 import { useCompany } from './session';
 import { useCommand } from './settings-command-state';
@@ -26,16 +26,7 @@ export function useWarehouseDirectory() {
       ),
   });
   // The inventory's asset collection supplies the demo's per-warehouse custody counts.
-  const assets = useQuery({
-    queryKey: [c.company_id, 'asset-collection', false],
-    enabled: c.can('tools.read'),
-    queryFn: () =>
-      collect((offset) =>
-        api
-          .GET('/api/companies/{company_id}/tools', { params: { path: c.path, query: { offset, limit: 100 } } })
-          .then(result),
-      ),
-  });
+  const assets = useToolCollection(false, { enabled: c.can('tools.read') });
   const people = usePeople({ enabled: c.can('people.manage') });
   const term = search.trim().toLocaleLowerCase();
   const rows = (warehouses.data ?? []).filter(

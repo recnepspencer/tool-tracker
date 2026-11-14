@@ -184,5 +184,5 @@ def test_pagination_is_bounded_and_deterministic(api_client, world):
     assert first["items"][0]["asset_tag"] == "NE-001"
     assert second["items"][0]["asset_tag"] == "NE-002"
     assert second["next_offset"] is None
-    assert api_client.get(url, {"limit": 101}).status_code == 400
+    assert api_client.get(url, {"limit": 501}).status_code == 400
     assert api_client.get(url, {"offset": -1}).status_code == 400

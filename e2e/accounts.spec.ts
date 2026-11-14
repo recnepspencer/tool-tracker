@@ -40,10 +40,8 @@ test('verified signup, company setup and an invitation accepted across accounts'
   await form.getByRole('button', { name: 'Create invitation', exact: true }).click();
   await expect(form.getByText('We emailed the invitation.', { exact: false })).toBeVisible();
   const invitation = await emailLink(employee, '/invite/');
-  await expect(form.getByRole('link', { name: 'View invitation', exact: true })).toHaveAttribute(
-    'href',
-    new URL(invitation, 'http://127.0.0.1:4173').pathname,
-  );
+  await expect(form.getByRole('button', { name: 'Copy invitation link' })).toHaveCount(0);
+  await expect(form.getByRole('link', { name: 'View invitation' })).toHaveCount(0);
   await form.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(form).toHaveCount(0);
   // A different signed-in user must explicitly switch accounts, preserving the invite.
@@ -68,16 +66,47 @@ test('verified signup, company setup and an invitation accepted across accounts'
   await worker.goto(invitation);
   await expect(worker.getByText(employee, { exact: true })).toBeVisible();
   await worker.screenshot({ path: 'artifacts/auth-invitation-mobile.png', fullPage: true });
-  await worker.getByRole('link', { name: 'Create an account', exact: true }).click();
-  await signup(worker, employee, 'Field Employee');
-  await expect(worker.getByRole('button', { name: 'Accept invitation' })).toBeVisible();
-  await worker.getByRole('button', { name: 'Accept invitation' }).click();
+  await expect(worker.getByLabel('Your name', { exact: true })).toHaveValue('Field Employee');
+  await expect(worker.getByLabel('Work email', { exact: true })).toHaveValue(employee);
+  await expect(worker.getByLabel('Work email', { exact: true })).toHaveAttribute('readonly', '');
+  await expect(worker.getByRole('button', { name: 'Send verification link' })).toHaveCount(0);
+  await worker.getByLabel('Your name', { exact: true }).fill('Corrected Employee');
+  await worker.getByLabel('New password', { exact: true }).fill(password);
+  await worker.getByLabel('Confirm password', { exact: true }).fill(password);
+  await worker.getByRole('button', { name: 'Create account and join', exact: true }).click();
   await expect(worker.getByRole('heading', { name: 'Invitation accepted' })).toBeVisible();
   await worker.screenshot({ path: 'artifacts/auth-invitation-accepted-mobile.png', fullPage: true });
   await worker.getByRole('button', { name: 'Open workspace', exact: true }).click();
   await expect(worker.getByRole('heading', { name: 'My tools', exact: true })).toBeVisible();
   await expect(worker.getByText('Choose your profile')).toHaveCount(0);
   await workerContext.close();
+});
+
+test('password changes stay in settings and keep the current session signed in', async ({ page }) => {
+  await ownedCompany(page, { ownOwner: true });
+  await page.goto('/app/settings');
+  await page.getByRole('button', { name: 'Change password', exact: true }).click();
+  await page.getByLabel('Current password', { exact: true }).fill('incorrect-password');
+  const replacement = 'new-settings-password-for-browser';
+  await page.getByLabel('New password', { exact: true }).fill(replacement);
+  await page.getByLabel('Confirm password', { exact: true }).fill('different-password');
+  await page.getByRole('button', { name: 'Save password', exact: true }).click();
+  await expect(page.getByRole('alert')).toHaveText('Passwords do not match.');
+  await page.getByLabel('Confirm password', { exact: true }).fill(replacement);
+  await page.getByRole('button', { name: 'Save password', exact: true }).click();
+  await expect(page.getByRole('alert')).toHaveText('Your current password is incorrect.');
+  await page.getByLabel('Current password', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Save password', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Your password has been changed.' })).toBeVisible();
+  await expect(page).toHaveURL(/\/app\/settings$/);
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Open account menu', exact: true }).click();
+  const account = page.getByRole('dialog');
+  await account.getByRole('button', { name: 'Change password', exact: true }).click();
+  await expect(account.getByLabel('Current password', { exact: true })).toBeVisible();
+  await account.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(page).toHaveURL(/\/app\/settings$/);
 });
 
 test('signup separates joining a team from starting a company', async ({ page, browser }) => {
@@ -106,8 +135,7 @@ test('signup separates joining a team from starting a company', async ({ page, b
   await expect.poll(() => emailLink(email, '/invite/')).not.toBe(`/invite/${first.token}`);
   await visitor.goto(await emailLink(email, '/invite/'));
   await expect(visitor.getByText(company.name, { exact: true })).toBeVisible();
-  await visitor.getByRole('link', { name: 'Create an account', exact: true }).click();
-  await expect(visitor.getByRole('heading', { name: 'Create your account' })).toBeVisible();
+  await expect(visitor.getByRole('button', { name: 'Create account and join' })).toBeVisible();
   await expect(visitor.getByLabel('Signup code', { exact: true })).toHaveCount(0);
   await visitorContext.close();
 });
@@ -158,9 +186,9 @@ test('a signup code starts a company with its logo and hands ownership to a name
   await bossPage.goto(await emailLink(boss, '/invite/'));
   await expect(bossPage.getByRole('heading', { name: 'Take ownership' })).toBeVisible();
   await expect(bossPage.getByText('Owner · Company admin', { exact: true })).toBeVisible();
-  await bossPage.getByRole('link', { name: 'Create an account', exact: true }).click();
-  await signup(bossPage, boss, 'Company Boss');
-  await bossPage.getByRole('button', { name: 'Accept invitation' }).click();
+  await bossPage.getByLabel('New password', { exact: true }).fill(password);
+  await bossPage.getByLabel('Confirm password', { exact: true }).fill(password);
+  await bossPage.getByRole('button', { name: 'Create account and join' }).click();
   await bossPage.getByRole('button', { name: 'Open workspace', exact: true }).click();
   await bossPage.getByRole('link', { name: 'People', exact: true }).click();
   const founderRow = bossPage.getByRole('row').filter({ hasText: 'Office Manager' });
@@ -198,18 +226,18 @@ test('a new company builds its inventory through public screens and a worker rec
   await categories.getByLabel('New category').fill('Drills');
   await categories.getByRole('button', { name: 'Add category', exact: true }).click();
   await expect(categories.getByText('Drills', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Add model', exact: true }).click();
-  const modelDialog = page.getByRole('dialog', { name: 'Create model', exact: true });
+  await page.getByRole('button', { name: 'Add tool type', exact: true }).click();
+  const modelDialog = page.getByRole('dialog', { name: 'Create tool type', exact: true });
   await chooseOption(modelDialog, 'Category', { label: 'Drills' });
   await modelDialog.getByLabel('Tool name').fill('Hammer drill');
   await modelDialog.getByLabel('Manufacturer').fill('Makita');
   await modelDialog.getByLabel('Model number').fill('XPH14');
-  await modelDialog.getByRole('button', { name: 'Save model', exact: true }).click();
+  await modelDialog.getByRole('button', { name: 'Save tool type', exact: true }).click();
   await expect(modelDialog).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Edit Hammer drill', exact: true })).toBeVisible();
   await page.goto('/app/tools/new');
   await page.getByRole('button', { name: 'Continue without a photo' }).click();
-  await chooseOption(page, 'Tool model', { label: 'Makita Hammer drill' });
+  await chooseOption(page, 'Tool type', { label: 'Makita Hammer drill' });
   await chooseOption(page, 'Home warehouse', { label: 'Main warehouse' });
   await page.getByLabel('Asset tag', { exact: true }).fill('TEST-001');
   await page.getByRole('button', { name: 'Add tool', exact: true }).click();
@@ -287,6 +315,11 @@ test('a member recovers their password, signs in with it and signs out', async (
   expect(JSON.stringify(credentials)).not.toContain(password);
   await worker.getByRole('button', { name: 'Open navigation' }).click();
   await worker.getByRole('button', { name: 'Open account for Field Employee', exact: true }).click();
+  const accountSheet = worker.getByRole('dialog', { name: 'Field Employee', exact: true });
+  await accountSheet.getByRole('button', { name: 'Change password', exact: true }).click();
+  await expect(accountSheet.getByLabel('Current password', { exact: true })).toBeVisible();
+  await accountSheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(worker).toHaveURL(/\/app\/mine$/);
   await worker.getByRole('button', { name: 'Sign out', exact: true }).click();
   await expect(worker.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible();
   await worker.goto('/app/tools');

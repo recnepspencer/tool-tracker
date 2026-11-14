@@ -7,14 +7,21 @@ const timelineOf = (page: Page) => page.getByRole('region', { name: 'Timeline', 
 const entry = (scope: Locator, action: string) =>
   scope.getByRole('listitem').filter({ has: scope.page().getByText(action, { exact: true }) });
 
-/** A photo thumbnail links to the full evidence photo; follow it and check it is private and fresh. */
+/**
+ * A photo thumbnail links to the full evidence photo. Attached evidence never
+ * changes, so both are cached privately; the thumbnail is a small WebP copy.
+ */
 async function expectPhotoDownload(page: Page, scope: Locator, name: string) {
   const link = scope.locator('a').filter({ has: page.getByRole('img', { name, exact: true }) });
   const href = await link.getAttribute('href');
   const download = await page.request.get(href!);
   expect(download.status()).toBe(200);
   expect(download.headers()['content-type']).toContain('image/jpeg');
-  expect(download.headers()['cache-control']).toContain('no-store');
+  expect(download.headers()['cache-control']).toBe('private, max-age=31536000, immutable');
+  const thumbnail = await link.getByRole('img', { name, exact: true }).getAttribute('src');
+  expect(thumbnail).toBe(`${href}?size=thumb`);
+  const small = await page.request.get(thumbnail!);
+  expect(small.headers()['content-type']).toContain('image/webp');
 }
 
 /** Managers flag condition from the inventory drawer's "Mark damaged" / "Mark lost" dialogs. */

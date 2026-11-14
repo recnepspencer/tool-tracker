@@ -56,11 +56,13 @@ export function signupCode() {
 // one verified owner through public endpoints per worker, then retain its real
 // session cookie while each scenario creates an independent company.
 let ownerCookies: Cookie[] | undefined;
-export async function ownedCompany(page: Page) {
+// A scenario that changes the owner's credentials asks for its own owner, leaving the
+// worker's shared session intact for the scenarios after it.
+export async function ownedCompany(page: Page, { ownOwner = false } = {}) {
   const suffix = crypto.randomUUID().slice(0, 8);
   // The worker's first signup claims a code; every later company spends a fresh one.
   let signup_code = '';
-  if (ownerCookies) {
+  if (ownerCookies && !ownOwner) {
     await page.context().addCookies(ownerCookies);
     signup_code = signupCode();
   } else {
@@ -73,7 +75,7 @@ export async function ownedCompany(page: Page) {
     });
     const link = new URL(await emailLink(email, '/verify-email'), 'http://localhost');
     await command(page.request, '/api/auth/verify-signup', { token: link.searchParams.get('token'), password });
-    ownerCookies = await page.context().cookies();
+    if (!ownOwner) ownerCookies = await page.context().cookies();
   }
   const company = await command(page.request, '/api/companies', {
     request_key: crypto.randomUUID(),
@@ -88,7 +90,7 @@ export async function ownedCompany(page: Page) {
   }, company.id);
   return { company, base };
 }
-// A company with one warehouse, job and two units of the same tool model.
+// A company with one warehouse, job and two units of the same tool type.
 export async function workspace(page: Page) {
   const { company, base } = await ownedCompany(page);
   const [warehouse, category, project] = await Promise.all([

@@ -134,25 +134,66 @@ def test_invitation_email_signup_accept_and_replay(world):
     client = browser()
     preview = client.get(f"/api/invitations/{created['token']}/preview")
     assert_response(preview, "/api/invitations/{token}/preview", method="get")
-    mismatch = post(
-        client,
-        "/api/auth/signup",
-        {"email": "other@example.com", "name": "Other", "invitation_token": created["token"]},
-    )
-    assert mismatch.json()["code"] == "invitation_email_mismatch"
-    token = signup(client, "invitee@example.com", invitation_token=created["token"])
+    sent = len(mail.outbox)
+    body = {"token": created["token"], "name": "Corrected Name", "password": PASSWORD}
+    # Email is authoritative on the server, including for a tampered form.
     assert (
-        post(client, "/api/auth/verify-signup", {"token": token, "password": PASSWORD}).status_code
-        == 200
+        post(
+            client, "/api/auth/invitation-signup", {**body, "email": "other@example.com"}
+        ).status_code
+        == 400
     )
+    assert (
+        post(
+            client, "/api/auth/invitation-signup", {**body, "password": "123456789012"}
+        ).status_code
+        == 400
+    )
+    assert not PlatformUser.objects.filter(email="invitee@example.com").exists()
+    joined = assert_response(
+        post(client, "/api/auth/invitation-signup", body), "/api/auth/invitation-signup"
+    )
+    assert len(mail.outbox) == sent
+    assert not SignupChallenge.objects.exists()
+    assert joined["email"] == "invitee@example.com"
+    assert "tools.request" in joined["memberships"][0]["capabilities"]
+    invite = MembershipInvitation.objects.get(pk=created["invitation"]["id"])
+    assert invite.accepted_membership.person.preferred_name == "Corrected Name"
+    assert PlatformUser.objects.get(email="invitee@example.com").full_name == "Corrected Name"
     csrf(client)
-    accepted = assert_response(
-        post(client, "/api/invitations/accept", {"token": created["token"]}),
-        "/api/invitations/accept",
-    )
-    assert accepted["roles"] == ["field_member"]
+    assert post(client, "/api/auth/invitation-signup", body).json()["code"] == "invalid_invitation"
     assert post(client, "/api/invitations/accept", {"token": created["token"]}).status_code == 409
     assert client.get(f"/api/invitations/{created['token']}/preview").status_code == 404
+    assert client.get("/api/me").status_code == 200
+
+
+@pytest.mark.parametrize("state", ["revoked", "expired", "unknown", "existing"])
+def test_invitation_signup_rejects_unusable_links_and_existing_accounts(world, state):
+    CompanyRoleGrant.objects.create(membership=world.member, role_code="company_admin")
+    email = world.user.email if state == "existing" else "invitee@example.com"
+    created = post(
+        login_client(world.user),
+        f"/api/companies/{world.company.pk}/invitations",
+        {"email": email, "preferred_name": "Invitee", "role": "field_member"},
+    ).json()
+    if state == "revoked":
+        MembershipInvitation.objects.update(revoked_at=timezone.now())
+    if state == "expired":
+        MembershipInvitation.objects.update(expires_at=timezone.now())
+    token = "unknown-token-that-is-long-enough" if state == "unknown" else created["token"]
+    body = {"token": token, "name": "Invitee", "password": PASSWORD + "changed"}
+    assert (
+        post(Client(enforce_csrf_checks=True), "/api/auth/invitation-signup", body).status_code
+        == 403
+    )
+    client = browser()
+    response = post(client, "/api/auth/invitation-signup", body)
+    assert response.status_code == (409 if state == "existing" else 400)
+    assert client.get("/api/me").status_code == 401
+    assert not PlatformUser.objects.filter(email="invitee@example.com").exists()
+    assert MembershipInvitation.objects.get().accepted_at is None
+    world.user.refresh_from_db()
+    assert world.user.check_password(PASSWORD)
 
 
 def test_invitee_can_ask_for_their_link_again(world):
@@ -226,6 +267,37 @@ def test_reset_real_email_single_use_and_session_revocation(world):
     )
     world.user.refresh_from_db()
     assert world.user.check_password(new_password)
+
+
+def test_signed_in_password_change_requires_current_password_and_revokes_other_sessions(world):
+    client = login_client(world.user)
+    other = login_client(world.user)
+    new_password = "new-long-settings-password"
+    path = "/api/auth/change-password"
+    body = {"current_password": PASSWORD, "password": new_password}
+    assert post(Client(enforce_csrf_checks=True), path, body).status_code == 403
+    assert post(browser(), path, body).status_code == 401
+    assert post(client, path, {**body, "current_password": "wrong"}).status_code == 400
+    assert post(client, path, {**body, "password": "123456789012"}).status_code == 400
+    assert other.get("/api/me").status_code == 200
+    post(client, "/api/auth/recover", {"email": world.user.email})
+    link = re.search(r"https?://\S+", mail.outbox[-1].body).group()
+    params = {k: v[0] for k, v in parse_qs(urlparse(link).query).items()}
+    sent = len(mail.outbox)
+    assert_response(post(client, path, body), path)
+    assert len(mail.outbox) == sent
+    assert client.get("/api/me").status_code == 200
+    assert other.get("/api/me").status_code == 401
+    assert post(browser(), "/api/auth/reset", {**params, "password": PASSWORD}).status_code >= 400
+    world.user.refresh_from_db()
+    assert world.user.check_password(new_password)
+    assert not world.user.check_password(PASSWORD)
+    assert (
+        post(
+            browser(), "/api/auth/sign-in", {"email": world.user.email, "password": new_password}
+        ).status_code
+        == 200
+    )
 
 
 def test_invitation_mail_failure_rolls_back(world, monkeypatch):

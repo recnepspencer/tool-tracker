@@ -35,6 +35,11 @@ export const workerStatusLabel: Record<StatusTone, string> = {
 export const assetLabel = (asset: Asset & Pick<Model<'AssetView'>, 'lifecycle'>) =>
   asset.lifecycle === 'disposed' ? 'Disposed' : statusLabel[toolStatus(asset)];
 
-/** Registration photo URL, or null so ToolPhoto shows its placeholder. */
-export const photoSrc = (companyId: string, photoId: string | null | undefined) =>
-  photoId ? `/api/companies/${companyId}/files/${photoId}` : null;
+/**
+ * Photo URL, or null so ToolPhoto shows its placeholder. Lists use the 320px
+ * thumbnail, sheets the 1280px display copy; only "view photo" links fetch
+ * the camera original. Field crews often browse on weak cellular signal.
+ */
+export type PhotoSize = 'thumb' | 'display' | 'original';
+export const photoSrc = (companyId: string, photoId: string | null | undefined, size: PhotoSize = 'thumb') =>
+  photoId ? `/api/companies/${companyId}/files/${photoId}${size === 'original' ? '' : `?size=${size}`}` : null;

@@ -66,6 +66,17 @@ class VerifySignupInput(CommandInput):
     password: str = Field(min_length=12, max_length=200)
 
 
+class InvitationSignupInput(CommandInput):
+    token: str = Field(min_length=20, max_length=200)
+    name: str = Field(min_length=1, max_length=120)
+    password: str = Field(min_length=12, max_length=200)
+
+
+class ChangePasswordInput(CommandInput):
+    current_password: str = Field(min_length=1, max_length=200)
+    password: str = Field(min_length=12, max_length=200)
+
+
 class AccountMessage(Schema):
     message: str
 
@@ -142,6 +153,22 @@ def reset_password(request: HttpRequest, data: PasswordResetCompleteContract):
     except ValidationError as exc:
         raise bad_request(" ".join(exc.messages)) from exc
     return complete_password_reset(data)
+
+
+@csrf_protect
+@transaction.atomic
+def change_password(request: HttpRequest, data: ChangePasswordInput):
+    user = PlatformUser.objects.select_for_update().get(pk=current_identity(request).user_id)
+    if not user.check_password(data.current_password):
+        raise bad_request("Your current password is incorrect.")
+    try:
+        validate_password(data.password, user)
+    except ValidationError as exc:
+        raise bad_request(" ".join(exc.messages)) from exc
+    user.set_password(data.password)
+    user.save(update_fields=["hashed_password", "password_reset_version"])
+    password_login(request, PasswordLoginContract(email=user.email, password=data.password))
+    return {"message": "Your password has been changed."}
 
 
 @csrf_protect
@@ -275,6 +302,50 @@ def preview_invitation(request: HttpRequest, token: str):
 
 @csrf_protect
 @transaction.atomic
+def signup_invitation(request: HttpRequest, data: InvitationSignupInput):
+    from companies.models import Person
+    from companies.people import accept_invitation
+
+    # Possession of the emailed, single-use invitation proves access to its mailbox.
+    # Lock it through account creation and acceptance so revocation and replay cannot race.
+    invite = live_invitation(data.token)
+    if invite is not None:
+        invite = MembershipInvitation.objects.select_for_update().get(pk=invite.pk)
+    if (
+        invite is None
+        or invite.accepted_at
+        or invite.revoked_at
+        or invite.expires_at <= timezone.now()
+        or invite.token_digest != hashlib.sha256(data.token.encode()).hexdigest()
+    ):
+        raise bad_request(
+            "This invitation is expired, revoked, or already used. Ask for a new link.",
+            code="invalid_invitation",
+        )
+    name = data.name.strip()
+    if not name:
+        raise bad_request("Enter your name.")
+    user = PlatformUser(email=invite.email, full_name=name)
+    try:
+        validate_password(data.password, user)
+    except ValidationError as exc:
+        raise bad_request(" ".join(exc.messages)) from exc
+    try:
+        with transaction.atomic():
+            user.set_password(data.password)
+            user.save(force_insert=True)
+    except IntegrityError as exc:
+        raise conflict(
+            "This account already exists. Sign in to accept your invitation or reset your password."
+        ) from exc
+    Person.objects.create(identity_user=user, preferred_name=name)
+    password_login(request, PasswordLoginContract(email=invite.email, password=data.password))
+    accept_invitation(current_identity(request), data.token)
+    return session_info(request)
+
+
+@csrf_protect
+@transaction.atomic
 def upload_logo(request: HttpRequest, file: File[UploadedFile], signup_code: Form[str] = ""):
     user_id = signed_in_user_id(request)
     # Before an account exists, only a usable signup code may store bytes.
@@ -320,6 +391,13 @@ define_http_endpoint(
     router, method="post", path="/auth/sign-out", endpoint=sign_out, response=AccountMessage
 )
 define_http_endpoint(
+    router,
+    method="post",
+    path="/auth/change-password",
+    endpoint=change_password,
+    response=AccountMessage,
+)
+define_http_endpoint(
     router, method="post", path="/auth/signup", endpoint=signup, response=AccountMessage
 )
 define_http_endpoint(
@@ -331,6 +409,13 @@ define_http_endpoint(
 )
 define_http_endpoint(
     router, method="post", path="/auth/verify-signup", endpoint=verify_signup, response=SessionView
+)
+define_http_endpoint(
+    router,
+    method="post",
+    path="/auth/invitation-signup",
+    endpoint=signup_invitation,
+    response=SessionView,
 )
 define_http_endpoint(
     router, method="post", path="/auth/logos", endpoint=upload_logo, response=LogoView

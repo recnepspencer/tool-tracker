@@ -37,7 +37,9 @@
   display: grid;
   gap: var(--space-16);
   margin-left: auto;
+  max-height: calc(100dvh - var(--header-height-sm) - var(--space-16));
   max-width: var(--space-320);
+  overflow-y: auto;
   padding: var(--space-18);
   width: min(var(--size-account-sheet), var(--space-320));
 }
@@ -101,10 +103,15 @@
   text-decoration: none;
 }
 .experience .account-sheet-action {
+  background: transparent;
+  border: 0;
   border-radius: var(--radius-field);
   color: var(--ink-2);
+  cursor: pointer;
+  font: inherit;
   min-height: var(--space-44);
   padding: 0 var(--space-12);
+  width: 100%;
 }
 .experience .account-sheet-action:hover {
   background: var(--hover);

@@ -1,4 +1,5 @@
 import { HandoffReviewDialog } from './handoff-review';
+import { EquipmentReports } from './equipment-reports';
 import { ErrorState, LoadingState, PageHeading, SearchField, SelectField, SurfaceCard } from './kit';
 import { useOperationsPageState, useQueueDecision, type QueueFilter, type QueueItem } from './operations-state';
 import { QueueGroup } from './queue-list';
@@ -39,6 +40,7 @@ export function OperationsPage() {
         title="Queue"
         description="Review requests and returns at the gate before custody changes."
       />
+      <EquipmentReports managerOnly />
       <div className="operations-toolbar">
         <div className="operations-tabs" role="tablist" aria-label="Queue filter">
           {filters.map(([value, label]) => (

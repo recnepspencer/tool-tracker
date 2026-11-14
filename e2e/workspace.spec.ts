@@ -131,8 +131,8 @@ test('company switching isolates inventory and policy changes survive reload', a
     employee_tool_creation_enabled: true,
   });
   await page.goto('/app/settings');
-  const registration = page.getByRole('region', { name: 'Employee tool uploads', exact: true });
-  const registrationSwitch = registration.getByRole('switch', { name: 'Employees can register tools' });
+  const registration = page.getByRole('region', { name: 'Field inventory collection', exact: true });
+  const registrationSwitch = registration.getByRole('switch', { name: 'Collect existing field equipment' });
   await expect(registrationSwitch).toHaveAttribute('aria-checked', 'true');
   await registrationSwitch.click();
   await expect(registrationSwitch).toHaveAttribute('aria-checked', 'false');
@@ -209,7 +209,7 @@ test('worker participation needs approval and suspended access is revoked', asyn
       employee_tool_creation_enabled: false,
     });
     await worker.goto('/app/tools/new');
-    await expect(worker.getByText(/Employee tool registration is disabled/)).toBeVisible();
+    await expect(worker.getByText(/Field inventory collection is closed/)).toBeVisible();
     await worker.goto('/app/jobs');
     const membership = worker.getByRole('switch', { name: 'Library wiring', exact: true });
     await membership.click();
@@ -253,7 +253,7 @@ test('registration attaches a real photo served through authorized download', as
   await page.reload(); // Complete external fixture setup before testing the UI's catalog read.
   await page.getByRole('link', { name: 'Add tool', exact: true }).click();
   await page.getByLabel('Choose a tool photo', { exact: true }).setInputFiles('e2e/fixtures/hammer-drill.jpg');
-  await chooseOption(page, 'Tool model', model.id);
+  await chooseOption(page, 'Tool type', model.id);
   await chooseOption(page, 'Home warehouse', fixture.warehouse.id);
   await page.getByLabel('Asset tag', { exact: true }).fill('PHOTO-003');
   await page.getByRole('button', { name: 'Add tool', exact: true }).click();

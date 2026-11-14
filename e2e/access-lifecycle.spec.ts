@@ -252,16 +252,14 @@ test('company rules changed mid-draft refresh disabled participation and registr
       });
     await actor.goto('/app/mine/new');
     await actor.getByRole('button', { name: 'Continue without a photo' }).click();
-    await chooseOption(actor, 'Tool model', fixture.asset.tool_model_id);
-    await chooseOption(actor, 'Home warehouse', fixture.warehouse.id);
-    await actor.getByLabel('Asset tag', { exact: true }).fill('DENIED-NEW-UNIT');
+    await actor.getByLabel('What is it?', { exact: true }).fill('DENIED-NEW-UNIT');
     const latest = await (await page.request.get(`${fixture.base}/tool-registration-policy`)).json();
     await command(page.request, `${fixture.base}/tool-registration-policy`, {
       expected_revision: latest.revision,
       employee_tool_creation_enabled: false,
     });
-    await actor.getByRole('button', { name: 'Add tool', exact: true }).click();
-    await expect(actor.getByText(/Employee tool registration is disabled by your company/)).toBeVisible();
+    await actor.getByRole('button', { name: 'Submit for review', exact: true }).click();
+    await expect(actor.getByText(/Field inventory collection is closed/)).toBeVisible();
     expect((await (await page.request.get(`${fixture.base}/tools?search=DENIED-NEW-UNIT`)).json()).items).toEqual([]);
     await actor.keyboard.press('Escape');
     await expect(actor.getByRole('dialog', { name: 'Add a tool', exact: true })).toHaveCount(0);
