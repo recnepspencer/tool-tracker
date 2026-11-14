@@ -10,8 +10,10 @@ import {
 } from './kit';
 import { formatStamp } from './format';
 import { ResolveCaseDialog } from './reconciliation-dialog';
-import { caseKindLabels, useReconciliationsPage, type CaseFilter } from './reconciliation-state';
+import { caseKindLabels, caseProblem, useReconciliationsPage, type CaseFilter } from './reconciliation-state';
+import { BackLink } from './related-links';
 import { assetLabel, photoSrc, toolStatus } from './tool-status';
+import './reconciliation.css';
 
 const filters: { value: CaseFilter; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -20,7 +22,7 @@ const filters: { value: CaseFilter; label: string }[] = [
   { value: 'duplicate_asset', label: 'Duplicates' },
 ];
 
-/** Open reconciliation cases in the demo's FlaggedToolsPage list pattern. */
+/** Open reconciliation cases in the demo's FlaggedToolsPage list pattern, each saying what doesn't match. */
 export function ReconciliationsPage() {
   const page = useReconciliationsPage();
   if (page.cases.isPending) return <LoadingState label="Loading reconciliation cases…" />;
@@ -28,11 +30,13 @@ export function ReconciliationsPage() {
     return <ErrorState message="Reconciliation cases could not be loaded." onRetry={() => void page.cases.refetch()} />;
   return (
     <div className="page-content admin-operations-page">
-      <PageHeading
-        eyebrow="Warehouse operations"
-        title="Reconciliation"
-        description="Resolve custody discrepancies with a reasoned record. Open a case from an individual tool."
-      />
+      <BackLink to="/app/operations">Queue</BackLink>
+      <PageHeading title="Reconciliation">
+        <p className="reconciliation-intro">
+          Fix tool records that don’t match reality: who has a tool, whether it’s lost, or whether it’s registered
+          twice. Open a case from the tool’s page, then settle it here.
+        </p>
+      </PageHeading>
       <DirectoryToolbar<CaseFilter>
         searchLabel="Search reconciliation cases"
         searchPlaceholder="Search cases…"
@@ -59,17 +63,17 @@ export function ReconciliationsPage() {
               <article className="flagged-row" key={item.id} aria-label={`${caseKindLabels[item.kind]} case`}>
                 <div className="flagged-row__main">
                   <ToolPhoto
-                    src={photoSrc(page.c.company_id, asset?.registration_photo_id)}
+                    src={photoSrc(page.c.company_id, item.record.registration_photo_id)}
                     alt=""
                     size="small"
                     priority
                   />
                   <div className="flagged-row__body">
-                    <h2>{asset?.name ?? 'Tool'}</h2>
+                    <h2>{item.record.name}</h2>
                     <span className="flagged-row__identity">
-                      {asset ? `${asset.asset_tag} · ` : ''}
-                      {caseKindLabels[item.kind]} · Opened {formatStamp(item.opened_at)}
+                      {caseKindLabels[item.kind]} · Opened {formatStamp(item.opened_at)} by {item.opened_by_name}
                     </span>
+                    <span className="reconciliation-problem">{caseProblem(item)}</span>
                     {item.narrative && <span className="queue-item__note">“{item.narrative}”</span>}
                   </div>
                 </div>
@@ -77,7 +81,7 @@ export function ReconciliationsPage() {
                   {asset && <StatusBadge tone={toolStatus(asset)}>{assetLabel(asset)}</StatusBadge>}
                 </div>
                 <div className="flagged-row__custody">
-                  <strong>{asset?.holder_name ?? asset?.warehouse_name ?? 'No current custodian'}</strong>
+                  <strong>{item.record.holder_name ?? 'No current custodian'}</strong>
                   <span>
                     {!asset
                       ? 'Loading custody…'
@@ -87,9 +91,7 @@ export function ReconciliationsPage() {
                   </span>
                 </div>
                 <div className="flagged-row__actions">
-                  <Button disabled={!asset} onClick={() => page.openResolve(item.id)}>
-                    Resolve
-                  </Button>
+                  <Button onClick={() => page.openResolve(item.id)}>Resolve</Button>
                 </div>
               </article>
             ))}
@@ -98,7 +100,7 @@ export function ReconciliationsPage() {
           <p className="admin-empty">No open reconciliation cases match this view.</p>
         )}
       </SurfaceCard>
-      {page.open?.asset && (
+      {page.open && (
         <ResolveCaseDialog
           key={page.open.item.id}
           item={page.open.item}

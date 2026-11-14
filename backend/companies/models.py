@@ -78,11 +78,9 @@ class CompanyMembership(models.Model):
 
 class CompanyRoleGrant(models.Model):
     class Role(models.TextChoices):
-        FIELD_MEMBER = "field_member"
-        COMPANY_ADMIN = "company_admin"
-        EQUIPMENT_MANAGER = "equipment_manager"
-        DISPATCHER = "dispatcher"
-        ESTIMATOR = "estimator"
+        ADMIN = "admin"
+        MANAGER = "manager"
+        FOREMAN = "foreman"
 
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     membership = models.ForeignKey(CompanyMembership, on_delete=models.PROTECT)
@@ -92,21 +90,14 @@ class CompanyRoleGrant(models.Model):
 
     class Meta:
         constraints = [
+            # Each person has exactly one role at a time.
             models.UniqueConstraint(
-                fields=["membership", "role_code"],
+                fields=["membership"],
                 condition=Q(revoked_at__isnull=True),
                 name="one_live_company_role",
             ),
             models.CheckConstraint(
-                condition=Q(
-                    role_code__in=[
-                        "field_member",
-                        "company_admin",
-                        "equipment_manager",
-                        "dispatcher",
-                        "estimator",
-                    ]
-                ),
+                condition=Q(role_code__in=["admin", "manager", "foreman"]),
                 name="company_role_valid",
             ),
         ]
@@ -135,15 +126,7 @@ class MembershipInvitation(models.Model):
             ScopedForeignKey(field="invited_by", name="invitation_inviter_company"),
             ScopedForeignKey(field="accepted_membership", name="invitation_member_company"),
             models.CheckConstraint(
-                condition=Q(
-                    role_code__in=[
-                        "field_member",
-                        "company_admin",
-                        "equipment_manager",
-                        "dispatcher",
-                        "estimator",
-                    ]
-                ),
+                condition=Q(role_code__in=["admin", "manager", "foreman"]),
                 name="invitation_role_valid",
             ),
         ]

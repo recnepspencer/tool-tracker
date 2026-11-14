@@ -49,13 +49,12 @@
 .experience .permission-rules-card {
   padding: var(--space-20);
   max-width: var(--space-900);
-  margin-top: var(--space-18);
 }
 .experience .permission-legend {
   display: none;
   color: var(--muted);
   font-size: var(--text-sm);
-  margin: var(--space-12) 0 0;
+  margin: 0;
 }
 @media (max-width: 620px) {
   .experience .permission-legend {
@@ -79,16 +78,6 @@
     padding: var(--space-16);
   }
 }
-.experience .permission-rules-heading {
-  align-items: flex-start;
-  display: flex;
-  gap: var(--space-18);
-  justify-content: space-between;
-}
-.experience .permission-rules-heading h2 {
-  font-size: var(--text-3xl);
-  margin: var(--space-6) 0 0;
-}
 .experience .permission-lock {
   border: var(--border-width) solid var(--border-strong);
   border-radius: var(--radius-pill);
@@ -99,12 +88,11 @@
   text-transform: uppercase;
 }
 .experience .permission-rules-list {
-  border-top: var(--border-width) solid var(--border);
   display: grid;
   gap: var(--space-12);
   list-style: none;
-  margin: var(--space-18) 0 0;
-  padding: var(--space-18) 0 0;
+  margin: 0;
+  padding: 0;
 }
 .experience .permission-rules-list li {
   display: grid;

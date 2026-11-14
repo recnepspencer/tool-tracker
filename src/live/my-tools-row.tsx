@@ -55,7 +55,7 @@ export function ToolRow({
         type="button"
         className="worker-tool-main"
         onClick={() => onSelect(tool.id)}
-        aria-label={`Open details for ${tool.name} unit ${tool.asset_tag}`}
+        aria-label={`Open details for ${tool.name}`}
         data-tool-unit-id={tool.id}
       >
         <ToolPhoto
@@ -76,7 +76,6 @@ export function ToolRow({
             {tool.custody_started_at && (
               <time dateTime={tool.custody_started_at}>{relativeTime(tool.custody_started_at)}</time>
             )}
-            <span className="worker-tool-unit">{tool.asset_tag}</span>
           </span>
         </span>
       </button>
@@ -87,7 +86,7 @@ export function ToolRow({
             type="button"
             className="worker-transfer-button"
             onClick={() => onTransfer(tool.id)}
-            aria-label={`Transfer ${tool.name} unit ${tool.asset_tag}`}
+            aria-label={`Transfer ${tool.name}`}
           >
             Start transfer
           </button>

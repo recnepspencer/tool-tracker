@@ -5,9 +5,8 @@
   align-items: end;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-14);
+  gap: var(--gap-tight) var(--space-14);
   justify-content: space-between;
-  margin-bottom: var(--space-16);
 }
 .experience .operations-tabs {
   display: flex;
@@ -44,25 +43,26 @@
   width: min(100%, var(--space-420));
 }
 .experience .operations-filters .field--search {
-  min-height: var(--space-42);
   min-width: 0;
   padding-inline: var(--space-12);
 }
-.experience .operations-filters .field--select {
-  min-height: var(--space-42);
+.experience .operations-toolbar--inventory {
+  align-items: center;
 }
-.experience .operations-add-button {
+/* What the viewer can take and what they hold, one tap away, each with its count. */
+.experience .inventory-views {
+  flex: 0 1 var(--space-420);
+  min-width: 0;
+}
+.experience .inventory-views > button {
   align-items: center;
   display: inline-flex;
-  gap: var(--space-8);
-  justify-content: center;
+  gap: var(--space-6);
+  white-space: nowrap;
 }
-.experience .operations-add-button svg {
-  height: var(--space-16);
-  width: var(--space-16);
-}
-.experience .operations-toolbar--inventory {
-  justify-content: flex-end;
+.experience .inventory-views__count {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 .experience .flagged-list {
   display: grid;
@@ -264,9 +264,6 @@
   min-height: var(--space-36);
   padding-inline: var(--space-12);
 }
-.experience .operations-inline-error {
-  margin-bottom: var(--space-12);
-}
 .experience .operations-dialog {
   max-width: min(var(--space-520), calc(100vw - var(--space-24)));
 }
@@ -307,7 +304,7 @@
   justify-content: space-between;
   padding: var(--space-9) var(--space-16);
 }
-.experience .operations-queue-group__heading h2 {
+.experience .operations-queue-group__heading :is(h2, h3) {
   font-size: var(--text-base);
   margin: 0;
 }
@@ -556,6 +553,7 @@
     flex-direction: column;
   }
   .experience .operations-filters {
+    gap: var(--gap-tight);
     grid-template-columns: minmax(0, 1fr) minmax(var(--space-140), 0.72fr);
     min-width: 0;
     width: 100%;
@@ -681,6 +679,20 @@
   }
 }
 @media (max-width: 620px) {
+  /* One row of tabs that scrolls sideways, rather than a lone tab wrapping onto a second line. */
+  .experience .operations-tabs {
+    flex-wrap: nowrap;
+    gap: var(--space-4);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .experience .operations-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .experience .operations-tab {
+    flex: 0 0 auto;
+    padding-inline: var(--space-10);
+  }
   .experience .inventory-drawer {
     width: 100%;
   }

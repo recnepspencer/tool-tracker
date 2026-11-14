@@ -3,7 +3,9 @@ from uuid import uuid4
 import pytest
 from backend_platform.jobs import run_pending_jobs
 from backend_platform.models import PlatformAuditEventRecord
+from django.utils import timezone
 
+from companies.access import set_role
 from companies.models import CompanyRoleGrant
 from equipment.models import CustodyHandoff, CustodyPeriod, ToolAsset, Warehouse, WarehouseRoleGrant
 from tests.conftest import login_client
@@ -14,8 +16,15 @@ def command(client, path, body):
     return client.post(path, body, content_type="application/json")
 
 
+def revoke_role(member):
+    # Every role can hold tools, so only a member left without a live role loses that access.
+    CompanyRoleGrant.objects.filter(membership=member, revoked_at__isnull=True).update(
+        revoked_at=timezone.now()
+    )
+
+
 def test_archived_category_preserves_models_and_units_but_stops_registration(world, password_hash):
-    actor = member_in(world.company, password_hash, "equipment_manager")
+    actor = member_in(world.company, password_hash, "manager")
     client = login_client(actor.user)
     base = f"/api/companies/{world.company.pk}"
     category = world.model.category
@@ -51,12 +60,12 @@ def test_archived_category_preserves_models_and_units_but_stops_registration(wor
     )
     registration = {
         "request_key": str(uuid4()),
-        "asset_tag": "NEW",
+        "serial_number": "NEW",
         "tool_model_id": model["id"],
         "warehouse_id": str(world.warehouse.pk),
     }
     assert command(client, f"{base}/tools", registration).status_code == 404
-    assert not ToolAsset.objects.filter(asset_tag="NEW").exists()
+    assert not ToolAsset.objects.filter(serial_number="NEW").exists()
     assert {item["name"] for item in client.get(f"{base}/tools").json()["items"]} == {
         "Historical hammer drill"
     }
@@ -74,8 +83,9 @@ def test_archived_category_preserves_models_and_units_but_stops_registration(wor
 
 
 def test_destination_and_warehouse_grants_require_effective_equipment_access(world, password_hash):
-    admin = member_in(world.company, password_hash, "company_admin")
-    estimator = member_in(world.company, password_hash, "estimator")
+    admin = member_in(world.company, password_hash, "admin")
+    roleless = member_in(world.company, password_hash)
+    revoke_role(roleless.member)
     client = login_client(admin.user)
     base = f"/api/companies/{world.company.pk}"
     transfer = command(
@@ -84,21 +94,21 @@ def test_destination_and_warehouse_grants_require_effective_equipment_access(wor
         {
             "expected_revision": 1,
             "request_key": str(uuid4()),
-            "destination_membership_id": str(estimator.member.pk),
+            "destination_membership_id": str(roleless.member.pk),
         },
     )
     assert transfer.status_code == 409 and transfer.json()["code"] == "destination_cannot_receive"
-    grant = {"expected_revision": 1, "membership_id": str(estimator.member.pk), "enabled": True}
+    grant = {"expected_revision": 1, "membership_id": str(roleless.member.pk), "enabled": True}
     denied = command(client, f"{base}/warehouses/{world.warehouse.pk}/authority", grant)
     assert denied.status_code == 409 and denied.json()["code"] == "warehouse_manager_ineligible"
     assert not CustodyHandoff.objects.exists() and not WarehouseRoleGrant.objects.exists()
-    CompanyRoleGrant.objects.create(membership=estimator.member, role_code="field_member")
+    set_role(roleless.member, "foreman")
     assert (
         command(client, f"{base}/warehouses/{world.warehouse.pk}/authority", grant).status_code
         == 200
     )
-    estimator.member.access_state = "suspended"
-    estimator.member.save(update_fields=["access_state"])
+    roleless.member.access_state = "suspended"
+    roleless.member.save(update_fields=["access_state"])
     assert (
         command(
             client,
@@ -111,13 +121,13 @@ def test_destination_and_warehouse_grants_require_effective_equipment_access(wor
 
 
 def test_old_warehouse_grants_can_be_revoked_after_archive_and_role_loss(world, password_hash):
-    admin = member_in(world.company, password_hash, "company_admin")
+    admin = member_in(world.company, password_hash, "admin")
     member = member_in(world.company, password_hash)
-    empty = Warehouse.objects.create(company=world.company, code="EMPTY", name="Empty")
+    empty = Warehouse.objects.create(company=world.company, name="Empty")
     grant = WarehouseRoleGrant.objects.create(
         company=world.company, warehouse=empty, membership=member.member, granted_by=admin.member
     )
-    CompanyRoleGrant.objects.filter(membership=member.member).update(role_code="estimator")
+    revoke_role(member.member)
     client = login_client(admin.user)
     base = f"/api/companies/{world.company.pk}"
     assert (
@@ -151,18 +161,16 @@ def test_old_warehouse_grants_can_be_revoked_after_archive_and_role_loss(world, 
 @pytest.mark.parametrize(
     "role,scope,allowed",
     [
-        ("company_admin", False, True),
-        ("equipment_manager", False, True),
-        ("field_member", True, True),
-        ("field_member", False, False),
-        ("dispatcher", False, False),
-        ("estimator", False, False),
+        ("admin", False, True),
+        ("manager", False, True),
+        ("foreman", True, True),
+        ("foreman", False, False),
     ],
 )
 def test_manager_cancellation_is_scoped_reasoned_and_never_records_receipt(
     world, password_hash, role, scope, allowed
 ):
-    admin = member_in(world.company, password_hash, "company_admin")
+    admin = member_in(world.company, password_hash, "admin")
     actor = member_in(world.company, password_hash, role)
     receiver = member_in(world.company, password_hash)
     if scope:
@@ -211,7 +219,7 @@ def test_manager_cancellation_is_scoped_reasoned_and_never_records_receipt(
 
 
 def test_ended_holder_stays_named_in_current_and_historical_custody(world, password_hash):
-    admin = member_in(world.company, password_hash, "company_admin")
+    admin = member_in(world.company, password_hash, "admin")
     worker = member_in(world.company, password_hash, name="Departed foreman")
     manager = login_client(admin.user)
     receiver = login_client(worker.user)
@@ -238,7 +246,7 @@ def test_ended_holder_stays_named_in_current_and_historical_custody(world, passw
             {
                 "expected_revision": 1,
                 "access_state": "disabled",
-                "roles": ["field_member"],
+                "role": "foreman",
                 "end_membership": True,
                 "reason": "Employment ended",
             },
@@ -253,16 +261,17 @@ def test_ended_holder_stays_named_in_current_and_historical_custody(world, passw
     assert history[1]["holder_name"] == world.warehouse.name
 
 
-def test_requester_role_loss_blocks_approval_but_not_explicit_rejection(
+def test_requester_access_loss_blocks_approval_but_not_explicit_rejection(
     world, password_hash, api_client
 ):
-    admin = member_in(world.company, password_hash, "company_admin")
+    admin = member_in(world.company, password_hash, "admin")
     client = login_client(admin.user)
     base = f"/api/companies/{world.company.pk}"
     requested = command(
         api_client, f"{base}/tools/{world.assets[0].pk}/requests", {"request_key": str(uuid4())}
     ).json()
-    CompanyRoleGrant.objects.filter(membership=world.member).update(role_code="estimator")
+    world.member.access_state = "suspended"
+    world.member.save(update_fields=["access_state"])
     listed = client.get(f"{base}/tool-requests").json()["items"][0]
     assert listed["requester_name"] == "Ray" and listed["requester_eligible"] is False
     approved = command(
@@ -280,10 +289,31 @@ def test_requester_role_loss_blocks_approval_but_not_explicit_rejection(
     )
 
 
-def test_generic_catalog_types_can_be_created_edited_and_archived(world, api_client):
-    from companies.models import CompanyRoleGrant
+def test_warehouses_are_told_apart_by_name(world, password_hash):
+    admin = member_in(world.company, password_hash, "admin")
+    client = login_client(admin.user)
+    base = f"/api/companies/{world.company.pk}"
+    taken = command(client, f"{base}/warehouses", {"name": " main WAREHOUSE "})
+    assert taken.status_code == 409 and taken.json()["code"] == "warehouse_name_exists"
+    east = command(client, f"{base}/warehouses", {"name": "East yard"}).json()
+    renamed = command(
+        client,
+        f"{base}/warehouses/{east['id']}/update",
+        {"expected_revision": east["revision"], "name": "Main warehouse"},
+    )
+    assert renamed.status_code == 409 and renamed.json()["code"] == "warehouse_name_exists"
+    kept = command(
+        client,
+        f"{base}/warehouses/{east['id']}/update",
+        {"expected_revision": east["revision"], "name": "East yard", "address": "1 Yard Rd"},
+    )
+    assert kept.status_code == 200 and "code" not in kept.json()
+    names = [item["name"] for item in client.get(f"{base}/warehouses").json()["items"]]
+    assert names.index("East yard") < names.index("Main warehouse")
 
-    CompanyRoleGrant.objects.create(membership=world.member, role_code="company_admin")
+
+def test_generic_catalog_types_can_be_created_edited_and_archived(world, password_hash):
+    api_client = login_client(member_in(world.company, password_hash, "admin").user)
     base = f"/api/companies/{world.company.pk}/tool-models"
     body = {"name": "Rotary hammer", "category_id": str(world.model.category_id)}
     created = api_client.post(base, body, content_type="application/json")

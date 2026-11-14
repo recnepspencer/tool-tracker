@@ -3,7 +3,10 @@ name: nelson-test
 x-application: &application
   image: nelson-app:${RELEASE_SHA:?Set the release commit}
   restart: unless-stopped
-  env_file: /srv/nelson/shared/app.env
+  # integrations.env holds the domain settings and CI's mail and sign-in keys; it is read second, so it wins.
+  env_file:
+    - /srv/nelson/shared/app.env
+    - /srv/nelson/shared/integrations.env
   environment:
     POSTGRES_HOST: db
     POSTGRES_PORT: "5432"

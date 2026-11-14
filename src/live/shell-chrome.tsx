@@ -1,11 +1,12 @@
-import type { RefObject } from 'react';
-import { Link, NavLink } from 'react-router-dom';
-import { Plus, X } from 'lucide-react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { Menu } from 'lucide-react';
 import { Switch } from './kit';
-import { initials } from './format';
 import type { ShellDestination } from './shell-state';
 
-/** Demo ThemeToggle: the Appearance switch in the side nav and drawers. */
+/** Destinations the tab bar names; the fifth slot is always Menu. */
+const TAB_COUNT = 4;
+
+/** The Appearance switch in the account menus. */
 export function ThemeToggle({ theme, onToggleTheme }: { theme: 'dark' | 'light'; onToggleTheme(): void }) {
   return (
     <div className="theme-toggle theme-toggle--navigation">
@@ -19,98 +20,76 @@ export function ThemeToggle({ theme, onToggleTheme }: { theme: 'dark' | 'light';
   );
 }
 
-/** Demo NavItems in its sidebar and drawer variants. */
-export function ShellNavItems({
-  destinations,
-  variant = 'sidebar',
-  onNavigate,
-}: {
-  destinations: ShellDestination[];
-  variant?: 'sidebar' | 'drawer';
-  onNavigate?(): void;
-}) {
+export function useIsCurrent() {
+  const { pathname } = useLocation();
+  return ({ path, also = [] }: ShellDestination) =>
+    [path, ...also].some((root) => pathname === root || pathname.startsWith(`${root}/`));
+}
+
+/** Links in the desktop sidebar. */
+export function ShellNavItems({ destinations }: { destinations: ShellDestination[] }) {
+  const current = useIsCurrent();
   return (
     <>
-      {destinations.map(({ label, path, icon: Icon }) => (
-        <NavLink
-          key={path}
-          to={path}
-          onClick={onNavigate}
-          className={({ isActive }) =>
-            variant === 'drawer'
-              ? `worker-drawer-link${isActive ? ' worker-drawer-link--active' : ''}`
-              : `side-nav-link${isActive ? ' side-nav-link--active' : ''}`
-          }
-        >
-          <Icon className={variant === 'drawer' ? 'worker-drawer-link-icon' : 'side-nav-icon'} aria-hidden="true" />
-          {label}
-        </NavLink>
-      ))}
+      {destinations.map((destination) => {
+        const { label, path, icon: Icon } = destination;
+        const active = current(destination);
+        return (
+          <NavLink
+            key={path}
+            to={path}
+            aria-current={active ? 'page' : undefined}
+            className={active ? 'side-nav-link side-nav-link--active' : 'side-nav-link'}
+          >
+            <Icon className="side-nav-icon" aria-hidden="true" />
+            {label}
+          </NavLink>
+        );
+      })}
     </>
   );
 }
 
-/**
- * Demo MobileNavDrawer (control room) and WorkerNavigationDrawer (field):
- * profile button, links, the optional "Add a tool" action and Appearance.
- */
-export function ShellNavigationDrawer({
-  label,
-  drawerRef,
-  name,
-  title,
+/** The phone tab bar: the first four destinations by name, then Menu, which holds everything. */
+export function TabBar({
   destinations,
-  addToolPath,
-  theme,
-  onToggleTheme,
-  onClose,
-  onOpenAccount,
+  menuOpen,
+  onMenu,
 }: {
-  label: string;
-  drawerRef: RefObject<HTMLElement>;
-  name: string;
-  title: string;
   destinations: ShellDestination[];
-  addToolPath?: string;
-  theme: 'dark' | 'light';
-  onToggleTheme(): void;
-  onClose(): void;
-  onOpenAccount(): void;
+  menuOpen: boolean;
+  onMenu(open: boolean): void;
 }) {
+  const current = useIsCurrent();
+  const shown = destinations.slice(0, TAB_COUNT);
+  const menuActive = menuOpen || !shown.some(current);
   return (
-    <div className="worker-navigation-layer" role="presentation">
-      <button type="button" className="worker-scrim" aria-label="Close navigation backdrop" onClick={onClose} />
-      <aside ref={drawerRef} className="worker-navigation-drawer" role="dialog" aria-modal="true" aria-label={label}>
-        <div className="worker-drawer-header">
-          <button type="button" className="worker-close-button" aria-label="Close navigation" onClick={onClose}>
-            <X aria-hidden="true" />
-          </button>
-        </div>
-        <button
-          type="button"
-          className="worker-drawer-profile"
-          aria-label={`Open account for ${name}`}
-          onClick={onOpenAccount}
-        >
-          <span className="worker-avatar">{initials(name)}</span>
-          <div>
-            <strong>{name}</strong>
-            <span>{title}</span>
-          </div>
-        </button>
-        <nav className="worker-drawer-nav" aria-label={`${label} links`}>
-          <ShellNavItems destinations={destinations} variant="drawer" onNavigate={onClose} />
-          {addToolPath && (
-            <Link className="worker-drawer-link worker-drawer-link--accent" to={addToolPath} onClick={onClose}>
-              <Plus className="worker-drawer-link-icon" aria-hidden="true" />
-              <span>Add a tool</span>
-            </Link>
-          )}
-        </nav>
-        <div className="worker-drawer-theme">
-          <ThemeToggle theme={theme} onToggleTheme={onToggleTheme} />
-        </div>
-      </aside>
-    </div>
+    <nav className="tab-bar" aria-label="Main">
+      {shown.map((destination) => {
+        const { label, path, icon: Icon } = destination;
+        const active = !menuOpen && current(destination);
+        return (
+          <NavLink
+            key={path}
+            to={path}
+            onClick={() => onMenu(false)}
+            aria-current={active ? 'page' : undefined}
+            className={active ? 'tab-bar-item tab-bar-item--active' : 'tab-bar-item'}
+          >
+            <Icon aria-hidden="true" />
+            <span>{label}</span>
+          </NavLink>
+        );
+      })}
+      <button
+        type="button"
+        className={menuActive ? 'tab-bar-item tab-bar-item--active' : 'tab-bar-item'}
+        aria-expanded={menuOpen}
+        onClick={() => onMenu(!menuOpen)}
+      >
+        <Menu aria-hidden="true" />
+        <span>Menu</span>
+      </button>
+    </nav>
   );
 }

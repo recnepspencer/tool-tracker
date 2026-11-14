@@ -1,214 +1,176 @@
-import { Plus } from 'lucide-react';
-import { api, errorMessage, type Model } from './client';
-import { JobForm } from './job-form';
-import { jobStatusLabel, options, projectLifecycleLabel } from './jobs-labels';
-import type { JobsState } from './jobs-state';
-import { Button, ErrorState, LoadingState, OverlayDialog, SelectField } from './kit';
+import { useId } from 'react';
+import { api, type Model } from './client';
+import { JobRequestsPanel } from './job-requests';
+import { JobPeople } from './job-roster';
+import { JobTools } from './job-tools';
+import type { JobTab, JobsState, RequestReviewState } from './jobs-state';
+import { Button, OverlayDialog } from './kit';
+import { CommandError, CommandForm } from './settings-command';
 import { Field, text } from './ui';
 
-/** Live-only projects card, in the demo `settings-card` / `job-row` idiom. */
-export function ProjectList({ state }: { state: Pick<JobsState, 'projects' | 'open'> }) {
-  const { projects, open } = state;
-  const headingId = 'jobs-projects-heading';
+type Job = Model<'JobView'>;
+
+const tabLabel: Record<JobTab, string> = {
+  people: 'People',
+  tools: 'Tools',
+  requests: 'Requests',
+  details: 'Details',
+};
+
+/** Naming a new job is all it takes to add one. */
+export function AddJobDialog({ state }: { state: JobsState }) {
+  const { c } = state;
+  const close = () => state.select('');
   return (
-    <section className="surface-card settings-card jobs-manager" aria-labelledby={headingId}>
-      <div className="settings-card-heading">
-        <h2 id={headingId}>Projects</h2>
-        <Button variant="secondary" onClick={() => open('new-project')}>
-          <Plus aria-hidden="true" /> Add project
-        </Button>
+    <OverlayDialog label="Add job" onClose={close} panelClassName="admin-dialog" showCloseButton>
+      <div className="dialog-heading">
+        <h2>Add a job</h2>
       </div>
-      <p className="jobs-muted">Every job belongs to a project. Close a project when its work is done.</p>
-      {projects.isPending ? (
-        <LoadingState label="Loading projects…" />
-      ) : projects.isError ? (
-        <ErrorState
-          message={`Projects could not be loaded. ${errorMessage(projects.error)}`}
-          onRetry={() => void projects.refetch()}
-        />
-      ) : (
-        <div className="jobs-list">
-          {!projects.data.length && <p className="jobs-muted">No projects yet. Add one before adding jobs.</p>}
-          {projects.data.map((project) => (
-            <div className="job-row" key={project.id}>
-              <div className="job-row-copy">
-                <strong>{project.name}</strong>
-                <small>
-                  {project.number} · {projectLifecycleLabel[project.lifecycle]}
-                </small>
-              </div>
-              <div className="job-row-actions">
-                <Button
-                  variant="ghost"
-                  aria-label={`Edit project ${project.name}`}
-                  onClick={() => open(`edit-project:${project.id}`)}
-                >
-                  Edit
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
+      <CommandForm
+        label="Add job"
+        onCancel={close}
+        onDone={close}
+        submit={(form) =>
+          api.POST('/api/companies/{company_id}/jobs', { params: { path: c.path }, body: { name: text(form, 'name') } })
+        }
+      >
+        <Field label="Job name" name="name" required maxLength={200} placeholder="e.g. Riverside lighting" />
+      </CommandForm>
+    </OverlayDialog>
   );
 }
 
-/** Demo job `OverlayDialog`s: add/edit job, archive confirm, plus the live project dialogs. */
-export function JobDialogs({ state }: { state: Pick<JobsState, 'c' | 'dialog' | 'open' | 'projects' | 'jobs'> }) {
-  const { c, dialog, open, projects, jobs } = state;
-  if (!c.can('jobs.manage') || !dialog) return null;
-  const [action, id] = dialog.split(':');
-  const job = jobs.data?.find((item) => item.id === id);
-  const project = projects.data?.find((item) => item.id === id);
-  const close = () => open('');
-  const path = { ...c.path, job_id: id };
-  const dialogProps = { onClose: close, showCloseButton: true, panelClassName: 'admin-dialog job-dialog' };
-  if (action === 'new-project' || (action === 'edit-project' && project)) {
-    const title = project ? 'Edit project' : 'Add project';
-    return (
-      <OverlayDialog label={title} {...dialogProps}>
-        <h2>{title}</h2>
-        <JobForm
-          label={project ? 'Save' : 'Add project'}
-          onDone={close}
-          onCancel={close}
-          submit={(form) =>
-            project
-              ? api.POST('/api/companies/{company_id}/projects/{project_id}/update', {
-                  params: { path: { ...c.path, project_id: project.id } },
-                  body: {
-                    expected_revision: project.revision,
-                    name: text(form, 'name'),
-                    lifecycle: text(form, 'lifecycle') as Model<'ProjectView'>['lifecycle'],
-                  },
-                })
-              : api.POST('/api/companies/{company_id}/projects', {
-                  params: { path: c.path },
-                  body: {
-                    number: text(form, 'number'),
-                    name: text(form, 'name'),
-                    lifecycle: text(form, 'lifecycle') as Model<'ProjectView'>['lifecycle'],
-                  },
-                })
-          }
-        >
-          {!project && <Field label="Project number" name="number" required maxLength={50} />}
-          <Field
-            label="Project name"
-            name="name"
-            defaultValue={project?.name ?? ''}
-            required
-            maxLength={200}
-            placeholder="e.g. Riverside Medical Center"
-          />
-          <SelectField
-            label="Project status"
-            name="lifecycle"
-            searchable={false}
-            defaultValue={project?.lifecycle ?? 'active'}
-            options={options(projectLifecycleLabel)}
-          />
-        </JobForm>
-      </OverlayDialog>
-    );
-  }
-  if (action === 'new-job' || (action === 'edit-job' && job)) {
-    const title = job ? 'Edit job' : 'Add job';
-    return (
-      <OverlayDialog label={title} {...dialogProps}>
-        <h2>{title}</h2>
-        {projects.isError && (
-          <p className="form-error" role="alert">
-            Projects could not be loaded. {errorMessage(projects.error)}
-          </p>
-        )}
-        <JobForm
-          label={job ? 'Save' : 'Add job'}
-          onDone={close}
-          onCancel={close}
-          submit={(form) =>
-            job
-              ? api.POST('/api/companies/{company_id}/jobs/{job_id}/update', {
-                  params: { path },
-                  body: {
-                    expected_revision: job.revision,
-                    name: text(form, 'name'),
-                    status: text(form, 'status') as Model<'JobView'>['status'],
-                    archived: !!job.archived_at,
-                  },
-                })
-              : api.POST('/api/companies/{company_id}/jobs', {
-                  params: { path: c.path },
-                  body: {
-                    project_id: text(form, 'project'),
-                    number: text(form, 'number'),
-                    name: text(form, 'name'),
-                    status: text(form, 'status') as Model<'JobView'>['status'],
-                  },
-                })
-          }
-        >
-          {!job && (
-            <>
-              <SelectField
-                label="Project"
-                name="project"
-                required
-                placeholder="Choose a project"
-                emptyMessage="No open projects"
-                options={(projects.data ?? [])
-                  .filter((item) => ['active', 'prospective'].includes(item.lifecycle))
-                  .map((item) => ({ value: item.id, label: item.name, description: item.number }))}
-              />
-              <Field label="Job number" name="number" required maxLength={50} />
-            </>
-          )}
-          <Field
-            label="Job name"
-            name="name"
-            defaultValue={job?.name ?? ''}
-            required
-            maxLength={200}
-            placeholder="e.g. Riverside · Lighting"
-          />
-          <SelectField
-            label="Status"
-            name="status"
-            searchable={false}
-            defaultValue={job?.status ?? 'active'}
-            options={options(jobStatusLabel)}
-          />
-        </JobForm>
-      </OverlayDialog>
-    );
-  }
-  if ((action === 'archive' || action === 'restore') && job) {
-    const archive = action === 'archive';
-    return (
-      <OverlayDialog label={archive ? 'Archive job' : 'Restore job'} {...dialogProps}>
-        <h2>
-          {archive ? 'Archive' : 'Restore'} {job.name}?
-        </h2>
+/**
+ * A job's own page: a short overview, then one section at a time — who is on it, the tools they
+ * hold, requests waiting on a decision, and (for managers) its name and archiving.
+ */
+export function JobSheet({ job, state, review }: { job: Job; state: JobsState; review: RequestReviewState }) {
+  const { c, tab, tabs, tools, waiting } = state;
+  const ids = useId();
+  const close = () => state.select('');
+  const people = state.currentFor(job.id).length;
+  const toolCount = tools.data?.reduce((total, person) => total + person.tools.length, 0);
+  return (
+    <OverlayDialog label={job.name} onClose={close} panelClassName="admin-dialog job-sheet" showCloseButton page>
+      <header className="job-sheet__head">
+        <h2>{job.name}</h2>
+        {job.archived_at ? <span className="job-sheet__status">Archived</span> : null}
+      </header>
+      <dl className="job-facts" aria-label="Overview">
+        <div>
+          <dt>People</dt>
+          <dd>{state.assignments.data ? people : '–'}</dd>
+        </div>
+        {c.can('tools.read') ? (
+          <div>
+            <dt>Tools</dt>
+            <dd>{toolCount ?? '–'}</dd>
+          </div>
+        ) : null}
+        {waiting.length ? (
+          <div>
+            <dt>Waiting</dt>
+            <dd>{waiting.length}</dd>
+          </div>
+        ) : null}
+      </dl>
+      {tabs.length > 1 ? (
+        <div className="segmented job-tabs" role="tablist" aria-label="Job sections">
+          {tabs.map((value) => (
+            <button
+              key={value}
+              id={`${ids}-${value}`}
+              type="button"
+              role="tab"
+              aria-selected={tab === value}
+              aria-controls={`${ids}-panel`}
+              onClick={() => tab !== value && state.setTab(value)}
+            >
+              {tabLabel[value]}
+              {value === 'requests' ? <span className="job-tabs__count">{waiting.length}</span> : null}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      <div
+        className="job-panel"
+        role={tabs.length > 1 ? 'tabpanel' : 'region'}
+        id={`${ids}-panel`}
+        aria-labelledby={tabs.length > 1 ? `${ids}-${tab}` : undefined}
+        aria-label={tabs.length > 1 ? undefined : tabLabel[tab]}
+      >
+        {tab === 'people' && <JobPeople state={state} job={job} onLeave={close} />}
+        {tab === 'tools' && <JobTools state={state} />}
+        {tab === 'requests' && <JobRequestsPanel requests={waiting} c={c} review={review} />}
+        {tab === 'details' && <JobDetails job={job} state={state} />}
+      </div>
+    </OverlayDialog>
+  );
+}
+
+/** The job's name and whether it is still running. Managers only. */
+function JobDetails({ job, state }: { job: Job; state: JobsState }) {
+  const { c, archive } = state;
+  return (
+    <>
+      <CommandForm
+        label="Save name"
+        saveWhenChanged
+        submit={(form) =>
+          api.POST('/api/companies/{company_id}/jobs/{job_id}/update', {
+            params: { path: { ...c.path, job_id: job.id } },
+            body: { name: text(form, 'name'), expected_revision: job.revision, archived: Boolean(job.archived_at) },
+          })
+        }
+      >
+        <Field label="Job name" name="name" defaultValue={job.name} required maxLength={200} />
+      </CommandForm>
+      <div className="job-archive">
         <p className="jobs-muted">
-          {archive
-            ? 'This closes current assignments and pending requests and removes the job from people’s current jobs. Job history and tool custody are kept.'
-            : 'The job returns to the current list. Former assignments stay ended; people must be assigned or join again.'}
+          {job.archived_at
+            ? 'This job is archived. Restore it to put people back on it.'
+            : 'When the work is done, archive the job. Everyone comes off it; its history and tools stay as they are.'}
         </p>
-        <JobForm
-          label={archive ? 'Archive job' : 'Restore job'}
-          busyLabel={archive ? 'Archiving…' : 'Restoring…'}
-          onDone={close}
-          onCancel={close}
-          submit={() =>
-            api.POST('/api/companies/{company_id}/jobs/{job_id}/update', {
-              params: { path },
-              body: { expected_revision: job.revision, name: job.name, status: job.status, archived: archive },
-            })
-          }
-        />
-      </OverlayDialog>
-    );
-  }
-  return null;
+        {job.archived_at ? (
+          <Button variant="secondary" disabled={archive.busy} onClick={() => state.setJobArchived(job, false)}>
+            {archive.busy ? 'Restoring…' : 'Restore job'}
+          </Button>
+        ) : (
+          <Button variant="secondary" onClick={state.startArchive}>
+            Archive job
+          </Button>
+        )}
+        <CommandError error={archive.error} />
+      </div>
+    </>
+  );
+}
+
+export function ArchiveJobDialog({ job, state }: { job: Job; state: JobsState }) {
+  const { archive } = state;
+  return (
+    <OverlayDialog
+      label="Archive job"
+      onClose={() => !archive.busy && state.cancelArchive()}
+      panelClassName="admin-dialog"
+      showCloseButton
+    >
+      <div className="dialog-heading">
+        <h2>Archive {job.name}?</h2>
+        <p>
+          Everyone comes off the job and waiting requests are turned down. Its history and tool custody are kept, and
+          you can restore it from Archived.
+        </p>
+      </div>
+      <CommandError error={archive.error} />
+      <div className="dialog-actions">
+        <Button variant="ghost" onClick={state.cancelArchive} disabled={archive.busy}>
+          Cancel
+        </Button>
+        <Button variant="danger" onClick={() => state.setJobArchived(job, true)} disabled={archive.busy}>
+          {archive.busy ? 'Archiving…' : 'Archive job'}
+        </Button>
+      </div>
+    </OverlayDialog>
+  );
 }

@@ -79,9 +79,12 @@ if DEBUG:
         "http://localhost:5173",
     ]
 PLATFORM_PASSWORD_RESET_URL = "/reset-password"
+BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
 EMAIL_BACKEND = os.getenv(
     "EMAIL_BACKEND",
-    "django.core.mail.backends.filebased.EmailBackend"
+    "accounts.mail_backends.BrevoEmailBackend"
+    if BREVO_API_KEY
+    else "django.core.mail.backends.filebased.EmailBackend"
     if DEBUG
     else "django.core.mail.backends.smtp.EmailBackend",
 )
@@ -95,6 +98,11 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "1") == "1"
 EMAIL_TIMEOUT = 15
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Tool Tracker <noreply@localhost>")
+# Sign-in providers appear on the account screens once their client ID and secret are set.
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+MICROSOFT_CLIENT_ID = os.getenv("MICROSOFT_CLIENT_ID", "")
+MICROSOFT_CLIENT_SECRET = os.getenv("MICROSOFT_CLIENT_SECRET", "")
 if DEBUG and os.getenv("NELSON_FAST_PASSWORD_HASHING") == "1":
     # Browser suites create many accounts; production-strength hashing would dominate their runtime.
     PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]

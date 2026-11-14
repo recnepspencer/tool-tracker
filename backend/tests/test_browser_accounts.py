@@ -15,7 +15,8 @@ from PIL import Image
 
 from accounts.models import AuthenticationWindow, SignupChallenge, SignupCode
 from accounts.signup_codes import issue_codes
-from companies.models import Company, CompanyRoleGrant, MembershipInvitation
+from companies.access import set_role
+from companies.models import Company, MembershipInvitation
 from tests.conftest import PASSWORD, login_client
 from tests.http_contract import assert_response
 
@@ -117,14 +118,14 @@ def test_signup_expiry_duplicate_and_csrf(world):
 
 
 def test_invitation_email_signup_accept_and_replay(world):
-    CompanyRoleGrant.objects.create(membership=world.member, role_code="company_admin")
+    set_role(world.member, "admin")
     admin = login_client(world.user)
     url = f"/api/companies/{world.company.pk}/invitations"
     created = assert_response(
         post(
             admin,
             url,
-            {"email": "invitee@example.com", "preferred_name": "Invitee", "role": "field_member"},
+            {"email": "invitee@example.com", "preferred_name": "Invitee", "role": "foreman"},
         ),
         "/api/companies/{company_id}/invitations",
     )
@@ -169,12 +170,12 @@ def test_invitation_email_signup_accept_and_replay(world):
 
 @pytest.mark.parametrize("state", ["revoked", "expired", "unknown", "existing"])
 def test_invitation_signup_rejects_unusable_links_and_existing_accounts(world, state):
-    CompanyRoleGrant.objects.create(membership=world.member, role_code="company_admin")
+    set_role(world.member, "admin")
     email = world.user.email if state == "existing" else "invitee@example.com"
     created = post(
         login_client(world.user),
         f"/api/companies/{world.company.pk}/invitations",
-        {"email": email, "preferred_name": "Invitee", "role": "field_member"},
+        {"email": email, "preferred_name": "Invitee", "role": "foreman"},
     ).json()
     if state == "revoked":
         MembershipInvitation.objects.update(revoked_at=timezone.now())
@@ -197,12 +198,12 @@ def test_invitation_signup_rejects_unusable_links_and_existing_accounts(world, s
 
 
 def test_invitee_can_ask_for_their_link_again(world):
-    CompanyRoleGrant.objects.create(membership=world.member, role_code="company_admin")
+    set_role(world.member, "admin")
     admin = login_client(world.user)
     created = post(
         admin,
         f"/api/companies/{world.company.pk}/invitations",
-        {"email": "invitee@example.com", "preferred_name": "Invitee", "role": "field_member"},
+        {"email": "invitee@example.com", "preferred_name": "Invitee", "role": "foreman"},
     ).json()
     client = browser()
     sent = len(mail.outbox)
@@ -301,7 +302,7 @@ def test_signed_in_password_change_requires_current_password_and_revokes_other_s
 
 
 def test_invitation_mail_failure_rolls_back(world, monkeypatch):
-    CompanyRoleGrant.objects.create(membership=world.member, role_code="company_admin")
+    set_role(world.member, "admin")
     client = login_client(world.user)
 
     def fail(*args, **kwargs):
@@ -453,7 +454,7 @@ def test_named_owner_accepts_ownership_and_owner_is_protected():
     assert mail.outbox[-1].subject == "Take ownership of A real company"
     token = re.search(r"/invite/([\w-]+)", mail.outbox[-1].body).group(1)
     preview = founder.get(f"/api/invitations/{token}/preview").json()
-    assert preview["owner"] and preview["role"] == "company_admin"
+    assert preview["owner"] and preview["role"] == "admin"
     boss = browser()
     verified(boss, "boss@example.com", invitation_token=token)
     accepted = assert_response(
@@ -469,7 +470,7 @@ def test_named_owner_accepts_ownership_and_owner_is_protected():
         {
             "expected_revision": accepted["revision"],
             "access_state": "active",
-            "roles": ["field_member"],
+            "role": "foreman",
             "reason": "Testing",
         },
     )

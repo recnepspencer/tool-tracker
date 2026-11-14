@@ -75,24 +75,30 @@ it('preserves a useful stale revision conflict and never retries the write', asy
   expect(fetch).toHaveBeenCalledTimes(2);
 });
 
-it('keeps evidence validation separate from stale-record recovery', async () => {
+it('keeps a blocked resolution separate from stale-record recovery', async () => {
   const fetch = vi
     .fn()
     .mockResolvedValueOnce(response({ csrf_token: 'csrf' }))
     .mockResolvedValueOnce(
-      response({ message: 'Photo evidence is required.', code: 'correction_evidence_required' }, 409),
+      response({ message: 'Settle the pending handoff for this tool first.', code: 'handoff_pending' }, 409),
     );
   const { api, isStaleRecord } = await client(fetch);
   const error = await api
     .POST('/api/companies/{company_id}/reconciliations/{case_id}/resolve', {
       params: { path: { company_id: 'company', case_id: 'case' } },
-      body: { expected_revision: 1, expected_asset_revision: 1, note: 'Verified return' },
+      body: {
+        expected_revision: 1,
+        outcome: 'move_custody',
+        expected_asset_revision: 1,
+        destination_warehouse_id: 'warehouse',
+        note: 'Verified return',
+      },
     })
     .catch((error: unknown) => error);
   expect(error).toMatchObject({
     status: 409,
-    code: 'correction_evidence_required',
-    message: 'Photo evidence is required.',
+    code: 'handoff_pending',
+    message: 'Settle the pending handoff for this tool first.',
   });
   expect(isStaleRecord(error)).toBe(false);
   expect(fetch).toHaveBeenCalledTimes(2);

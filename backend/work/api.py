@@ -13,69 +13,26 @@ from companies.access import capabilities, require_member
 from config.contracts import CommandInput, PageInput, RevisionInput, paginate
 
 from . import jobs, participation
-from .models import Job, JobAssignment, JobParticipationRequest, Project
+from .models import Job, JobAssignment, JobParticipationRequest
 
 router = Router(tags=["work"])
-JobStatus = Literal["planned", "active", "on_hold", "completed", "cancelled"]
-ProjectStatus = Literal["prospective", "active", "closed", "cancelled"]
 ParticipationMode = Literal["direct", "approval_required", "disabled"]
 
 
-class ProjectInput(CommandInput):
-    number: str = Field(min_length=1, max_length=50)
-    name: str = Field(min_length=1, max_length=200)
-    lifecycle: ProjectStatus = "active"
-
-
-class ProjectUpdate(RevisionInput):
-    name: str = Field(min_length=1, max_length=200)
-    lifecycle: ProjectStatus
-
-
-class ProjectView(Schema):
-    id: UUID
-    number: str
-    name: str
-    lifecycle: ProjectStatus
-    revision: int
-
-
-class ProjectPage(Schema):
-    items: list[ProjectView]
-    next_offset: int | None
-
-
 class JobInput(CommandInput):
-    project_id: UUID
-    number: str = Field(min_length=1, max_length=50)
     name: str = Field(min_length=1, max_length=200)
-    status: JobStatus = "active"
 
 
 class JobUpdate(RevisionInput):
     name: str = Field(min_length=1, max_length=200)
-    status: JobStatus
     archived: bool = False
 
 
 class JobView(Schema):
     id: UUID
-    project_id: UUID
-    number: str
     name: str
-    status: JobStatus
     archived_at: datetime | None
     revision: int
-    project_name: str
-    project_number: str
-
-    @staticmethod
-    def resolve_project_name(obj):
-        return obj.project.name
-
-    @staticmethod
-    def resolve_project_number(obj):
-        return obj.project.number
 
 
 class JobPage(Schema):
@@ -117,7 +74,6 @@ class ParticipationView(Schema):
     revision: int
     member_name: str
     job_name: str
-    job_number: str
     decided_by_id: UUID | None
     decided_by_name: str | None
     approval_blocked_reason: str | None
@@ -129,10 +85,6 @@ class ParticipationView(Schema):
     @staticmethod
     def resolve_job_name(obj):
         return obj.job.name
-
-    @staticmethod
-    def resolve_job_number(obj):
-        return obj.job.number
 
     @staticmethod
     def resolve_decided_by_name(obj):
@@ -159,7 +111,6 @@ class DecisionInput(RevisionInput):
 
 class AssignmentInput(RevisionInput):
     membership_id: UUID
-    responsibility: Literal["crew", "foreman", "supervisor"] = "crew"
     reason: str = Field(min_length=1, max_length=2000)
 
 
@@ -167,7 +118,6 @@ class AssignmentView(Schema):
     id: UUID
     job_id: UUID
     membership_id: UUID
-    responsibility: Literal["crew", "foreman", "supervisor"]
     starts_at: datetime
     ends_at: datetime | None
     assigned_by_id: UUID
@@ -195,23 +145,16 @@ class AssignmentPage(Schema):
     next_offset: int | None
 
 
-def projects_list(request: HttpRequest, company_id: UUID, page: Query[PageInput]):
-    require_member(current_identity(request), company_id, "jobs.read")
-    return paginate(
-        Project.objects.filter(company_id=company_id).order_by("number", "id"),
-        page.limit,
-        page.offset,
-    )
+class JobMembersInput(RevisionInput):
+    """Everyone who should be on the job after the save; anyone left out comes off it."""
+
+    membership_ids: list[UUID] = Field(max_length=1000)
+    note: str = Field(default="", max_length=2000)
 
 
-@csrf_protect
-def project_create(request: HttpRequest, company_id: UUID, data: ProjectInput):
-    return jobs.create_project(current_identity(request), company_id, data)
-
-
-@csrf_protect
-def project_update(request: HttpRequest, company_id: UUID, project_id: UUID, data: ProjectUpdate):
-    return jobs.update_project(current_identity(request), company_id, project_id, data)
+class JobMembersView(Schema):
+    job: JobView
+    assignments: list[AssignmentView]
 
 
 def jobs_list(
@@ -219,9 +162,9 @@ def jobs_list(
 ):
     require_member(current_identity(request), company_id, "jobs.read")
     return paginate(
-        Job.objects.filter(company_id=company_id, archived_at__isnull=not archived)
-        .select_related("project")
-        .order_by("number", "id"),
+        Job.objects.filter(company_id=company_id, archived_at__isnull=not archived).order_by(
+            "name", "id"
+        ),
         page.limit,
         page.offset,
     )
@@ -289,6 +232,11 @@ def assignment_create(request: HttpRequest, company_id: UUID, job_id: UUID, data
 
 
 @csrf_protect
+def job_members_set(request: HttpRequest, company_id: UUID, job_id: UUID, data: JobMembersInput):
+    return participation.set_job_members(current_identity(request), company_id, job_id, data)
+
+
+@csrf_protect
 def assignment_end(
     request: HttpRequest, company_id: UUID, assignment_id: UUID, data: DecisionInput
 ):
@@ -318,27 +266,6 @@ def assignments_list(
     return paginate(query.order_by("-starts_at", "id"), page.limit, page.offset)
 
 
-define_http_endpoint(
-    router,
-    method="get",
-    path="/companies/{company_id}/projects",
-    endpoint=projects_list,
-    response=ProjectPage,
-)
-define_http_endpoint(
-    router,
-    method="post",
-    path="/companies/{company_id}/projects",
-    endpoint=project_create,
-    response=ProjectView,
-)
-define_http_endpoint(
-    router,
-    method="post",
-    path="/companies/{company_id}/projects/{project_id}/update",
-    endpoint=project_update,
-    response=ProjectView,
-)
 define_http_endpoint(
     router, method="get", path="/companies/{company_id}/jobs", endpoint=jobs_list, response=JobPage
 )
@@ -397,6 +324,13 @@ define_http_endpoint(
     path="/companies/{company_id}/jobs/{job_id}/assignments",
     endpoint=assignment_create,
     response=AssignmentView,
+)
+define_http_endpoint(
+    router,
+    method="post",
+    path="/companies/{company_id}/jobs/{job_id}/members",
+    endpoint=job_members_set,
+    response=JobMembersView,
 )
 define_http_endpoint(
     router,

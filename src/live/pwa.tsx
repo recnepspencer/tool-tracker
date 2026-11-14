@@ -32,8 +32,7 @@ function useSavedSince() {
 }
 
 export function PwaStatus() {
-  const { online, update, install, installError, installApp, updateApp, later, dismissInstall, dismissInstallError } =
-    usePwaState();
+  const { online, install, installError, installApp, dismissInstall, dismissInstallError } = usePwaState();
   const savedSince = useSavedSince();
   const savedAt = savedSince
     ? new Date(savedSince).toLocaleString([], { hour: 'numeric', minute: '2-digit', month: 'short', day: 'numeric' })
@@ -51,13 +50,6 @@ export function PwaStatus() {
             Weak connection. Showing records saved {savedAt}; they will refresh when the connection improves.
           </div>
         )
-      )}
-      {update && (
-        <div className="status-bar">
-          An update is ready. Finish any unsaved changes first.{' '}
-          <button onClick={() => void updateApp()}>Update app</button>
-          <button onClick={later}>Later</button>
-        </div>
       )}
       {install && (
         <div className="install-bar">

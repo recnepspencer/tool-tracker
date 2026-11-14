@@ -1,14 +1,68 @@
-import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import {
+  Fragment,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
+} from 'react';
 import { createPortal } from 'react-dom';
+import { Check } from 'lucide-react';
 import { cx } from './cx';
 import { ChevronDownIcon } from './ChevronDownIcon';
 import { Field } from './Field';
-import { filterSelectOptions, optionDomId, selectedSelectOption, type SelectOption } from './select-options';
+import {
+  optionDomId,
+  sectionSelectOptions,
+  selectedSelectOption,
+  SEARCH_THRESHOLD,
+  SECTION_THRESHOLD,
+  type SelectOption,
+} from './select-options';
 import { useFormDraft } from './form-draft';
 import { useListboxOverlay } from './use-listbox-overlay';
 import { useModalFocusTrap } from '../experience/use-modal-focus-trap';
 
 export type { SelectOption };
+
+const PHONE_QUERY = '(max-width: 620px)';
+const RECENT_LIMIT = 5;
+
+/** On a phone every picker is a bottom sheet with full-width rows; a popover is a desktop control. */
+function usePhoneLayout() {
+  return useSyncExternalStore(
+    (onChange) => {
+      if (typeof window.matchMedia !== 'function') return () => undefined;
+      const query = window.matchMedia(PHONE_QUERY);
+      query.addEventListener('change', onChange);
+      return () => query.removeEventListener('change', onChange);
+    },
+    () => typeof window.matchMedia === 'function' && window.matchMedia(PHONE_QUERY).matches,
+    () => false,
+  );
+}
+
+// Recent picks are a convenience for this browser only, so storage that is missing or full is ignored.
+const recentKey = (label: string) => `tool-tracker.select-recent.${label}`;
+function readRecent(label: string): string[] {
+  try {
+    const stored: unknown = JSON.parse(window.localStorage.getItem(recentKey(label)) ?? '[]');
+    return Array.isArray(stored) ? stored.filter((item): item is string => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+function rememberRecent(label: string, value: string) {
+  try {
+    const next = [value, ...readRecent(label).filter((item) => item !== value)].slice(0, RECENT_LIMIT);
+    window.localStorage.setItem(recentKey(label), JSON.stringify(next));
+  } catch {
+    // Nothing to do: the list simply has no Recent section.
+  }
+}
 
 export interface SelectFieldProps {
   label: string;
@@ -26,7 +80,9 @@ export interface SelectFieldProps {
   name?: string;
   emptyMessage?: string;
   className?: string;
+  /** Defaults to a search field once the list is longer than a screenful. */
   searchable?: boolean;
+  /** A sheet on every screen size; otherwise a popover on desktop and a sheet on a phone. */
   presentation?: 'popover' | 'sheet';
 }
 
@@ -45,7 +101,7 @@ export function SelectField({
   name,
   emptyMessage = 'No matches',
   className,
-  searchable = true,
+  searchable: searchableProp,
   presentation = 'popover',
 }: SelectFieldProps) {
   const generatedId = useId();
@@ -65,11 +121,17 @@ export function SelectField({
   const proxyRef = useRef<HTMLInputElement>(null);
   const beginDraft = useFormDraft();
   const selected = selectedSelectOption(options, value);
-  const isSheet = presentation === 'sheet';
-  const filtered = useMemo(
-    () => filterSelectOptions(options, searchable && open ? query : ''),
-    [open, options, query, searchable],
+  const phone = usePhoneLayout();
+  const isSheet = presentation === 'sheet' || phone;
+  const searchable = searchableProp ?? options.length > SEARCH_THRESHOLD;
+  const long = options.length > SECTION_THRESHOLD;
+  const [recent, setRecent] = useState<string[]>([]);
+  const sections = useMemo(
+    () => sectionSelectOptions(options, searchable && open ? query : '', open && long ? recent : []),
+    [long, open, options, query, recent, searchable],
   );
+  // Keyboard movement runs through the options in the order they are shown, section by section.
+  const filtered = useMemo(() => sections.flatMap((section) => section.options), [sections]);
   const active = filtered[activeIndex];
   const overlayStyle = useListboxOverlay(!isSheet && open, fieldRef, listRef);
   useModalFocusTrap(open && isSheet, () => close(true), sheetRef);
@@ -125,7 +187,13 @@ export function SelectField({
     if (restoreFocus) triggerRef.current?.focus();
   };
 
+  const openList = () => {
+    if (long) setRecent(readRecent(label));
+    setOpen(true);
+  };
+
   const choose = (option: SelectOption) => {
+    if (long) rememberRecent(label, option.value);
     if (option.value !== value) {
       beginDraft?.();
       if (controlledValue === undefined) setOwnValue(option.value);
@@ -154,7 +222,7 @@ export function SelectField({
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault();
       if (!open) {
-        setOpen(true);
+        openList();
         return;
       }
       moveActive(event.key === 'ArrowDown' ? 1 : -1);
@@ -170,7 +238,7 @@ export function SelectField({
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault();
       if (!open) {
-        setOpen(true);
+        openList();
         return;
       }
       moveActive(event.key === 'ArrowDown' ? 1 : -1);
@@ -179,7 +247,7 @@ export function SelectField({
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       if (!open) {
-        setOpen(true);
+        openList();
       } else if (active) {
         choose(active);
       }
@@ -215,6 +283,33 @@ export function SelectField({
     else optionRefs.current.delete(valueToStore);
   };
 
+  // A titled section is a labelled group inside the listbox; an untitled one is just its options.
+  const renderSections = (renderOption: (option: SelectOption, index: number) => ReactNode, sheet: boolean) => {
+    let index = 0;
+    return sections.map((section) => {
+      const rendered = section.options.map((option) => renderOption(option, index++));
+      if (!section.title) return <Fragment key="all">{rendered}</Fragment>;
+      const heading = (
+        <span className="field-section" aria-hidden="true">
+          {section.title}
+        </span>
+      );
+      return sheet ? (
+        <div key={section.title} className="field-sheet-group" role="group" aria-label={section.title}>
+          {heading}
+          {rendered}
+        </div>
+      ) : (
+        <li key={section.title} role="none">
+          {heading}
+          <ul className="field-listbox-group" role="group" aria-label={section.title}>
+            {rendered}
+          </ul>
+        </li>
+      );
+    });
+  };
+
   return (
     <div ref={fieldRef} className="field-anchor">
       <Field
@@ -244,14 +339,18 @@ export function SelectField({
           aria-activedescendant={open && active ? optionDomId(listboxId, active.value) : undefined}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          onClick={() => !disabled && setOpen((current) => !current)}
+          onClick={() => {
+            if (disabled) return;
+            if (open) close();
+            else openList();
+          }}
           onKeyDown={onButtonKeyDown}
         >
           <span className={cx('field-select-trigger__value', !selected && 'field-select-trigger__value--placeholder')}>
             {selected?.label ?? placeholder}
           </span>
+          <ChevronDownIcon className="field-chevron" />
         </button>
-        <ChevronDownIcon className="field-chevron" />
         {name ? (
           // Submits the value with its form and carries native required validation.
           <input
@@ -269,7 +368,7 @@ export function SelectField({
       </Field>
       {open && !isSheet
         ? createPortal(
-            <div ref={listRef} className="field-popover" style={overlayStyle}>
+            <div ref={listRef} className={cx('field-popover', long && 'field-popover--long')} style={overlayStyle}>
               {searchable ? (
                 <div className="field-popover-search">
                   <label className="sr-only" htmlFor={`${generatedId}-popover-search`}>
@@ -297,26 +396,32 @@ export function SelectField({
               ) : null}
               <ul id={listboxId} className="field-listbox" role="listbox" aria-label={label}>
                 {filtered.length ? (
-                  filtered.map((option, index) => (
-                    <li
-                      key={option.value}
-                      id={optionDomId(listboxId, option.value)}
-                      role="option"
-                      data-value={option.value}
-                      className={cx(
-                        'field-option',
-                        index === activeIndex && 'field-option--active',
-                        option.value === value && 'field-option--selected',
-                      )}
-                      aria-selected={option.value === value}
-                      onMouseEnter={() => setActiveIndex(index)}
-                      onMouseDown={(event) => event.preventDefault()}
-                      onClick={() => choose(option)}
-                    >
-                      {option.label}
-                      {option.description ? <small>{option.description}</small> : null}
-                    </li>
-                  ))
+                  renderSections(
+                    (option, index) => (
+                      <li
+                        key={option.value}
+                        id={optionDomId(listboxId, option.value)}
+                        role="option"
+                        data-value={option.value}
+                        className={cx(
+                          'field-option',
+                          index === activeIndex && 'field-option--active',
+                          option.value === value && 'field-option--selected',
+                        )}
+                        aria-selected={option.value === value}
+                        onMouseEnter={() => setActiveIndex(index)}
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => choose(option)}
+                      >
+                        <span>
+                          {option.label}
+                          {option.description ? <small>{option.description}</small> : null}
+                        </span>
+                        {option.value === value ? <Check className="field-option-check" aria-hidden="true" /> : null}
+                      </li>
+                    ),
+                    false,
+                  )
                 ) : (
                   <li className="field-empty">{emptyMessage}</li>
                 )}
@@ -336,13 +441,18 @@ export function SelectField({
               />
               <section
                 ref={sheetRef}
-                className="field-sheet"
+                className={cx('field-sheet', long && 'field-sheet--tall')}
                 role="dialog"
                 aria-modal="true"
                 aria-label={`Choose ${label}`}
               >
                 <span className="field-sheet-handle" aria-hidden="true" />
-                <h2>{label}</h2>
+                <header className="field-sheet-header">
+                  <h2>{label}</h2>
+                  <button type="button" className="button button--ghost" onClick={() => close(true)}>
+                    Cancel
+                  </button>
+                </header>
                 {searchable ? (
                   <div className="field-sheet-search">
                     <label className="sr-only" htmlFor={`${generatedId}-sheet-search`}>
@@ -371,30 +481,33 @@ export function SelectField({
                 ) : null}
                 <div id={listboxId} className="field-sheet-options" role="listbox" aria-label={label}>
                   {filtered.length ? (
-                    filtered.map((option, index) => (
-                      <button
-                        ref={(element) => setOptionRef(option.value, element)}
-                        type="button"
-                        role="option"
-                        data-value={option.value}
-                        aria-selected={option.value === value}
-                        className={cx(
-                          'field-sheet-option',
-                          index === activeIndex && 'field-sheet-option--active',
-                          option.value === value && 'field-sheet-option--selected',
-                        )}
-                        key={option.value}
-                        onMouseEnter={() => setActiveIndex(index)}
-                        onClick={() => choose(option)}
-                        onKeyDown={(event) => onSheetOptionKeyDown(event, index)}
-                      >
-                        <span>
-                          {option.label}
-                          {option.description ? <small>{option.description}</small> : null}
-                        </span>
-                        <span className="field-option-radio" aria-hidden="true" />
-                      </button>
-                    ))
+                    renderSections(
+                      (option, index) => (
+                        <button
+                          ref={(element) => setOptionRef(option.value, element)}
+                          type="button"
+                          role="option"
+                          data-value={option.value}
+                          aria-selected={option.value === value}
+                          className={cx(
+                            'field-sheet-option',
+                            index === activeIndex && 'field-sheet-option--active',
+                            option.value === value && 'field-sheet-option--selected',
+                          )}
+                          key={option.value}
+                          onMouseEnter={() => setActiveIndex(index)}
+                          onClick={() => choose(option)}
+                          onKeyDown={(event) => onSheetOptionKeyDown(event, index)}
+                        >
+                          <span>
+                            {option.label}
+                            {option.description ? <small>{option.description}</small> : null}
+                          </span>
+                          {option.value === value ? <Check className="field-option-check" aria-hidden="true" /> : null}
+                        </button>
+                      ),
+                      true,
+                    )
                   ) : (
                     <p className="field-empty">{emptyMessage}</p>
                   )}

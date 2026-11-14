@@ -8,8 +8,8 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("companies", "0004_company_logo_and_owner"),
-        ("equipment", "0006_asset_purchase_details"),
+        ("companies", "0005_three_roles"),
+        ("equipment", "0010_starter_catalog"),
         ("evidence", "0001_initial"),
     ]
 

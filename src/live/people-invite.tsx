@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { api, result } from './client';
-import { Button, OverlayDialog } from './kit';
+import { Button, FieldGroup, OverlayDialog } from './kit';
 import { ROLES, ROLE_LABELS, type RoleCode } from './people-roles';
 import { useCompany } from './session';
 import { CommandForm } from './settings-command';
@@ -15,7 +15,6 @@ export function InvitePersonDialog({ onClose }: { onClose(): void }) {
   return (
     <OverlayDialog label="Invite a person" onClose={onClose} panelClassName="admin-dialog" showCloseButton>
       <div className="dialog-heading">
-        <span className="eyebrow">People</span>
         <h2>Invite someone new</h2>
       </div>
       {created ? (
@@ -47,15 +46,17 @@ export function InvitePersonDialog({ onClose }: { onClose(): void }) {
             setCreated({ name });
           }}
         >
-          <Field label="Name" name="name" required maxLength={120} />
-          <Field label="Email address" name="email" type="email" placeholder="name@company.com" required />
-          <Select label="Role" name="role" defaultValue="field_member" searchable={false}>
-            {ROLES.map((role) => (
-              <option key={role} value={role}>
-                {ROLE_LABELS[role]}
-              </option>
-            ))}
-          </Select>
+          <FieldGroup>
+            <Field label="Name" name="name" required maxLength={120} />
+            <Field label="Email address" name="email" type="email" placeholder="name@company.com" required />
+            <Select label="Role" name="role" defaultValue="foreman" searchable={false}>
+              {ROLES.map((role) => (
+                <option key={role} value={role}>
+                  {ROLE_LABELS[role]}
+                </option>
+              ))}
+            </Select>
+          </FieldGroup>
         </CommandForm>
       )}
     </OverlayDialog>

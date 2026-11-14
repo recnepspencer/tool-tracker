@@ -50,14 +50,11 @@ class CompanySummary(Schema):
 
 class DirectoryJob(Schema):
     job_id: UUID
-    number: str
     name: str
-    responsibility: str
 
 
 class DirectoryTool(Schema):
     asset_id: UUID
-    asset_tag: str
     name: str
     manufacturer: str
     model_number: str
@@ -115,7 +112,8 @@ def activity(
             | Q(subject_entity_id__icontains=text)
             | Q(metadata__reason__icontains=text)
             | Q(metadata__note__icontains=text)
-            | Q(metadata__asset_tag__icontains=text)
+            | Q(metadata__tool_name__icontains=text)
+            | Q(metadata__serial_number__icontains=text)
         )
     result = paginate(query.order_by("-occurred_at", "id"), page.limit, page.offset)
     names = dict(
@@ -174,14 +172,11 @@ def directory(
         query = query.exclude(pk__in=assignments.values("membership_id"))
     if search:
         text = search[:200]
-        job_members = assignments.filter(
-            Q(job__name__icontains=text) | Q(job__number__icontains=text)
-        ).values("membership_id")
+        job_members = assignments.filter(Q(job__name__icontains=text)).values("membership_id")
         tool_members = (
             CustodyPeriod.objects.filter(company_id=company_id, ends_at__isnull=True)
             .filter(
-                Q(asset__asset_tag__icontains=text)
-                | (Q(asset__serial_number__icontains=text) if sensitive else Q())
+                (Q(asset__serial_number__icontains=text) if sensitive else Q())
                 | Q(asset__tool_model__name__icontains=text)
                 | Q(asset__tool_model__manufacturer__icontains=text)
                 | Q(asset__tool_model__model_number__icontains=text)
@@ -209,9 +204,7 @@ def directory(
         people[assignment.membership_id]["jobs"].append(
             {
                 "job_id": assignment.job_id,
-                "number": assignment.job.number,
                 "name": assignment.job.name,
-                "responsibility": assignment.responsibility,
             }
         )
     missing = set(
@@ -225,7 +218,6 @@ def directory(
         people[custody.holder_membership_id]["tools"].append(
             {
                 "asset_id": custody.asset_id,
-                "asset_tag": custody.asset.asset_tag,
                 "name": custody.asset.tool_model.name,
                 "manufacturer": custody.asset.tool_model.manufacturer,
                 "model_number": custody.asset.tool_model.model_number,

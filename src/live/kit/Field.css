@@ -3,12 +3,15 @@
   width: 100%;
 }
 .field--select {
+  cursor: pointer;
   position: relative;
 }
 .field {
   background: var(--field);
+  position: relative;
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius-field);
+  cursor: text;
   display: grid;
   gap: var(--space-8);
   min-width: 0;
@@ -23,12 +26,21 @@
   gap: var(--space-6);
   padding: var(--space-8) var(--space-12);
 }
+/* Without a visible label a field is one row, the same height as a button or search box
+   beside it, rather than whatever its padding and font size happen to add up to. */
+.field--bare {
+  align-content: center;
+  height: var(--control-height);
+  padding-block: 0;
+}
+.field--bare.field--compact {
+  height: var(--space-36);
+}
 .field--search {
   align-items: center;
   border-radius: var(--radius-pill);
   display: flex;
   gap: var(--space-10);
-  min-height: var(--control-height);
   padding: 0 var(--space-16);
 }
 .field--focused,
@@ -37,13 +49,36 @@
   box-shadow: var(--elevation-focus);
 }
 .field--disabled {
+  cursor: default;
   opacity: var(--opacity-disabled);
 }
+/* Centred, not baseline-aligned: the smaller hint would otherwise hang below the label.
+   The hint ("required", "optional") sits with its label, never across the field where a
+   select's chevron or a label-row action lives. */
 .field-head {
-  align-items: baseline;
+  align-items: center;
   display: flex;
-  gap: var(--space-8);
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-8);
+  min-width: 0;
+}
+/* Out of the flow, so a link on the label row can't make this field taller than its neighbours. */
+.field-action {
+  font-size: var(--text-body);
+  line-height: var(--leading-none);
+  position: absolute;
+  right: var(--space-16);
+  top: calc(var(--space-12) + var(--text-xs) / 2);
+  transform: translateY(-50%);
+}
+.field-action a {
+  color: var(--muted);
+  text-decoration: none;
+}
+.field-action a:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: var(--space-3);
 }
 .field-label {
   color: var(--dim);
@@ -57,15 +92,33 @@
   letter-spacing: var(--tracking-hint);
   text-transform: uppercase;
 }
+/* Every single-line control is exactly one line of its text tall. Whatever sits beside
+   the text (a reveal button, an icon) centres in that line instead of growing the field. */
+.field {
+  --field-line: calc(var(--text-lg) * var(--leading-snug));
+}
+.field--compact {
+  --field-line: calc(var(--text-base) * var(--leading-snug));
+}
+.field-control,
+.field-control-row,
+.field-select-trigger {
+  height: var(--field-line);
+}
+textarea.field-control {
+  height: auto;
+}
 .field-control,
 .field-control-row {
   min-width: 0;
   width: 100%;
 }
+/* Block, so an inline input never picks up the line box's extra space below it. */
 .field-control {
   background: transparent;
   border: 0;
   color: var(--ink);
+  display: block;
   font: var(--font-control);
   outline: 0;
   padding: 0;
@@ -81,11 +134,6 @@
   align-items: center;
   display: flex;
   gap: var(--space-8);
-}
-.field--select .field-control-row,
-.field--select .field-select-trigger {
-  box-sizing: border-box;
-  padding-right: calc(var(--space-16) + var(--space-8));
 }
 .field-select-trigger {
   align-items: center;
@@ -120,13 +168,23 @@
 .field-select-trigger__value--placeholder {
   color: var(--dim);
 }
+/* In the trigger's own row, after the value, so nothing on the label row can meet it. */
 .field-chevron {
   color: var(--dim);
+  flex: none;
   pointer-events: none;
-  position: absolute;
-  right: var(--space-16);
-  top: 50%;
-  transform: translateY(-50%);
+}
+/* A unit in front of the value, such as the "$" on a price. */
+.field-prefix {
+  color: var(--dim);
+  flex: none;
+  font: var(--font-control);
+}
+.field--compact .field-prefix {
+  font: var(--font-control-compact);
+}
+.field-control-row--prefixed {
+  gap: var(--space-4);
 }
 .icon-chevron-down {
   display: block;
@@ -138,73 +196,108 @@
   width: var(--space-16);
 }
 .field-popover {
-  background: var(--card);
+  background: var(--sheet-bg);
   border: var(--border-width) solid var(--border-strong);
-  border-radius: var(--radius-field);
+  border-radius: var(--radius-group);
   box-shadow: var(--elevation-overlay);
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   z-index: var(--z-popover);
 }
 .field-popover-search {
-  border-bottom: var(--border-width) solid var(--border);
-  padding: var(--space-8);
+  flex: none;
+  padding: var(--space-8) var(--space-8) var(--space-4);
 }
-.field-popover-search-input {
+/* One search field for both presentations: a grey rounded well, like the page searches. */
+.field-popover-search-input,
+.field-sheet-search-input {
   appearance: none;
-  background: var(--field);
-  border: var(--border-width) solid var(--border);
+  background: var(--chip-bg);
+  border: var(--border-width) solid transparent;
   border-radius: var(--radius-sm);
   box-sizing: border-box;
   color: var(--ink);
-  font: var(--font-control-compact);
-  min-height: var(--space-38);
+  font: var(--weight-regular) var(--text-base) / var(--leading-snug) var(--font-sans);
+  min-height: var(--space-36);
   outline: 0;
-  padding: 0 var(--space-10);
+  padding: 0 var(--space-12);
   width: 100%;
 }
-.field-popover-search-input:focus {
+.field-popover-search-input:focus,
+.field-sheet-search-input:focus {
   border-color: var(--blue-border-focus);
-  box-shadow: var(--elevation-focus);
 }
-.field-popover-search-input::placeholder {
+.field-popover-search-input::placeholder,
+.field-sheet-search-input::placeholder {
   color: var(--dim);
 }
 .field-listbox {
   list-style: none;
   margin: 0;
+  min-height: 0;
   max-height: var(--listbox-max-height);
   overflow-y: auto;
-  padding: var(--space-6);
+  padding: var(--space-4);
+}
+.field-popover--long .field-listbox {
+  max-height: min(var(--field-sheet-max-height), 60dvh);
+}
+.field-listbox-group {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 .field-option,
 .field-empty {
   border-radius: var(--radius-sm);
   color: var(--ink);
-  padding: var(--space-10) var(--space-12);
+  padding: var(--space-8) var(--space-10);
 }
 .field-option {
+  align-items: center;
   cursor: pointer;
+  display: flex;
+  font: var(--weight-regular) var(--text-base) / var(--leading-snug) var(--font-sans);
+  gap: var(--space-12);
+  justify-content: space-between;
+}
+.field-option > span,
+.field-sheet-option > span {
+  min-width: 0;
 }
 .field-option small,
+.field-sheet-option small,
 .field-empty {
-  color: var(--dim);
+  color: var(--muted);
   display: block;
-  font: var(--font-meta);
-  margin-top: var(--space-3);
+  font: var(--weight-regular) var(--text-body) / var(--leading-snug) var(--font-sans);
+  margin-top: var(--space-2);
 }
 .field-empty {
   margin: 0;
-  padding: var(--space-12);
+  padding: var(--space-24) var(--space-16);
   text-align: center;
 }
 .field-option--active,
 .field-option:hover {
-  background: var(--blue-bg);
-  color: var(--blue-soft);
+  background: var(--neutral-fill);
 }
-.field-option--selected {
-  box-shadow: var(--elevation-selected);
+/* The chosen option is marked by a checkmark only, as in iOS menus. */
+.field-option-check {
+  color: var(--accent-text);
+  flex: 0 0 var(--space-18);
+  height: var(--space-18);
+  stroke-width: 2.5;
+  width: var(--space-18);
+}
+/* Letter and Recent headings in a long list. */
+.field-section {
+  color: var(--muted);
+  display: block;
+  font: var(--weight-medium) var(--text-body) / var(--leading-snug) var(--font-sans);
+  padding: var(--space-12) var(--space-10) var(--space-4);
 }
 .field-sheet-layer {
   inset: 0;
@@ -213,131 +306,129 @@
 }
 .field-sheet-scrim {
   appearance: none;
-  backdrop-filter: blur(var(--space-3));
-  background: var(--scrim-strong);
+  background: var(--scrim);
   border: 0;
   inset: 0;
   padding: 0;
   position: fixed;
   width: 100%;
 }
+/* A bottom sheet: a grey surface, the title with Cancel, an optional search, then one group of rows. */
 .field-sheet {
-  animation: field-sheet-rise-in var(--duration-480) var(--ease-out) both;
-  background: var(--card-2);
-  border: var(--border-width) solid var(--border-strong);
-  border-radius: var(--space-32) var(--space-32) var(--space-46) var(--space-46);
+  animation: field-sheet-rise-in var(--duration-300) var(--ease-out) both;
+  background: var(--sheet-bg);
+  border-radius: var(--radius-group) var(--radius-group) 0 0;
   bottom: 0;
   box-shadow: var(--elevation-field-sheet);
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
   left: 0;
-  max-height: min(var(--field-sheet-max-height), 100dvh);
-  overflow-y: auto;
-  padding-bottom: var(--space-46);
+  margin-inline: auto;
+  max-height: calc(100dvh - env(safe-area-inset-top) - var(--space-48));
+  max-width: var(--space-560);
+  padding-bottom: calc(env(safe-area-inset-bottom) + var(--space-16));
   position: fixed;
   right: 0;
+}
+.field-sheet--tall {
+  height: calc(100dvh - env(safe-area-inset-top) - var(--space-12));
+  max-height: none;
 }
 .field-sheet-handle {
   background: var(--border-strong);
   border-radius: var(--radius-pill);
   display: block;
+  flex: none;
   height: var(--space-4);
-  margin: var(--space-12) auto var(--space-4);
-  width: var(--space-38);
+  margin: var(--space-8) auto 0;
+  width: var(--space-36);
+}
+.field-sheet-header {
+  align-items: center;
+  display: flex;
+  flex: none;
+  justify-content: space-between;
+  padding: var(--space-8) var(--space-8) var(--space-8) var(--space-16);
 }
 .field-sheet h2 {
-  font: var(--weight-medium) var(--text-5xl) / var(--leading-snug) var(--font-sans);
-  letter-spacing: var(--tracking-heading);
-  margin: var(--space-10) var(--space-20) var(--space-4);
+  font: var(--weight-semibold) var(--text-xl) / var(--leading-snug) var(--font-sans);
+  margin: 0;
 }
 .field-sheet-search {
-  padding: var(--space-8) var(--space-20) 0;
-}
-.field-sheet-search-input {
-  appearance: none;
-  background: var(--field);
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-field);
-  box-sizing: border-box;
-  color: var(--ink);
-  font: var(--font-control-compact);
-  min-height: var(--control-height);
-  outline: 0;
-  padding: 0 var(--space-12);
-  width: 100%;
-}
-.field-sheet-search-input:focus {
-  border-color: var(--blue-border-focus);
-  box-shadow: var(--elevation-focus);
-}
-.field-sheet-search-input::placeholder {
-  color: var(--dim);
+  flex: none;
+  padding: 0 var(--space-16) var(--space-8);
 }
 .field-sheet-options {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
-  gap: var(--space-7);
-  max-height: var(--field-sheet-max-height);
+  min-height: 0;
   overflow-y: auto;
-  padding: var(--space-16) var(--space-20) 0;
+  overscroll-behavior: contain;
+  padding: var(--space-4) var(--space-16) 0;
+}
+/* Rows sit on one group surface; the hairline between two rows starts at the text. */
+.field-sheet-options > .field-sheet-option,
+.field-sheet-group > .field-sheet-option {
+  background-color: var(--group-bg);
+}
+.field-sheet-options > .field-sheet-option:first-child,
+.field-sheet-group > .field-section + .field-sheet-option {
+  border-top-left-radius: var(--radius-group);
+  border-top-right-radius: var(--radius-group);
+}
+.field-sheet-options > .field-sheet-option:last-child,
+.field-sheet-group > .field-sheet-option:last-child {
+  border-bottom-left-radius: var(--radius-group);
+  border-bottom-right-radius: var(--radius-group);
+}
+.field-sheet-option + .field-sheet-option {
+  background-image: linear-gradient(var(--border), var(--border));
+  background-position: var(--space-16) 0;
+  background-repeat: no-repeat;
+  background-size: 100% var(--border-width);
+}
+.field-sheet-group {
+  display: flex;
+  flex-direction: column;
+}
+.field-sheet-group .field-section {
+  padding-inline: var(--space-16);
 }
 .field-sheet-option {
   align-items: center;
   appearance: none;
-  background: var(--card);
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-field);
+  border: 0;
+  border-radius: 0;
   color: var(--ink);
   cursor: pointer;
   display: flex;
-  font: var(--font-control-compact);
+  flex: none;
+  font: var(--weight-regular) var(--text-base) / var(--leading-snug) var(--font-sans);
   gap: var(--space-12);
   justify-content: space-between;
-  min-height: var(--field-sheet-option-height);
-  padding: var(--space-14);
+  min-height: var(--space-48);
+  padding: var(--space-10) var(--space-16);
   text-align: left;
-  transition:
-    background var(--duration-220) var(--ease-standard),
-    border-color var(--duration-220) var(--ease-standard),
-    box-shadow var(--duration-220) var(--ease-standard);
   width: 100%;
 }
-.field-sheet-option > span:first-child {
-  min-width: 0;
-}
-.field-sheet-option small {
-  color: var(--dim);
-  display: block;
-  font: var(--font-meta);
-  margin-top: var(--space-3);
-}
 .field-sheet-option:hover,
-.field-sheet-option--active,
-.field-sheet-option--selected {
-  background: var(--blue-bg);
-  border-color: var(--blue-border);
+.field-sheet-option--active {
+  background-color: var(--neutral-fill);
 }
-.field-sheet-option--selected {
-  box-shadow: var(--elevation-selected);
+.field-sheet-option:focus-visible {
+  outline: var(--focus-ring-width) solid var(--blue);
+  outline-offset: calc(var(--focus-ring-width) * -1);
 }
-.field-option-radio {
-  border: var(--border-width) solid var(--border-strong);
-  border-radius: var(--radius-full);
-  flex: 0 0 var(--space-18);
-  height: var(--space-18);
-  width: var(--space-18);
-}
-.field-sheet-option--selected .field-option-radio {
-  background: var(--blue);
-  border-color: var(--blue);
-  box-shadow: var(--elevation-switch-on);
+.field-sheet .field-empty {
+  background: none;
 }
 @keyframes field-sheet-rise-in {
   from {
-    opacity: 0;
     transform: translateY(100%);
   }
   to {
-    opacity: var(--opacity-full);
     transform: translateY(0);
   }
 }

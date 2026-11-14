@@ -21,15 +21,22 @@ from .models import (
 )
 
 
+def reject_duplicate_name(company_id, name, exclude=None):
+    # The name is how people tell warehouses apart, so two can't share one.
+    if (
+        Warehouse.objects.filter(company_id=company_id, name__iexact=name.strip())
+        .exclude(pk=exclude)
+        .exists()
+    ):
+        raise conflict("Another warehouse already has this name.", code="warehouse_name_exists")
+
+
 @transaction.atomic
 def create_warehouse(identity, company_id, data):
     authorize_write(identity, company_id, "warehouses.manage")
     Company.objects.select_for_update().get(pk=company_id)
-    if Warehouse.objects.filter(company_id=company_id, code=data.code).exists():
-        raise conflict("Warehouse code already exists.", code="warehouse_code_exists")
-    result = Warehouse.objects.create(
-        company_id=company_id, code=data.code, name=data.name, address=data.address
-    )
+    reject_duplicate_name(company_id, data.name)
+    result = Warehouse.objects.create(company_id=company_id, name=data.name, address=data.address)
     record_company_event(
         identity,
         company_id,
@@ -49,6 +56,7 @@ def update_warehouse(identity, company_id, warehouse_id, data):
     if result is None:
         raise not_found("Warehouse not found.")
     expect_revision(result, data.expected_revision)
+    reject_duplicate_name(company_id, data.name, exclude=result.pk)
     if data.archived and (
         CustodyPeriod.objects.filter(holder_warehouse=result, ends_at__isnull=True).exists()
         or ToolAsset.objects.filter(responsible_warehouse=result, lifecycle="active").exists()

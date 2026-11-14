@@ -14,7 +14,7 @@ test('field layout follows the demo with real photographed custody and review sh
     const invite = await command(page.request, `${fixture.base}/invitations`, {
       email,
       preferred_name: 'Ray Torres',
-      role: 'field_member',
+      role: 'foreman',
     });
     await command(worker.request, '/api/auth/signup', { email, name: 'Ray Torres', invitation_token: invite.token });
     const verification = new URL(await emailLink(email, '/verify-email'), 'http://localhost');
@@ -45,7 +45,7 @@ test('field layout follows the demo with real photographed custody and review sh
     });
     const asset = await command(page.request, `${fixture.base}/tools`, {
       request_key: crypto.randomUUID(),
-      asset_tag: 'TL-101',
+      serial_number: 'TL-101',
       warehouse_id: fixture.warehouse.id,
       tool_model_id: model.id,
       photo_id: photo.id,
@@ -75,7 +75,7 @@ test('field layout follows the demo with real photographed custody and review sh
     });
     await worker.goto('/app/mine');
     await expect(worker.getByRole('heading', { name: 'My tools', exact: true })).toBeVisible();
-    const held = worker.getByRole('button', { name: 'Open details for Hammer drill unit TL-101', exact: true });
+    const held = worker.getByRole('button', { name: 'Open details for Hammer drill', exact: true });
     await expect(held).toBeVisible();
     // The unaccepted unit waits in the pending list instead of the held list.
     await expect(
@@ -99,7 +99,7 @@ test('field layout follows the demo with real photographed custody and review sh
     await worker.setViewportSize({ width: 390, height: 844 });
     await worker.screenshot({ path: 'artifacts/parity-worker-mobile.png', fullPage: true });
     expect(await worker.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    const startTransfer = worker.getByRole('button', { name: 'Transfer Hammer drill unit TL-101', exact: true });
+    const startTransfer = worker.getByRole('button', { name: 'Transfer Hammer drill', exact: true });
     await startTransfer.click();
     await expect(worker.getByRole('dialog', { name: 'Tool details' })).toBeVisible();
     await expect(worker.getByRole('form', { name: 'Action details', exact: true })).toBeVisible();
@@ -127,22 +127,19 @@ test('field layout follows the demo with real photographed custody and review sh
     await worker.keyboard.press('Escape');
     await expect(worker).toHaveURL(/\/checkout\?view=list$/);
     await expect(requestable).toBeFocused();
-    // The control-room list now has twelve destinations; at a desktop height they all fit without scrolling.
+    // The admin sidebar has nine destinations; reviews hang off Queue and Settings sits in the account menu.
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('/app/tools');
     for (const name of [
       'Queue',
       'Inventory',
-      'Damaged & lost',
-      'Reconciliation',
+      'My tools',
+      'Jobs',
       'People',
       'Foremen',
-      'Jobs',
       'Warehouses',
       'Catalog',
-      'Access',
       'Activity',
-      'Settings',
     ]) {
       await expect(page.getByRole('link', { name, exact: true })).toBeVisible();
       await expect(page.getByRole('link', { name, exact: true })).toBeInViewport({ ratio: 1 });
@@ -172,19 +169,16 @@ test('field layout follows the demo with real photographed custody and review sh
     await page.reload();
     await expect(page.getByRole('combobox', { name: 'Warehouse', exact: true })).toHaveText('Main warehouse');
     await page.goto('/app/operations');
-    const tabs = page.getByRole('tablist', { name: 'Queue filter', exact: true });
-    const empty = page.getByText('Nothing waiting in this view. Requests and returns land here.', { exact: true });
-    await tabs.getByRole('tab', { name: /^Requests/ }).click();
-    await expect(empty).toBeVisible();
-    await tabs.getByRole('tab', { name: /^Returns/ }).click();
-    await expect(empty).toBeVisible();
-    // A warehouse-to-person transfer is not a gate decision; it is listed in queue history.
-    await tabs.getByRole('tab', { name: /^All waiting/ }).click();
-    await expect(empty).toBeVisible();
-    await tabs.getByRole('tab', { name: 'History', exact: true }).click();
+    // The unit sent to Ray waits on Ray, so nothing needs the admin; it is listed under Waiting on others.
+    await expect(page.getByText('Nothing needs you', { exact: true })).toBeVisible();
     await expect(
-      page.getByRole('region', { name: 'Transfers between people', exact: true }).getByText('Ray Torres'),
-    ).not.toHaveCount(0);
+      page
+        .getByRole('region', { name: 'Waiting on others', exact: true })
+        .getByText('Waiting for Ray Torres to accept'),
+    ).toBeVisible();
+    // The unit Ray already accepted is a past decision, behind the history toggle.
+    await page.getByRole('button', { name: 'Show history', exact: true }).click();
+    await expect(page.getByRole('region', { name: 'History', exact: true }).getByText(/Ray Torres/)).not.toHaveCount(0);
   } finally {
     await workerContext.close();
   }

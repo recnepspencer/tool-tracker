@@ -5,6 +5,7 @@ import { AssetDetailsFields, assetDetailsInput } from './asset-details';
 import { Button, Callout, ErrorState, LoadingState, OverlayDialog, SelectField } from './kit';
 import { CustodyEvidenceFields } from './photos';
 import { useStagedPhoto } from './photo-state';
+import { OpenCaseDialog } from './reconciliation-open';
 import { markFound, proposeHandoff, transferSubmitNote } from './tool-actions';
 import { CommandForm } from './tool-detail-form';
 import { transferCandidates, useChoice, type ToolDetailState, type ToolPermissions } from './tools-state';
@@ -89,14 +90,12 @@ export function ToolDrawerActions({ state, asset: t, permissions: p }: Props) {
 
 function DecisionDialog({
   label,
-  eyebrow,
   title,
   description,
   onClose,
   children,
 }: {
   label: string;
-  eyebrow: string;
   title: string;
   description: string;
   onClose(): void;
@@ -105,7 +104,6 @@ function DecisionDialog({
   return (
     <OverlayDialog label={label} onClose={onClose} panelClassName="admin-dialog operations-dialog" showCloseButton>
       <div className="dialog-heading">
-        <span className="eyebrow">{eyebrow}</span>
         <h2>{title}</h2>
         <p>{description}</p>
       </div>
@@ -141,7 +139,6 @@ function EditDialog({ state, asset: t }: Props) {
   return (
     <DecisionDialog
       label={`Edit ${t.name}`}
-      eyebrow="Inventory decision"
       title="Edit tool"
       description="Update this unit's record without changing custody or warehouse responsibility."
       onClose={close}
@@ -193,7 +190,6 @@ function FlagDialog({ state, asset: t, permissions: p, initial }: Props & { init
   return (
     <DecisionDialog
       label={`${copy.action}: ${t.name}`}
-      eyebrow="Inventory decision"
       title={copy.action}
       description={copy.description}
       onClose={close}
@@ -250,7 +246,6 @@ function ServiceDialog({ state, asset: t, restore }: Props & { restore: boolean 
   return (
     <DecisionDialog
       label={`${restore ? 'Restore' : 'Record service for'} ${t.name}`}
-      eyebrow="Service record"
       title={restore ? 'Restore to stock' : 'Record service'}
       description={
         restore
@@ -326,14 +321,13 @@ function LifecycleDialog({ state, asset: t }: Props) {
   return (
     <DecisionDialog
       label={`${retired ? 'Change lifecycle of' : 'Decommission'} ${t.name}`}
-      eyebrow="Lifecycle decision"
       title={retired ? 'Change lifecycle' : 'Decommission tool'}
       description="This archives the unit while keeping its custody and audit history. Return it to a warehouse first."
       onClose={close}
     >
       {blocked ? (
         <>
-          <Callout tone="amber" eyebrow="Not yet" title="This tool cannot change lifecycle" description={blocked} />
+          <Callout tone="amber" title="This tool cannot change lifecycle" description={blocked} />
           <div className="dialog-actions">
             <Button variant="secondary" onClick={close}>
               Close
@@ -368,7 +362,6 @@ function LifecycleDialog({ state, asset: t }: Props) {
             />
             <Callout
               tone="amber"
-              eyebrow="Permanent"
               title="Disposal cannot be undone"
               description="A disposed tool cannot be restored or reassigned. Its custody and audit history stay on record."
             />
@@ -388,7 +381,6 @@ function StewardshipDialog({ state, asset: t }: Props) {
   return (
     <DecisionDialog
       label={`Change responsible warehouse for ${t.name}`}
-      eyebrow="Warehouse responsibility"
       title="Change responsible warehouse"
       description="Moves accountability for this tool to another warehouse. Custody does not change."
       onClose={close}
@@ -412,7 +404,6 @@ function StewardshipDialog({ state, asset: t }: Props) {
             options={warehouses.map((warehouse) => ({
               value: warehouse.id,
               label: warehouse.name,
-              description: warehouse.code,
             }))}
             disabled={state.refs.warehouses.isPending}
             required
@@ -424,55 +415,8 @@ function StewardshipDialog({ state, asset: t }: Props) {
   );
 }
 
-const caseOptions = [
-  { value: 'custody_dispute', label: 'Custody dispute', description: 'The recorded holder disputes having this tool' },
-  { value: 'missing_asset', label: 'Missing asset', description: 'The tool cannot be located' },
-  { value: 'duplicate_asset', label: 'Duplicate asset', description: 'This record duplicates another unit' },
-];
-
 function ReconcileDialog({ state, asset: t }: Props) {
-  const close = () => state.setAction('');
-  return (
-    <DecisionDialog
-      label={`Open a reconciliation case for ${t.name}`}
-      eyebrow="Reconciliation"
-      title="Open reconciliation case"
-      description="Start a case when the record and what is on hand disagree."
-      onClose={close}
-    >
-      <CommandForm
-        submitLabel="Open case"
-        onCancel={close}
-        onDone={close}
-        after={
-          <Link className="text-link" to="/app/reconciliations">
-            View open cases
-          </Link>
-        }
-        submit={(form) =>
-          api.POST('/api/companies/{company_id}/tools/{asset_id}/reconciliations', {
-            params: { path: state.path },
-            body: {
-              kind: text(form, 'kind') as 'custody_dispute' | 'missing_asset' | 'duplicate_asset',
-              narrative: text(form, 'narrative'),
-            },
-          })
-        }
-      >
-        <div className="operations-form">
-          <SelectField
-            label="Case type"
-            name="kind"
-            defaultValue="custody_dispute"
-            options={caseOptions}
-            searchable={false}
-            required
-          />
-          <TextArea label="Describe the discrepancy" name="narrative" required maxLength={4000} rows={4} />
-        </div>
-      </CommandForm>
-    </DecisionDialog>
-  );
+  return <OpenCaseDialog asset={t} onClose={() => state.setAction('')} />;
 }
 
 function TransferDialog({ state, asset: t }: Props) {
@@ -486,7 +430,6 @@ function TransferDialog({ state, asset: t }: Props) {
   return (
     <DecisionDialog
       label={`Transfer ${t.name}`}
-      eyebrow="Custody decision"
       title="Transfer tool"
       description="Custody stays with the current holder until the recipient accepts."
       onClose={close}
@@ -523,7 +466,6 @@ function FoundDialog({ state, asset: t, incident }: Props & { incident: Model<'I
   return (
     <DecisionDialog
       label={`Mark ${t.name} found`}
-      eyebrow="Condition"
       title="Mark found"
       description="Record where the tool turned up. This closes the missing report."
       onClose={close}

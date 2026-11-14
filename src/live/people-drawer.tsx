@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { api, type Model } from './client';
 import { formatDate } from './format';
-import { Button, OverlayDialog, Switch, TextField } from './kit';
+import { Button, OverlayDialog, SelectField, TextField } from './kit';
 import {
   LIFECYCLE_LABELS,
   ROLES,
@@ -41,9 +41,9 @@ export function PersonDrawer({
       onClose={onClose}
       panelClassName="admin-drawer admin-drawer--person"
       showCloseButton
+      page
     >
       <div className="dialog-heading">
-        <span className="eyebrow">Person record</span>
         <h2>{person.preferred_name}</h2>
         <p>{person.title || memberRoles(person)}</p>
       </div>
@@ -73,7 +73,6 @@ export function PersonDrawer({
             currentJobs.map((job) => (
               <div key={job.job_id}>
                 <strong>{job.name}</strong>
-                <span>{job.number}</span>
               </div>
             ))
           ) : (
@@ -87,10 +86,7 @@ export function PersonDrawer({
           {tools.map((tool) => (
             <div key={tool.id}>
               <strong>{tool.name}</strong>
-              <span>
-                {tool.asset_tag}
-                {tool.custody_started_at ? ` · since ${formatDate(tool.custody_started_at)}` : ''}
-              </span>
+              {tool.custody_started_at && <span>Since {formatDate(tool.custody_started_at)}</span>}
             </div>
           ))}
           {!tools.length && <span>No tools in this person’s custody.</span>}
@@ -117,7 +113,7 @@ export function PersonDrawer({
 function update(
   companyPath: { company_id: string },
   person: Member,
-  change: { access_state?: AccessState; end_membership?: boolean; roles?: RoleCode[]; title?: string; reason: string },
+  change: { access_state?: AccessState; end_membership?: boolean; role?: RoleCode; title?: string; reason: string },
 ) {
   return api.POST('/api/companies/{company_id}/people/{membership_id}/update', {
     params: { path: { ...companyPath, membership_id: person.id } },
@@ -125,43 +121,41 @@ function update(
       expected_revision: person.revision,
       access_state: change.access_state ?? person.access_state,
       end_membership: change.end_membership ?? Boolean(person.ended_at),
-      roles: change.roles ?? person.roles,
+      role: change.role ?? person.role,
       title: change.title ?? person.title,
       reason: change.reason,
     },
   });
 }
 
-/** Live roles are multi-valued, so the demo's role SelectField becomes Switch rows. */
 function PersonRoleEditor({ person, onSaved }: { person: Member; onSaved(): void }) {
   const c = useCompany();
   return (
     <CommandForm
-      label="Save roles"
+      saveWhenChanged
+      ignoreFields={['reason']}
+      label="Save role"
       onDone={(form) => {
         const reason = form.elements.namedItem('reason');
         if (reason instanceof HTMLInputElement) reason.value = '';
         onSaved();
       }}
-      submit={(form) => {
-        const roles = form.getAll('roles') as RoleCode[];
-        if (!roles.length) return Promise.reject(new Error('Choose at least one role.'));
-        return update(c.path, person, { roles, title: text(form, 'title'), reason: text(form, 'reason') });
-      }}
+      submit={(form) =>
+        update(c.path, person, {
+          role: text(form, 'role') as RoleCode,
+          title: text(form, 'title'),
+          reason: text(form, 'reason'),
+        })
+      }
     >
       <Field label="Job title" name="title" defaultValue={person.title} maxLength={120} />
-      <div className="admin-form" role="group" aria-label="Roles">
-        {ROLES.map((role) => (
-          <Switch
-            key={role}
-            name="roles"
-            value={role}
-            defaultChecked={person.roles.includes(role)}
-            label={ROLE_LABELS[role]}
-            description={ROLE_DESCRIPTIONS[role]}
-          />
-        ))}
-      </div>
+      <SelectField
+        label="Role"
+        name="role"
+        defaultValue={person.role}
+        options={ROLES.map((role) => ({ value: role, label: ROLE_LABELS[role], description: ROLE_DESCRIPTIONS[role] }))}
+        required
+      />
       <Field label="Reason for change" name="reason" placeholder="Required to save" required maxLength={2000} />
     </CommandForm>
   );

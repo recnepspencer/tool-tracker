@@ -17,6 +17,7 @@ export function toolStatus(asset: Asset): StatusTone {
 /** Badge copy used in the control room and the tool sheet. */
 export const statusLabel: Record<StatusTone, string> = {
   'in-stock': 'In stock',
+  'with-you': 'With you',
   'checked-out': 'Checked out',
   damaged: 'Damaged',
   lost: 'Lost',
@@ -26,6 +27,7 @@ export const statusLabel: Record<StatusTone, string> = {
 /** Worker-row copy from the demo's tool list. */
 export const workerStatusLabel: Record<StatusTone, string> = {
   'in-stock': 'Available',
+  'with-you': 'With you',
   'checked-out': 'In use',
   damaged: 'Damaged',
   lost: 'Lost',
@@ -34,6 +36,22 @@ export const workerStatusLabel: Record<StatusTone, string> = {
 
 export const assetLabel = (asset: Asset & Pick<Model<'AssetView'>, 'lifecycle'>) =>
   asset.lifecycle === 'disposed' ? 'Disposed' : statusLabel[toolStatus(asset)];
+
+/**
+ * The status as the viewer reads it: what they can take, what they already hold, and what
+ * someone else has. A tool the viewer holds reads "With you", never the same "Checked out" as a
+ * coworker's.
+ */
+export function viewerStatus(
+  asset: Asset & Pick<Model<'AssetView'>, 'lifecycle'>,
+  membershipId: string,
+): { tone: StatusTone; label: string } {
+  const tone = toolStatus(asset);
+  if (asset.lifecycle === 'disposed') return { tone, label: 'Disposed' };
+  if (tone === 'checked-out' && asset.holder_membership_id === membershipId)
+    return { tone: 'with-you', label: 'With you' };
+  return { tone, label: tone === 'in-stock' ? 'Available' : statusLabel[tone] };
+}
 
 /**
  * Photo URL, or null so ToolPhoto shows its placeholder. Lists use the 320px

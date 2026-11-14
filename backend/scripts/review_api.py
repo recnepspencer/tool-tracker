@@ -32,8 +32,10 @@ response = session.get(f"{base}/companies/{company_id}/tools", timeout=10)
 response.raise_for_status()
 assets = response.json()["items"]
 for item in assets:
-    print(f"{item['asset_tag']}: {item['id']} ({item['name']}), requestable={item['requestable']}")
-asset = next(item for item in assets if item["asset_tag"] == "NE-001")
+    print(
+        f"{item['serial_number']}: {item['id']} ({item['name']}), requestable={item['requestable']}"
+    )
+asset = next(item for item in assets if item["serial_number"] == "REVIEW-NE-001")
 url = f"{base}/companies/{company_id}/tools/{asset['id']}/requests"
 payload = {
     "request_key": str(uuid5(NAMESPACE_URL, "nelson-electric/local-review/tool-request")),

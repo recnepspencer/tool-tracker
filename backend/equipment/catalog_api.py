@@ -22,7 +22,6 @@ router = Router(tags=["equipment catalog"])
 
 
 class WarehouseInput(CommandInput):
-    code: str = Field(min_length=1, max_length=40)
     name: str = Field(min_length=1, max_length=200)
     address: str = Field(default="", max_length=2000)
 
@@ -41,7 +40,6 @@ class WarehouseManagerView(Schema):
 
 class WarehouseView(Schema):
     id: UUID
-    code: str
     name: str
     address: str
     archived_at: datetime | None
@@ -134,7 +132,6 @@ class AssetDetailsInput(CommandInput):
     serial_number: str | None = Field(default=None, max_length=120)
     acquisition_date: date | None = None
     acquisition_cost: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
-    acquisition_currency: str = Field(default="", pattern=r"^([A-Z]{3})?$")
     notes: str = Field(default="", max_length=4000)
 
 
@@ -142,7 +139,6 @@ class RegistrationInput(AssetDetailsInput):
     request_key: UUID
     tool_model_id: UUID
     warehouse_id: UUID
-    asset_tag: str = Field(min_length=1, max_length=64)
     photo_id: UUID | None = None
 
 
@@ -179,7 +175,7 @@ def warehouses_list(
                 to_attr="live_managers",
             )
         )
-        .order_by("code", "id"),
+        .order_by("name", "id"),
         page.limit,
         page.offset,
     )

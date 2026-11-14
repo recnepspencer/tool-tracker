@@ -1,9 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, result } from './client';
-import { useListLocation } from './list-location';
 import { useCompany } from './session';
 import { useRegistrationPolicy } from './registration-policy';
-import { useCategoryOptions } from './catalog-state';
 import { useCommand } from './settings-command-state';
 
 export function useSettingsPageState() {
@@ -16,9 +14,6 @@ export function useSettingsPageState() {
   });
   const { policy: tools } = useRegistrationPolicy();
   const registration = useCommand();
-  const categories = useCategoryOptions({ enabled: c.can('catalog.manage') });
-  const location = useListLocation();
-  const categoryArchived = location.params.get('categories') === 'archived';
   const jobs = useQuery({
     queryKey: [c.company_id, 'participation-policy'],
     queryFn: () =>
@@ -31,9 +26,6 @@ export function useSettingsPageState() {
     jobs,
     company,
     refresh,
-    categories,
-    categoryArchived,
-    setCategoryArchived: (value: boolean) => location.update('categories', value ? 'archived' : ''),
     registration,
     /** The registration Switch saves on toggle with the policy revision it was rendered from. */
     setRegistration: (enabled: boolean) => {

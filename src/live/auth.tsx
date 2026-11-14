@@ -23,6 +23,7 @@ import {
   PasswordInput,
 } from './auth-ui';
 import { Button, ErrorState, LoadingState } from './kit';
+import { chosenProvider, ProviderButtons, ProviderFailure, startProvider } from './sign-in-providers';
 import { human, text } from './ui';
 
 const primaryLink = 'button button--primary button--full';
@@ -31,30 +32,29 @@ export function Login() {
   const { navigate, session, loading, refresh, error, next } = useLoginState();
   if (loading)
     return (
-      <AuthLayout eyebrow="Welcome back" title="Signing in" description="Checking your session.">
+      <AuthLayout title="Signing in" description="Checking your session.">
         <LoadingState label="Checking your session…" />
       </AuthLayout>
     );
   if (session) return <Navigate to={next} replace />;
   return (
     <AuthLayout
-      eyebrow="Welcome back"
       title="Sign in"
-      description="Use your work email to continue."
       footer={
-        <>
-          <Link to={`/forgot-password?next=${encodeURIComponent(next)}`}>Forgot password?</Link>
-          <span>
-            Don’t have an account? <Link to={`/signup?next=${encodeURIComponent(next)}`}>Create an account</Link>
-          </span>
-        </>
+        <span>
+          New to Tool Tracker? <Link to={`/signup?next=${encodeURIComponent(next)}`}>Create an account</Link>
+        </span>
       }
     >
       {error && <ErrorState message="Unable to check your session. Check your connection and try again." />}
+      <ProviderFailure />
       <AccountForm
         label="Sign in"
         pendingLabel="Signing in…"
+        alternatives={<ProviderButtons />}
         submit={async (f) => {
+          const provider = chosenProvider(f);
+          if (provider) return startProvider({ provider, return_to: '/login', next });
           await api.POST('/api/auth/sign-in', {
             body: { email: text(f, 'email'), password: String(f.get('password')) },
           });
@@ -63,7 +63,11 @@ export function Login() {
         }}
       >
         <Field label="Email address" name="email" type="email" autoComplete="username" required />
-        <PasswordInput label="Password" name="password" />
+        <PasswordInput
+          label="Password"
+          name="password"
+          action={<Link to={`/forgot-password?next=${encodeURIComponent(next)}`}>Forgot password?</Link>}
+        />
       </AccountForm>
     </AuthLayout>
   );
@@ -82,7 +86,6 @@ export function Signup() {
   );
   return (
     <AuthLayout
-      eyebrow="New account"
       title="Create an account"
       description="Are you joining a team that already uses Tool Tracker, or starting one for your company?"
       footer={signIn}
@@ -109,7 +112,6 @@ function withPath(next: string, path: 'team' | 'company') {
 function FindInvitation({ sent, setSent, draft, setDraft, next, findInvitation }: SignupState) {
   return (
     <AuthLayout
-      eyebrow="Joining a team"
       title={sent ? 'Check your email' : 'Find your invitation'}
       description={
         sent
@@ -170,7 +172,6 @@ function SignupForm(state: SignupState) {
   const { sent, setSent, draft, setDraft, logo, setLogo, next, invitation, send } = state;
   return (
     <AuthLayout
-      eyebrow={sent ? 'Verify your email' : invitation ? 'New account' : 'Starting a company'}
       title={sent ? 'Check your email' : invitation ? 'Create your account' : 'Set up your company'}
       description={
         sent
@@ -193,13 +194,28 @@ function SignupForm(state: SignupState) {
         </>
       }
     >
+      {!sent && <ProviderFailure />}
       {sent ? (
         <EmailDelivery email={draft.email} resend={() => send(draft)} changeEmail={() => setSent(false)} />
       ) : (
         <AccountForm
           label="Send verification link"
           pendingLabel="Sending verification…"
+          alternatives={<ProviderButtons />}
           submit={async (f) => {
+            const provider = chosenProvider(f);
+            if (provider && invitation)
+              return startProvider({ provider, return_to: '/signup', next, invitation_token: invitation });
+            if (provider) {
+              const signup_code = text(f, 'signup_code');
+              return startProvider({
+                provider,
+                return_to: '/signup',
+                signup_code,
+                company_name: text(f, 'company_name'),
+                logo_id: await saveLogo(logo, signup_code),
+              });
+            }
             const values = { ...draft, name: text(f, 'name'), email: text(f, 'email') };
             if (!invitation) {
               values.signup_code = text(f, 'signup_code');
@@ -261,7 +277,6 @@ export function VerifyEmail() {
   const { search, refresh, navigate, invalid, setInvalid, invite, next, signupUrl } = useVerifyEmailState();
   return (
     <AuthLayout
-      eyebrow="Verify your email"
       title={invalid ? 'Verification link unavailable' : 'Choose your password'}
       description={
         invalid ? 'This link is missing, expired, or already used.' : 'Finish creating your Tool Tracker account.'
@@ -310,7 +325,6 @@ export function Recovery() {
   const { sent, setSent, email, setEmail, next, send } = useRecoveryState();
   return (
     <AuthLayout
-      eyebrow="Account recovery"
       title={sent ? 'Check your email' : 'Reset your password'}
       description={
         sent ? 'Follow the link to get back to your account.' : 'Enter your work email to receive a reset link.'
@@ -340,7 +354,6 @@ export function ResetPassword() {
   const { done, setDone, refresh, email, token, missing, recoveryUrl } = useResetPasswordState();
   return (
     <AuthLayout
-      eyebrow="Account recovery"
       title={done ? 'Password updated' : missing ? 'Reset link unavailable' : 'Set a new password'}
       description={
         done
@@ -419,7 +432,7 @@ export function CompanySetup() {
   const pending = signup?.pending;
   if (loading)
     return (
-      <AuthLayout eyebrow="Workspace setup" title="Your workspace" description="Checking your account.">
+      <AuthLayout title="Your workspace" description="Checking your account.">
         <LoadingState label="Checking your account…" />
       </AuthLayout>
     );
@@ -428,7 +441,6 @@ export function CompanySetup() {
     return <Navigate to="/app" replace />;
   return (
     <AuthLayout
-      eyebrow="Workspace setup"
       title="Your company workspace"
       description={
         pending
@@ -469,6 +481,7 @@ export function CompanySetup() {
                 preferred_name: text(f, 'name'),
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
                 signup_code: pending ? '' : text(f, 'signup_code'),
+                starter_catalog: true,
                 logo_id,
                 owner_email: ownerElse ? text(f, 'owner_email') : null,
                 owner_name: ownerElse ? text(f, 'owner_name') : '',
@@ -557,11 +570,7 @@ export function Invitation() {
   } = useInvitationState();
   if (accepted)
     return (
-      <AuthLayout
-        eyebrow="Invitation"
-        title="Invitation accepted"
-        description={`Your access to ${accepted.name} is ready.`}
-      >
+      <AuthLayout title="Invitation accepted" description={`Your access to ${accepted.name} is ready.`}>
         <AccountForm
           label="Open workspace"
           pendingLabel="Opening workspace…"
@@ -577,7 +586,6 @@ export function Invitation() {
     );
   return (
     <AuthLayout
-      eyebrow="Invitation"
       title={unavailable ? 'Invitation unavailable' : data?.owner ? 'Take ownership' : 'Join your team'}
       description={
         unavailable
@@ -626,7 +634,7 @@ export function Invitation() {
             <div className="auth-invitation-card">
               <strong>{data.company_name}</strong>
               <span>{data.email}</span>
-              <span>{data.owner ? 'Owner · Company admin' : human(data.role)}</span>
+              <span>{data.owner ? 'Owner · Admin' : human(data.role)}</span>
             </div>
             {!session ? (
               <AccountForm label="Create account and join" pendingLabel="Joining workspace…" submit={register}>

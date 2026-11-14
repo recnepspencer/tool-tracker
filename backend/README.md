@@ -39,7 +39,7 @@ All business routes are scoped under `/api/companies/{company_id}` except compan
 | Custody | Request a specific asset; approve/reject/withdraw; propose transfer/return; accept/decline/cancel; browse scoped queues and custody history. |
 | Condition | Independent damage and missing incidents; repair/service records; found reports; retirement, restoration, and disposal. |
 | Reconciliation | Investigate cases; record reasoned resolutions; correct custody with photo evidence and both case/asset revisions. |
-| Work | Projects, jobs, administrative assignments and responsibility changes; configurable direct/approval-required/disabled self-join and self-leave; decisions, archive/restore, historical assignments. |
+| Work | Jobs with unique names, administrative assignments; configurable direct/approval-required/disabled self-join and self-leave; decisions, archive/restore, historical assignments. |
 | Evidence/reporting | Validated staged JPEG/PNG/WebP uploads, authorized downloads, typed evidence links, company summary, person/job/tool directory, and scoped activity. |
 
 Requests do not reserve tools. Approval creates a pending handoff; the recipient's acceptance records actual receipt. Only one handoff may be pending per asset. A warehouse receipt updates responsible warehouse; a worker transfer preserves it. Job changes preserve equipment custody. Suspension preserves accountability; employment end explicitly closes job assignments. Disposed assets cannot be restored. Duplicate reconciliation cases can record findings; automatic asset identity merging is outside this API.
@@ -68,7 +68,7 @@ uv run --env-file .env python manage.py generate_platform_openapi --output contr
 
 The gate checks Django declarations, missing migrations, unapplied migrations, PostgreSQL scoped-constraint drift, OpenAPI drift, a fresh test database with migrations, regression tests, and formatting/lint. Migration tests upgrade populated historical records. Domain-owned fixtures keep job tests independent of equipment; HTTP tests validate real responses against the checked OpenAPI instead of importing implementation schemas. Tests exercise rollback, access revocation, tenant isolation, policy changes, competing receipt decisions, and seed preservation.
 
-[API quality](../.github/workflows/api-quality.yml) runs on branch pushes and PRs using real PostgreSQL and production-browser journeys. The [testing deployment workflow](../.github/workflows/deploy-test.yml) invokes the same reusable check before building and deploying a release. CI uses a dedicated read-only CleanForce deploy key, removed from the runner after dependency installation. Fork PRs without the secret fail closed. The generated OpenAPI document is uploaded as a workflow artifact.
+[API quality](../.github/workflows/api-quality.yml) runs on PRs and pushes to `main` using real PostgreSQL and production-browser journeys. The [testing deployment workflow](../.github/workflows/deploy-test.yml) is started by hand from `main` and invokes the same reusable check before building and deploying a release. CI uses a dedicated read-only CleanForce deploy key, removed from the runner after dependency installation. Fork PRs without the secret fail closed. The generated OpenAPI document is uploaded as a workflow artifact.
 
 The schema command checks declared scoped foreign keys and obsolete custody triggers; it is not a general comparison of every database object. Review generated migration and contract diffs alongside behavior tests.
 

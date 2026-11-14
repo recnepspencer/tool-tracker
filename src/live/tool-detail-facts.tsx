@@ -63,7 +63,6 @@ export function ToolFacts({
   const photo = photoSrc(companyId, t.registration_photo_id, 'original');
   return (
     <dl className={className}>
-      <Fact label="Unit">{t.asset_tag}</Fact>
       <Fact label="Category">{t.category_name}</Fact>
       {custody && (
         <Fact label="Custody">

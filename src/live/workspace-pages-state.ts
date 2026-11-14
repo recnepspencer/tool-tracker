@@ -32,8 +32,8 @@ export function useWarehouseDirectory() {
   const rows = (warehouses.data ?? []).filter(
     (warehouse) =>
       !term ||
-      [warehouse.name, warehouse.code, warehouse.address, ...warehouse.managers.map((manager) => manager.name)].some(
-        (value) => value.toLocaleLowerCase().includes(term),
+      [warehouse.name, warehouse.address, ...warehouse.managers.map((manager) => manager.name)].some((value) =>
+        value.toLocaleLowerCase().includes(term),
       ),
   );
   const custody = (warehouseId: string) => {

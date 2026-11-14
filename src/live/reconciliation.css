@@ -1,0 +1,112 @@
+/* Resolving a reconciliation case: the outcome choice, then only what that outcome needs. */
+.experience .reconciliation-form {
+  gap: var(--gap-item);
+}
+.experience .reconciliation-choice {
+  display: grid;
+  gap: var(--space-8);
+}
+.experience .reconciliation-choice__hint,
+.experience .reconciliation-narrative {
+  color: var(--muted);
+  font-size: var(--text-body);
+  line-height: var(--leading-snug);
+  margin: 0;
+}
+.experience .dialog-heading .reconciliation-narrative {
+  color: var(--ink);
+  font-style: italic;
+  margin-top: var(--space-8);
+}
+.experience .reconciliation-warning {
+  background: var(--amber-wash);
+  border: var(--border-width) solid var(--amber-border-soft);
+  border-radius: var(--radius-field);
+  color: var(--ink);
+  font-size: var(--text-body);
+  line-height: var(--leading-snug);
+  margin: 0;
+  padding: var(--space-12) var(--space-16);
+}
+
+/* A duplicate's two records, side by side, each one tap to keep. */
+.experience .reconciliation-compare {
+  display: grid;
+  gap: var(--space-10);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.experience .reconciliation-record {
+  align-content: start;
+  appearance: none;
+  background: var(--group-bg);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-group);
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  font: inherit;
+  gap: var(--space-8);
+  min-width: 0;
+  padding: var(--space-10);
+  text-align: left;
+}
+.experience .reconciliation-record:focus-visible {
+  outline: var(--focus-ring-width) solid var(--blue);
+  outline-offset: var(--focus-ring-offset);
+}
+.experience .reconciliation-record--kept {
+  background: var(--blue-glow-subtle);
+  border-color: var(--blue-border-hot);
+}
+.experience .reconciliation-record .tool-photo {
+  height: var(--space-104);
+  width: 100%;
+}
+.experience .reconciliation-record__verdict {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+.experience .reconciliation-record--kept .reconciliation-record__verdict {
+  color: var(--accent-text);
+}
+.experience .reconciliation-record strong {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-snug);
+  overflow-wrap: anywhere;
+}
+.experience .reconciliation-record dl {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+}
+.experience .reconciliation-record dl > div {
+  display: grid;
+  gap: var(--space-2);
+}
+.experience .reconciliation-record dt {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+.experience .reconciliation-record dd {
+  font-size: var(--text-body);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The page's list of open cases says what is wrong under each tool. */
+.experience .reconciliation-problem {
+  color: var(--ink);
+  display: block;
+  font-size: var(--text-body);
+  line-height: var(--leading-snug);
+  margin-top: var(--space-4);
+}
+.experience .reconciliation-intro {
+  color: var(--muted);
+  font-size: var(--text-body);
+  line-height: var(--leading-snug);
+  margin: var(--space-4) 0 0;
+  max-width: 60ch;
+}

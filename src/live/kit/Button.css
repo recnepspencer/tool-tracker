@@ -1,16 +1,28 @@
+/* Icon and label centre on one line, whichever element carries the class (a link, say).
+   As tall as a one-row field, so a button beside a search box lines up with it. */
 .button {
-  border: var(--border-width) solid transparent;
-  border-radius: var(--radius-pill);
+  align-items: center;
+  border: 0;
+  border-radius: var(--radius-button);
   cursor: pointer;
-  min-height: var(--button-height);
+  display: inline-flex;
+  font-weight: var(--weight-semibold);
+  gap: var(--space-8);
+  justify-content: center;
+  min-height: var(--control-height);
   padding: 0 var(--button-padding-x);
+  text-decoration: none;
   transition:
     transform var(--duration-fast) var(--ease-standard),
-    border-color var(--duration-fast) var(--ease-standard),
     background var(--duration-fast) var(--ease-standard);
 }
-.button:hover:not(:disabled) {
-  transform: translateY(calc(var(--space-1) * -1));
+.button svg {
+  flex: none;
+  height: var(--space-16);
+  width: var(--space-16);
+}
+.button:active:not(:disabled) {
+  transform: scale(0.98);
 }
 .button:focus-visible,
 a:focus-visible {
@@ -30,23 +42,32 @@ a:focus:not(:focus-visible) {
 .button--full {
   width: 100%;
 }
+/* Buttons are rounded rectangles and chips are pills, so an action never reads as a filter or a status.
+   Only one action per screen is blue; everything else is neutral, and only destructive ones are red. */
 .button--primary {
-  background: linear-gradient(180deg, var(--primary-from), var(--primary-to));
-  box-shadow: var(--elevation-primary);
-  color: var(--on-accent);
+  background: var(--accent-fill);
+  color: var(--on-accent-fill);
+}
+.button--primary:hover:not(:disabled) {
+  background: var(--accent-fill-hover);
 }
 .button--secondary {
-  background: var(--blue-bg);
-  border-color: var(--blue-border);
-  color: var(--blue-soft);
+  background: var(--neutral-fill);
+  color: var(--ink);
 }
+.button--secondary:hover:not(:disabled) {
+  background: var(--neutral-fill-hover);
+}
+/* A text button: Cancel, Export, Show archived. */
 .button--ghost {
   background: transparent;
-  border-color: var(--border);
-  color: var(--muted);
+  color: var(--accent-text);
+  padding-inline: var(--space-8);
+}
+.button--ghost:hover:not(:disabled) {
+  background: var(--neutral-fill);
 }
 .button--danger {
-  background: var(--amber-bg);
-  border-color: var(--amber-border);
-  color: var(--amber);
+  background: var(--danger-fill);
+  color: var(--danger-ink);
 }

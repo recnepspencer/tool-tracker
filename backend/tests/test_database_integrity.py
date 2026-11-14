@@ -14,7 +14,7 @@ def constraint_name(error):
 
 
 def test_asset_cannot_reference_another_company_warehouse(world):
-    foreign = Warehouse.objects.create(company=world.other_company, code="OTHER", name="Other")
+    foreign = Warehouse.objects.create(company=world.other_company, name="Other")
     with pytest.raises(IntegrityError) as error, transaction.atomic():
         ToolAsset.objects.filter(pk=world.assets[0].id).update(responsible_warehouse=foreign)
     assert constraint_name(error) == "asset_warehouse_company"
@@ -61,11 +61,10 @@ def test_asset_creation_rolls_back_if_initial_custody_fails(world, monkeypatch):
         create_asset_at_warehouse(
             company=world.company,
             tool_model=world.model,
-            asset_tag="ORPHAN",
             warehouse=world.warehouse,
             registered_by=world.member,
         )
-    assert not ToolAsset.objects.filter(asset_tag="ORPHAN").exists()
+    assert ToolAsset.objects.count() == len(world.assets)
 
 
 @pytest.mark.django_db(transaction=True)

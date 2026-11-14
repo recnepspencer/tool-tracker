@@ -4,7 +4,7 @@ from uuid import uuid4
 
 import pytest
 
-from companies.models import CompanyRoleGrant, MembershipInvitation
+from companies.models import MembershipInvitation
 from equipment.models import (
     CustodyPeriod,
     ToolAsset,
@@ -15,9 +15,9 @@ from equipment.models import (
 )
 from tests.conftest import login_client
 from tests.factories import member_in
-from work.models import Job, Project
+from work.models import Job
 
-ROLES = ["company_admin", "equipment_manager", "dispatcher", "estimator", "field_member"]
+ROLES = ["admin", "manager", "foreman"]
 
 
 @pytest.mark.parametrize("role", ROLES)
@@ -25,9 +25,10 @@ def test_public_read_surfaces_and_write_boundaries(world, password_hash, role):
     actor = member_in(world.company, password_hash, role)
     client = login_client(actor.user)
     base = f"/api/companies/{world.company.pk}"
-    equipment = role in {"company_admin", "equipment_manager", "field_member"}
-    catalog = role in {"company_admin", "equipment_manager"}
-    work = role in {"company_admin", "dispatcher"}
+    # Every role works with tools; managers and admins also run the catalog and jobs.
+    equipment = True
+    catalog = role in {"admin", "manager"}
+    work = role in {"admin", "manager"}
     reads = {
         "": True,
         "/people": True,
@@ -35,7 +36,6 @@ def test_public_read_surfaces_and_write_boundaries(world, password_hash, role):
         "/warehouses": True,
         "/activity": True,
         "/tool-registration-policy": True,
-        "/projects": True,
         "/jobs": True,
         "/assignments": True,
         "/job-participation-policy": True,
@@ -51,7 +51,7 @@ def test_public_read_surfaces_and_write_boundaries(world, password_hash, role):
         "/handoffs": equipment,
         "/incidents": equipment,
         "/directory": equipment,
-        "/invitations": role == "company_admin",
+        "/invitations": role == "admin",
         "/reconciliations": catalog,
         "/summary": catalog,
     }
@@ -68,20 +68,18 @@ def test_public_read_surfaces_and_write_boundaries(world, password_hash, role):
         )
         return response.json()
 
-    command("/warehouses", {"code": "NEW", "name": "New location"}, catalog)
-    assert Warehouse.objects.filter(company=world.company, code="NEW").exists() == catalog
+    command("/warehouses", {"name": "New location"}, catalog)
+    assert Warehouse.objects.filter(company=world.company, name="New location").exists() == catalog
     command("/tool-categories", {"name": "Meters"}, catalog)
     assert ToolCategory.objects.filter(company=world.company, name="Meters").exists() == catalog
     command(
         "/invitations",
-        {"email": "invited@example.com", "preferred_name": "Invited", "role": "field_member"},
-        role == "company_admin",
+        {"email": "invited@example.com", "preferred_name": "Invited", "role": "foreman"},
+        role == "admin",
     )
-    assert MembershipInvitation.objects.filter(company=world.company).exists() == (
-        role == "company_admin"
-    )
-    command("/projects", {"number": "P1", "name": "Project"}, work)
-    assert Project.objects.filter(company=world.company).exists() == work
+    assert MembershipInvitation.objects.filter(company=world.company).exists() == (role == "admin")
+    command("/jobs", {"name": "Job"}, work)
+    assert Job.objects.filter(company=world.company).exists() == work
     ToolRegistrationPolicy.objects.create(
         company=world.company, employee_tool_creation_enabled=True
     )
@@ -91,13 +89,14 @@ def test_public_read_surfaces_and_write_boundaries(world, password_hash, role):
             "request_key": str(uuid4()),
             "tool_model_id": str(world.model.pk),
             "warehouse_id": str(world.warehouse.pk),
-            "asset_tag": "REGISTERED",
+            "serial_number": "REGISTERED",
         },
         catalog,
         status=201,
     )
     assert (
-        ToolAsset.objects.filter(company=world.company, asset_tag="REGISTERED").exists() == catalog
+        ToolAsset.objects.filter(company=world.company, serial_number="REGISTERED").exists()
+        == catalog
     )
     command(
         f"/tools/{world.assets[0].pk}/requests",
@@ -118,47 +117,40 @@ def test_public_read_surfaces_and_write_boundaries(world, password_hash, role):
     command(
         f"/warehouses/{world.warehouse.pk}/authority",
         {"expected_revision": 1, "membership_id": str(world.member.pk), "enabled": True},
-        role == "company_admin",
+        role == "admin",
     )
-    assert WarehouseRoleGrant.objects.filter(membership=world.member).exists() == (
-        role == "company_admin"
-    )
+    assert WarehouseRoleGrant.objects.filter(membership=world.member).exists() == (role == "admin")
 
 
-def test_combined_roles_and_job_responsibilities_do_not_create_warehouse_authority(
-    world, password_hash
-):
+def test_job_assignment_does_not_create_warehouse_authority(world, password_hash):
     from django.utils import timezone
 
     from work.models import JobAssignment
 
-    actor = member_in(world.company, password_hash, "dispatcher")
-    CompanyRoleGrant.objects.create(membership=actor.member, role_code="field_member")
-    project = Project.objects.create(company=world.company, number="P1", name="Project")
-    job = Job.objects.create(company=world.company, project=project, number="J1", name="Job")
+    actor = member_in(world.company, password_hash, "foreman")
+    job = Job.objects.create(company=world.company, name="Job")
     JobAssignment.objects.create(
         company=world.company,
         job=job,
         membership=actor.member,
-        responsibility="foreman",
         assigned_by=world.member,
         starts_at=timezone.now(),
     )
     client = login_client(actor.user)
     base = f"/api/companies/{world.company.pk}"
     assert client.get(f"{base}/tools").status_code == 200
+    # Being on a job does not let a foreman staff it.
     assert (
         client.post(
             f"{base}/jobs/{job.pk}/assignments",
             {
                 "expected_revision": 1,
                 "membership_id": str(world.member.pk),
-                "responsibility": "crew",
                 "reason": "Staff the job",
             },
             content_type="application/json",
         ).status_code
-        == 200
+        == 403
     )
     service = {"expected_revision": 1, "serviceability": "damaged", "note": "Inspection"}
     assert (
@@ -179,9 +171,7 @@ def test_combined_roles_and_job_responsibilities_do_not_create_warehouse_authori
         ).status_code
         == 200
     )
-    foreign_warehouse = Warehouse.objects.create(
-        company=world.company, code="OTHER", name="Other location"
-    )
+    foreign_warehouse = Warehouse.objects.create(company=world.company, name="Other location")
     world.assets[1].responsible_warehouse = foreign_warehouse
     world.assets[1].save(update_fields=["responsible_warehouse"])
     assert (

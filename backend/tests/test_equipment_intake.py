@@ -2,7 +2,7 @@ from uuid import uuid4
 
 import pytest
 
-from companies.models import CompanyRoleGrant
+from companies.access import set_role
 from equipment.models import CustodyPeriod, EquipmentSubmission, ToolAsset, ToolCategory, ToolModel
 from tests.conftest import login_client
 from tests.factories import member_in
@@ -17,7 +17,7 @@ def post(client, path, body):
 
 @pytest.fixture
 def collection(world, password_hash, api_client):
-    manager = login_client(member_in(world.company, password_hash, "equipment_manager").user)
+    manager = login_client(member_in(world.company, password_hash, "manager").user)
     base = f"/api/companies/{world.company.pk}"
     enabled = post(
         manager,
@@ -71,7 +71,7 @@ def test_submission_photo_is_retained_and_adopted_by_the_reviewed_item(world, co
                 "request_key": str(uuid4()),
                 "tool_model_id": str(world.model.pk),
                 "warehouse_id": str(world.warehouse.pk),
-                "asset_tag": "WITH-PHOTO",
+                "serial_number": "WITH-PHOTO",
             },
         },
     )
@@ -107,7 +107,7 @@ def test_collection_does_not_create_catalog_or_inventory_and_review_records_repo
         "request_key": str(uuid4()),
         "tool_model_id": str(world.model.pk),
         "warehouse_id": str(world.warehouse.pk),
-        "asset_tag": "REVIEWED-001",
+        "serial_number": "REVIEWED-001",
     }
     decision = {"expected_revision": 1, "decision": "register", "registration": registration}
     assert post(worker, url, decision).status_code == 403
@@ -120,7 +120,7 @@ def test_collection_does_not_create_catalog_or_inventory_and_review_records_repo
     assert period.holder_membership == world.member and period.holder_warehouse_id is None
     assert EquipmentSubmission.objects.get(pk=report["id"]).description == body["description"]
     assert post(manager, url, decision).status_code == 409
-    assert ToolAsset.objects.filter(asset_tag="REVIEWED-001").count() == 1
+    assert ToolAsset.objects.filter(serial_number="REVIEWED-001").count() == 1
 
 
 def test_clarification_and_duplicate_matching_work_after_collection_closes(
@@ -142,7 +142,7 @@ def test_clarification_and_duplicate_matching_work_after_collection_closes(
     )
     denied = post(worker, f"{base}/equipment-submissions", report_body())
     assert denied.status_code == 403
-    outsider = login_client(member_in(world.company, password_hash, "field_member").user)
+    outsider = login_client(member_in(world.company, password_hash, "foreman").user)
     assert outsider.get(f"{base}/equipment-submissions").json()["items"] == []
     assert (
         post(outsider, f"{url}/reply", {"expected_revision": 2, "note": "Other person"}).status_code
@@ -168,7 +168,7 @@ def test_clarification_and_duplicate_matching_work_after_collection_closes(
                 "request_key": str(uuid4()),
                 "tool_model_id": str(world.model.pk),
                 "warehouse_id": str(world.warehouse.pk),
-                "asset_tag": "BYPASS",
+                "serial_number": "BYPASS",
             },
         ).status_code
         == 403
@@ -204,7 +204,7 @@ def test_reports_cannot_reference_foreign_types_or_assets_and_failed_review_roll
                 "request_key": str(uuid4()),
                 "tool_model_id": str(foreign_type.pk),
                 "warehouse_id": str(world.warehouse.pk),
-                "asset_tag": "BAD",
+                "serial_number": "BAD",
             },
         },
     )
@@ -217,9 +217,7 @@ def test_reports_cannot_reference_foreign_types_or_assets_and_failed_review_roll
         ).status_code
         == 404
     )
-    other_manager = login_client(
-        member_in(world.other_company, password_hash, "company_admin").user
-    )
+    other_manager = login_client(member_in(world.other_company, password_hash, "admin").user)
     assert other_manager.get(f"{base}/equipment-submissions").status_code == 403
 
 
@@ -227,7 +225,6 @@ def test_field_roles_never_receive_serial_or_purchase_details_in_reads_or_search
     asset = world.assets[0]
     asset.serial_number = "PRIVATE-SERIAL-ABC"
     asset.acquisition_cost = "319.99"
-    asset.acquisition_currency = "USD"
     asset.acquisition_date = "2026-11-01"
     asset.save()
     CustodyPeriod.objects.filter(asset=asset).update(
@@ -241,7 +238,7 @@ def test_field_roles_never_receive_serial_or_purchase_details_in_reads_or_search
     assert api_client.get(f"{base}/directory?search=PRIVATE-SERIAL-ABC").json()["items"] == []
     directory = api_client.get(f"{base}/directory").json()
     assert directory["items"][0]["tools"][0]["serial_number"] is None
-    CompanyRoleGrant.objects.create(membership=world.member, role_code="company_admin")
+    set_role(world.member, "admin")
     visible = api_client.get(f"{base}/tools/{asset.pk}").json()
     assert visible["serial_number"] == "PRIVATE-SERIAL-ABC"
     assert visible["acquisition_cost"] == "319.99"

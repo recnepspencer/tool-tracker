@@ -1,9 +1,14 @@
 name: Deploy testing environment
 
+# Trunk-based: work merges to main, and deploying is a separate, deliberate step.
+# Run this workflow by hand from main when a release should go to the testing host.
 on:
-  push:
-    branches: [main, codex/tool-tracker-api]
   workflow_dispatch:
+    inputs:
+      reset_database:
+        description: Erase every account, company and photo, then reseed the review data (a backup is kept)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -14,6 +19,8 @@ concurrency:
 
 jobs:
   quality:
+    # Only main is ever deployed; a run started from another branch stops here.
+    if: github.ref == 'refs/heads/main'
     uses: ./.github/workflows/api-quality.yml
     secrets:
       CLEANFORCE_DEPLOY_KEY: ${{ secrets.CLEANFORCE_DEPLOY_KEY }}
@@ -25,9 +32,10 @@ jobs:
     timeout-minutes: 20
     environment:
       name: testing
-      url: https://${{ vars.TEST_DEPLOY_HOST }}
+      url: https://${{ vars.TEST_DEPLOY_DOMAIN }}
     env:
       DEPLOY_HOST: ${{ vars.TEST_DEPLOY_HOST }}
+      DEPLOY_DOMAIN: ${{ vars.TEST_DEPLOY_DOMAIN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -39,6 +47,7 @@ jobs:
         run: |
           test -n "$DEPLOY_KEY" && test -n "$KNOWN_HOSTS"
           [[ "$DEPLOY_HOST" =~ ^[0-9.]+$ ]]
+          [[ "$DEPLOY_DOMAIN" =~ ^[a-z0-9.-]+$ ]]
           install -d -m 700 ~/.ssh
           printf '%s\n' "$DEPLOY_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
           printf '%s\n' "$KNOWN_HOSTS" | tr -d '\r' > ~/.ssh/known_hosts
@@ -59,6 +68,14 @@ jobs:
             --secret "id=cleanforce_key,src=$key" \
             --secret "id=github_known_hosts,src=$RUNNER_TEMP/github_known_hosts" .
       - name: Transfer and deploy the checked release
+        env:
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          DEFAULT_FROM_EMAIL: ${{ vars.MAIL_FROM || format('Tool Tracker <noreply@{0}>', vars.TEST_DEPLOY_DOMAIN) }}
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          MICROSOFT_CLIENT_ID: ${{ vars.MICROSOFT_CLIENT_ID }}
+          MICROSOFT_CLIENT_SECRET: ${{ secrets.MICROSOFT_CLIENT_SECRET }}
+          RESET: ${{ inputs.reset_database && 'reset' || '' }}
         run: |
           release="$RUNNER_TEMP/release"
           mkdir -p "$release"
@@ -67,8 +84,15 @@ jobs:
           (cd "$release" && sha256sum image.tar.gz deploy/*.* > SHA256SUMS && tar -czf ../release.tgz image.tar.gz deploy SHA256SUMS)
           ssh -o StrictHostKeyChecking=yes "nelson-deploy@$DEPLOY_HOST" "mkdir -p /srv/nelson/incoming/$GITHUB_SHA"
           scp -o StrictHostKeyChecking=yes "$RUNNER_TEMP/release.tgz" "nelson-deploy@$DEPLOY_HOST:/srv/nelson/incoming/$GITHUB_SHA/release.tgz"
-          ssh -o StrictHostKeyChecking=yes "nelson-deploy@$DEPLOY_HOST" \
-            "cd /srv/nelson/incoming/$GITHUB_SHA && tar -xzf release.tgz && sudo bash deploy/release.sh $GITHUB_SHA"
+          # A one-time code the server issues only if the browser check's account is missing.
+          DEPLOYMENT_CHECK_CODE=$(openssl rand -hex 12 | tr a-f A-F)
+          echo "::add-mask::$DEPLOYMENT_CHECK_CODE"
+          echo "TEST_SIGNUP_CODE=$DEPLOYMENT_CHECK_CODE" >> "$GITHUB_ENV"
+          # Keys travel on stdin, so they never reach a command line or the release bundle.
+          for name in BREVO_API_KEY DEFAULT_FROM_EMAIL GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET MICROSOFT_CLIENT_ID MICROSOFT_CLIENT_SECRET DEPLOYMENT_CHECK_CODE; do
+            if [[ -n ${!name} ]]; then printf '%s=%s\n' "$name" "${!name}"; fi
+          done | ssh -o StrictHostKeyChecking=yes "nelson-deploy@$DEPLOY_HOST" \
+            "cd /srv/nelson/incoming/$GITHUB_SHA && tar -xzf release.tgz && sudo bash deploy/release.sh $GITHUB_SHA $DEPLOY_DOMAIN $RESET"
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -79,14 +103,14 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Verify HTTPS accounts, photos, activity and the PWA
         env:
-          TEST_APP_URL: https://${{ vars.TEST_DEPLOY_HOST }}
+          TEST_APP_URL: https://${{ vars.TEST_DEPLOY_DOMAIN }}
           TEST_PASSWORD: ${{ secrets.TEST_REVIEW_PASSWORD }}
           EXPECTED_RELEASE: ${{ github.sha }}
         run: |
           ssh -o StrictHostKeyChecking=yes -o ExitOnForwardFailure=yes -fN \
             -L 127.0.0.1:8025:127.0.0.1:8025 "nelson-deploy@$DEPLOY_HOST"
           node deploy/smoke.mjs
-          printf 'Testing app: https://%s\n\nRelease: `%s`\n' "$DEPLOY_HOST" "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+          printf 'Testing app: https://%s\n\nRelease: `%s`\n' "$DEPLOY_DOMAIN" "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

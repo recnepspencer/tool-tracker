@@ -1,12 +1,10 @@
 import './Callout.css';
 
 export function Callout({
-  eyebrow,
   title,
   description,
   tone = 'blue',
 }: {
-  eyebrow: string;
   title: string;
   description: string;
   tone?: 'blue' | 'amber';
@@ -14,7 +12,6 @@ export function Callout({
   return (
     <section className={'callout callout--' + tone}>
       <div>
-        <span className="eyebrow">{eyebrow}</span>
         <h2>{title}</h2>
         <p>{description}</p>
       </div>

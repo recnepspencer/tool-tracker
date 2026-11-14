@@ -22,7 +22,7 @@ export function EquipmentTypePicker({ defaultValue = '', name = 'model' }: { def
     if (busy) return;
     setError('');
     if (!typeName.trim() || !category || (category === 'new' && !categoryName.trim())) {
-      setError('Enter an equipment type and choose or create a category.');
+      setError('Enter a model name and choose or create a category.');
       return;
     }
     setBusy(true);
@@ -70,7 +70,11 @@ export function EquipmentTypePicker({ defaultValue = '', name = 'model' }: { def
   return (
     <div>
       <SelectField
-        label="Tool type"
+        className="worker-select-field"
+        label="Tool model"
+        hint="required"
+        placeholder="Select a tool model"
+        searchable
         presentation="sheet"
         name={name}
         value={selected}
@@ -86,13 +90,13 @@ export function EquipmentTypePicker({ defaultValue = '', name = 'model' }: { def
       />
       {c.can('catalog.manage') && !adding && (
         <Button type="button" variant="ghost" onClick={() => setAdding(true)}>
-          Add tool type
+          Add model
         </Button>
       )}
       {adding && (
-        <fieldset disabled={busy} aria-label="New equipment type" className="admin-form">
+        <fieldset disabled={busy} aria-label="New model" className="admin-form">
           <Field
-            label="New tool type"
+            label="New model"
             value={typeName}
             onChange={(event) => setTypeName(event.target.value)}
             maxLength={200}
@@ -118,10 +122,10 @@ export function EquipmentTypePicker({ defaultValue = '', name = 'model' }: { def
             />
           )}
           <Button type="button" onClick={() => void save()}>
-            {busy ? 'Saving…' : 'Save tool type'}
+            {busy ? 'Saving…' : 'Save model'}
           </Button>
           <Button type="button" variant="ghost" onClick={() => setAdding(false)}>
-            Cancel new type
+            Cancel new model
           </Button>
         </fieldset>
       )}

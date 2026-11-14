@@ -17,42 +17,15 @@ import { Button, FieldShell, LoadingState } from './kit';
 const LogoCropper = lazy(() => import('./logo-cropper').then((m) => ({ default: m.LogoCropper })));
 import './experience/auth.css';
 
-/** Demo AuthHero: the brand statement beside every account screen. */
-function AuthHero() {
-  return (
-    <section className="auth-hero">
-      <div className="auth-brand">
-        Tool <em>Tracker</em>
-      </div>
-      <span className="eyebrow">Tool custody system</span>
-      <h1>Know where every tool went.</h1>
-      <p>One shared record for the people, yards, and handoffs that keep the job moving.</p>
-      <div className="auth-proof">
-        <span>
-          <strong>Shared</strong> custody record
-        </span>
-        <span>
-          <strong>Role-based</strong> views
-        </span>
-        <span>
-          <strong>Complete</strong> movement history
-        </span>
-      </div>
-    </section>
-  );
-}
-
-/** Demo AuthExperienceLayout: hero, then the panel holding this screen's task. */
+/** The product name, then one narrow column holding this screen's task. */
 export function AuthLayout({
-  eyebrow,
   title,
   description,
   children,
   footer,
 }: {
-  eyebrow: string;
   title: string;
-  description: string;
+  description?: string;
   children: ReactNode;
   footer?: ReactNode;
 }) {
@@ -63,14 +36,13 @@ export function AuthLayout({
   }, [title]);
   return (
     <main className="auth-page" id="main-content">
-      <AuthHero />
+      <div className="auth-brand">Tool Tracker</div>
       <section className="auth-panel" aria-labelledby="auth-title">
         <div className="panel-heading">
-          <span className="eyebrow">{eyebrow}</span>
-          <h2 id="auth-title" ref={heading} tabIndex={-1}>
+          <h1 id="auth-title" ref={heading} tabIndex={-1}>
             {title}
-          </h2>
-          <p>{description}</p>
+          </h1>
+          {description && <p>{description}</p>}
         </div>
         <div className="auth-experience-content">{children}</div>
         {footer && <div className="auth-experience-links">{footer}</div>}
@@ -88,8 +60,11 @@ export function AccountForm({
   pendingLabel,
   variant = 'primary',
   disabled = false,
+  alternatives,
 }: {
   children?: ReactNode;
+  /** Other ways to submit, after the main button, so Enter still presses the main one. */
+  alternatives?: ReactNode;
   submit: (data: FormData) => Promise<unknown>;
   label: string;
   pendingLabel: string;
@@ -111,7 +86,8 @@ export function AccountForm({
     setBusy(true);
     setError('');
     try {
-      await submit(new FormData(event.currentTarget));
+      // The submitter carries which button was pressed (a sign-in provider, say).
+      await submit(new FormData(event.currentTarget, (event.nativeEvent as SubmitEvent).submitter));
     } catch (cause) {
       setError(errorMessage(cause));
     } finally {
@@ -139,6 +115,11 @@ export function AccountForm({
       <Button variant={variant} fullWidth disabled={busy || disabled} type="submit">
         {busy ? pendingLabel : label}
       </Button>
+      {alternatives && (
+        <fieldset className="auth-fieldset" disabled={busy || disabled}>
+          {alternatives}
+        </fieldset>
+      )}
     </form>
   );
 }
@@ -249,7 +230,7 @@ export function LogoField({ value, onChange }: { value: LogoChoice; onChange: (v
         onChange={(event) => choose(event.currentTarget.files?.[0])}
       />
       <small className="auth-hint" role={error ? 'alert' : undefined}>
-        {error || 'Shown at its own shape, up to four times as wide as tall. JPEG, PNG, or WebP, up to 10 MB.'}
+        {error || 'JPEG, PNG, or WebP, up to 10 MB.'}
       </small>
     </FieldShell>
   );
@@ -260,44 +241,49 @@ export function PasswordInput({
   name,
   newPassword = false,
   hint,
+  action,
 }: {
   label: string;
   name: string;
   newPassword?: boolean;
   hint?: string;
+  action?: ReactNode;
 }) {
   const [visible, setVisible] = useState(false);
   const id = useId();
+  // The hint sits under the box, so this box is the same height as every other field.
   return (
-    <FieldShell label={label} htmlFor={id}>
-      <div className="field-control-row">
-        <input
-          id={id}
-          className="field-control"
-          name={name}
-          type={visible ? 'text' : 'password'}
-          autoComplete={newPassword ? 'new-password' : 'current-password'}
-          minLength={newPassword ? 12 : undefined}
-          maxLength={200}
-          required
-          aria-describedby={hint ? `${id}-hint` : undefined}
-        />
-        <button
-          type="button"
-          className="auth-reveal"
-          aria-label={`${visible ? 'Hide' : 'Show'} ${label.toLowerCase()}`}
-          aria-pressed={visible}
-          onClick={() => setVisible(!visible)}
-        >
-          {visible ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
-        </button>
-      </div>
+    <div className="auth-described">
+      <FieldShell label={label} htmlFor={id} action={action}>
+        <div className="field-control-row">
+          <input
+            id={id}
+            className="field-control"
+            name={name}
+            type={visible ? 'text' : 'password'}
+            autoComplete={newPassword ? 'new-password' : 'current-password'}
+            minLength={newPassword ? 12 : undefined}
+            maxLength={200}
+            required
+            aria-describedby={hint ? `${id}-hint` : undefined}
+          />
+          <button
+            type="button"
+            className="auth-reveal"
+            aria-label={`${visible ? 'Hide' : 'Show'} ${label.toLowerCase()}`}
+            aria-pressed={visible}
+            onClick={() => setVisible(!visible)}
+          >
+            {visible ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+          </button>
+        </div>
+      </FieldShell>
       {hint && (
         <small id={`${id}-hint`} className="auth-hint">
           {hint}
         </small>
       )}
-    </FieldShell>
+    </div>
   );
 }
 

@@ -13,6 +13,8 @@ export interface CatalogItem {
   photoId: string | null;
   units: Asset[];
   availableCount: number;
+  /** Units the viewer holds, kept apart from the ones coworkers have. */
+  withYouCount: number;
   checkedOutCount: number;
   attentionCount: number;
   lostCount: number;
@@ -43,7 +45,7 @@ const unitMatches = (unit: Asset, filters: CatalogFilterState) =>
  * survive the warehouse, category and availability filters (the demo's
  * `filterCatalog` + `scopeCatalogItem`).
  */
-export function catalogItems(tools: Asset[], filters: CatalogFilterState): CatalogItem[] {
+export function catalogItems(tools: Asset[], filters: CatalogFilterState, membershipId: string): CatalogItem[] {
   const search = filters.search.trim().toLowerCase();
   const groups = new Map<string, Asset[]>();
   for (const unit of catalogUnits(tools)) {
@@ -63,14 +65,17 @@ export function catalogItems(tools: Asset[], filters: CatalogFilterState): Catal
         photoId: units.find((unit) => unit.registration_photo_id)?.registration_photo_id ?? null,
         units,
         availableCount: units.filter((unit) => unit.requestable).length,
-        checkedOutCount: statuses.filter((status) => status === 'checked-out').length,
+        withYouCount: units.filter((unit) => unit.holder_membership_id === membershipId).length,
+        checkedOutCount: units.filter(
+          (unit, index) => statuses[index] === 'checked-out' && unit.holder_membership_id !== membershipId,
+        ).length,
         attentionCount: statuses.filter((status) => status === 'damaged').length,
         lostCount: statuses.filter((status) => status === 'lost').length,
       };
     })
     .filter((item) =>
       `${item.name} ${item.brand} ${item.model} ${item.category} ${item.units
-        .map((unit) => `${unit.asset_tag} ${unit.serial_number ?? ''}`)
+        .map((unit) => unit.serial_number ?? '')
         .join(' ')}`
         .toLowerCase()
         .includes(search),

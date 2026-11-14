@@ -10,7 +10,7 @@ import { ErrorState, LoadingState, SelectField } from './kit';
 import { useCompany } from './session';
 import { CommandForm, SettingsCard } from './settings-command';
 import { photoSrc } from './tool-status';
-import { Field, TextArea, text } from './ui';
+import { TextArea, text } from './ui';
 
 type Report = Model<'SubmissionView'>;
 const statusLabels = {
@@ -45,7 +45,12 @@ export function EquipmentReports({ managerOnly = false }: { managerOnly?: boolea
   );
   if (!manager && !reports.length) return null;
   return (
-    <SettingsCard eyebrow={manager ? 'Equipment collection review' : 'Reported equipment'}>
+    <SettingsCard
+      title={manager ? 'Equipment collection review' : 'Reported equipment'}
+      description={
+        manager ? 'Equipment foremen reported from the field.' : 'Equipment you reported for a manager to review.'
+      }
+    >
       {manager && (
         <label>
           <input type="checkbox" checked={showSettled} onChange={(event) => setShowSettled(event.target.checked)} />{' '}
@@ -139,7 +144,6 @@ function EquipmentReview({ report }: { report: Report }) {
                     request_key: key,
                     tool_model_id: text(form, 'model'),
                     warehouse_id: text(form, 'warehouse'),
-                    asset_tag: text(form, 'tag'),
                     ...assetDetailsInput(form),
                     photo_id: null,
                   }
@@ -167,7 +171,7 @@ function EquipmentReview({ report }: { report: Report }) {
             required
             options={(tools.data ?? []).map((asset) => ({
               value: asset.id,
-              label: `${asset.asset_tag} · ${asset.name}`,
+              label: [asset.name, asset.serial_number].filter(Boolean).join(' · '),
               description: asset.holder_name ?? asset.warehouse_name ?? '',
             }))}
           />
@@ -193,7 +197,6 @@ function EquipmentReview({ report }: { report: Report }) {
               .filter((item) => !item.archived_at)
               .map((item) => ({ value: item.id, label: item.name }))}
           />
-          <Field label="Asset tag" name="tag" required maxLength={64} />
           <AssetDetailsFields />
         </>
       )}

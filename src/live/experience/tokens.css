@@ -35,6 +35,21 @@
   --photo-matte: #eef0f2;
   --auth-hero-deep: #0c1725;
   --switch-knob-fill: var(--ink);
+  /* The phone design system: one accent fill for the action that matters, a neutral fill for the
+     rest, and grouped rows on a surface one step above the page. */
+  --accent-fill: #2a7ae2;
+  --accent-fill-hover: #3787ee;
+  --on-accent-fill: #ffffff;
+  --accent-text: #5aa9ff;
+  --neutral-fill: #1a202b;
+  --neutral-fill-hover: #222a37;
+  --group-bg: #0d1119;
+  --sheet-bg: #141922;
+  --chip-bg: #141922;
+  --chip-on-bg: var(--ink);
+  --chip-on-ink: #06080c;
+  --danger-fill: rgba(224, 128, 132, 0.14);
+  --danger-ink: #f09a9d;
 
   --blue-border-faint: color-mix(in srgb, var(--blue) 20%, transparent);
   --blue-border-muted: color-mix(in srgb, var(--blue) 24%, transparent);
@@ -166,7 +181,6 @@
   --space-70: 70px;
   --space-72: 72px;
   --space-80: 80px;
-  --space-90: 90px;
   --space-104: 104px;
   --space-112: 112px;
   --space-120: 120px;
@@ -189,7 +203,6 @@
   --space-520: 520px;
   --space-540: 540px;
   --space-560: 560px;
-  --space-610: 610px;
   --space-620: 620px;
   --space-680: 680px;
   --space-844: 844px;
@@ -271,6 +284,8 @@
   --radius-card: 18px;
   --radius-dialog: 22px;
   --radius-pill: 999px;
+  --radius-button: 12px;
+  --radius-group: 12px;
   --radius-full: 50%;
   --border-width: 1px;
   --blur-header: 18px;
@@ -335,7 +350,14 @@
   --scale-pulse-max: 1.15;
 
   --control-height: 44px;
-  --button-height: 42px;
+  /* Page rhythm on a 4px grid, each step clearly wider than the one before, so distance says
+     how related two things are: controls in one toolbar or form, cards in one list, a toolbar
+     to the results it filters, a page heading to its content, one section to the next. */
+  --gap-tight: var(--space-8);
+  --gap-item: var(--space-12);
+  --gap-group: var(--space-16);
+  --gap-heading: var(--space-24);
+  --gap-section: clamp(var(--space-40), 5vw, var(--space-48));
   --button-padding-x: 17px;
   --icon-button-size: 38px;
   --switch-width: 46px;
@@ -357,17 +379,15 @@
   --size-viewport: 100vh;
   --size-async: 55vh;
   --size-async-error: 20vh;
-  --size-hero-min: 54vh;
   --size-nav-drawer: 82vw;
   --size-account-sheet: 92vw;
-  --pad-header-x: clamp(18px, 4vw, 56px);
+  --pad-header-x: clamp(16px, 4vw, 56px);
   --pad-page-y: clamp(26px, 5vw, 64px);
-  --pad-page-x: clamp(18px, 4vw, 56px);
+  --pad-page-x: clamp(16px, 4vw, 56px);
   --pad-page-bottom: 80px;
   --pad-account: clamp(20px, 4vw, 34px);
-  --pad-auth-hero: clamp(30px, 8vw, 120px);
-  --pad-auth-panel: clamp(28px, 6vw, 90px);
   --worker-header-height: 46px;
+  --tab-bar-height: 58px;
   --worker-page-pad-top: clamp(var(--space-18), 3vw, var(--space-28));
   --worker-pad-x: clamp(16px, 4vw, 32px);
   --worker-pad-bottom: clamp(56px, 10vh, 72px);
@@ -423,6 +443,19 @@
   --header-bg: rgba(244, 247, 251, 0.9);
   --scrim: rgba(29, 53, 79, 0.4);
   --switch-knob-fill: #ffffff;
+  --accent-fill: #1f6fd6;
+  --accent-fill-hover: #1a63c2;
+  --on-accent-fill: #ffffff;
+  --accent-text: #1769c2;
+  --neutral-fill: #e6ecf3;
+  --neutral-fill-hover: #dbe3ed;
+  --group-bg: #ffffff;
+  --sheet-bg: #f4f7fb;
+  --chip-bg: #e6ecf3;
+  --chip-on-bg: var(--ink);
+  --chip-on-ink: #ffffff;
+  --danger-fill: rgba(181, 69, 76, 0.1);
+  --danger-ink: #b5454c;
   --photo-matte: #e8eef6;
   --auth-hero-deep: #d9e4f2;
 }

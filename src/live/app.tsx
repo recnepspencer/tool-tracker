@@ -38,7 +38,6 @@ function RequireAccount() {
   if (error && !session)
     return (
       <AuthLayout
-        eyebrow="Connection"
         title="Can’t reach your workspace"
         description="Check your connection and try again. Your account has not been signed out."
       >
@@ -138,11 +137,7 @@ export function App() {
           <Route
             path="*"
             element={
-              <AuthLayout
-                eyebrow="Not found"
-                title="Page not found"
-                description="This address does not match a page in Tool Tracker."
-              >
+              <AuthLayout title="Page not found" description="This address does not match a page in Tool Tracker.">
                 <Link className="button button--primary button--full" to="/app">
                   Return to your workspace
                 </Link>

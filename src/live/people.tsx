@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { formatDate } from './format';
 import { Button, DirectoryToolbar, ErrorState, LoadingState, OverlayDialog, PageHeading, SurfaceCard } from './kit';
 import { PersonDrawer } from './people-drawer';
+import { RoleGuideButton } from './people-role-guide';
 import { InvitePersonDialog } from './people-invite';
 import { LIFECYCLE_LABELS, LIFECYCLE_PILL, ROLE_LABELS, memberLifecycle, memberRoles } from './people-roles';
 import { usePeoplePageState, type InvitationState, type PeopleFilter } from './people-state';
@@ -37,9 +38,8 @@ export function PeoplePage() {
   return (
     <div className="page-content people-page">
       <PageHeading
-        eyebrow="Admin view · People"
         title="People"
-        description="Manage access, responsibility, and the history attached to every member."
+        info={<RoleGuideButton />}
         action={manages ? <Button onClick={() => state.invite(true)}>Invite person</Button> : undefined}
       />
       {people.isError && (
@@ -181,7 +181,6 @@ export function PeoplePage() {
           showCloseButton
         >
           <div className="dialog-heading">
-            <span className="eyebrow">People</span>
             <h2>Revoke {revoking.preferred_name}’s invitation?</h2>
             <p>The invitation link stops working. You can invite {revoking.email} again later.</p>
           </div>
