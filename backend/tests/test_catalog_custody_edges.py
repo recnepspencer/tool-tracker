@@ -278,3 +278,31 @@ def test_requester_role_loss_blocks_approval_but_not_explicit_rejection(
         ).status_code
         == 200
     )
+
+
+def test_generic_catalog_types_can_be_created_edited_and_archived(world, api_client):
+    from companies.models import CompanyRoleGrant
+
+    CompanyRoleGrant.objects.create(membership=world.member, role_code="company_admin")
+    base = f"/api/companies/{world.company.pk}/tool-models"
+    body = {"name": "Rotary hammer", "category_id": str(world.model.category_id)}
+    created = api_client.post(base, body, content_type="application/json")
+    assert created.status_code == 200, created.content
+    item = created.json()
+    assert item["manufacturer"] == item["model_number"] == ""
+    for archived in (True, False):
+        updated = api_client.post(
+            f"{base}/{item['id']}/update",
+            {
+                **body,
+                "name": "Hammer drill",
+                "manufacturer": "",
+                "model_number": "",
+                "expected_revision": item["revision"],
+                "archived": archived,
+            },
+            content_type="application/json",
+        )
+        assert updated.status_code == 200, updated.content
+        item = updated.json()
+        assert bool(item["archived_at"]) == archived

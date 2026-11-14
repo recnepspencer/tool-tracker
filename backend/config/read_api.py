@@ -162,7 +162,8 @@ def directory(
     search: str = "",
 ):
     require_member(current_identity(request), company_id, "jobs.read")
-    require_member(current_identity(request), company_id, "tools.read")
+    reader = require_member(current_identity(request), company_id, "tools.read")
+    sensitive = "tools.manage" in capabilities(reader)
     query = CompanyMembership.objects.filter(
         company_id=company_id, access_state="active", ended_at__isnull=True
     ).select_related("person")
@@ -180,7 +181,7 @@ def directory(
             CustodyPeriod.objects.filter(company_id=company_id, ends_at__isnull=True)
             .filter(
                 Q(asset__asset_tag__icontains=text)
-                | Q(asset__serial_number__icontains=text)
+                | (Q(asset__serial_number__icontains=text) if sensitive else Q())
                 | Q(asset__tool_model__name__icontains=text)
                 | Q(asset__tool_model__manufacturer__icontains=text)
                 | Q(asset__tool_model__model_number__icontains=text)
@@ -228,7 +229,7 @@ def directory(
                 "name": custody.asset.tool_model.name,
                 "manufacturer": custody.asset.tool_model.manufacturer,
                 "model_number": custody.asset.tool_model.model_number,
-                "serial_number": custody.asset.serial_number,
+                "serial_number": custody.asset.serial_number if sensitive else None,
                 "registration_photo_id": custody.asset.registration_photo_id,
                 "serviceability": custody.asset.serviceability,
                 "missing": custody.asset_id in missing,

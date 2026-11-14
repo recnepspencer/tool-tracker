@@ -129,8 +129,8 @@ for (const access of roles)
         const active = (await (await page.request.get(`${fixture.base}/tool-categories`)).json()).items;
         expect(active.map((category: { name: string }) => category.name)).toEqual(['Drills', 'Layout equipment']);
       }
-      const registration = actor.getByRole('region', { name: 'Employee tool uploads', exact: true });
-      const registrationSwitch = registration.getByRole('switch', { name: 'Employees can register tools' });
+      const registration = actor.getByRole('region', { name: 'Field inventory collection', exact: true });
+      const registrationSwitch = registration.getByRole('switch', { name: 'Collect existing field equipment' });
       await expect(registrationSwitch).toHaveCount(access.tools ? 1 : 0);
       const registrationPolicy = async () =>
         (await (await page.request.get(`${fixture.base}/tool-registration-policy`)).json())
@@ -143,7 +143,9 @@ for (const access of roles)
         await expect.poll(registrationPolicy).toBe(false);
       } else if (access.role === 'field_member') {
         await expect(
-          registration.getByText('Employees can register tools and upload photos.', { exact: true }),
+          registration.getByText('Field inventory collection is open. Submissions need manager review.', {
+            exact: true,
+          }),
         ).toBeVisible();
       }
       const participation = actor.getByRole('region', { name: 'Job participation', exact: true });

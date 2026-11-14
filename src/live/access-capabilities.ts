@@ -7,14 +7,17 @@ export const CAPABILITY_COPY: Record<string, { label: string; description: strin
   'tools.request': { label: 'Request tools', description: 'Request available warehouse stock' },
   'tools.transfer': { label: 'Hand off tools', description: 'Give and receive tools in custody handoffs' },
   'tools.report': { label: 'Report problems', description: 'Flag damaged or missing tools' },
-  'tools.register': { label: 'Register tools', description: 'Add tools when employee uploads are allowed' },
+  'tools.register': {
+    label: 'Submit equipment',
+    description: 'Report existing equipment while field collection is open',
+  },
   'files.upload': { label: 'Upload photos', description: 'Attach photos as custody evidence' },
   'tools.manage': { label: 'Manage tools', description: 'Edit tool records, service, and retirement' },
   'tools.manage_registration_policy': {
     label: 'Set upload rules',
-    description: 'Choose whether employees can register tools',
+    description: 'Open or close temporary field inventory collection',
   },
-  'catalog.manage': { label: 'Manage catalog', description: 'Edit tool models and categories' },
+  'catalog.manage': { label: 'Manage catalog', description: 'Edit tool types and categories' },
   'warehouses.manage': { label: 'Manage warehouses', description: 'Add, edit, and archive warehouses' },
   'reconciliation.manage': {
     label: 'Resolve reconciliation',

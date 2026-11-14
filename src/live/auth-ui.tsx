@@ -1,8 +1,20 @@
 import { Eye, EyeOff, Image as ImageIcon } from 'lucide-react';
-import { useEffect, useId, useRef, useState, type FormEvent, type InputHTMLAttributes, type ReactNode } from 'react';
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type FormEvent,
+  type InputHTMLAttributes,
+  type ReactNode,
+} from 'react';
 import { errorMessage } from './client';
-import { Button, FieldShell } from './kit';
-import { LogoCropper } from './logo-cropper';
+import { Button, FieldShell, LoadingState } from './kit';
+
+// The cropper is only needed once someone picks a logo.
+const LogoCropper = lazy(() => import('./logo-cropper').then((m) => ({ default: m.LogoCropper })));
 import './experience/auth.css';
 
 /** Demo AuthHero: the brand statement beside every account screen. */
@@ -185,14 +197,16 @@ export function LogoField({ value, onChange }: { value: LogoChoice; onChange: (v
   return (
     <FieldShell label="Company logo" hint="Optional" htmlFor={id}>
       {editing ? (
-        <LogoCropper
-          source={editing}
-          onCancel={() => setEditing('')}
-          onDone={(file) => {
-            setEditing('');
-            onChange({ file });
-          }}
-        />
+        <Suspense fallback={<LoadingState label="Opening the logo editor…" />}>
+          <LogoCropper
+            source={editing}
+            onCancel={() => setEditing('')}
+            onDone={(file) => {
+              setEditing('');
+              onChange({ file });
+            }}
+          />
+        </Suspense>
       ) : (
         <div className="auth-logo-field">
           {preview ? (

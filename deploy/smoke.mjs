@@ -121,7 +121,7 @@ try {
   if (!asset) {
     await page.goto('/app/tools/new');
     await page.getByLabel('Tool photo (up to 8 MB)').setInputFiles('e2e/fixtures/hammer-drill.jpg');
-    await page.getByLabel('Tool model').selectOption(model.id);
+    await page.getByLabel('Tool type').selectOption(model.id);
     await page.getByLabel('Starting warehouse').selectOption(warehouse.id);
     await page.getByLabel('Unique asset tag').fill('PIPELINE-PHOTO-001');
     await page.getByRole('button', { name: 'Register tool', exact: true }).click();

@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
 import { command, invitedMember, workspace, chooseOption, test } from './support';
 
-for (const role of ['company_admin', 'equipment_manager', 'field_member'])
+for (const role of ['company_admin', 'equipment_manager'])
   test(`${role} registers purchase details for one physical tool and a manager can edit or clear them`, async ({
     page,
     browser,
@@ -18,12 +18,11 @@ for (const role of ['company_admin', 'equipment_manager', 'field_member'])
     const actor = role === 'company_admin' ? page : await context.newPage();
     try {
       if (actor !== page) await invitedMember(page, actor, fixture.base, role);
-      // Field crew add tools from My tools; managers from the inventory.
-      const root = role === 'field_member' ? '/app/mine' : '/app/tools';
+      const root = '/app/tools';
       await actor.goto(`${root}/new`);
       const sheet = actor.getByRole('dialog', { name: 'Add a tool', exact: true });
       await sheet.getByRole('button', { name: 'Continue without a photo' }).click();
-      await chooseOption(sheet, 'Tool model', fixture.asset.tool_model_id);
+      await chooseOption(sheet, 'Tool type', fixture.asset.tool_model_id);
       await chooseOption(sheet, 'Home warehouse', fixture.warehouse.id);
       await sheet.getByLabel('Asset tag', { exact: true }).fill('PURCHASE-003');
       await sheet.getByRole('button', { name: 'Serial, price, notes', exact: true }).click();
@@ -43,7 +42,7 @@ for (const role of ['company_admin', 'equipment_manager', 'field_member'])
       // The wizard closes onto the new tool's record.
       await expect(sheet).toHaveCount(0);
       const tool = actor.getByRole('dialog', {
-        name: role === 'field_member' ? 'Tool details' : 'Hammer drill details',
+        name: 'Hammer drill details',
         exact: true,
       });
       await expect(tool.getByText('$249.95', { exact: true })).toBeVisible();

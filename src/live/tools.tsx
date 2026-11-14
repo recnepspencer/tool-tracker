@@ -51,7 +51,7 @@ function WorkerToolContent({ state, asset: t }: { state: ToolDetailState; asset:
     <div className="detail-sheet-content worker-detail-content" data-overlay-scroll>
       <div className="detail-hero">
         <ToolPhoto
-          src={photoSrc(c.company_id, t.registration_photo_id)}
+          src={photoSrc(c.company_id, t.registration_photo_id, 'display')}
           alt={`${t.name} product photo`}
           size="large"
           priority
@@ -117,7 +117,7 @@ function DrawerContent({ state, asset: t }: { state: ToolDetailState; asset: Mod
   return (
     <>
       <ToolPhoto
-        src={photoSrc(c.company_id, t.registration_photo_id)}
+        src={photoSrc(c.company_id, t.registration_photo_id, 'display')}
         alt={`${t.name} product photo`}
         size="large"
         priority

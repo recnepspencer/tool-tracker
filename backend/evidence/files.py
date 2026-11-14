@@ -8,13 +8,16 @@ from backend_platform.api import conflict, forbidden, not_found
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.utils import timezone
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 from companies.access import require_member
 
 from .models import StoredFile
 
 MAX_BYTES = 8 * 1024 * 1024
+# Field crews browse lists over weak cellular signal; lists and sheets request a
+# downscaled WebP rendition instead of the camera original.
+PHOTO_SIZES = {"thumb": 320, "display": 1280}
 
 
 def upload_photo(identity, company_id, upload, purpose):
@@ -73,7 +76,7 @@ def claim_file(member, file_id, purpose):
     return record
 
 
-def read_file(identity, company_id, file_id):
+def read_file(identity, company_id, file_id, size="original"):
     member = require_member(identity, company_id, "tools.read")
     record = StoredFile.objects.filter(company_id=company_id, pk=file_id).first()
     if record is None:
@@ -82,4 +85,33 @@ def read_file(identity, company_id, file_id):
         raise forbidden("Staged photos are private to their uploader.")
     if record.attached_at is None and record.expires_at <= timezone.now():
         raise not_found("Photo expired.")
-    return record, default_storage.open(record.storage_key, "rb")
+    # Staged photos may still be removed by cleanup, so only attached evidence
+    # keeps stored renditions; staged previews return the original.
+    if size in PHOTO_SIZES and record.attached_at is not None:
+        key = rendition(record, size)
+        if key:
+            return record, "image/webp", default_storage.open(key, "rb")
+    return record, record.content_type, default_storage.open(record.storage_key, "rb")
+
+
+def rendition(record, size):
+    """Return the storage key of a downscaled WebP copy, creating it on first request."""
+    key = f"{record.storage_key}.{size}.webp"
+    if default_storage.exists(key):
+        return key
+    edge = PHOTO_SIZES[size]
+    try:
+        with default_storage.open(record.storage_key, "rb") as source, Image.open(source) as image:
+            image = ImageOps.exif_transpose(image)
+            image.thumbnail((edge, edge))
+            if image.mode not in {"RGB", "RGBA"}:
+                image = image.convert("RGBA" if "A" in image.getbands() else "RGB")
+            output = BytesIO()
+            image.save(output, format="WEBP", quality=78, method=4)
+    except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
+        return None
+    saved = default_storage.save(key, ContentFile(output.getvalue()))
+    if saved != key:
+        # A concurrent request stored the same rendition first.
+        default_storage.delete(saved)
+    return key

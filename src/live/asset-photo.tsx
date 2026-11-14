@@ -1,5 +1,6 @@
 import { Wrench } from 'lucide-react';
 import type { Model } from './client';
+import { photoSrc } from './tool-status';
 type Asset = Model<'AssetView'>;
 export function AssetPhoto({
   asset,
@@ -14,7 +15,7 @@ export function AssetPhoto({
     <span className={large ? 'catalog-photo-frame' : 'tool-photo'}>
       <img
         className={large ? 'catalog-photo' : ''}
-        src={`/api/companies/${companyId}/files/${asset.registration_photo_id}`}
+        src={photoSrc(companyId, asset.registration_photo_id, large ? 'display' : 'thumb') ?? undefined}
         alt=""
         loading="lazy"
       />

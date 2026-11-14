@@ -12,6 +12,10 @@ export class ApiError extends Error {
   }
 }
 
+/** A dropped connection, timeout or server outage, as opposed to a decision from the server. */
+export const isNetworkFailure = (error: unknown) =>
+  !(error instanceof ApiError) || error.status >= 500 || error.status === 408 || error.status === 429;
+
 export const isStaleRecord = (error: unknown): error is ApiError =>
   error instanceof ApiError && error.status === 409 && ['stale_revision', 'stale_custody'].includes(error.code ?? '');
 
@@ -36,25 +40,51 @@ function codeFrom(body: unknown): string | undefined {
   return typeof value.code === 'string' ? value.code : codeFrom(value.error);
 }
 
+// One CSRF token serves every write until sign-in or sign-out rotates it, so a
+// save over a slow connection is one round trip instead of two.
+let csrfToken: Promise<string> | null = null;
+export const forgetCsrfToken = () => {
+  csrfToken = null;
+};
+function csrf(): Promise<string> {
+  csrfToken ??= fetch('/api/auth/csrf', { credentials: 'same-origin', cache: 'no-store' })
+    .then(async (response) => {
+      if (!response.ok) throw new ApiError(response.status, 'Unable to prepare a secure request. Please retry.');
+      return ((await response.json()) as { csrf_token: string }).csrf_token;
+    })
+    .catch((error: unknown) => {
+      csrfToken = null;
+      throw error;
+    });
+  return csrfToken;
+}
+// Django answers a rejected CSRF token with its HTML failure page; API errors are JSON.
+const csrfRejected = (response: Response) =>
+  response.status === 403 && !(response.headers.get('content-type') ?? '').includes('json');
+
+async function send(request: Request): Promise<Response> {
+  if (request.method === 'GET' || request.method === 'HEAD') return fetch(request);
+  if (!navigator.onLine) throw new Error('You are offline. Reconnect before saving changes.');
+  const retry = request.clone();
+  request.headers.set('X-CSRFToken', await csrf());
+  let response = await fetch(request);
+  if (csrfRejected(response)) {
+    forgetCsrfToken();
+    retry.headers.set('X-CSRFToken', await csrf());
+    response = await fetch(retry);
+  }
+  if (new URL(request.url).pathname.startsWith('/api/auth/')) forgetCsrfToken();
+  return response;
+}
+
 export const api = createClient<paths>({
   baseUrl: window.location.origin,
   credentials: 'same-origin',
-  cache: 'no-store',
+  // Revalidate with the server's ETag: an unchanged list answers 304 with no body.
+  cache: 'no-cache',
+  fetch: send,
 });
 api.use({
-  async onRequest({ request }) {
-    if (request.method !== 'GET') {
-      if (!navigator.onLine) throw new Error('You are offline. Reconnect before saving changes.');
-      const csrf = await fetch('/api/auth/csrf', {
-        credentials: 'same-origin',
-        cache: 'no-store',
-        signal: request.signal,
-      });
-      if (!csrf.ok) throw new ApiError(csrf.status, 'Unable to prepare a secure request. Please retry.');
-      request.headers.set('X-CSRFToken', (await csrf.json()).csrf_token);
-    }
-    return request;
-  },
   async onResponse({ response, request }) {
     if (!response.ok) {
       const body: unknown = await response
@@ -62,6 +92,7 @@ api.use({
         .json()
         .catch(() => null);
       if (response.status === 401 && !new URL(request.url).pathname.startsWith('/api/auth/')) {
+        forgetCsrfToken();
         window.dispatchEvent(new Event('session-expired'));
       }
       const error = new ApiError(response.status, messageFrom(body), codeFrom(body));

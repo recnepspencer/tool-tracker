@@ -1,7 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { api, result } from './client';
 import {
   catalogCategories,
   catalogItems,
@@ -9,7 +7,7 @@ import {
   catalogWarehouses,
   type CatalogItem,
 } from './checkout-catalog';
-import { collect, useReferences } from './data';
+import { useReferences, useToolCollection } from './data';
 import { useListLocation } from './list-location';
 import { usePendingMovements } from './pending-state';
 import { useCompany } from './session';
@@ -17,20 +15,7 @@ import { useCompany } from './session';
 export function useAssetCollection(mine = false) {
   const c = useCompany();
   const refs = useReferences();
-  const tools = useQuery({
-    queryKey: [c.company_id, 'asset-collection', mine],
-    queryFn: () =>
-      collect((offset) =>
-        api
-          .GET('/api/companies/{company_id}/tools', {
-            params: {
-              path: c.path,
-              query: { offset, limit: 100, ...(mine ? { holder_membership_id: c.membership_id } : {}) },
-            },
-          })
-          .then(result),
-      ),
-  });
+  const tools = useToolCollection(mine);
   return { c, refs, tools };
 }
 

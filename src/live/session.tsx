@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient, type Query } from '@tanstack/react-query';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { api, ApiError, result, type Model } from './client';
+import { forgetSavedRecords } from './query-persistence';
 
 type Membership = Model<'MembershipView'>;
 type Session = Model<'SessionView'>;
@@ -48,8 +49,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       }
     },
     staleTime: 0,
-    refetchInterval: 60_000,
-    retry: false,
+    // Access changes also arrive as 403s on the next request; polling is a backstop,
+    // kept infrequent so an idle phone is not waking its radio every minute.
+    refetchInterval: 5 * 60_000,
     networkMode: 'always',
   });
   const { refetch } = query;
@@ -57,6 +59,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     let active = true;
     let refreshing = false;
     const expire = () => {
+      void forgetSavedRecords();
       void cache.cancelQueries({ predicate: privateQuery });
       cache.removeQueries({ predicate: privateQuery });
       cache.setQueryData(['session'], null);
@@ -100,6 +103,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   };
   const logout = async () => {
     await api.POST('/api/auth/sign-out');
+    await forgetSavedRecords();
     await cache.cancelQueries();
     cache.setQueryData(['session'], null);
     cache.removeQueries({ predicate: privateQuery });

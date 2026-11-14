@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+  '/api/auth/change-password': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Change Password */
+    post: operations['accounts_api_change_password'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/auth/csrf': {
     parameters: {
       query?: never;
@@ -51,6 +68,23 @@ export interface paths {
     put?: never;
     /** Resend Invitation Links */
     post: operations['accounts_api_resend_invitation_links'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/auth/invitation-signup': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Signup Invitation */
+    post: operations['accounts_api_signup_invitation'];
     delete?: never;
     options?: never;
     head?: never;
@@ -408,6 +442,58 @@ export interface paths {
     get: operations['config_read_api_directory'];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/companies/{company_id}/equipment-submissions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Listing */
+    get: operations['equipment_intake_api_listing'];
+    put?: never;
+    /** Submit */
+    post: operations['equipment_intake_api_submit'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/companies/{company_id}/equipment-submissions/{submission_id}/reply': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Reply */
+    post: operations['equipment_intake_api_reply'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/companies/{company_id}/equipment-submissions/{submission_id}/review': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Review */
+    post: operations['equipment_intake_api_review'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1729,6 +1815,13 @@ export interface components {
       /** Revision */
       revision: number;
     };
+    /** ChangePasswordInput */
+    ChangePasswordInput: {
+      /** Current Password */
+      current_password: string;
+      /** Password */
+      password: string;
+    };
     /** CompanyInput */
     CompanyInput: {
       /** Logo Id */
@@ -1921,6 +2014,15 @@ export interface components {
       serial_number: string | null;
       /** Serviceability */
       serviceability: string;
+    };
+    /** DiscussionMessage */
+    DiscussionMessage: {
+      /** At */
+      at: string;
+      /** Author */
+      author: string;
+      /** Text */
+      text: string;
     };
     /** FileView */
     FileView: {
@@ -2161,6 +2263,15 @@ export interface components {
       preferred_name: string;
       /** Role */
       role: string;
+    };
+    /** InvitationSignupInput */
+    InvitationSignupInput: {
+      /** Name */
+      name: string;
+      /** Password */
+      password: string;
+      /** Token */
+      token: string;
     };
     /** InvitationView */
     InvitationView: {
@@ -2430,9 +2541,15 @@ export interface components {
        * Format: uuid
        */
       category_id: string;
-      /** Manufacturer */
+      /**
+       * Manufacturer
+       * @default
+       */
       manufacturer: string;
-      /** Model Number */
+      /**
+       * Model Number
+       * @default
+       */
       model_number: string;
       /** Name */
       name: string;
@@ -2458,9 +2575,15 @@ export interface components {
       category_id: string;
       /** Expected Revision */
       expected_revision: number;
-      /** Manufacturer */
+      /**
+       * Manufacturer
+       * @default
+       */
       manufacturer: string;
-      /** Model Number */
+      /**
+       * Model Number
+       * @default
+       */
       model_number: string;
       /** Name */
       name: string;
@@ -2906,6 +3029,13 @@ export interface components {
       /** Revision */
       revision: number;
     };
+    /** ReplyInput */
+    ReplyInput: {
+      /** Expected Revision */
+      expected_revision: number;
+      /** Note */
+      note: string;
+    };
     /** RequestInput */
     RequestInput: {
       /**
@@ -2972,6 +3102,24 @@ export interface components {
        * @enum {string}
        */
       status: 'pending' | 'approved' | 'rejected' | 'withdrawn' | 'fulfilled';
+    };
+    /** ReviewInput */
+    ReviewInput: {
+      /** Asset Id */
+      asset_id?: string | null;
+      /**
+       * Decision
+       * @enum {string}
+       */
+      decision: 'clarify' | 'link' | 'register';
+      /** Expected Revision */
+      expected_revision: number;
+      /**
+       * Note
+       * @default
+       */
+      note: string;
+      registration?: components['schemas']['RegistrationInput'] | null;
     };
     /** ServiceInput */
     ServiceInput: {
@@ -3079,6 +3227,85 @@ export interface components {
        */
       warehouse_id: string;
     };
+    /** SubmissionInput */
+    SubmissionInput: {
+      /** Description */
+      description: string;
+      /**
+       * In My Possession
+       * @default true
+       */
+      in_my_possession: boolean;
+      /**
+       * Location
+       * @default
+       */
+      location: string;
+      /**
+       * Notes
+       * @default
+       */
+      notes: string;
+      /** Photo Id */
+      photo_id?: string | null;
+      /**
+       * Request Key
+       * Format: uuid
+       */
+      request_key: string;
+      /** Suggested Type Id */
+      suggested_type_id?: string | null;
+    };
+    /** SubmissionPage */
+    SubmissionPage: {
+      /** Items */
+      items: components['schemas']['SubmissionView'][];
+      /** Next Offset */
+      next_offset: number | null;
+    };
+    /** SubmissionView */
+    SubmissionView: {
+      /** Asset Id */
+      asset_id: string | null;
+      /** Description */
+      description: string;
+      /** Discussion */
+      discussion: components['schemas']['DiscussionMessage'][];
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** In My Possession */
+      in_my_possession: boolean;
+      /** Location */
+      location: string;
+      /** Notes */
+      notes: string;
+      /** Photo Id */
+      photo_id: string | null;
+      /**
+       * Reporter Id
+       * Format: uuid
+       */
+      reporter_id: string;
+      /** Reporter Name */
+      reporter_name: string;
+      /** Revision */
+      revision: number;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: 'pending' | 'clarification' | 'registered' | 'linked';
+      /**
+       * Submitted At
+       * Format: date-time
+       */
+      submitted_at: string;
+      /** Suggested Type Id */
+      suggested_type_id: string | null;
+    };
     /** VerifySignupInput */
     VerifySignupInput: {
       /** Password */
@@ -3175,6 +3402,30 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  accounts_api_change_password: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ChangePasswordInput'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AccountMessage'];
+        };
+      };
+    };
+  };
   config_api_csrf_token: {
     parameters: {
       query?: never;
@@ -3279,6 +3530,30 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['AccountMessage'];
+        };
+      };
+    };
+  };
+  accounts_api_signup_invitation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['InvitationSignupInput'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SessionView'];
         };
       };
     };
@@ -3795,6 +4070,111 @@ export interface operations {
       };
     };
   };
+  equipment_intake_api_listing: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path: {
+        company_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SubmissionPage'];
+        };
+      };
+    };
+  };
+  equipment_intake_api_submit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        company_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SubmissionInput'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SubmissionView'];
+        };
+      };
+    };
+  };
+  equipment_intake_api_reply: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        company_id: string;
+        submission_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReplyInput'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SubmissionView'];
+        };
+      };
+    };
+  };
+  equipment_intake_api_review: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        company_id: string;
+        submission_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReviewInput'];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SubmissionView'];
+        };
+      };
+    };
+  };
   evidence_api_upload: {
     parameters: {
       query?: never;
@@ -3834,7 +4214,9 @@ export interface operations {
   };
   evidence_api_download: {
     parameters: {
-      query?: never;
+      query?: {
+        size?: 'original' | 'thumb' | 'display';
+      };
       header?: never;
       path: {
         company_id: string;

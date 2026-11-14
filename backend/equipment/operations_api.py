@@ -249,11 +249,11 @@ class ReconciliationPage(Schema):
 
 
 def asset_detail(request: HttpRequest, company_id: UUID, asset_id: UUID):
-    require_member(current_identity(request), company_id, "tools.read")
+    member = require_member(current_identity(request), company_id, "tools.read")
     asset = assets_with_availability(company_id).filter(pk=asset_id).first()
     if asset is None:
         raise not_found("Tool not found.")
-    return asset_view(asset)
+    return asset_view(asset, sensitive="tools.manage" in capabilities(member))
 
 
 def requests_list(
@@ -424,7 +424,7 @@ def services_list(request: HttpRequest, company_id: UUID, asset_id: UUID, page: 
 @csrf_protect
 def lifecycle_change(request: HttpRequest, company_id: UUID, asset_id: UUID, data: LifecycleInput):
     asset = condition.change_lifecycle(current_identity(request), company_id, asset_id, data)
-    return asset_view(assets_with_availability(company_id).get(pk=asset.pk))
+    return asset_view(assets_with_availability(company_id).get(pk=asset.pk), sensitive=True)
 
 
 def lifecycle_history(

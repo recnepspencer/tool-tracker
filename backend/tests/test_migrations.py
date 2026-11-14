@@ -55,6 +55,9 @@ def test_purchase_details_upgrade_preserves_existing_units_and_custody(world):
             assert asset.acquisition_date is None
             assert asset.acquisition_cost is None
             assert asset.acquisition_currency == "" and asset.notes == ""
+        from companies.models import CompanyRoleGrant
+
+        CompanyRoleGrant.objects.create(membership=world.member, role_code="equipment_manager")
         retry = login_client(world.user).post(
             f"/api/companies/{world.company.pk}/tools",
             {"request_key": str(key), **original_input},

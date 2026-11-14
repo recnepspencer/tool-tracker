@@ -37,6 +37,9 @@ export function CompanyProfile({ state }: { state: Pick<SettingsState, 'c' | 'co
       {company.data &&
         (c.can('company.manage') ? (
           <CommandForm
+            // Restored records refresh after the page opens; a newer revision
+            // replaces fields that were filled from the older one.
+            key={company.data.revision}
             className=""
             label="Save company"
             submit={async (form) => {
@@ -119,7 +122,7 @@ export function RegistrationSettings({
   if (!c.can('tools.register') && !c.can('tools.manage_registration_policy')) return null;
   const enabled = tools.data?.employee_tool_creation_enabled ?? false;
   return (
-    <SettingsCard eyebrow="Employee tool uploads">
+    <SettingsCard eyebrow="Field inventory collection">
       {tools.isPending && <LoadingState label="Loading upload rule…" />}
       {tools.isError && (
         <ErrorState message="The upload rule could not be loaded." onRetry={() => void tools.refetch()} />
@@ -128,8 +131,8 @@ export function RegistrationSettings({
         (c.can('tools.manage_registration_policy') ? (
           <>
             <Switch
-              label="Employees can register tools"
-              description="When off, only equipment managers register tools and upload registration photos."
+              label="Collect existing field equipment"
+              description="Temporarily let workers and foremen submit equipment for manager review. When closed, only managers and owners can add equipment."
               checked={registration.busy ? !enabled : enabled}
               disabled={registration.busy || tools.isFetching}
               onCheckedChange={state.setRegistration}
@@ -139,8 +142,8 @@ export function RegistrationSettings({
         ) : (
           <p className="settings-muted">
             {enabled
-              ? 'Employees can register tools and upload photos.'
-              : 'Equipment managers register tools and upload registration photos.'}
+              ? 'Field inventory collection is open. Submissions need manager review.'
+              : 'Field inventory collection is closed. Ask a manager to add equipment.'}
           </p>
         ))}
     </SettingsCard>

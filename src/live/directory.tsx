@@ -110,7 +110,7 @@ export function DirectoryPage() {
                             </Link>
                           </strong>
                           <small>
-                            {tool.manufacturer} · {tool.model_number} · {tool.asset_tag}
+                            {[tool.manufacturer, tool.model_number, tool.asset_tag].filter(Boolean).join(' · ')}
                             {tool.serial_number ? ` · ${tool.serial_number}` : ''}
                           </small>
                           <div className="foreman-tool-status">

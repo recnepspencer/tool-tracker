@@ -101,8 +101,8 @@ class CategoryPage(Schema):
 class ModelInput(CommandInput):
     category_id: UUID
     name: str = Field(min_length=1, max_length=200)
-    manufacturer: str = Field(min_length=1, max_length=120)
-    model_number: str = Field(min_length=1, max_length=120)
+    manufacturer: str = Field(default="", max_length=120)
+    model_number: str = Field(default="", max_length=120)
 
 
 class ModelUpdate(ModelInput):
@@ -256,14 +256,15 @@ def model_update(request: HttpRequest, company_id: UUID, model_id: UUID, data: M
 def asset_register(request: HttpRequest, company_id: UUID, data: RegistrationInput):
     result, created = registration.register_asset(current_identity(request), company_id, data)
     return Status(
-        201 if created else 200, asset_view(assets_with_availability(company_id).get(pk=result.pk))
+        201 if created else 200,
+        asset_view(assets_with_availability(company_id).get(pk=result.pk), sensitive=True),
     )
 
 
 @csrf_protect
 def asset_update(request: HttpRequest, company_id: UUID, asset_id: UUID, data: AssetUpdate):
     result = catalog.update_asset(current_identity(request), company_id, asset_id, data)
-    return asset_view(assets_with_availability(company_id).get(pk=result.pk))
+    return asset_view(assets_with_availability(company_id).get(pk=result.pk), sensitive=True)
 
 
 @csrf_protect
@@ -271,7 +272,7 @@ def stewardship_update(
     request: HttpRequest, company_id: UUID, asset_id: UUID, data: StewardshipInput
 ):
     result = catalog.set_stewardship(current_identity(request), company_id, asset_id, data)
-    return asset_view(assets_with_availability(company_id).get(pk=result.pk))
+    return asset_view(assets_with_availability(company_id).get(pk=result.pk), sensitive=True)
 
 
 def registration_policy_read(request: HttpRequest, company_id: UUID):

@@ -4,6 +4,7 @@ import { formatDate, formatStamp } from './format';
 import { purchasePrice } from './asset-details';
 import { photoSrc } from './tool-status';
 import './experience/tool-detail-live.css';
+import { useCompany } from './session';
 
 type Asset = Model<'AssetView'>;
 
@@ -57,8 +58,9 @@ export function ToolFacts({
   className: 'detail-facts' | 'inventory-drawer__facts';
   custody?: boolean;
 }) {
+  const sensitive = useCompany().can('tools.manage');
   const caveat = custodyCaveat(t);
-  const photo = photoSrc(companyId, t.registration_photo_id);
+  const photo = photoSrc(companyId, t.registration_photo_id, 'original');
   return (
     <dl className={className}>
       <Fact label="Unit">{t.asset_tag}</Fact>
@@ -71,15 +73,17 @@ export function ToolFacts({
       )}
       <Fact label="Origin warehouse">{t.origin_warehouse_name}</Fact>
       <Fact label="Responsible warehouse">{t.responsible_warehouse_name}</Fact>
-      <Fact label="Serial">{t.serial_number || 'Not recorded'}</Fact>
+      {sensitive && <Fact label="Serial">{t.serial_number || 'Not recorded'}</Fact>}
       <Fact label="Condition">
         {conditionLabels[t.serviceability]}
         {t.missing && ' · Missing'}
       </Fact>
       <Fact label="Lifecycle">{lifecycleLabels[t.lifecycle]}</Fact>
       <Fact label="Last moved">{t.custody_started_at ? formatStamp(t.custody_started_at) : 'Not recorded'}</Fact>
-      <Fact label="Purchase price">{purchasePrice(t)}</Fact>
-      <Fact label="Purchase date">{t.acquisition_date ? calendarDate(t.acquisition_date) : 'Not recorded'}</Fact>
+      {sensitive && <Fact label="Purchase price">{purchasePrice(t)}</Fact>}
+      {sensitive && (
+        <Fact label="Purchase date">{t.acquisition_date ? calendarDate(t.acquisition_date) : 'Not recorded'}</Fact>
+      )}
       {photo && (
         <Fact label="Registration photo">
           <a className="text-button" href={photo} target="_blank" rel="noreferrer">

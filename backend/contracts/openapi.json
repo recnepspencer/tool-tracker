@@ -1230,6 +1230,29 @@
         "title": "CategoryView",
         "type": "object"
       },
+      "ChangePasswordInput": {
+        "additionalProperties": false,
+        "properties": {
+          "current_password": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Current Password",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 200,
+            "minLength": 12,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "current_password",
+          "password"
+        ],
+        "title": "ChangePasswordInput",
+        "type": "object"
+      },
       "CompanyInput": {
         "additionalProperties": false,
         "properties": {
@@ -1749,6 +1772,29 @@
           "missing"
         ],
         "title": "DirectoryTool",
+        "type": "object"
+      },
+      "DiscussionMessage": {
+        "properties": {
+          "at": {
+            "title": "At",
+            "type": "string"
+          },
+          "author": {
+            "title": "Author",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "author",
+          "text",
+          "at"
+        ],
+        "title": "DiscussionMessage",
         "type": "object"
       },
       "FileView": {
@@ -2439,6 +2485,36 @@
         "title": "InvitationPreview",
         "type": "object"
       },
+      "InvitationSignupInput": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 200,
+            "minLength": 12,
+            "title": "Password",
+            "type": "string"
+          },
+          "token": {
+            "maxLength": 200,
+            "minLength": 20,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "name",
+          "password"
+        ],
+        "title": "InvitationSignupInput",
+        "type": "object"
+      },
       "InvitationView": {
         "properties": {
           "accepted_at": {
@@ -3106,14 +3182,14 @@
             "type": "string"
           },
           "manufacturer": {
+            "default": "",
             "maxLength": 120,
-            "minLength": 1,
             "title": "Manufacturer",
             "type": "string"
           },
           "model_number": {
+            "default": "",
             "maxLength": 120,
-            "minLength": 1,
             "title": "Model Number",
             "type": "string"
           },
@@ -3126,9 +3202,7 @@
         },
         "required": [
           "category_id",
-          "name",
-          "manufacturer",
-          "model_number"
+          "name"
         ],
         "title": "ModelInput",
         "type": "object"
@@ -3180,14 +3254,14 @@
             "type": "integer"
           },
           "manufacturer": {
+            "default": "",
             "maxLength": 120,
-            "minLength": 1,
             "title": "Manufacturer",
             "type": "string"
           },
           "model_number": {
+            "default": "",
             "maxLength": 120,
-            "minLength": 1,
             "title": "Model Number",
             "type": "string"
           },
@@ -3201,8 +3275,6 @@
         "required": [
           "category_id",
           "name",
-          "manufacturer",
-          "model_number",
           "expected_revision"
         ],
         "title": "ModelUpdate",
@@ -4358,6 +4430,28 @@
         "title": "RegistrationPolicyView",
         "type": "object"
       },
+      "ReplyInput": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "note": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "note"
+        ],
+        "title": "ReplyInput",
+        "type": "object"
+      },
       "RequestInput": {
         "additionalProperties": false,
         "properties": {
@@ -4506,6 +4600,59 @@
           "requester_eligible"
         ],
         "title": "RequestView",
+        "type": "object"
+      },
+      "ReviewInput": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Id"
+          },
+          "decision": {
+            "enum": [
+              "clarify",
+              "link",
+              "register"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Note",
+            "type": "string"
+          },
+          "registration": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegistrationInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "expected_revision",
+          "decision"
+        ],
+        "title": "ReviewInput",
         "type": "object"
       },
       "ServiceInput": {
@@ -4748,6 +4895,211 @@
         "title": "StewardshipInput",
         "type": "object"
       },
+      "SubmissionInput": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Description",
+            "type": "string"
+          },
+          "in_my_possession": {
+            "default": true,
+            "title": "In My Possession",
+            "type": "boolean"
+          },
+          "location": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Location",
+            "type": "string"
+          },
+          "notes": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Notes",
+            "type": "string"
+          },
+          "photo_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Id"
+          },
+          "request_key": {
+            "format": "uuid",
+            "title": "Request Key",
+            "type": "string"
+          },
+          "suggested_type_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Type Id"
+          }
+        },
+        "required": [
+          "request_key",
+          "description"
+        ],
+        "title": "SubmissionInput",
+        "type": "object"
+      },
+      "SubmissionPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SubmissionView"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Offset"
+          }
+        },
+        "required": [
+          "items",
+          "next_offset"
+        ],
+        "title": "SubmissionPage",
+        "type": "object"
+      },
+      "SubmissionView": {
+        "properties": {
+          "asset_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Id"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "discussion": {
+            "items": {
+              "$ref": "#/components/schemas/DiscussionMessage"
+            },
+            "title": "Discussion",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "in_my_possession": {
+            "title": "In My Possession",
+            "type": "boolean"
+          },
+          "location": {
+            "title": "Location",
+            "type": "string"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          },
+          "photo_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Id"
+          },
+          "reporter_id": {
+            "format": "uuid",
+            "title": "Reporter Id",
+            "type": "string"
+          },
+          "reporter_name": {
+            "title": "Reporter Name",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "clarification",
+              "registered",
+              "linked"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "submitted_at": {
+            "format": "date-time",
+            "title": "Submitted At",
+            "type": "string"
+          },
+          "suggested_type_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Type Id"
+          }
+        },
+        "required": [
+          "id",
+          "description",
+          "location",
+          "in_my_possession",
+          "notes",
+          "suggested_type_id",
+          "photo_id",
+          "status",
+          "asset_id",
+          "discussion",
+          "revision",
+          "submitted_at",
+          "reporter_id",
+          "reporter_name"
+        ],
+        "title": "SubmissionView",
+        "type": "object"
+      },
       "VerifySignupInput": {
         "additionalProperties": false,
         "properties": {
@@ -4975,6 +5327,38 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/auth/change-password": {
+      "post": {
+        "operationId": "accounts_api_change_password",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountMessage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Change Password",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
     "/api/auth/csrf": {
       "get": {
         "operationId": "config_api_csrf_token",
@@ -5106,6 +5490,38 @@
           }
         },
         "summary": "Resend Invitation Links",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/auth/invitation-signup": {
+      "post": {
+        "operationId": "accounts_api_signup_invitation",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitationSignupInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Signup Invitation",
         "tags": [
           "accounts"
         ]
@@ -6018,6 +6434,209 @@
         ]
       }
     },
+    "/api/companies/{company_id}/equipment-submissions": {
+      "get": {
+        "operationId": "equipment_intake_api_listing",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionPage"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Listing",
+        "tags": [
+          "equipment collection"
+        ]
+      },
+      "post": {
+        "operationId": "equipment_intake_api_submit",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmissionInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Submit",
+        "tags": [
+          "equipment collection"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/equipment-submissions/{submission_id}/reply": {
+      "post": {
+        "operationId": "equipment_intake_api_reply",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "submission_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Submission Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplyInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Reply",
+        "tags": [
+          "equipment collection"
+        ]
+      }
+    },
+    "/api/companies/{company_id}/equipment-submissions/{submission_id}/review": {
+      "post": {
+        "operationId": "equipment_intake_api_review",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "submission_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Submission Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "Review",
+        "tags": [
+          "equipment collection"
+        ]
+      }
+    },
     "/api/companies/{company_id}/files": {
       "post": {
         "operationId": "evidence_api_upload",
@@ -6105,6 +6724,21 @@
             "schema": {
               "format": "uuid",
               "title": "File Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": "original",
+              "enum": [
+                "original",
+                "thumb",
+                "display"
+              ],
+              "title": "Size",
               "type": "string"
             }
           }
@@ -8248,7 +8882,7 @@
             "required": false,
             "schema": {
               "default": 50,
-              "maximum": 100,
+              "maximum": 500,
               "minimum": 1,
               "title": "Limit",
               "type": "integer"

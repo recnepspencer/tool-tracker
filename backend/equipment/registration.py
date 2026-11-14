@@ -27,7 +27,8 @@ def registration_allowed(member, *, lock=False):
     manager = "tools.manage" in capabilities(member)
     if not manager and (policy is None or not policy.employee_tool_creation_enabled):
         raise forbidden(
-            "Employee tool registration is disabled.", code="employee_registration_disabled"
+            "Field inventory collection is closed. Ask a manager to add equipment.",
+            code="employee_registration_disabled",
         )
     return manager
 
@@ -62,7 +63,7 @@ def set_registration_policy(identity, company_id, enabled, expected_revision):
 
 @transaction.atomic
 def register_asset(identity, company_id, data):
-    member = authorize_write(identity, company_id, "tools.register")
+    member = authorize_write(identity, company_id, "tools.manage")
     payload = data.model_dump(mode="json", exclude={"request_key"})
     # Keep existing retry hashes valid when optional details are added or schemas
     # are reorganized. The original registration fields retain their wire order.

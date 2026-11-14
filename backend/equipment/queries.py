@@ -2,7 +2,7 @@ from backend_platform.api import not_found
 from django.db.models import Exists, OuterRef, Q, Subquery
 from django.utils import timezone
 
-from companies.access import require_member
+from companies.access import capabilities, require_member
 
 from .models import AssetIncident, CustodyHandoff, CustodyPeriod, ToolAsset, ToolRequest
 
@@ -54,13 +54,14 @@ def unavailable_reason(asset):
 def list_assets(
     identity, company_id, *, limit, offset, search="", warehouse_id=None, holder_membership_id=None
 ):
-    require_member(identity, company_id, "tools.read")
+    member = require_member(identity, company_id, "tools.read")
+    sensitive = "tools.manage" in capabilities(member)
     query = assets_with_availability(company_id)
     if search:
         text = search[:200]
         query = query.filter(
             Q(asset_tag__icontains=text)
-            | Q(serial_number__icontains=text)
+            | (Q(serial_number__icontains=text) if sensitive else Q())
             | Q(tool_model__name__icontains=text)
             | Q(tool_model__manufacturer__icontains=text)
             | Q(tool_model__model_number__icontains=text)
@@ -71,22 +72,22 @@ def list_assets(
         query = query.filter(holder_membership_id=holder_membership_id)
     rows = list(query.order_by("asset_tag", "id")[offset : offset + limit + 1])
     return {
-        "items": [asset_view(asset) for asset in rows[:limit]],
+        "items": [asset_view(asset, sensitive=sensitive) for asset in rows[:limit]],
         "next_offset": offset + limit if len(rows) > limit else None,
     }
 
 
-def asset_view(asset):
+def asset_view(asset, *, sensitive=False):
     reason = unavailable_reason(asset)
     return {
         "id": asset.id,
         "asset_tag": asset.asset_tag,
-        "serial_number": asset.serial_number,
-        "acquisition_date": asset.acquisition_date,
+        "serial_number": asset.serial_number if sensitive else None,
+        "acquisition_date": asset.acquisition_date if sensitive else None,
         "acquisition_cost": format(asset.acquisition_cost, ".2f")
-        if asset.acquisition_cost is not None
+        if sensitive and asset.acquisition_cost is not None
         else None,
-        "acquisition_currency": asset.acquisition_currency,
+        "acquisition_currency": asset.acquisition_currency if sensitive else "",
         "notes": asset.notes,
         "tool_model_id": asset.tool_model_id,
         "category_id": asset.tool_model.category_id,

@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, result, type Model } from './client';
-import { collect } from './data';
+import { collect, useToolCollection } from './data';
 import { useListLocation } from './list-location';
 import { ROLE_LABELS, memberLifecycle } from './people-roles';
 import { useCompany } from './session';
@@ -58,16 +58,7 @@ export function usePeoplePageState() {
       ),
   });
   // The inventory's asset collection: custody counts for every holder, including former employees.
-  const assets = useQuery({
-    queryKey: [c.company_id, 'asset-collection', false],
-    enabled: c.can('tools.read'),
-    queryFn: () =>
-      collect((offset) =>
-        api
-          .GET('/api/companies/{company_id}/tools', { params: { path: c.path, query: { offset, limit: 100 } } })
-          .then(result),
-      ),
-  });
+  const assets = useToolCollection(false, { enabled: c.can('tools.read') });
   // Current jobs for active members (the directory lists active members only).
   const directory = useQuery({
     queryKey: [c.company_id, 'directory', '', ''],

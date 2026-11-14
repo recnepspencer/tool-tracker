@@ -254,7 +254,7 @@ test('photo-first registration survives a lost server response without duplicati
   await page.screenshot({ path: 'artifacts/parity-registration-capture-mobile.png', fullPage: true });
   await page.getByLabel('Choose a tool photo', { exact: true }).setInputFiles('e2e/fixtures/hammer-drill.jpg');
   await expect(wizard.getByRole('img', { name: 'Selected tool', exact: true })).toBeVisible();
-  await chooseOption(page, 'Tool model', model.id);
+  await chooseOption(page, 'Tool type', model.id);
   await chooseOption(page, 'Home warehouse', fixture.warehouse.id);
   await page.getByLabel('Asset tag', { exact: true }).fill('RETRY-PHOTO');
   await page.getByRole('button', { name: /Retake/ }).click();

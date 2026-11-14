@@ -34,13 +34,25 @@ def upload(
     return upload_photo(current_identity(request), company_id, file, purpose)
 
 
-def download(request: HttpRequest, company_id: UUID, file_id: UUID):
-    record, stream = read_file(current_identity(request), company_id, file_id)
+def download(
+    request: HttpRequest,
+    company_id: UUID,
+    file_id: UUID,
+    size: Literal["original", "thumb", "display"] = "original",
+):
+    record, content_type, stream = read_file(current_identity(request), company_id, file_id, size)
+    filename = record.original_name
+    if content_type != record.content_type:
+        filename = f"{filename.rsplit('.', 1)[0] or 'photo'}-{size}.webp"
     response = FileResponse(
-        stream, as_attachment=True, filename=record.original_name, content_type=record.content_type
+        stream, as_attachment=True, filename=filename, content_type=content_type
     )
     response["X-Content-Type-Options"] = "nosniff"
-    response["Cache-Control"] = "private, no-store"
+    # Attached evidence never changes under its id, so the browser may keep it.
+    # Sign-out sends Clear-Site-Data to drop these private copies from the device.
+    response["Cache-Control"] = (
+        "private, max-age=31536000, immutable" if record.attached_at else "private, no-store"
+    )
     return response
 
 

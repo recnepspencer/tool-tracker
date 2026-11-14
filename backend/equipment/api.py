@@ -56,7 +56,8 @@ class AssetPage(Schema):
 
 
 class PageInput(Schema):
-    limit: int = Field(default=50, ge=1, le=100)
+    # Crews load whole inventories over high-latency links; large pages mean fewer round trips.
+    limit: int = Field(default=50, ge=1, le=500)
     offset: int = Field(default=0, ge=0)
 
 

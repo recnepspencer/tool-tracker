@@ -34,18 +34,18 @@ export function CatalogPage() {
       <PageHeading
         eyebrow="Admin view · Catalog"
         title="Catalog"
-        description="Models describe a kind of tool. Registered tools are individual assets."
-        action={manages ? <Button onClick={() => state.select('new')}>Add model</Button> : undefined}
+        description="Tool types describe a kind of tool. Registered tools are individual assets."
+        action={manages ? <Button onClick={() => state.select('new')}>Add tool type</Button> : undefined}
       />
       {models.isError && (
         <ErrorState message="The tool catalog could not be refreshed." onRetry={() => void models.refetch()} />
       )}
       <DirectoryToolbar<ModelTab>
-        searchLabel="Search models"
-        searchPlaceholder="Search models…"
+        searchLabel="Search tool types"
+        searchPlaceholder="Search tool types…"
         search={state.search}
         onSearchChange={state.setSearch}
-        filterLabel="Model status"
+        filterLabel="Tool type status"
         filters={MODEL_TABS}
         activeFilter={archived ? 'archived' : 'active'}
         onFilterChange={(value) => state.setArchived(value === 'archived')}
@@ -55,7 +55,7 @@ export function CatalogPage() {
           <table className="admin-table admin-table--responsive directory-table">
             <thead>
               <tr>
-                <th>Model</th>
+                <th>Tool type</th>
                 <th>Category</th>
                 <th>Status</th>
                 <th />
@@ -64,13 +64,13 @@ export function CatalogPage() {
             <tbody>
               {rows.map((model) => (
                 <tr key={model.id}>
-                  <td data-label="Model">
+                  <td data-label="Tool type">
                     <button className="admin-record-button" type="button" onClick={() => state.select(model.id)}>
                       {model.name}
                     </button>
-                    <span>
-                      {model.manufacturer} · {model.model_number}
-                    </span>
+                    {(model.manufacturer || model.model_number) && (
+                      <span>{[model.manufacturer, model.model_number].filter(Boolean).join(' · ')}</span>
+                    )}
                   </td>
                   <td className="directory-table__mobile-hide" data-label="Category">
                     {state.categoryName(model.category_id) || '—'}
@@ -99,10 +99,10 @@ export function CatalogPage() {
         {!rows.length && (
           <p className="admin-empty">
             {models.data.length
-              ? 'No models match this search.'
+              ? 'No tool types match this search.'
               : archived
-                ? 'No archived models.'
-                : 'No tool models yet.'}
+                ? 'No archived tool types.'
+                : 'No tool types yet.'}
           </p>
         )}
       </SurfaceCard>
@@ -126,23 +126,21 @@ function ModelDialog({ model, state }: { model?: ToolModel; state: CatalogPageSt
     }));
   return (
     <OverlayDialog
-      label={model ? 'Edit model' : 'Create model'}
+      label={model ? 'Edit tool type' : 'Create tool type'}
       onClose={close}
       panelClassName="admin-dialog"
       showCloseButton
     >
       <div className="dialog-heading">
         <span className="eyebrow">Catalog</span>
-        <h2>{model ? (manages ? 'Edit model' : model.name) : 'Add a model'}</h2>
-        {model && (
-          <p>
-            {model.manufacturer} · {model.model_number}
-          </p>
+        <h2>{model ? (manages ? 'Edit tool type' : model.name) : 'Add a tool type'}</h2>
+        {model && (model.manufacturer || model.model_number) && (
+          <p>{[model.manufacturer, model.model_number].filter(Boolean).join(' · ')}</p>
         )}
       </div>
       {manages ? (
         <CommandForm
-          label="Save model"
+          label="Save tool type"
           onCancel={close}
           onDone={close}
           submit={(form) => {
@@ -172,8 +170,20 @@ function ModelDialog({ model, state }: { model?: ToolModel; state: CatalogPageSt
             options={categories}
           />
           <Field label="Tool name" name="name" defaultValue={model?.name} required maxLength={200} />
-          <Field label="Manufacturer" name="manufacturer" defaultValue={model?.manufacturer} required maxLength={120} />
-          <Field label="Model number" name="number" defaultValue={model?.model_number} required maxLength={120} />
+          <Field
+            label="Manufacturer"
+            name="manufacturer"
+            defaultValue={model?.manufacturer}
+            hint="Optional"
+            maxLength={120}
+          />
+          <Field
+            label="Model number"
+            name="number"
+            defaultValue={model?.model_number}
+            hint="Optional"
+            maxLength={120}
+          />
         </CommandForm>
       ) : (
         model && (
@@ -187,13 +197,13 @@ function ModelDialog({ model, state }: { model?: ToolModel; state: CatalogPageSt
       )}
       {model && manages && (
         <div className="admin-danger-zone">
-          <span className="eyebrow">Model status</span>
+          <span className="eyebrow">Tool type status</span>
           <Button
             variant="secondary"
             disabled={archive.busy}
             onClick={() => state.setModelArchived(model, !model.archived_at)}
           >
-            {archive.busy ? 'Saving…' : model.archived_at ? 'Restore model' : 'Archive model'}
+            {archive.busy ? 'Saving…' : model.archived_at ? 'Restore tool type' : 'Archive tool type'}
           </Button>
           <CommandError error={archive.error} />
         </div>

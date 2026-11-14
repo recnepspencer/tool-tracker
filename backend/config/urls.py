@@ -6,6 +6,7 @@ from accounts.api import router as accounts_router
 from companies.api import router as company_router
 from equipment.api import router as tools_router
 from equipment.catalog_api import router as catalog_router
+from equipment.intake_api import router as intake_router
 from equipment.operations_api import router as operations_router
 from evidence.api import router as evidence_router
 from evidence.openapi import describe_photo_download
@@ -22,6 +23,7 @@ api.add_router("", session_router)
 api.add_router("", tools_router)
 api.add_router("", catalog_router)
 api.add_router("", operations_router)
+api.add_router("", intake_router)
 api.add_router("", company_router)
 api.add_router("", work_router)
 api.add_router("", evidence_router)

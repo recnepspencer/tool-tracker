@@ -53,9 +53,9 @@ export function ToolCatalogCard({
             {status}
           </span>
         </span>
-        <span className="catalog-card-subtitle">
-          {item.brand} · {item.model}
-        </span>
+        {(item.brand || item.model) && (
+          <span className="catalog-card-subtitle">{[item.brand, item.model].filter(Boolean).join(' · ')}</span>
+        )}
         <span className="catalog-card-meta">
           <span>{item.category}</span>
           <span>
