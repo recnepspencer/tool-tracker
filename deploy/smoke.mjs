@@ -177,28 +177,24 @@ try {
   const member = await memberContext.newPage();
   member.setDefaultTimeout(20_000);
   member.on('pageerror', (error) => browserErrors.push(error.message));
+  // The invitation link proves the email, so a new person sets a password and joins on that page.
   await member.goto(invitation);
-  await member.getByRole('link', { name: 'Create an account', exact: true }).click();
-  await member.getByLabel('Your name', { exact: true }).fill('Deployment member');
-  await member.getByLabel('Work email', { exact: true }).fill(email);
-  await member.getByRole('button', { name: 'Send verification link' }).click();
-  await expect(member.getByRole('heading', { name: 'Check your email' })).toBeVisible();
-  await member.goto(await emailLink(email, '/verify-email'));
+  await expect(member.getByLabel('Work email', { exact: true })).toHaveValue(email);
   await member.getByLabel('New password', { exact: true }).fill(password);
   await member.getByLabel('Confirm password', { exact: true }).fill(password);
-  await member.getByRole('button', { name: 'Create account', exact: true }).click();
-  await member.getByRole('button', { name: 'Accept invitation', exact: true }).click();
+  await member.getByRole('button', { name: 'Create account and join', exact: true }).click();
+  await expect(member.getByRole('heading', { name: 'Invitation accepted' })).toBeVisible();
   await member.getByRole('button', { name: 'Open workspace', exact: true }).click();
   await expect(member.getByRole('heading', { name: 'My tools', exact: true })).toBeVisible();
   await member.goto('/forgot-password');
   await member.getByLabel('Email address', { exact: true }).fill(email);
   await member.getByRole('button', { name: 'Send reset link' }).click();
-  await expect(member.getByRole('heading', { name: 'Check your email' })).toBeVisible();
+  await expect(member.getByRole('status')).toContainText('If an account exists');
   await member.goto(await emailLink(email, '/reset-password'));
   await member.getByLabel('New password', { exact: true }).fill(`${password}-reset`);
   await member.getByLabel('Confirm password', { exact: true }).fill(`${password}-reset`);
   await member.getByRole('button', { name: 'Update password', exact: true }).click();
-  await expect(member.getByRole('heading', { name: 'Password updated', exact: true })).toBeVisible();
+  await expect(member.getByText('Your password has been updated.', { exact: false })).toBeVisible();
   await memberContext.close();
 
   await page.goto('/app/tools');
